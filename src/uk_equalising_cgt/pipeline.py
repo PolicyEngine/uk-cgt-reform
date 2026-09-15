@@ -33,20 +33,48 @@ from .impacts import (
     validation_stats,
 )
 from .reform import BURNHAM_RATES, ELASTICITY, PERIOD, YEARS, burnham_reform
-from .simulations import DATASET, ensure_uk_datasets, make_policy, run_simulation
+from .simulations import BASE_YEAR, DATASET, ensure_uk_datasets, make_policy, run_simulation
+from .uprating_audit import baseline_by_year, engine_audit, projection_fingerprint, write_audit
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 OUTPUT_PATH = REPO_ROOT / "data" / "cgt_equalisation_results.json"
+AUDIT_PATH = REPO_ROOT / "data" / "cgt_uprating_audit.json"
 DATASET_FOLDER = REPO_ROOT / "data" / "policyengine_datasets"
 
 # Simulation ids double as output-cache filenames (`<id>.h5` beside the
-# per-year dataset files), so they must be keyed by dataset vintage —
-# otherwise a dataset upgrade silently reuses stale cached outputs.
+# per-year dataset files), so they must be keyed by dataset vintage AND by
+# the projection actually applied — otherwise a dataset upgrade, or a
+# change in the engine's uprating, silently reuses stale cached outputs.
 DATASET_STEM = Path(DATASET.rsplit("@", 1)[0]).stem
+
+
+def write_uprating_audit(baseline_sims: dict | None = None, path: Path = AUDIT_PATH) -> dict:
+    """Write the uprating audit (issue #2, item 1). With ``baseline_sims``
+    the per-year baseline block is filled from the simulations; without
+    them it is left empty and says so."""
+    audit = engine_audit(BASE_YEAR, YEARS)
+    audit["projection_fingerprint"] = projection_fingerprint(audit)
+    if baseline_sims:
+        audit["baseline_by_year"] = baseline_by_year(baseline_sims)
+    else:
+        audit["baseline_by_year"] = {}
+        audit["baseline_by_year_note"] = (
+            "Not populated: written with --audit-only, no simulations run. "
+            "A full pipeline run fills this block from the baseline simulations."
+        )
+    write_audit(audit, path)
+    print(f"    wrote {path} (projection {audit['projection_fingerprint']})")
+    return audit
 
 
 def run(output_path: Path = OUTPUT_PATH) -> dict:
     """Run the pipeline end-to-end and write the results JSON."""
+    # ── Step 0: the projection the engine will apply, before anything runs
+    print("Step 0: Auditing the engine's uprating of gains and weights...")
+    audit = engine_audit(BASE_YEAR, YEARS)
+    fingerprint = projection_fingerprint(audit)
+    sim_stem = f"{DATASET_STEM}_{fingerprint}"
+
     # ── Step 1: certified per-year datasets, as published upstream ───────
     print(f"Step 1: Ensuring {DATASET} datasets for {YEARS}...")
     datasets = ensure_uk_datasets(YEARS, DATASET_FOLDER)
@@ -57,11 +85,9 @@ def run(output_path: Path = OUTPUT_PATH) -> dict:
     baseline_sims, reform_sims = {}, {}
     for year in YEARS:
         print(f"    {fiscal_year_label(year)}...")
-        baseline_sims[year] = run_simulation(
-            datasets[year], sim_id=f"{DATASET_STEM}_baseline_{year}"
-        )
+        baseline_sims[year] = run_simulation(datasets[year], sim_id=f"{sim_stem}_baseline_{year}")
         reform_sims[year] = run_simulation(
-            datasets[year], policy=reform_policy, sim_id=f"{DATASET_STEM}_burnham_e07_{year}"
+            datasets[year], policy=reform_policy, sim_id=f"{sim_stem}_burnham_e07_{year}"
         )
 
     # ── Step 3: elasticity sensitivity (2026), which doubles as the check
@@ -76,7 +102,7 @@ def run(output_path: Path = OUTPUT_PATH) -> dict:
         return run_simulation(
             datasets[2026],
             policy=make_policy(burnham_reform(e), tag),
-            sim_id=f"{DATASET_STEM}_{tag}_2026",
+            sim_id=f"{sim_stem}_{tag}_2026",
         )
 
     sens = sensitivity(base_cgt_2026, SENSITIVITY_CASES, run_case)
@@ -111,8 +137,7 @@ def run(output_path: Path = OUTPUT_PATH) -> dict:
     # region), all years ──────────────────────────────────────────────────
     print("Step 6: Distributional impacts...")
     groups = {
-        fiscal_year_label(y): income_change_groups(baseline_sims[y], reform_sims[y])
-        for y in YEARS
+        fiscal_year_label(y): income_change_groups(baseline_sims[y], reform_sims[y]) for y in YEARS
     }
 
     # ── Step 7: comparison with other institutions ────────────────────────
@@ -122,8 +147,12 @@ def run(output_path: Path = OUTPUT_PATH) -> dict:
         static_2026_bn=static_2026,
     )
 
-    # ── Step 8: write the results JSON ────────────────────────────────────
-    print("Step 8: Writing results JSON...")
+    # ── Step 8: the uprating audit with the per-year baseline filled in ──
+    print("Step 8: Writing the uprating audit...")
+    audit = write_uprating_audit(baseline_sims)
+
+    # ── Step 9: write the results JSON ────────────────────────────────────
+    print("Step 9: Writing results JSON...")
     output = {
         "metadata": {
             "generated": datetime.date.today().isoformat(),
@@ -135,6 +164,21 @@ def run(output_path: Path = OUTPUT_PATH) -> dict:
             "elasticity": ELASTICITY,
             "reform": dict(BURNHAM_RATES),
             "years": list(YEARS),
+            "projection": {
+                "fingerprint": fingerprint,
+                "base_year": BASE_YEAR,
+                "indices": {
+                    variable: row.get("index") for variable, row in audit["variables"].items()
+                },
+                "cumulative_factors": {
+                    variable: {
+                        year: row["cumulative_factor"]
+                        for year, row in entry.get("by_year", {}).items()
+                    }
+                    for variable, entry in audit["variables"].items()
+                },
+                "audit": str(AUDIT_PATH.relative_to(REPO_ROOT)),
+            },
         },
         "calibration": {
             "targets": [],

@@ -119,7 +119,36 @@ baseline validation vs HMRC/Advani, budget impact by year, decile
 impacts, winners/losers bands, the elasticity sensitivity, and a comparison
 with CenTax (£14.0bn central / £9.6bn worst-case), Advani & Summers 2020
 static (£16.7bn), the HMRC ready reckoner (−£2bn) and the OBR baseline
-(~£16.2bn).
+(£21.8bn in 2025-26, EFO March 2026).
+
+### Projection of the gains base (issue #2)
+
+The published file is a single engine year (`time_period` 2024, the FRS
+2024-25 observation). `pe.uk.ensure_datasets` hands it to the engine, which
+copies the year forward to 2030 and uprates it year on year from the
+engine's `data/uprating_indices.yaml`: `capital_gains` and
+`capital_gains_before_response` follow OBR GDP per capita, `household_weight`
+follows ONS population growth. Nothing CGT-specific enters the projection.
+
+`uk_equalising_cgt.uprating_audit` records what is actually applied,
+reading the installed engine's index map and growth parameters:
+
+| | 2026 | 2027 | 2028 | 2029 | 2030 | source |
+|---|---:|---:|---:|---:|---:|---|
+| gains (GDP per capita) | 1.074 | 1.109 | 1.143 | 1.177 | 1.214 | OBR EFO March 2026, Table A.1 |
+| weights (population) | 1.011 | 1.015 | 1.019 | 1.023 | 1.028 | ONS population projections |
+| CPI (sensitivity, not applied) | 1.058 | 1.079 | 1.100 | 1.123 | 1.145 | OBR EFO March 2026, Table A.1 |
+
+Cumulative factors from the 2024 base on policyengine-uk 2.97.0; the
+committed `data/cgt_uprating_audit.json` carries the year-on-year rates,
+the parameter references and the OBR March 2026 CGT receipts path
+(unbridged: receipts are not gains and lag them). A full pipeline run adds
+the per-year baseline gains, taxpayer counts and liability;
+`uk-equalising-cgt-build --audit-only` writes the factor table alone.
+
+The projection is fingerprinted into the results metadata
+(`metadata.projection`) and into every simulation id, so a change in the
+engine's uprating cannot reuse cached simulation outputs.
 
 ## Run
 

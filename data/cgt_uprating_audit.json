@@ -1,0 +1,164 @@
+{
+  "policyengine_uk_version": "2.97.0",
+  "base_year": 2024,
+  "base_year_note": "Engine period of the published single-year Enhanced FRS 2024-25 file (time_period 2024); the observation is the FRS 2024-25 survey year. Uprating runs year on year from the base year; the base year itself is not uprated.",
+  "years": [
+    2026,
+    2027,
+    2028,
+    2029,
+    2030
+  ],
+  "variables": {
+    "capital_gains": {
+      "index": "gov.economic_assumptions.yoy_growth.obr.per_capita.gdp",
+      "label": "Per capita GDP growth",
+      "reference": [
+        {
+          "title": "OBR EFO March 2026 (Table A.1, nominal GDP minus population growth)",
+          "href": "https://obr.uk/efo/economic-and-fiscal-outlook-march-2026/"
+        }
+      ],
+      "by_year": {
+        "2026": {
+          "yoy_growth": 0.0292,
+          "cumulative_factor": 1.07427896
+        },
+        "2027": {
+          "yoy_growth": 0.0323,
+          "cumulative_factor": 1.108978170408
+        },
+        "2028": {
+          "yoy_growth": 0.031,
+          "cumulative_factor": 1.143356493690648
+        },
+        "2029": {
+          "yoy_growth": 0.0296,
+          "cumulative_factor": 1.1771998459038913
+        },
+        "2030": {
+          "yoy_growth": 0.0315,
+          "cumulative_factor": 1.214281641049864
+        }
+      }
+    },
+    "capital_gains_before_response": {
+      "index": "gov.economic_assumptions.yoy_growth.obr.per_capita.gdp",
+      "label": "Per capita GDP growth",
+      "reference": [
+        {
+          "title": "OBR EFO March 2026 (Table A.1, nominal GDP minus population growth)",
+          "href": "https://obr.uk/efo/economic-and-fiscal-outlook-march-2026/"
+        }
+      ],
+      "by_year": {
+        "2026": {
+          "yoy_growth": 0.0292,
+          "cumulative_factor": 1.07427896
+        },
+        "2027": {
+          "yoy_growth": 0.0323,
+          "cumulative_factor": 1.108978170408
+        },
+        "2028": {
+          "yoy_growth": 0.031,
+          "cumulative_factor": 1.143356493690648
+        },
+        "2029": {
+          "yoy_growth": 0.0296,
+          "cumulative_factor": 1.1771998459038913
+        },
+        "2030": {
+          "yoy_growth": 0.0315,
+          "cumulative_factor": 1.214281641049864
+        }
+      }
+    },
+    "household_weight": {
+      "index": "gov.economic_assumptions.yoy_growth.ons.population",
+      "label": "Population growth",
+      "reference": [
+        {
+          "title": "ONS Population Projections",
+          "href": "https://www.ons.gov.uk/"
+        }
+      ],
+      "by_year": {
+        "2026": {
+          "yoy_growth": 0.0038,
+          "cumulative_factor": 1.0110273600000002
+        },
+        "2027": {
+          "yoy_growth": 0.0037,
+          "cumulative_factor": 1.014768161232
+        },
+        "2028": {
+          "yoy_growth": 0.004,
+          "cumulative_factor": 1.0188272338769282
+        },
+        "2029": {
+          "yoy_growth": 0.0044,
+          "cumulative_factor": 1.0233100737059866
+        },
+        "2030": {
+          "yoy_growth": 0.0045,
+          "cumulative_factor": 1.0279149690376634
+        }
+      }
+    }
+  },
+  "sensitivity_not_applied": {
+    "cpi": {
+      "index": "gov.economic_assumptions.yoy_growth.obr.consumer_price_index",
+      "applied_to": [],
+      "label": "Consumer price index growth",
+      "reference": [
+        {
+          "title": "OBR EFO March 2026 (Table A.1)",
+          "href": "https://obr.uk/efo/economic-and-fiscal-outlook-march-2026/"
+        },
+        {
+          "title": "Bank of England inflation target (2031+ assumes 2% target)",
+          "href": "https://www.bankofengland.co.uk/monetary-policy/inflation"
+        }
+      ],
+      "by_year": {
+        "2026": {
+          "yoy_growth": 0.023,
+          "cumulative_factor": 1.057782
+        },
+        "2027": {
+          "yoy_growth": 0.02,
+          "cumulative_factor": 1.07893764
+        },
+        "2028": {
+          "yoy_growth": 0.02,
+          "cumulative_factor": 1.1005163928
+        },
+        "2029": {
+          "yoy_growth": 0.02,
+          "cumulative_factor": 1.122526720656
+        },
+        "2030": {
+          "yoy_growth": 0.02,
+          "cumulative_factor": 1.14497725506912
+        }
+      }
+    }
+  },
+  "obr_cgt_receipts_bn": {
+    "source": "OBR Economic and fiscal outlook, March 2026, Table 3.7",
+    "basis": "cash receipts by fiscal year; unbridged to gains (see issue #2, item 2)",
+    "values": {
+      "2025-26": 21.8,
+      "2026-27": 20.8,
+      "2027-28": 25.5,
+      "2028-29": 28.9,
+      "2029-30": 32.0,
+      "2030-31": 34.9
+    }
+  },
+  "projection_fingerprint": "c02b4bee3019",
+  "baseline_by_year": {},
+  "baseline_by_year_note": "Not populated: written with --audit-only, no simulations run. A full pipeline run fills this block from the baseline simulations."
+}

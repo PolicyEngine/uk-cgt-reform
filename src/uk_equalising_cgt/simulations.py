@@ -42,6 +42,10 @@ from __future__ import annotations
 from pathlib import Path
 
 DATASET = "hf://policyengine/policyengine-uk-data/enhanced_frs_2024_25.h5"
+# Engine period of the published single-year file (``time_period`` 2024, the
+# FRS 2024-25 observation). The engine copies this year forward and uprates
+# it year on year; see ``uprating_audit`` for the factors applied.
+BASE_YEAR = 2024
 
 # Variables needed beyond policyengine.py's bundled UK defaults.
 EXTRA_VARIABLES = {

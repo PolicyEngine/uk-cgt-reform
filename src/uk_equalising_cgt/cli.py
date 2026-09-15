@@ -27,11 +27,25 @@ def build_parser() -> argparse.ArgumentParser:
         default=OUTPUT_PATH,
         help="Path of the results JSON (default: data/cgt_equalisation_results.json).",
     )
+    parser.add_argument(
+        "--audit-only",
+        action="store_true",
+        help=(
+            "Write only the uprating audit (data/cgt_uprating_audit.json) from the "
+            "installed engine's parameters; runs no simulations, so the per-year "
+            "baseline block is left empty."
+        ),
+    )
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    if args.audit_only:
+        from .pipeline import write_uprating_audit
+
+        write_uprating_audit()
+        return 0
     run(output_path=args.output)
     return 0
 

@@ -9,7 +9,10 @@ equalisation (not all model the identical package).
   £16.7bn/yr.
 - HMRC ready reckoner: +10pp on higher CGT rates only, implied very high
   elasticity (unpublished): -£2bn/yr by year 3 (loses revenue).
-- OBR baseline: CGT receipts under current policy, ~£16.2bn/yr (2025-26).
+- OBR baseline: CGT receipts under current policy, £21.8bn (2025-26), from
+  the March 2026 Economic and fiscal outlook, Table 3.7 (see
+  ``uprating_audit.OBR_CGT_RECEIPTS_BN`` for the full 2025-26 to 2030-31
+  path).
 """
 
 from __future__ import annotations
@@ -48,10 +51,10 @@ EXTERNAL_ESTIMATES = [
         "revenue_bn_per_year": -2.0,
     },
     {
-        "source": "OBR baseline (2025-26 CGT receipts)",
+        "source": "OBR baseline (2025-26 CGT receipts, EFO March 2026 Table 3.7)",
         "reform_modelled": "CGT receipts under current policy (no reform)",
         "behavioural_assumption": "n/a",
-        "revenue_bn_per_year": 16.2,
+        "revenue_bn_per_year": 21.8,
     },
 ]
 
