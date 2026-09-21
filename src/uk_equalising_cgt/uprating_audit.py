@@ -21,6 +21,11 @@ actually runs on, and records that version.
 Nothing here changes a simulation. The audit is a description, the OBR
 receipts table is carried unbridged (receipts are not gains, and lag them),
 and the CPI series is reported only as the sensitivity the issue names.
+
+The audit is dataset-independent (it describes the engine), except for the
+``baseline_by_year`` block, which the pipeline fills per registered dataset,
+and the ``datasets`` block, which records each dataset's pinned revision and
+digest.
 """
 
 from __future__ import annotations
@@ -214,12 +219,25 @@ def engine_audit(base_year: int, years: list[int]) -> dict:
     )
 
 
-def baseline_by_year(baseline_sims: Mapping[int, object]) -> dict[str, dict]:
+def baseline_by_year(
+    baseline_sims: Mapping[int, object],
+    exempt_amounts: Mapping[int, float] | None = None,
+    ceilings: Mapping[int, float] | None = None,
+) -> dict[str, dict]:
     """Per-year baseline gains, taxpayer counts and CGT liability from the
-    simulations' output datasets (native microdf, published weights)."""
-    from .impacts import validation_stats
+    simulations' output datasets (native microdf, published weights). With
+    ``exempt_amounts`` and ``ceilings`` each year also reports the entrants
+    by uprating (see ``impacts``)."""
+    from .impacts import AEA, validation_stats
 
-    return {str(year): validation_stats(sim) for year, sim in sorted(baseline_sims.items())}
+    return {
+        str(year): validation_stats(
+            sim,
+            (exempt_amounts or {}).get(year, AEA),
+            (ceilings or {}).get(year),
+        )
+        for year, sim in sorted(baseline_sims.items())
+    }
 
 
 def write_audit(audit: dict, path: Path) -> None:

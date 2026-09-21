@@ -3,14 +3,28 @@
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import BaselineTab from "../src/components/BaselineTab";
+import ComparisonTab from "../src/components/ComparisonTab";
 import MethodologyTab from "../src/components/MethodologyTab";
 import PolicyEngineHeader from "../src/components/PolicyEngineHeader";
 import ReformTab from "../src/components/ReformTab";
-import results from "../public/data/cgt_equalisation_results.json";
+import { getDatasetInfo, getDatasetOptions } from "../src/lib/dataHelpers";
+import comparison from "../public/data/dataset_comparison.json";
+import resultsIncumbent from "../public/data/cgt_equalisation_results_enhanced_frs_2024_25.json";
+import resultsCandidate from "../public/data/cgt_equalisation_results_microcosm_uk_2024_v20.json";
+
+// Bundled at build time: a runtime fetch() 404s when the app is served
+// behind proxies/rewrites that don't forward public assets. One results
+// file per registered dataset, plus the side-by-side comparison.
+const RESULTS = Object.fromEntries(
+  [resultsIncumbent, resultsCandidate].map((results) => [results.metadata.dataset_key, results]),
+);
+const DEFAULT_DATASET = resultsCandidate.metadata.default_dataset_key;
+const DATASET_OPTIONS = getDatasetOptions(resultsCandidate).filter((o) => o.value in RESULTS);
 
 const TAB_OPTIONS = [
   { id: "reform", label: "Reform impacts" },
   { id: "baseline", label: "Baseline" },
+  { id: "datasets", label: "Dataset comparison" },
   { id: "methodology", label: "Methodology" },
 ];
 
@@ -19,6 +33,13 @@ function getInitialTab(tabParam) {
     return tabParam;
   }
   return "reform";
+}
+
+function getInitialDataset(datasetParam) {
+  if (datasetParam && datasetParam in RESULTS) {
+    return datasetParam;
+  }
+  return DEFAULT_DATASET;
 }
 
 function TabLink({ onSelect, children }) {
@@ -33,29 +54,67 @@ function TabLink({ onSelect, children }) {
   );
 }
 
+function DatasetSwitch({ options, value, onChange, info }) {
+  return (
+    <div className="mb-6 flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm shadow-sm">
+      <span className="font-semibold text-slate-700">Dataset</span>
+      <div className="inline-flex overflow-hidden rounded-md border border-slate-300">
+        {options.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            onClick={() => onChange(option.value)}
+            className={
+              option.value === value
+                ? "bg-[color:var(--pe-color-primary-600)] px-3 py-1.5 font-semibold text-white"
+                : "bg-white px-3 py-1.5 text-slate-600 hover:bg-slate-50"
+            }
+          >
+            {option.label}
+            <span className="ml-1 text-xs font-normal opacity-80">({option.role})</span>
+          </button>
+        ))}
+      </div>
+      <span className="text-slate-500">
+        {info.label}. The Reform impacts, Baseline and Methodology tabs read from this dataset;
+        Dataset comparison shows both side by side.
+      </span>
+    </div>
+  );
+}
+
 function Dashboard() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
   const [activeTab, setActiveTab] = useState(() => getInitialTab(searchParams.get("tab")));
-  // Bundled at build time: a runtime fetch() 404s when the app is served
-  // behind proxies/rewrites that don't forward public assets.
-  const data = results;
-  const loading = false;
-  const error = null;
+  const [datasetKey, setDatasetKey] = useState(() =>
+    getInitialDataset(searchParams.get("dataset")),
+  );
+  const data = RESULTS[datasetKey];
+  const dataset = getDatasetInfo(data);
 
   useEffect(() => {
-    const tabParam = searchParams.get("tab");
-    setActiveTab(getInitialTab(tabParam));
+    setActiveTab(getInitialTab(searchParams.get("tab")));
+    setDatasetKey(getInitialDataset(searchParams.get("dataset")));
   }, [searchParams]);
+
+  function replaceUrl(tab, key) {
+    const params = new URLSearchParams();
+    if (tab !== "reform") params.set("tab", tab);
+    if (key !== DEFAULT_DATASET) params.set("dataset", key);
+    const query = params.toString();
+    router.replace(query ? `/?${query}` : "/", { scroll: false });
+  }
 
   function handleTabChange(tab) {
     setActiveTab(tab);
-    if (tab === "reform") {
-      router.replace("/", { scroll: false });
-      return;
-    }
-    router.replace(`/?tab=${tab}`, { scroll: false });
+    replaceUrl(tab, datasetKey);
+  }
+
+  function handleDatasetChange(key) {
+    setDatasetKey(key);
+    replaceUrl(activeTab, key);
   }
 
   return (
@@ -76,8 +135,7 @@ function Dashboard() {
             </a>{" "}
             UK&apos;s microsimulation model to estimate equalising capital
             gains tax rates with income tax rates from 2026-27 (18%→20%,
-            24%→40%, 24%→45%) on the Enhanced Family Resources Survey, with
-            behavioural elasticities from{" "}
+            24%→40%, 24%→45%), with behavioural elasticities from{" "}
             <a
               href="https://centax.org.uk/wp-content/uploads/2024/10/AdvaniLonsdaleSummers2024_CGTReform.pdf"
               target="_blank"
@@ -86,7 +144,9 @@ function Dashboard() {
             >
               Advani, Lonsdale &amp; Summers (CenTax, 2024)
             </a>
-            . As{" "}
+            . It runs on two datasets: the incumbent Enhanced Family Resources
+            Survey and the candidate Microcosm UK build, which records what kind
+            of asset each gain came from. As{" "}
             <a
               href="https://www.bloomberg.com/news/articles/2026-05-21/streeting-backs-hiking-uk-capital-gains-levy-to-match-income-tax"
               target="_blank"
@@ -102,7 +162,9 @@ function Dashboard() {
             <TabLink onSelect={() => handleTabChange("baseline")}>
               Baseline
             </TabLink>{" "}
-            validates the baseline against HMRC, and{" "}
+            validates the baseline against HMRC,{" "}
+            <TabLink onSelect={() => handleTabChange("datasets")}>Dataset comparison</TabLink>{" "}
+            puts the two datasets side by side, and{" "}
             <TabLink onSelect={() => handleTabChange("methodology")}>Methodology</TabLink>{" "}
             explains the method.
           </p>
@@ -120,24 +182,19 @@ function Dashboard() {
           ))}
         </div>
 
-        {error && (
-          <p className="rounded-2xl border border-red-200 bg-red-50 p-6 text-sm text-red-700">
-            Error: {error}
-          </p>
-        )}
-        {loading && !error && (
-          <p className="rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-500">
-            Loading data...
-          </p>
+        {activeTab !== "datasets" && (
+          <DatasetSwitch
+            options={DATASET_OPTIONS}
+            value={datasetKey}
+            onChange={handleDatasetChange}
+            info={dataset}
+          />
         )}
 
-        {!loading && !error && data && (
-          <>
-            {activeTab === "reform" && <ReformTab data={data} />}
-            {activeTab === "baseline" && <BaselineTab data={data} />}
-            {activeTab === "methodology" && <MethodologyTab data={data} />}
-          </>
-        )}
+        {activeTab === "reform" && <ReformTab data={data} />}
+        {activeTab === "baseline" && <BaselineTab data={data} />}
+        {activeTab === "datasets" && <ComparisonTab comparison={comparison} />}
+        {activeTab === "methodology" && <MethodologyTab data={data} />}
 
         <footer className="mt-12 border-t border-slate-200 pt-8 text-center text-sm text-slate-500">
           <p>
@@ -150,7 +207,7 @@ function Dashboard() {
               PolicyEngine/uk-equalising-cgt
             </a>
             {data?.metadata?.policyengine_version
-              ? `, run on policyengine.py ${data.metadata.policyengine_version}`
+              ? `, run on policyengine.py ${data.metadata.policyengine_version} with policyengine-uk ${data.metadata.policyengine_uk_version}`
               : ""}
             .
           </p>
