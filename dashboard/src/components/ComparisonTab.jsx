@@ -171,12 +171,12 @@ export default function ComparisonTab({ comparison }) {
 
   const headline = [
     {
-      label: `Revenue raised, ${firstYear} (e = \u22120.7)`,
+      label: `Revenue raised, ${firstYear} (e = −0.7)`,
       values: keys.map((key) => formatSignedBn(firstBudget[key].gov_balance_change_bn, 1)),
       benchmark: (
         <>
-          <BenchmarkLink href={CENTAX_2024}>CenTax (2024)</BenchmarkLink>: \u00A314.0bn central,
-          \u00A39.7bn worst case, both with base broadening; HMRC ready reckoner: \u2212\u00A32bn by
+          <BenchmarkLink href={CENTAX_2024}>CenTax (2024)</BenchmarkLink>: £14.0bn central,
+          £9.7bn worst case, both with base broadening; HMRC ready reckoner: −£2bn by
           year 3 for +10pp on the higher rates alone
         </>
       ),
@@ -192,7 +192,7 @@ export default function ComparisonTab({ comparison }) {
       benchmark: (
         <>
           <BenchmarkLink href={ADVANI_SUMMERS}>Advani &amp; Summers (2020)</BenchmarkLink>, static,
-          GDP-uprated: \u00A316.7bn
+          GDP-uprated: £16.7bn
         </>
       ),
     },
@@ -201,10 +201,10 @@ export default function ComparisonTab({ comparison }) {
       values: keys.map((key) => formatBn(firstBudget[key].baseline_cgt_bn, 1)),
       benchmark: (
         <>
-          <BenchmarkLink href={HMRC_TABLE_1}>HMRC Table 1</BenchmarkLink>: \u00A312.1bn (2023-24),
-          \u00A322.5bn (2024-25, provisional);{" "}
-          <BenchmarkLink href={OBR_EFO}>OBR receipts</BenchmarkLink>: \u00A320.8bn (2026-27),
-          \u00A325.5bn (2027-28)
+          <BenchmarkLink href={HMRC_TABLE_1}>HMRC Table 1</BenchmarkLink>: £12.1bn (2023-24),
+          £22.5bn (2024-25, provisional);{" "}
+          <BenchmarkLink href={OBR_EFO}>OBR receipts</BenchmarkLink>: £20.8bn (2026-27),
+          £25.5bn (2027-28)
         </>
       ),
     },
@@ -261,7 +261,7 @@ export default function ComparisonTab({ comparison }) {
       <section className="section-card">
         <SectionHeading
           title="Headline results"
-          description="Revenue after the behavioural response, the static yield, and the baseline each dataset starts from, with the published counterparts where one exists. Benchmarks are outturns for the tax year stated (HMRC Capital Gains Tax statistics, 2026 release) or other institutions\u2019 estimates of a similar reform; only the OBR receipts describe a projected year."
+          description="Revenue after the behavioural response, the static yield, and the baseline each dataset starts from, with the published counterparts where one exists. Benchmarks are outturns for the tax year stated (HMRC Capital Gains Tax statistics, 2026 release) or other institutions’ estimates of a similar reform; only the OBR receipts describe a projected year."
         />
         <table className="data-table">
           <thead>
@@ -283,7 +283,7 @@ export default function ComparisonTab({ comparison }) {
                 {row.values.map((value, i) => (
                   <td key={keys[i]}>{value}</td>
                 ))}
-                <td className="text-sm text-slate-600">{row.benchmark ?? "\u2014"}</td>
+                <td className="text-sm text-slate-600">{row.benchmark ?? "—"}</td>
               </tr>
             ))}
           </tbody>
