@@ -55,6 +55,30 @@ function orderedKeys(comparison) {
 
 const FILLS = { incumbent: colors.gray[400], candidate: colors.primary[600] };
 
+// Published counterparts of the headline measures. Outturns describe the tax
+// year stated (HMRC Capital Gains Tax statistics, 2026 release); the OBR
+// receipts are the only projected figures; the yield estimates describe
+// similar, not identical, reforms.
+const HMRC_TABLE_1 =
+  "https://assets.publishing.service.gov.uk/media/6a7b23f1bbafcd1db3b6e420/Table_1_2026_Taxpayer_numbers_gains_and_tax_liabilities.ods";
+const OBR_EFO = "https://obr.uk/economic-and-fiscal-outlooks/";
+const CENTAX_2024 =
+  "https://centax.org.uk/wp-content/uploads/2024/10/AdvaniLonsdaleSummers2024_CGTReform.pdf";
+const ADVANI_SUMMERS = "https://arunadvani.com/taxreform.html";
+
+function BenchmarkLink({ href, children }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="underline decoration-1 underline-offset-2 hover:opacity-80"
+    >
+      {children}
+    </a>
+  );
+}
+
 function Toggle({ options, value, onChange }) {
   return (
     <div className="inline-flex overflow-hidden rounded-md border border-slate-300 text-sm">
@@ -147,28 +171,57 @@ export default function ComparisonTab({ comparison }) {
 
   const headline = [
     {
-      label: `Revenue raised, ${firstYear} (e = −0.7)`,
+      label: `Revenue raised, ${firstYear} (e = \u22120.7)`,
       values: keys.map((key) => formatSignedBn(firstBudget[key].gov_balance_change_bn, 1)),
+      benchmark: (
+        <>
+          <BenchmarkLink href={CENTAX_2024}>CenTax (2024)</BenchmarkLink>: \u00A314.0bn central,
+          \u00A39.7bn worst case, both with base broadening; HMRC ready reckoner: \u2212\u00A32bn by
+          year 3 for +10pp on the higher rates alone
+        </>
+      ),
     },
     {
       label: "Five-year total, 2026-27 to 2030-31",
       values: keys.map((key) => formatSignedBn(comparison.five_year_total_bn[key], 1)),
+      benchmark: null,
     },
     {
       label: `Static yield, ${firstYear} (e = 0)`,
       values: keys.map((key) => formatSignedBn(staticRow[key], 1)),
+      benchmark: (
+        <>
+          <BenchmarkLink href={ADVANI_SUMMERS}>Advani &amp; Summers (2020)</BenchmarkLink>, static,
+          GDP-uprated: \u00A316.7bn
+        </>
+      ),
     },
     {
       label: `Baseline CGT liability, ${firstYear}`,
       values: keys.map((key) => formatBn(firstBudget[key].baseline_cgt_bn, 1)),
+      benchmark: (
+        <>
+          <BenchmarkLink href={HMRC_TABLE_1}>HMRC Table 1</BenchmarkLink>: \u00A312.1bn (2023-24),
+          \u00A322.5bn (2024-25, provisional);{" "}
+          <BenchmarkLink href={OBR_EFO}>OBR receipts</BenchmarkLink>: \u00A320.8bn (2026-27),
+          \u00A325.5bn (2027-28)
+        </>
+      ),
     },
     {
       label: `CGT taxpayers, ${firstYear}`,
       values: keys.map((key) => formatCount(taxpayers[key])),
+      benchmark: (
+        <>
+          <BenchmarkLink href={HMRC_TABLE_1}>HMRC Table 1</BenchmarkLink>: 382k (2023-24), 551k
+          (2024-25, provisional)
+        </>
+      ),
     },
     {
       label: "of which entrants by uprating",
       values: keys.map((key) => formatCount(entrants[key])),
+      benchmark: "None: HMRC counts only taxpayers with a liability",
     },
     {
       label: `Top income quintile, net income change, ${firstYear}`,
@@ -176,6 +229,7 @@ export default function ComparisonTab({ comparison }) {
         (key) =>
           `${formatSignedPct(comparison.top_quintile[key].relative_change_pct)} (${formatSignedCurrency(comparison.top_quintile[key].avg_change_gbp)}/household)`,
       ),
+      benchmark: null,
     },
   ];
 
@@ -207,7 +261,7 @@ export default function ComparisonTab({ comparison }) {
       <section className="section-card">
         <SectionHeading
           title="Headline results"
-          description="Revenue after the behavioural response, the static yield, and the baseline each dataset starts from."
+          description="Revenue after the behavioural response, the static yield, and the baseline each dataset starts from, with the published counterparts where one exists. Benchmarks are outturns for the tax year stated (HMRC Capital Gains Tax statistics, 2026 release) or other institutions\u2019 estimates of a similar reform; only the OBR receipts describe a projected year."
         />
         <table className="data-table">
           <thead>
@@ -219,6 +273,7 @@ export default function ComparisonTab({ comparison }) {
                   <RoleBadge role={role(key)} />
                 </th>
               ))}
+              <th>External benchmark</th>
             </tr>
           </thead>
           <tbody>
@@ -228,6 +283,7 @@ export default function ComparisonTab({ comparison }) {
                 {row.values.map((value, i) => (
                   <td key={keys[i]}>{value}</td>
                 ))}
+                <td className="text-sm text-slate-600">{row.benchmark ?? "\u2014"}</td>
               </tr>
             ))}
           </tbody>

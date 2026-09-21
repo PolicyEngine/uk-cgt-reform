@@ -6,49 +6,54 @@ import SectionHeading from "./SectionHeading";
 
 // External benchmarks the baseline is validated against. These are published
 // HMRC figures, not model outputs, so they live here rather than in the
-// pipeline JSON. Two vintages are shown because the two datasets calibrate
-// their capital gains to different HMRC releases.
-const SIZE_OF_GAIN_2023_24 =
-  "https://assets.publishing.service.gov.uk/media/6878ac562bad77c3dae4dcef/Table_2_2025_Size_of_gain.ods";
-const COMMENTARY_2023_24 =
-  "https://www.gov.uk/government/statistics/capital-gains-tax-statistics/capital-gains-tax-commentary";
-// HMRC Capital Gains Tax statistics, 2026 release, Table 1 (tax year 2024-25,
-// provisional): taxpayer numbers, gains and tax liabilities by year of disposal.
-const TABLE_1_2024_25 =
+// pipeline JSON. Both columns come from the same release (Capital Gains Tax
+// statistics, 2026), which carries the revised 2023-24 year and the
+// provisional 2024-25 year; the two datasets calibrate their capital gains to
+// one or the other.
+const TABLE_1 =
   "https://assets.publishing.service.gov.uk/media/6a7b23f1bbafcd1db3b6e420/Table_1_2026_Taxpayer_numbers_gains_and_tax_liabilities.ods";
+const TABLE_2 =
+  "https://assets.publishing.service.gov.uk/media/6a7b240b423b0bdba0290eca/Table_2_2026_Size_of_gain.ods";
+const T1_2023 = "HMRC CGT statistics 2026 release, Table 1 (2023-24, revised)";
+const T1_2024 = "HMRC CGT statistics 2026 release, Table 1 (2024-25, provisional)";
+const T2_2023 = "HMRC CGT statistics 2026 release, Table 2.2a (2023-24, revised)";
+const T2_2024 = "HMRC CGT statistics 2026 release, Table 2.1a (2024-25, provisional)";
 
 const BENCHMARKS = {
   totalGains: {
-    y2023: { value: "£66bn", source: "HMRC CGT statistics commentary, 2023-24", url: COMMENTARY_2023_24 },
-    y2024: { value: "£119.3bn", source: "HMRC CGT statistics 2026 release, Table 1 (2024-25, provisional)", url: TABLE_1_2024_25 },
+    y2023: { value: "£66.6bn", source: T1_2023, url: TABLE_1 },
+    y2024: { value: "£119.3bn", source: T1_2024, url: TABLE_1 },
   },
   taxpayers: {
-    y2023: { value: "378k", source: "HMRC CGT statistics commentary, 2023-24", url: COMMENTARY_2023_24 },
-    y2024: { value: "551k", source: "HMRC CGT statistics 2026 release, Table 1 (2024-25, provisional)", url: TABLE_1_2024_25 },
+    y2023: { value: "382k", source: T1_2023, url: TABLE_1 },
+    y2024: { value: "551k", source: T1_2024, url: TABLE_1 },
   },
   liability: {
-    y2023: null,
-    y2024: { value: "£22.5bn", source: "HMRC CGT statistics 2026 release, Table 1 (2024-25, provisional)", url: TABLE_1_2024_25 },
+    y2023: { value: "£12.1bn", source: T1_2023, url: TABLE_1 },
+    y2024: { value: "£22.5bn", source: T1_2024, url: TABLE_1 },
   },
+  // Shares are ratios within Table 2's bands: gains of £1m+ were £40.4bn of
+  // £66.6bn in 2023-24 and £77.8bn of £119.3bn in 2024-25; £5m+ were £23.6bn
+  // and £48.5bn.
   shareOver1m: {
-    y2023: { value: "61%", source: "HMRC CGT statistics, Table 2.1a (ODS, sheet 2_1a_2023-24)", url: SIZE_OF_GAIN_2023_24 },
-    y2024: null,
+    y2023: { value: "61%", source: T2_2023, url: TABLE_2 },
+    y2024: { value: "65%", source: T2_2024, url: TABLE_2 },
   },
   shareOver5m: {
-    y2023: { value: "36%", source: "HMRC CGT statistics, Table 2.1a (ODS, sheet 2_1a_2023-24)", url: SIZE_OF_GAIN_2023_24 },
-    y2024: null,
+    y2023: { value: "35%", source: T2_2023, url: TABLE_2 },
+    y2024: { value: "41%", source: T2_2024, url: TABLE_2 },
   },
   taxpayersOver500k: {
-    y2023: { value: "18k", source: "HMRC CGT statistics, Table 2.1a (ODS, sheet 2_1a_2023-24)", url: SIZE_OF_GAIN_2023_24 },
-    y2024: null,
+    y2023: { value: "19k", source: T2_2023, url: TABLE_2 },
+    y2024: { value: "33k", source: T2_2024, url: TABLE_2 },
   },
   gainsOver500k: {
-    y2023: { value: "£44bn", source: "HMRC CGT statistics, Table 2.1a (ODS, sheet 2_1a_2023-24)", url: SIZE_OF_GAIN_2023_24 },
-    y2024: null,
+    y2023: { value: "£46.5bn", source: T2_2023, url: TABLE_2 },
+    y2024: { value: "£89.1bn", source: T2_2024, url: TABLE_2 },
   },
   gainsOver5m: {
-    y2023: { value: "£22.7bn", source: "HMRC CGT statistics, Table 2.1a (ODS, sheet 2_1a_2023-24)", url: SIZE_OF_GAIN_2023_24 },
-    y2024: null,
+    y2023: { value: "£23.6bn", source: T2_2023, url: TABLE_2 },
+    y2024: { value: "£48.5bn", source: T2_2024, url: TABLE_2 },
   },
 };
 
@@ -109,14 +114,14 @@ export default function BaselineTab({ data }) {
       <section className="section-card">
         <SectionHeading
           title="Model versus external benchmarks"
-          description={`PolicyEngine's baseline for ${firstYear} on ${dataset.shortLabel}, alongside HMRC's statistics for the 2023-24 tax year (July 2025 release) and the provisional 2024-25 tax year (2026 release). The vintages differ by design: each dataset calibrates its base year to one HMRC release (${dataset.observation}) and the engine uprates it to the simulated years. HMRC's 2024-25 figures are far above 2023-24 because the rate rises announced in October 2024 brought disposals forward.`}
+          description={`PolicyEngine's baseline for ${firstYear} on ${dataset.shortLabel}, alongside HMRC's statistics for the 2023-24 tax year (revised) and the provisional 2024-25 tax year, both from the 2026 release. The vintages differ by design: each dataset calibrates its base year to one HMRC year (${dataset.observation}) and the engine uprates it to the simulated years. HMRC's 2024-25 figures are far above 2023-24 because the rate rises announced in October 2024 brought disposals forward.`}
         />
         <table className="data-table">
           <thead>
             <tr>
               <th>Quantity</th>
               <th>PolicyEngine ({dataset.shortLabel}, {firstYear})</th>
-              <th>HMRC, 2023-24</th>
+              <th>HMRC, 2023-24 (revised)</th>
               <th>HMRC, 2024-25 (provisional)</th>
             </tr>
           </thead>

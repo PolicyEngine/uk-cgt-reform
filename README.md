@@ -55,24 +55,34 @@ and its results are unchanged by them.
 Same engine (policyengine-uk 2.99.1), wrapper (policyengine.py 4.22.3),
 projection (fingerprint `1b0cd0dff144`) and reform on each dataset.
 
-| | Enhanced FRS 2024-25 (incumbent) | Microcosm UK v20 (candidate) |
-|---|---:|---:|
-| CGT taxpayers (gains above the exempt amount) | 597k | 11.54m |
-| of which entrants by uprating (see below) | 12k | 10.99m |
-| CGT taxpayers excluding entrants | 586k | 555k |
-| Taxable gains | £57.9bn | £163.2bn |
-| Taxable gains excluding entrants | £57.8bn | £127.8bn |
-| Baseline CGT liability | £13.2bn | £30.5bn |
-| Residential property gains on their own schedule | none recorded | £13.3bn |
-| Share of gains from gains of £1m or more | 67% | 52% |
-| Taxpayers with gains over £500k | 17.9k | 35.5k |
-| Largest single gain | £12.2m | £185m |
-| Static yield (e = 0) | +£10.7bn | +£24.8bn |
-| Yield, CenTax lower (e = −0.35) | +£5.9bn | +£13.6bn |
-| **Yield, central (e = −0.7)** | **+£2.2bn** | **+£4.6bn** |
-| Five-year total, 2026-27 to 2030-31 | +£11.7bn | +£24.9bn |
-| Top income quintile, net income change | −2.8% (−£3,328/household) | −6.1% (−£8,446/household) |
-| Lowest income quintile, net income change | −0.05% (−£7) | −0.34% (−£63) |
+| | Enhanced FRS 2024-25 (incumbent) | Microcosm UK v20 (candidate) | External benchmark |
+|---|---:|---:|---|
+| CGT taxpayers (gains above the exempt amount) | 597k | 11.54m | HMRC Table 1: 382k (2023-24), 551k (2024-25, provisional) |
+| of which entrants by uprating (see below) | 12k | 10.99m | none: HMRC counts only taxpayers with a liability |
+| CGT taxpayers excluding entrants | 586k | 555k | HMRC Table 1: 382k (2023-24), 551k (2024-25) |
+| Taxable gains | £57.9bn | £163.2bn | HMRC Table 1: £66.6bn (2023-24), £119.3bn (2024-25) |
+| Taxable gains excluding entrants | £57.8bn | £127.8bn | HMRC Table 1: £66.6bn (2023-24), £119.3bn (2024-25) |
+| Baseline CGT liability | £13.2bn | £30.5bn | HMRC Table 1: £12.1bn (2023-24), £22.5bn (2024-25); OBR receipts £20.8bn (2026-27), £25.5bn (2027-28) |
+| Residential property gains on their own schedule | none recorded | £13.3bn | HMRC Table 8a (2024-25): £12.9bn including trusts, about £12.2bn for individuals; 205k taxpayers |
+| Share of gains from gains of £1m or more | 67% | 52% | HMRC Table 2: 61% (2023-24), 65% (2024-25) |
+| Taxpayers with gains over £500k | 17.9k | 35.5k | HMRC Table 2: 19k (2023-24), 33k (2024-25) |
+| Largest single gain | £12.2m | £185m | none: HMRC's top band is £5m and over (2k taxpayers, £23.6bn in 2023-24; 3k, £48.5bn in 2024-25) |
+| Static yield (e = 0) | +£10.7bn | +£24.8bn | Advani & Summers (2020), static, GDP-uprated: £16.7bn |
+| Yield, CenTax lower (e = −0.35) | +£5.9bn | +£13.6bn | none |
+| **Yield, central (e = −0.7)** | **+£2.2bn** | **+£4.6bn** | CenTax (2024): £14.0bn central, £9.7bn worst case, both with base broadening; HMRC ready reckoner: −£2bn by year 3 for +10pp on the higher rates alone |
+| Five-year total, 2026-27 to 2030-31 | +£11.7bn | +£24.9bn | none |
+| Top income quintile, net income change | −2.8% (−£3,328/household) | −6.1% (−£8,446/household) | none |
+| Lowest income quintile, net income change | −0.05% (−£7) | −0.34% (−£63) | none |
+
+Benchmarks are outturns for the tax year stated (HMRC Capital Gains Tax
+statistics, 2026 release, Tables 1, 2 and 8) or other institutions'
+estimates of a similar reform; only the OBR receipts describe a projected
+year. HMRC's 2026 release revised 2023-24 to 382,000 taxpayers and £66.6bn
+of gains; the incumbent's calibration targets came from the 2025 release
+(378,000 and £65.9bn). Uprating each dataset's own HMRC vintage to 2026 by
+the engine's 1.074 factor gives £71.5bn on the 2023-24 basis and £128.1bn on
+the 2024-25 basis: the candidate excluding entrants lands on its figure
+(£127.8bn), the incumbent falls 19% short of its (£57.9bn).
 
 Baseline CGT liability by year, against the OBR's March 2026 receipts path
 (receipts lag the liability by about a year, so the 2027-28 receipts figure
@@ -103,10 +113,11 @@ Two things separate the datasets before the reform is applied:
    netted out, and the fix belongs upstream (a sub-exempt-amount cap that
    survives uprating, or amounts drawn below the cap).
 2. **Vintage of the capital gains calibration.** The incumbent calibrates
-   its gains to HMRC's 2023-24 statistics (378,000 taxpayers, £65.9bn of
-   gains); the candidate redraws amounts from HMRC Table 3 for 2024-25 and
-   calibrates to the 2024-25 provisional totals (551,000 taxpayers, £119.3bn
-   of gains, £22.5bn of liability). 2024-25 gains are 81% above 2023-24
+   its gains to HMRC's 2023-24 statistics as published in 2025 (378,000
+   taxpayers, £65.9bn of gains; since revised to 382,000 and £66.6bn); the
+   candidate redraws amounts from HMRC Table 3 for 2024-25 and calibrates to
+   the 2024-25 provisional totals (551,000 taxpayers, £119.3bn of gains,
+   £22.5bn of liability). 2024-25 gains are 79% above 2023-24
    because the rate rises announced in October 2024 brought disposals
    forward, and a base calibrated to that year and then uprated with GDP per
    capita carries the one-off into every projected year: the candidate's
