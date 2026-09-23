@@ -37,6 +37,10 @@ def test_reform_dict_shape():
 def test_reform_fingerprint_tracks_the_definition():
     central = reform_fingerprint(burnham_reform())
     assert len(central) == 12
+    # The definition the committed results were produced with; a change to
+    # the rates, schedules or elasticity parameter moves it and must land
+    # with regenerated results.
+    assert central == "d33c3951fbea"
     assert central == reform_fingerprint(burnham_reform(ELASTICITY))
     assert central != reform_fingerprint(burnham_reform(0.0))
 

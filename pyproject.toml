@@ -29,8 +29,12 @@ simulation = [
   # policyengine.py 5.0.3 onwards certifies the UK bundle against one pinned
   # policyengine-uk (2.90.2 in 6.0.0) and refuses to import with any other
   # version installed; the asset-type CGT schedules need policyengine-uk 2.99.0.
+  # policyengine-uk 2.100.x moves the projection fingerprint (1b0cd0dff144 on
+  # 2.99.1, cd902bb73930 on 2.100.1), so the upper bound keeps a fresh install
+  # reproducing the committed results; raising it is a deliberate re-pin that
+  # regenerates every results file.
   "policyengine>=4.20.0,<5",
-  "policyengine-uk>=2.99.0",
+  "policyengine-uk>=2.99.0,<2.100",
   "microdf-python>=1.0",
   "pyyaml>=6",
 ]

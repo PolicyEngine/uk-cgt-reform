@@ -20,6 +20,15 @@ The candidate carries the capital gains asset-type breakdown
 (`capital_gains_residential_property`) that policyengine-uk 2.99.0 charges on
 its own schedule. The dashboard shows the candidate first and lets the reader
 switch to the incumbent; its Dataset comparison tab lays both out together.
+The candidate is the default because it is the dataset this comparison exists
+to evaluate and the only one carrying the schedules the reform charges; the
+21 September hesitation (the sub-exempt entrants artefact) was removed
+upstream by [microcosm#970](https://github.com/PolicyEngine/microcosm/issues/970).
+The candidate is re-pinned when
+[microcosm#979](https://github.com/PolicyEngine/microcosm/pull/979) lands on
+main, replacing this PR-head build with one from main, and again when a
+certified national release exists; the production default is confirmed when
+this branch merges.
 
 **Note on decile impacts vs revenue:** household net-income losses in the decile
 tables include both the extra tax paid and the gains taxpayers choose not to
@@ -72,7 +81,7 @@ projection (fingerprint `1b0cd0dff144`) and reform on each dataset.
 | **Yield, central (e = −0.7)** | **+£2.2bn** | **+£5.1bn** | CenTax (2024): £14.0bn central, £9.7bn worst case, both with base broadening; HMRC ready reckoner: −£2bn by year 3 for +10pp on the higher rates alone |
 | Five-year total, 2026-27 to 2030-31 | +£11.7bn | +£27.7bn | none |
 | Top income quintile, net income change | −2.8% (−£3,328/household) | −6.0% (−£8,269/household) | none |
-| Lowest income quintile, net income change | −0.05% (−£7) | −0.01% (−£2) | none |
+| Lowest income quintile, net income change | −0.04% (−£7) | −0.01% (−£2) | none |
 
 Benchmarks are outturns for the tax year stated (HMRC Capital Gains Tax
 statistics, 2026 release, Tables 1, 2 and 8) or other institutions'
@@ -287,7 +296,10 @@ current release manifest at import, and since 23 September 2026 that manifest
 certifies only newer policyengine-uk releases, so the import refuses 2.99.1.
 Without it the wrapper records its bundled default dataset as
 `unverified_data_release_manifest_unavailable`, which does not touch these
-runs: every dataset here is pinned explicitly by revision and digest. A full
+runs: every dataset here is pinned explicitly by revision and digest.
+`pyproject.toml` bounds policyengine-uk below 2.100 because 2.100.x moves the
+projection fingerprint; raising the bound is a deliberate re-pin that
+regenerates every results file. A full
 run takes about ten minutes for both datasets
 (per-year dataset builds plus thirteen scored simulations each; re-runs
 reuse policyengine.py's output cache). Copy the four results files from

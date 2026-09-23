@@ -44,7 +44,7 @@ export default function MethodologyTab({ data }) {
             <ExternalLink href="https://github.com/PolicyEngine/policyengine-uk-data">
               policyengine-uk-data
             </ExternalLink>
-            ) and a candidate (the Microcosm UK 2024 spine-assessment build staged from{" "}
+            ) and a candidate (the Microcosm UK 2024-25 national line staged from{" "}
             <ExternalLink href="https://github.com/PolicyEngine/microcosm">microcosm</ExternalLink>
             ), each pinned to an immutable revision and a sha256 digest that is checked
             before anything runs. The same reform, engine and projection run on both; the
@@ -71,6 +71,13 @@ export default function MethodologyTab({ data }) {
                 year they owe nothing; once the engine uprates gains past the frozen exempt
                 amount they become taxpayers. The Baseline tab reports them as entrants by
                 uprating and shows every figure with and without them.
+              </li>
+              <li>
+                <strong>Why this dataset is the default, and when it moves.</strong> The
+                candidate is the dataset this comparison exists to evaluate and the only one
+                carrying the schedules the reform charges. It is a staged candidate built from
+                microcosm pull request #979, not a certified release: it is re-pinned when that
+                pull request lands on main and again when a certified national release exists.
               </li>
             </>
           ) : (

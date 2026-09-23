@@ -21,10 +21,11 @@ policyengine.py wrapper), never by constructing
 
 Two datasets are registered (:data:`DATASETS`): the incumbent Enhanced FRS
 2024-25 as published by policyengine-uk-data, and the staged Microcosm UK
-2024 spine-assessment candidate (v20), which carries the capital gains
-asset-type breakdown that policyengine-uk 2.99.0 charges on separate
-schedules. Both are single engine-year files (``time_period`` 2024) that
-the engine copies forward and uprates; see ``uprating_audit``.
+2024-25 national-line candidate built on main plus microcosm#979, which
+carries the capital gains asset-type breakdown that policyengine-uk 2.99.0
+charges on separate schedules. Both are single engine-year files
+(``time_period`` 2024) that the engine copies forward and uprates; see
+``uprating_audit``.
 
 Wrapper version (load-bearing): policyengine.py 5.0.3 onwards certifies
 the UK bundle against a pinned policyengine-uk (2.90.2 in 6.0.0) and
@@ -155,7 +156,14 @@ CANDIDATE = DatasetSpec(
 
 DATASETS: dict[str, DatasetSpec] = {spec.key: spec for spec in (INCUMBENT, CANDIDATE)}
 
-#: The dataset whose results the dashboard shows first.
+#: The dataset whose results the dashboard shows first. The candidate is the
+#: default because it is the dataset this comparison exists to evaluate and
+#: the only one carrying the asset-type schedules the reform charges; the
+#: 21 September 2026 hesitation (the sub-exempt entrants artefact) was removed
+#: upstream by microcosm#970. The candidate is re-pinned when
+#: PolicyEngine/microcosm#979 lands on main, replacing this PR-head build with
+#: one from main, and again when a certified national release exists; the
+#: production default is confirmed when the branch merges.
 DEFAULT_DATASET_KEY = CANDIDATE.key
 
 #: Kept for callers that still import the single-dataset constants.

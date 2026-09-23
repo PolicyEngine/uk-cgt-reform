@@ -8,8 +8,8 @@ behavioural CGT elasticity actually fires (the static e=0 and central
 e=-0.7 reform runs must differ materially) before writing any results.
 
 The same reform runs on every registered dataset (``simulations.DATASETS``:
-the incumbent Enhanced FRS 2024-25 and the staged Microcosm UK v20
-candidate) on the same engine and the same projection, and the per-dataset
+the incumbent Enhanced FRS 2024-25 and the staged Microcosm UK national-line
+candidate built on microcosm#979) on the same engine and the same projection, and the per-dataset
 results are written side by side. Simulations run directly on each file
 as published, with no local reweighting and no edited inputs: calibration
 and imputation belong upstream in the dataset producer, not in an analysis
@@ -65,6 +65,21 @@ DATASET_FOLDER = DATA_DIR / "policyengine_datasets"
 
 def results_path(spec: DatasetSpec, data_dir: Path = DATA_DIR) -> Path:
     return data_dir / f"cgt_equalisation_results_{spec.key}.json"
+
+
+def simulation_stem(spec: DatasetSpec, fingerprint: str) -> str:
+    """The id prefix one dataset's per-year files and cached simulations
+    share: dataset key, source digest and projection fingerprint, so a
+    re-pinned file or a moved projection cannot reuse what an earlier run
+    materialised (program review C1)."""
+    return f"{spec.key}_{spec.digest}_{fingerprint}"
+
+
+def dataset_folder(spec: DatasetSpec, fingerprint: str, root: Path = DATASET_FOLDER) -> Path:
+    """Where ``pe.uk.ensure_datasets`` materialises and reuses one dataset's
+    per-year files. The wrapper reuses any ``<stem>_year_<year>.h5`` it finds
+    in the folder it is given, so the folder carries the same key."""
+    return root / simulation_stem(spec, fingerprint)
 
 
 def shared_base_year(specs: list[DatasetSpec]) -> int:
@@ -163,8 +178,8 @@ def run_dataset(
     # Per-year files and cached outputs live in a folder keyed by the
     # dataset digest and the projection: the wrapper reuses whatever it
     # finds there, so a dataset or engine change must land elsewhere.
-    sim_stem = f"{spec.key}_{spec.digest}_{fingerprint}"
-    folder = DATASET_FOLDER / sim_stem
+    sim_stem = simulation_stem(spec, fingerprint)
+    folder = dataset_folder(spec, fingerprint)
 
     # ── Step 1: per-year datasets, as published upstream ─────────────────
     print(f"Step 1 {tag}: Ensuring {spec.uri} datasets for {YEARS}...")
@@ -344,7 +359,7 @@ def run(output_dir: Path = DATA_DIR, dataset_keys: list[str] | None = None) -> d
 
     # ── Step 8: the uprating audit with the per-year baselines filled in ──
     print("Step 8: Writing the uprating audit...")
-    write_uprating_audit(baselines, aea=aea, ceilings=ceilings)
+    write_uprating_audit(baselines, output_dir / AUDIT_PATH.name, aea=aea, ceilings=ceilings)
 
     # ── Step 9: the dashboard's primary file and the side-by-side ─────────
     print("Step 9: Writing the dashboard results and the dataset comparison...")
