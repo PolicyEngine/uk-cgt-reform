@@ -45,6 +45,11 @@ JOBS_DICT_NAME = "uk-equalising-cgt-jobs"
 MAX_IN_FLIGHT = 3
 #: A job entry older than this is treated as dead (run_reform times out at 1500 s).
 JOB_TTL_SECONDS = 1800
+USAGE_DICT_NAME = "uk-equalising-cgt-usage"
+#: Uncached schedules the gateway will start per UTC day, across every
+#: visitor: a spend cap that needs no Modal billing access. At the measured
+#: cost of about $0.10 per schedule this is about $25 a day at most.
+DAILY_COMPUTE_BUDGET = 250
 
 volume = modal.Volume.from_name(VOLUME_NAME, create_if_missing=True)
 results = modal.Dict.from_name(RESULTS_DICT_NAME, create_if_missing=True)
@@ -52,6 +57,8 @@ results = modal.Dict.from_name(RESULTS_DICT_NAME, create_if_missing=True)
 # second request for the same schedule joins the running job instead of
 # starting another, and the number in flight stays bounded.
 jobs = modal.Dict.from_name(JOBS_DICT_NAME, create_if_missing=True)
+# UTC date -> number of schedules spawned that day (cached hits never count).
+usage = modal.Dict.from_name(USAGE_DICT_NAME, create_if_missing=True)
 
 # The engine image: the pinned runtime plus the pipeline package.
 engine_image = (

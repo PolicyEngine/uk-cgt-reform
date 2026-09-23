@@ -374,8 +374,11 @@ and one Dict (`uk-equalising-cgt-results`):
 Abuse guards, because every visitor can start workers through the
 dashboard's route: custom rates are whole percentage points ordered basic ≤
 higher ≤ additional (about 76,000 schedules per dataset and elasticity);
-the gateway joins a request to a job already computing the same schedule
-and answers 429 when `MAX_IN_FLIGHT` (3) uncached schedules are computing;
+the gateway joins a request to a job already computing the same schedule,
+answers 429 when `MAX_IN_FLIGHT` (3) uncached schedules are computing, and
+starts at most `DAILY_COMPUTE_BUDGET` (250) new schedules per UTC day (a
+count in the `uk-equalising-cgt-usage` Dict, about $25 of compute; cached
+schedules are always served);
 the workers cap at 10 year-containers and 5 orchestrators; the Next route
 applies a best-effort per-address limit (20 submissions per 10 minutes per
 instance). Two guards live outside this repo: the Vercel Firewall rule "Rate explorer
@@ -383,8 +386,8 @@ submissions" (project `uk-equalising-cgt`, custom rule: `POST
 /uk/equalising-cgt/api/explore`, at most 10 requests per 60 s per address,
 deny beyond that, which the edge answers with 403; published 2026-09-23 and
 verified with a burst of twelve requests), and a spend cap on the Modal
-workspace (Settings, Usage limits), which must be set before the tab is
-public. Manage the rule with `bunx vercel firewall rules list --scope
+workspace (Settings, Usage limits), which only a workspace admin can set;
+the daily budget above is the cap that needs no such access. Manage the rule with `bunx vercel firewall rules list --scope
 policy-engine` from `dashboard/`.
 
 Deploy, from the PolicyEngine Modal workspace (`modal` is not a project
@@ -429,8 +432,8 @@ Qualification after a deploy: `GET /metadata` returns the pinned digests; one
 genuine run matches the local CLI on the same tuple; the same schedule
 submitted again comes back from `/submit` as `status: "done"` without a job
 id, and still does after the Dict entry is deleted (the Volume copy). Before
-the tab goes public: the Modal spend cap is set (the Firewall rule already
-is). A failed job reports only its exception type; the detail
+the tab goes public: a workspace admin has set the Modal spend cap (the
+Firewall rule and the daily budget are already in place). A failed job reports only its exception type; the detail
 is in the Modal logs for `uk-equalising-cgt-workers`.
 
 ## Run

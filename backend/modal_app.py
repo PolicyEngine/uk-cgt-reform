@@ -18,6 +18,7 @@ import time
 
 import modal
 from common import (
+    DAILY_COMPUTE_BUDGET,
     DATA_ROOT,
     GATEWAY_APP_NAME,
     JOB_TTL_SECONDS,
@@ -28,6 +29,7 @@ from common import (
     jobs,
     read_manifest,
     results,
+    usage,
     volume,
 )
 
@@ -119,9 +121,19 @@ def build_web_app():
                 "try again in a minute.",
                 429,
             )
+        # Daily budget: the spend cap that needs no billing access.
+        today = time.strftime("%Y-%m-%d", time.gmtime(now))
+        spawned_today = int(usage.get(today, 0))
+        if spawned_today >= DAILY_COMPUTE_BUDGET:
+            return error(
+                "The explorer has reached its daily budget of new schedules; schedules "
+                "already computed are still served. Try again tomorrow.",
+                429,
+            )
         run_reform = modal.Function.from_name(WORKERS_APP_NAME, "run_reform")
         call = run_reform.spawn(request.to_payload())
         jobs[key] = {"job_id": call.object_id, "submitted_at": now}
+        usage[today] = spawned_today + 1
         return JSONResponse(
             {"status": "queued", "job_id": call.object_id, "cache_key": key}, headers=no_store
         )
