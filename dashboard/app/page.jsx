@@ -10,11 +10,13 @@ import ReformTab from "../src/components/ReformTab";
 import { getDatasetInfo, getDatasetOptions } from "../src/lib/dataHelpers";
 import comparison from "../public/data/dataset_comparison.json";
 import resultsIncumbent from "../public/data/cgt_equalisation_results_enhanced_frs_2024_25.json";
-import resultsCandidate from "../public/data/cgt_equalisation_results_microcosm_uk_2024_v20.json";
+import resultsCandidate from "../public/data/cgt_equalisation_results_microcosm_uk_2024_25_979.json";
 
 // Bundled at build time: a runtime fetch() 404s when the app is served
 // behind proxies/rewrites that don't forward public assets. One results
-// file per registered dataset, plus the side-by-side comparison.
+// file per registered dataset, plus the side-by-side comparison. The file
+// names follow the pipeline's dataset keys (simulations.DATASETS), so a
+// re-registered candidate needs its import path updated here too.
 const RESULTS = Object.fromEntries(
   [resultsIncumbent, resultsCandidate].map((results) => [results.metadata.dataset_key, results]),
 );
