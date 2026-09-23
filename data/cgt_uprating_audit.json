@@ -198,20 +198,27 @@
       "digest": "ef34c1ae2821",
       "revision": "1.57.3"
     },
-    "microcosm_uk_2024_v20": {
-      "key": "microcosm_uk_2024_v20",
-      "label": "Microcosm UK 2024, spine assessment v20 (staged candidate)",
-      "short_label": "Microcosm UK v20",
+    "microcosm_uk_2024_25_979": {
+      "key": "microcosm_uk_2024_25_979",
+      "label": "Microcosm UK 2024-25, national line on microcosm#979 (staged candidate)",
+      "short_label": "Microcosm UK #979",
       "role": "candidate",
-      "uri": "hf://policyengine/populace-uk-private/staged/uk-spine-assessment-v20-calibration/microcosm_uk_2024.h5@25e40b2469e9cab63bc5562cd7f38d0b7faee11a",
-      "sha256": "8883e59256792525afcff2fe17af7f659ba3982cd0ac7a95a4005bac5ee7b389",
+      "uri": "hf://policyengine/populace-uk-private/staged/uk-frs-calibration-attempt-20260923T134002Z-c1be1c9f/microcosm_uk_2024_25.h5@f6df65b1e98675ad305bcacf7ede3e0d34b57063",
+      "sha256": "c5f107ab6eaf74d05c1e17ecd65a4f6876666c4554bd004f76102099aa6de821",
       "base_year": 2024,
-      "producer": "microcosm build uk-frs-calibration-attempt-20260918T174754Z-3f928f19, staged 2026-09-18 as run uk-spine-assessment-v20-calibration in the Hugging Face dataset repo policyengine/populace-uk-private (commit 25e40b24); a staging candidate whose terminal gates passed, not a certified release",
-      "observation": "FRS 2024-25 spine; capital gains amounts redrawn from HMRC Table 3 (size of gain by taxable income, 2024-25) with asset types from HMRC Tables 7 and 8, and household weights calibrated to HMRC CGT totals, age, region and size bands for 2024-25",
-      "notes": "Carries capital_gains and capital_gains_residential_property (the residential schedule); no BADR or carried-interest columns. Gainers beyond HMRC's taxpayer count keep their gains capped at the annual exempt amount, so 10.8 million people sit at exactly GBP 3,000 in the base year.",
-      "digest": "8883e5925679",
-      "revision": "25e40b2469e9cab63bc5562cd7f38d0b7faee11a"
+      "producer": "microcosm build uk-frs-calibration-attempt-20260923T134002Z-c1be1c9f (tools/build_uk_rowwise_candidate.py --release-role national on code e01c6846, main 0f00021c plus PolicyEngine/microcosm#979), staged 2026-09-23 in the Hugging Face dataset repo policyengine/populace-uk-private (commit f6df65b1); a staging candidate whose seven calibration-seam gates passed, not a certified release",
+      "observation": "FRS 2024-25 spine; capital gains amounts redrawn from HMRC Table 3 (size of gain by taxable income, 2024-25) with asset types from HMRC Tables 7 and 8, the sub-exempt remainder drawn from the Advani-Summers within-band distribution restricted to (0, exempt amount] and the clone incidence anchored to the redrawn liable mass (microcosm#970); household weights calibrated to HMRC CGT totals, age, region and size bands for 2024-25",
+      "notes": "Carries capital_gains and capital_gains_residential_property (the residential schedule); no BADR or carried-interest columns. Sub-exempt gainers hold gains strictly inside (0, GBP 3,000) rather than at the cap, and the build's projection fence bounds the stock of them that uprating carries over the frozen exempt amount by 2030 (68.5k against HMRC's 73k in the GBP 3,000 to 5,999 band).",
+      "digest": "c5f107ab6eaf",
+      "revision": "f6df65b1e98675ad305bcacf7ede3e0d34b57063"
     }
+  },
+  "entrant_ceiling_gbp": {
+    "2026": 3222.83688,
+    "2027": 3326.934511224,
+    "2028": 3430.0694810719438,
+    "2029": 3531.5995377116737,
+    "2030": 3642.844923149592
   },
   "baseline_by_year": {
     "enhanced_frs_2024_25": {
@@ -341,140 +348,132 @@
         "total_gains_excluding_entrants_bn": 66.46565501773772
       }
     },
-    "microcosm_uk_2024_v20": {
+    "microcosm_uk_2024_25_979": {
       "2026": {
-        "cgt_taxpayers": 11542023.002706766,
-        "total_gains_bn": 163.15363199616812,
-        "mean_gain": 14135.618336396168,
-        "median_gain": 3222.8369140625,
-        "share_gains_over_1m_pct": 52.159461901815106,
-        "share_gains_over_5m_pct": 32.434629575780015,
-        "taxpayers_over_500k": 35491.37088441849,
-        "gains_over_500k_bn": 96.1163842556208,
-        "gains_over_5m_bn": 52.91827617738843,
+        "cgt_taxpayers": 578469.8353872187,
+        "total_gains_bn": 127.86540912834228,
+        "mean_gain": 221040.75494749207,
+        "median_gain": 29459.82421875,
+        "share_gains_over_1m_pct": 66.5620914028034,
+        "share_gains_over_5m_pct": 41.442478768742376,
+        "taxpayers_over_500k": 35528.22358727455,
+        "gains_over_500k_bn": 96.18334121344546,
+        "gains_over_5m_bn": 52.990595030578824,
         "largest_gain_m": 184.97666931152344,
-        "baseline_cgt_revenue_bn": 30.45123021042646,
-        "residential_property_gains_bn": 13.283113872928913,
+        "baseline_cgt_revenue_bn": 30.00356298842178,
+        "residential_property_gains_bn": 13.351530739855976,
         "badr_gains_bn": 0.0,
         "carried_interest_gains_bn": 0.0,
         "entrants_by_uprating": {
           "exempt_amount_gbp": 3000.0,
           "ceiling_gbp": 3222.83688,
-          "count": 10986689.717767477,
-          "gains_bn": 35.401096380460665,
-          "cgt_bn": 0.4598754002630643
+          "count": 22606.82553838566,
+          "gains_bn": 0.07034224186048642,
+          "cgt_bn": 0.0005313298238030943
         },
-        "cgt_taxpayers_excluding_entrants": 555333.2849392891,
-        "total_gains_excluding_entrants_bn": 127.75253561570744
+        "cgt_taxpayers_excluding_entrants": 555863.0098488331,
+        "total_gains_excluding_entrants_bn": 127.79506688648179
       },
       "2027": {
-        "cgt_taxpayers": 11615791.788303852,
-        "total_gains_bn": 169.14147908863245,
-        "mean_gain": 14561.33875083264,
-        "median_gain": 3326.9345703125,
-        "share_gains_over_1m_pct": 52.90888759939261,
-        "share_gains_over_5m_pct": 32.772087770165136,
-        "taxpayers_over_500k": 35822.12939667702,
-        "gains_over_500k_bn": 99.68984043554843,
-        "gains_over_5m_bn": 55.43119398268214,
+        "cgt_taxpayers": 602951.4038231969,
+        "total_gains_bn": 132.55163689358307,
+        "mean_gain": 219838.0102494149,
+        "median_gain": 27706.564453125,
+        "share_gains_over_1m_pct": 67.53277886907088,
+        "share_gains_over_5m_pct": 41.893423686317725,
+        "taxpayers_over_500k": 35862.169175863266,
+        "gains_over_500k_bn": 99.76077055316132,
+        "gains_over_5m_bn": 55.530418846978186,
         "largest_gain_m": 190.95143127441406,
-        "baseline_cgt_revenue_bn": 31.77983982611357,
-        "residential_property_gains_bn": 13.762893212609159,
+        "baseline_cgt_revenue_bn": 31.113426705752023,
+        "residential_property_gains_bn": 13.833781801819988,
         "badr_gains_bn": 0.0,
         "carried_interest_gains_bn": 0.0,
         "entrants_by_uprating": {
           "exempt_amount_gbp": 3000.0,
           "ceiling_gbp": 3326.934511224,
-          "count": 11058403.769916773,
-          "gains_bn": 36.774582836218976,
-          "cgt_bn": 0.6796975849043351
+          "count": 45031.702076494694,
+          "gains_bn": 0.14067334881750318,
+          "cgt_bn": 0.0011886623512608202
         },
-        "cgt_taxpayers_excluding_entrants": 557388.0183870792,
-        "total_gains_excluding_entrants_bn": 132.36689625241348
+        "cgt_taxpayers_excluding_entrants": 557919.7017467022,
+        "total_gains_excluding_entrants_bn": 132.41096354476556
       },
       "2028": {
-        "cgt_taxpayers": 11688344.905923128,
-        "total_gains_bn": 175.16231205190118,
-        "mean_gain": 14986.066330326785,
-        "median_gain": 3430.069580078125,
-        "share_gains_over_1m_pct": 53.45327431499497,
-        "share_gains_over_5m_pct": 32.757136370264284,
-        "taxpayers_over_500k": 36832.766738414764,
-        "gains_over_500k_bn": 103.62835615819968,
-        "gains_over_5m_bn": 57.37815742814914,
+        "cgt_taxpayers": 612490.324023731,
+        "total_gains_bn": 137.22912614178486,
+        "mean_gain": 224051.09233442825,
+        "median_gain": 27651.435546875,
+        "share_gains_over_1m_pct": 68.27060457328737,
+        "share_gains_over_5m_pct": 41.88678312959837,
+        "taxpayers_over_500k": 36906.52389740944,
+        "gains_over_500k_bn": 103.71867851916892,
+        "gains_over_5m_bn": 57.480866457652404,
         "largest_gain_m": 196.87091064453125,
-        "baseline_cgt_revenue_bn": 33.11735218067409,
-        "residential_property_gains_bn": 14.24630116568774,
+        "baseline_cgt_revenue_bn": 32.231372378654214,
+        "residential_property_gains_bn": 14.319679240112606,
         "badr_gains_bn": 0.0,
         "carried_interest_gains_bn": 0.0,
         "entrants_by_uprating": {
           "exempt_amount_gbp": 3000.0,
           "ceiling_gbp": 3430.0694810719438,
-          "count": 11128727.336716413,
-          "gains_bn": 38.146162986651575,
-          "cgt_bn": 0.9007280918450775
+          "count": 52338.94243837148,
+          "gains_bn": 0.16736308091154894,
+          "cgt_bn": 0.0022365927055627574
         },
-        "cgt_taxpayers_excluding_entrants": 559617.5692067146,
-        "total_gains_excluding_entrants_bn": 137.0161490652496
+        "cgt_taxpayers_excluding_entrants": 560151.3815853596,
+        "total_gains_excluding_entrants_bn": 137.06176306087332
       },
       "2029": {
-        "cgt_taxpayers": 11775832.535819054,
-        "total_gains_bn": 181.25121191747,
-        "mean_gain": 15391.795982674723,
-        "median_gain": 3531.599609375,
-        "share_gains_over_1m_pct": 53.43280107644084,
-        "share_gains_over_5m_pct": 34.790543771746,
-        "taxpayers_over_500k": 37053.5680243969,
-        "gains_over_500k_bn": 107.19529883782592,
-        "gains_over_5m_bn": 63.05828221896751,
+        "cgt_taxpayers": 619078.4022911564,
+        "total_gains_bn": 141.92472409972683,
+        "mean_gain": 229251.61590918942,
+        "median_gain": 27874.009765625,
+        "share_gains_over_1m_pct": 68.28131638905684,
+        "share_gains_over_5m_pct": 44.5265029405471,
+        "taxpayers_over_500k": 37127.58860349655,
+        "gains_over_500k_bn": 107.28867483306202,
+        "gains_over_5m_bn": 63.194116449628225,
         "largest_gain_m": 202.69830322265625,
-        "baseline_cgt_revenue_bn": 34.46245104005601,
-        "residential_property_gains_bn": 14.732530968649417,
+        "baseline_cgt_revenue_bn": 33.35603520121359,
+        "residential_property_gains_bn": 14.808413484089405,
         "badr_gains_bn": 0.0,
         "carried_interest_gains_bn": 0.0,
         "entrants_by_uprating": {
           "exempt_amount_gbp": 3000.0,
           "ceiling_gbp": 3531.5995377116737,
-          "count": 11213752.650900126,
-          "gains_bn": 39.55866856886128,
-          "cgt_bn": 1.1227154591978386
+          "count": 56462.35693679005,
+          "gains_bn": 0.1850080839261396,
+          "cgt_bn": 0.0033796149070690904
         },
-        "cgt_taxpayers_excluding_entrants": 562079.8849189281,
-        "total_gains_excluding_entrants_bn": 141.6925433486087
+        "cgt_taxpayers_excluding_entrants": 562616.0453543663,
+        "total_gains_excluding_entrants_bn": 141.7397160158007
       },
       "2030": {
-        "cgt_taxpayers": 11849701.413414955,
-        "total_gains_bn": 187.86592231079322,
-        "mean_gain": 15854.063807726974,
-        "median_gain": 3642.844970703125,
-        "share_gains_over_1m_pct": 53.42972454497576,
-        "share_gains_over_5m_pct": 34.7937698360602,
-        "taxpayers_over_500k": 37873.57450938225,
-        "gains_over_500k_bn": 111.40077706738208,
-        "gains_over_5m_bn": 65.36563660920905,
+        "cgt_taxpayers": 635594.8756633997,
+        "total_gains_bn": 147.09585530153026,
+        "mean_gain": 231430.20960954027,
+        "median_gain": 28521.4453125,
+        "share_gains_over_1m_pct": 68.2821752204372,
+        "share_gains_over_5m_pct": 44.533745834737495,
+        "taxpayers_over_500k": 37951.65442085266,
+        "gains_over_500k_bn": 111.49936338660123,
+        "gains_over_5m_bn": 65.50729433341674,
         "largest_gain_m": 209.0832977294922,
-        "baseline_cgt_revenue_bn": 35.93948076241156,
-        "residential_property_gains_bn": 15.264989904065457,
+        "baseline_cgt_revenue_bn": 34.58843687509989,
+        "residential_property_gains_bn": 15.343615201872925,
         "badr_gains_bn": 0.0,
         "carried_interest_gains_bn": 0.0,
         "entrants_by_uprating": {
           "exempt_amount_gbp": 3000.0,
           "ceiling_gbp": 3642.844923149592,
-          "count": 11285092.16814065,
-          "gains_bn": 41.05236535147042,
-          "cgt_bn": 1.36922321758237
+          "count": 70447.05456602573,
+          "gains_bn": 0.2334194694881634,
+          "cgt_bn": 0.004809342711162095
         },
-        "cgt_taxpayers_excluding_entrants": 564609.2452743053,
-        "total_gains_excluding_entrants_bn": 146.8135569593228
+        "cgt_taxpayers_excluding_entrants": 565147.821097374,
+        "total_gains_excluding_entrants_bn": 146.8624358320421
       }
     }
-  },
-  "entrant_ceiling_gbp": {
-    "2026": 3222.83688,
-    "2027": 3326.934511224,
-    "2028": 3430.0694810719438,
-    "2029": 3531.5995377116737,
-    "2030": 3642.844923149592
-  },
-  "baseline_by_year_note": "Carried forward from the previous audit at this path, which was produced under the same projection fingerprint; an audit-only rewrite refreshes the factor table without discarding measured baselines."
+  }
 }

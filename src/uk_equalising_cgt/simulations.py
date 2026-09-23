@@ -116,33 +116,40 @@ INCUMBENT = DatasetSpec(
 )
 
 CANDIDATE = DatasetSpec(
-    key="microcosm_uk_2024_v20",
-    label="Microcosm UK 2024, spine assessment v20 (staged candidate)",
-    short_label="Microcosm UK v20",
+    key="microcosm_uk_2024_25_979",
+    label="Microcosm UK 2024-25, national line on microcosm#979 (staged candidate)",
+    short_label="Microcosm UK #979",
     role="candidate",
     uri=(
-        "hf://policyengine/populace-uk-private/staged/uk-spine-assessment-v20-calibration/"
-        "microcosm_uk_2024.h5@25e40b2469e9cab63bc5562cd7f38d0b7faee11a"
+        "hf://policyengine/populace-uk-private/staged/"
+        "uk-frs-calibration-attempt-20260923T134002Z-c1be1c9f/"
+        "microcosm_uk_2024_25.h5@f6df65b1e98675ad305bcacf7ede3e0d34b57063"
     ),
-    sha256="8883e59256792525afcff2fe17af7f659ba3982cd0ac7a95a4005bac5ee7b389",
+    sha256="c5f107ab6eaf74d05c1e17ecd65a4f6876666c4554bd004f76102099aa6de821",
     base_year=2024,
     producer=(
-        "microcosm build uk-frs-calibration-attempt-20260918T174754Z-3f928f19, staged "
-        "2026-09-18 as run uk-spine-assessment-v20-calibration in the Hugging Face "
-        "dataset repo policyengine/populace-uk-private (commit 25e40b24); a staging "
-        "candidate whose terminal gates passed, not a certified release"
+        "microcosm build uk-frs-calibration-attempt-20260923T134002Z-c1be1c9f "
+        "(tools/build_uk_rowwise_candidate.py --release-role national on code "
+        "e01c6846, main 0f00021c plus PolicyEngine/microcosm#979), staged 2026-09-23 "
+        "in the Hugging Face dataset repo policyengine/populace-uk-private (commit "
+        "f6df65b1); a staging candidate whose seven calibration-seam gates passed, "
+        "not a certified release"
     ),
     observation=(
         "FRS 2024-25 spine; capital gains amounts redrawn from HMRC Table 3 (size of gain "
-        "by taxable income, 2024-25) with asset types from HMRC Tables 7 and 8, and "
-        "household weights calibrated to HMRC CGT totals, age, region and size bands for "
-        "2024-25"
+        "by taxable income, 2024-25) with asset types from HMRC Tables 7 and 8, the "
+        "sub-exempt remainder drawn from the Advani-Summers within-band distribution "
+        "restricted to (0, exempt amount] and the clone incidence anchored to the "
+        "redrawn liable mass (microcosm#970); household weights calibrated to HMRC CGT "
+        "totals, age, region and size bands for 2024-25"
     ),
     notes=(
         "Carries capital_gains and capital_gains_residential_property (the residential "
-        "schedule); no BADR or carried-interest columns. Gainers beyond HMRC's taxpayer "
-        "count keep their gains capped at the annual exempt amount, so 10.8 million "
-        "people sit at exactly GBP 3,000 in the base year."
+        "schedule); no BADR or carried-interest columns. Sub-exempt gainers hold gains "
+        "strictly inside (0, GBP 3,000) rather than at the cap, and the build's "
+        "projection fence bounds the stock of them that uprating carries over the "
+        "frozen exempt amount by 2030 (68.5k against HMRC's 73k in the GBP 3,000 to "
+        "5,999 band)."
     ),
 )
 

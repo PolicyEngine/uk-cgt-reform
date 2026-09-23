@@ -28,7 +28,7 @@ def test_every_dataset_is_pinned():
 
 def test_stems_are_distinct_and_revision_free():
     stems = {spec.stem for spec in DATASETS.values()}
-    assert stems == {"enhanced_frs_2024_25", "microcosm_uk_2024"}
+    assert stems == {"enhanced_frs_2024_25", "microcosm_uk_2024_25"}
 
 
 def test_shared_base_year():
@@ -38,7 +38,7 @@ def test_shared_base_year():
 def test_metadata_round_trip():
     metadata = CANDIDATE.to_metadata()
     assert metadata["key"] == CANDIDATE.key
-    assert metadata["revision"] == "25e40b2469e9cab63bc5562cd7f38d0b7faee11a"
+    assert metadata["revision"] == "f6df65b1e98675ad305bcacf7ede3e0d34b57063"
     assert metadata["digest"] == CANDIDATE.digest
 
 

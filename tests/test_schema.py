@@ -170,7 +170,7 @@ def test_dataset_comparison_lays_datasets_out_as_columns():
         name for name, _ in VALIDATION_METRICS
     ]
     taxpayers = next(r for r in side_by_side["validation"] if r["metric"] == "cgt_taxpayers")
-    assert taxpayers["microcosm_uk_2024_v20"] == 2 * taxpayers["enhanced_frs_2024_25"]
+    assert taxpayers["microcosm_uk_2024_25_979"] == 2 * taxpayers["enhanced_frs_2024_25"]
     entrants = next(
         r for r in side_by_side["validation"] if r["metric"] == "entrants_by_uprating.count"
     )

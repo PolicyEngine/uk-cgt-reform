@@ -14,7 +14,7 @@ by side:
 | Key | Role | Dataset | Pinned input |
 |---|---|---|---|
 | `enhanced_frs_2024_25` | incumbent | Enhanced FRS 2024-25, [policyengine-uk-data](https://github.com/PolicyEngine/policyengine-uk-data) 1.57.3 | `hf://policyengine/policyengine-uk-data/enhanced_frs_2024_25.h5@1.57.3`, sha256 `ef34c1ae…` |
-| `microcosm_uk_2024_v20` | candidate | Microcosm UK 2024, spine assessment v20, staged from [microcosm](https://github.com/PolicyEngine/microcosm) (`staged/uk-spine-assessment-v20-calibration`, a staging candidate whose terminal gates passed, not a certified release) | `hf://policyengine/populace-uk-private/staged/uk-spine-assessment-v20-calibration/microcosm_uk_2024.h5@25e40b24…`, sha256 `8883e592…` |
+| `microcosm_uk_2024_25_979` | candidate | Microcosm UK 2024-25, the national line built by [microcosm](https://github.com/PolicyEngine/microcosm)'s consolidated build path on main plus [microcosm#979](https://github.com/PolicyEngine/microcosm/pull/979) (`staged/uk-frs-calibration-attempt-20260923T134002Z-c1be1c9f`, a staging candidate whose seven calibration-seam gates passed, not a certified release; it supersedes the v20 spine assessment, whose sub-exempt gainers sat at exactly £3,000) | `hf://policyengine/populace-uk-private/staged/uk-frs-calibration-attempt-20260923T134002Z-c1be1c9f/microcosm_uk_2024_25.h5@f6df65b1…`, sha256 `c5f107ab…` |
 
 The candidate carries the capital gains asset-type breakdown
 (`capital_gains_residential_property`) that policyengine-uk 2.99.0 charges on
@@ -55,24 +55,24 @@ and its results are unchanged by them.
 Same engine (policyengine-uk 2.99.1), wrapper (policyengine.py 4.22.3),
 projection (fingerprint `1b0cd0dff144`) and reform on each dataset.
 
-| | Enhanced FRS 2024-25 (incumbent) | Microcosm UK v20 (candidate) | External benchmark |
+| | Enhanced FRS 2024-25 (incumbent) | Microcosm UK #979 (candidate) | External benchmark |
 |---|---:|---:|---|
-| CGT taxpayers (gains above the exempt amount) | 597k | 11.54m | HMRC Table 1: 382k (2023-24), 551k (2024-25, provisional) |
-| of which entrants by uprating (see below) | 12k | 10.99m | none: HMRC counts only taxpayers with a liability |
-| CGT taxpayers excluding entrants | 586k | 555k | HMRC Table 1: 382k (2023-24), 551k (2024-25) |
-| Taxable gains | £57.9bn | £163.2bn | HMRC Table 1: £66.6bn (2023-24), £119.3bn (2024-25) |
+| CGT taxpayers (gains above the exempt amount) | 597k | 578k | HMRC Table 1: 382k (2023-24), 551k (2024-25, provisional) |
+| of which entrants by uprating (see below) | 12k | 22.6k | none: HMRC counts only taxpayers with a liability |
+| CGT taxpayers excluding entrants | 586k | 556k | HMRC Table 1: 382k (2023-24), 551k (2024-25) |
+| Taxable gains | £57.9bn | £127.9bn | HMRC Table 1: £66.6bn (2023-24), £119.3bn (2024-25) |
 | Taxable gains excluding entrants | £57.8bn | £127.8bn | HMRC Table 1: £66.6bn (2023-24), £119.3bn (2024-25) |
-| Baseline CGT liability | £13.2bn | £30.5bn | HMRC Table 1: £12.1bn (2023-24), £22.5bn (2024-25); OBR receipts £20.8bn (2026-27), £25.5bn (2027-28) |
-| Residential property gains on their own schedule | none recorded | £13.3bn | HMRC Table 8a (2024-25): £12.9bn including trusts, about £12.2bn for individuals; 205k taxpayers |
-| Share of gains from gains of £1m or more | 67% | 52% | HMRC Table 2: 61% (2023-24), 65% (2024-25) |
+| Baseline CGT liability | £13.2bn | £30.0bn | HMRC Table 1: £12.1bn (2023-24), £22.5bn (2024-25); OBR receipts £20.8bn (2026-27), £25.5bn (2027-28) |
+| Residential property gains on their own schedule | none recorded | £13.4bn | HMRC Table 8a (2024-25): £12.9bn including trusts, about £12.2bn for individuals; 205k taxpayers |
+| Share of gains from gains of £1m or more | 67% | 67% | HMRC Table 2: 61% (2023-24), 65% (2024-25) |
 | Taxpayers with gains over £500k | 17.9k | 35.5k | HMRC Table 2: 19k (2023-24), 33k (2024-25) |
 | Largest single gain | £12.2m | £185m | none: HMRC's top band is £5m and over (2k taxpayers, £23.6bn in 2023-24; 3k, £48.5bn in 2024-25) |
-| Static yield (e = 0) | +£10.7bn | +£24.8bn | Advani & Summers (2020), static, GDP-uprated: £16.7bn |
-| Yield, CenTax lower (e = −0.35) | +£5.9bn | +£13.6bn | none |
-| **Yield, central (e = −0.7)** | **+£2.2bn** | **+£4.6bn** | CenTax (2024): £14.0bn central, £9.7bn worst case, both with base broadening; HMRC ready reckoner: −£2bn by year 3 for +10pp on the higher rates alone |
-| Five-year total, 2026-27 to 2030-31 | +£11.7bn | +£24.9bn | none |
-| Top income quintile, net income change | −2.8% (−£3,328/household) | −6.1% (−£8,446/household) | none |
-| Lowest income quintile, net income change | −0.05% (−£7) | −0.34% (−£63) | none |
+| Static yield (e = 0) | +£10.7bn | +£24.7bn | Advani & Summers (2020), static, GDP-uprated: £16.7bn |
+| Yield, CenTax lower (e = −0.35) | +£5.9bn | +£13.8bn | none |
+| **Yield, central (e = −0.7)** | **+£2.2bn** | **+£5.1bn** | CenTax (2024): £14.0bn central, £9.7bn worst case, both with base broadening; HMRC ready reckoner: −£2bn by year 3 for +10pp on the higher rates alone |
+| Five-year total, 2026-27 to 2030-31 | +£11.7bn | +£27.7bn | none |
+| Top income quintile, net income change | −2.8% (−£3,328/household) | −6.0% (−£8,269/household) | none |
+| Lowest income quintile, net income change | −0.05% (−£7) | −0.01% (−£2) | none |
 
 Benchmarks are outturns for the tax year stated (HMRC Capital Gains Tax
 statistics, 2026 release, Tables 1, 2 and 8) or other institutions'
@@ -91,27 +91,31 @@ is the closest published counterpart of the 2026-27 liability):
 | | 2026-27 | 2027-28 | 2028-29 | 2029-30 | 2030-31 |
 |---|---:|---:|---:|---:|---:|
 | Incumbent baseline CGT liability | £13.2bn | £13.7bn | £14.2bn | £14.7bn | £15.2bn |
-| Candidate baseline CGT liability | £30.5bn | £31.8bn | £33.1bn | £34.5bn | £35.9bn |
+| Candidate baseline CGT liability | £30.0bn | £31.1bn | £32.2bn | £33.4bn | £34.6bn |
 | OBR CGT receipts (EFO March 2026, Table 3.7) | £20.8bn | £25.5bn | £28.9bn | £32.0bn | £34.9bn |
 
 Two things separate the datasets before the reform is applied:
 
 1. **Entrants by uprating.** The annual exempt amount is frozen at £3,000
    while the engine uprates gains with GDP per capita (×1.074 by 2026), so a
-   person whose base-year gains sit at or below £3,000 crosses the exempt
+   person whose base-year gains sit just below £3,000 crosses the exempt
    amount in the projection and counts as a CGT taxpayer with a few hundred
-   pounds of taxable gain. The candidate builds every gainer beyond HMRC's
-   taxpayer count with gains capped at exactly the exempt amount (microcosm's
-   `cgt_imputation` stage, approximation 4), so 10.8 million people sit at
-   exactly £3,000 in its base year and all of them enter in 2026. They hold
-   £35bn of "taxable" gains but pay £0.46bn of baseline CGT, and under the
-   reform the behavioural response pushes their gains back below the exempt
-   amount, so they contribute −£0.46bn to the 2026-27 yield. Every count in
-   the candidate's results is dominated by this group; the revenue figures
-   are not. The pipeline edits nothing: `validation.entrants_by_uprating`
-   and `budget[].cgt_change_from_entrants_bn` report the group so it can be
-   netted out, and the fix belongs upstream (a sub-exempt-amount cap that
-   survives uprating, or amounts drawn below the cap).
+   pounds of taxable gain. On the current candidate that group is 22.6k
+   people holding £0.07bn of gains and paying £0.001bn of CGT, and the
+   candidate's own build fences it: microcosm#979's `uk_cgt_projection_entrants`
+   gate bounds the stock of crossers by 2030 (68.5k on this build) by HMRC's
+   count of taxpayers in the £3,000 to £5,999 band (73k in 2024-25). The
+   previous candidate, spine assessment v20, built every gainer beyond HMRC's
+   taxpayer count with gains capped at exactly £3,000 (microcosm's
+   `cgt_imputation` stage, approximation 4), so 10.8 million people entered
+   in 2026 holding £35bn of nominal gains and paying £0.46bn, and every count
+   in its results was dominated by the group; microcosm#970 replaced the cap
+   with amounts drawn from the Advani-Summers within-band distribution below
+   the exempt amount and anchored the clone incidence to the liable mass. The
+   pipeline edits nothing and still reports the group
+   (`validation.entrants_by_uprating`, `budget[].cgt_change_from_entrants_bn`)
+   so it can be netted out; PR #3's 21 September comment records the v20
+   results for comparison.
 2. **Vintage of the capital gains calibration.** The incumbent calibrates
    its gains to HMRC's 2023-24 statistics as published in 2025 (378,000
    taxpayers, £65.9bn of gains; since revised to 382,000 and £66.6bn); the
@@ -271,12 +275,20 @@ engine's uprating cannot reuse cached simulation outputs.
 ```bash
 pip install -e ".[simulation,dev]"
 uk-equalising-cgt-build                       # every registered dataset
-uk-equalising-cgt-build --dataset microcosm_uk_2024_v20   # one dataset
+uk-equalising-cgt-build --dataset microcosm_uk_2024_25_979   # one dataset
 uk-equalising-cgt-build --audit-only          # the projection audit alone
 ```
 
-Requires a `HUGGING_FACE_TOKEN` with access to PolicyEngine's private
-Hugging Face repos. A full run takes about ten minutes for both datasets
+Requires a Hugging Face token with access to PolicyEngine's private repos,
+exported as `HF_TOKEN` (the variable `huggingface_hub` reads for the pinned
+downloads). Do not also export `HUGGING_FACE_TOKEN` while running on the pinned
+engine: policyengine.py 4.22.3 uses that variable to fetch the data package's
+current release manifest at import, and since 23 September 2026 that manifest
+certifies only newer policyengine-uk releases, so the import refuses 2.99.1.
+Without it the wrapper records its bundled default dataset as
+`unverified_data_release_manifest_unavailable`, which does not touch these
+runs: every dataset here is pinned explicitly by revision and digest. A full
+run takes about ten minutes for both datasets
 (per-year dataset builds plus thirteen scored simulations each; re-runs
 reuse policyengine.py's output cache). Copy the four results files from
 `data/` into `dashboard/public/data/` for the dashboard, which bundles
