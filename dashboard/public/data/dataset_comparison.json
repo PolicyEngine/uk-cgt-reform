@@ -1,0 +1,463 @@
+{
+  "generated": "2026-09-23",
+  "first_year": "2026-27",
+  "years": [
+    "2026-27",
+    "2027-28",
+    "2028-29",
+    "2029-30",
+    "2030-31"
+  ],
+  "projection_fingerprint": "1b0cd0dff144",
+  "datasets": {
+    "enhanced_frs_2024_25": {
+      "dataset": "hf://policyengine/policyengine-uk-data/enhanced_frs_2024_25.h5@1.57.3",
+      "dataset_key": "enhanced_frs_2024_25",
+      "dataset_label": "Enhanced FRS 2024-25 (policyengine-uk-data 1.57.3)",
+      "dataset_short_label": "Enhanced FRS 2024-25",
+      "dataset_role": "incumbent",
+      "dataset_sha256": "ef34c1ae28219367981fbc3c1144f58ea1f8a77554165fe02ff395b04c5ffea5",
+      "dataset_producer": "policyengine-uk-data 1.57.3, Hugging Face model repo policyengine/policyengine-uk-data at tag 1.57.3 (commit 25af520a, 2026-09-04)",
+      "dataset_observation": "FRS 2024-25 households; capital gains imputed onto survey households and household weights calibrated to HMRC CGT aggregates and size-of-gain bands",
+      "dataset_notes": "Carries capital_gains only: no asset-type breakdown, so the engine charges every gain on the main CGT schedule.",
+      "policyengine_version": "4.22.3",
+      "policyengine_uk_version": "2.99.1",
+      "generated": "2026-09-23"
+    },
+    "microcosm_uk_2024_25_979": {
+      "dataset": "hf://policyengine/populace-uk-private/staged/uk-frs-calibration-attempt-20260923T134002Z-c1be1c9f/microcosm_uk_2024_25.h5@f6df65b1e98675ad305bcacf7ede3e0d34b57063",
+      "dataset_key": "microcosm_uk_2024_25_979",
+      "dataset_label": "Microcosm UK 2024-25, national line on microcosm#979 (staged candidate)",
+      "dataset_short_label": "Microcosm UK #979",
+      "dataset_role": "candidate",
+      "dataset_sha256": "c5f107ab6eaf74d05c1e17ecd65a4f6876666c4554bd004f76102099aa6de821",
+      "dataset_producer": "microcosm build uk-frs-calibration-attempt-20260923T134002Z-c1be1c9f (tools/build_uk_rowwise_candidate.py --release-role national on code e01c6846, main 0f00021c plus PolicyEngine/microcosm#979), staged 2026-09-23 in the Hugging Face dataset repo policyengine/populace-uk-private (commit f6df65b1); a staging candidate whose seven calibration-seam gates passed, not a certified release",
+      "dataset_observation": "FRS 2024-25 spine; capital gains amounts redrawn from HMRC Table 3 (size of gain by taxable income, 2024-25) with asset types from HMRC Tables 7 and 8, the sub-exempt remainder drawn from the Advani-Summers within-band distribution restricted to (0, exempt amount] and the clone incidence anchored to the redrawn liable mass (microcosm#970); household weights calibrated to HMRC CGT totals, age, region and size bands for 2024-25",
+      "dataset_notes": "Carries capital_gains and capital_gains_residential_property (the residential schedule); no BADR or carried-interest columns. Sub-exempt gainers hold gains strictly inside (0, GBP 3,000) rather than at the cap, and the build's projection fence bounds the stock of them that uprating carries over the frozen exempt amount by 2030 (68.5k against HMRC's 73k in the GBP 3,000 to 5,999 band).",
+      "policyengine_version": "4.22.3",
+      "policyengine_uk_version": "2.99.1",
+      "generated": "2026-09-23"
+    }
+  },
+  "validation": [
+    {
+      "metric": "cgt_taxpayers",
+      "label": "CGT taxpayers (gains above the exempt amount)",
+      "enhanced_frs_2024_25": 597363.1812931299,
+      "microcosm_uk_2024_25_979": 578469.8353872187
+    },
+    {
+      "metric": "entrants_by_uprating.count",
+      "label": "of which entrants by uprating",
+      "enhanced_frs_2024_25": 11574.113523960114,
+      "microcosm_uk_2024_25_979": 22606.82553838566
+    },
+    {
+      "metric": "cgt_taxpayers_excluding_entrants",
+      "label": "CGT taxpayers excluding entrants",
+      "enhanced_frs_2024_25": 585789.0677691698,
+      "microcosm_uk_2024_25_979": 555863.0098488331
+    },
+    {
+      "metric": "total_gains_bn",
+      "label": "Taxable gains, \u00a3bn",
+      "enhanced_frs_2024_25": 57.87216900337583,
+      "microcosm_uk_2024_25_979": 127.86540912834228
+    },
+    {
+      "metric": "entrants_by_uprating.gains_bn",
+      "label": "of which held by entrants, \u00a3bn",
+      "enhanced_frs_2024_25": 0.03585135099147715,
+      "microcosm_uk_2024_25_979": 0.07034224186048642
+    },
+    {
+      "metric": "total_gains_excluding_entrants_bn",
+      "label": "Taxable gains excluding entrants, \u00a3bn",
+      "enhanced_frs_2024_25": 57.83631765238435,
+      "microcosm_uk_2024_25_979": 127.79506688648179
+    },
+    {
+      "metric": "mean_gain",
+      "label": "Mean gain per taxpayer, \u00a3",
+      "enhanced_frs_2024_25": 96879.37056665967,
+      "microcosm_uk_2024_25_979": 221040.75494749207
+    },
+    {
+      "metric": "median_gain",
+      "label": "Median gain per taxpayer, \u00a3",
+      "enhanced_frs_2024_25": 9689.4990234375,
+      "microcosm_uk_2024_25_979": 29459.82421875
+    },
+    {
+      "metric": "share_gains_over_1m_pct",
+      "label": "Share of gains from gains of \u00a31m or more, %",
+      "enhanced_frs_2024_25": 67.31898389837774,
+      "microcosm_uk_2024_25_979": 66.5620914028034
+    },
+    {
+      "metric": "share_gains_over_5m_pct",
+      "label": "Share of gains from gains of \u00a35m or more, %",
+      "enhanced_frs_2024_25": 38.75126332572452,
+      "microcosm_uk_2024_25_979": 41.442478768742376
+    },
+    {
+      "metric": "taxpayers_over_500k",
+      "label": "Taxpayers with gains over \u00a3500k",
+      "enhanced_frs_2024_25": 17890.088092565536,
+      "microcosm_uk_2024_25_979": 35528.22358727455
+    },
+    {
+      "metric": "gains_over_500k_bn",
+      "label": "Gains held by taxpayers with gains over \u00a3500k, \u00a3bn",
+      "enhanced_frs_2024_25": 44.50830709942673,
+      "microcosm_uk_2024_25_979": 96.18334121344546
+    },
+    {
+      "metric": "gains_over_5m_bn",
+      "label": "Gains in the \u00a35m-and-over band, \u00a3bn",
+      "enhanced_frs_2024_25": 22.426196602806495,
+      "microcosm_uk_2024_25_979": 52.990595030578824
+    },
+    {
+      "metric": "largest_gain_m",
+      "label": "Largest single gain, \u00a3m",
+      "enhanced_frs_2024_25": 12.200586318969727,
+      "microcosm_uk_2024_25_979": 184.97666931152344
+    },
+    {
+      "metric": "baseline_cgt_revenue_bn",
+      "label": "Baseline CGT liability, \u00a3bn",
+      "enhanced_frs_2024_25": 13.201311744254435,
+      "microcosm_uk_2024_25_979": 30.00356298842178
+    },
+    {
+      "metric": "entrants_by_uprating.cgt_bn",
+      "label": "of which paid by entrants, \u00a3bn",
+      "enhanced_frs_2024_25": 0.00021491242798647739,
+      "microcosm_uk_2024_25_979": 0.0005313298238030943
+    },
+    {
+      "metric": "residential_property_gains_bn",
+      "label": "Residential property gains (own schedule), \u00a3bn",
+      "enhanced_frs_2024_25": 0.0,
+      "microcosm_uk_2024_25_979": 13.351530739855976
+    },
+    {
+      "metric": "badr_gains_bn",
+      "label": "BADR gains (own schedule), \u00a3bn",
+      "enhanced_frs_2024_25": 0.0,
+      "microcosm_uk_2024_25_979": 0.0
+    },
+    {
+      "metric": "carried_interest_gains_bn",
+      "label": "Carried interest gains (own schedule), \u00a3bn",
+      "enhanced_frs_2024_25": 0.0,
+      "microcosm_uk_2024_25_979": 0.0
+    }
+  ],
+  "budget": [
+    {
+      "year": "2026-27",
+      "enhanced_frs_2024_25": {
+        "year": "2026-27",
+        "baseline_cgt_bn": 13.201311744254435,
+        "reform_cgt_bn": 15.35545122100879,
+        "cgt_change_bn": 2.1541394767543562,
+        "total_tax_change_bn": 2.1541394423962403,
+        "gov_balance_change_bn": 2.154139445007629,
+        "cgt_change_from_entrants_bn": -0.00021491242798647739
+      },
+      "microcosm_uk_2024_25_979": {
+        "year": "2026-27",
+        "baseline_cgt_bn": 30.00356298842178,
+        "reform_cgt_bn": 35.076689433066335,
+        "cgt_change_bn": 5.073126444644558,
+        "total_tax_change_bn": 5.073126829667725,
+        "gov_balance_change_bn": 5.07312678788797,
+        "cgt_change_from_entrants_bn": -0.0005313298238030943
+      }
+    },
+    {
+      "year": "2027-28",
+      "enhanced_frs_2024_25": {
+        "year": "2027-28",
+        "baseline_cgt_bn": 13.697029940340366,
+        "reform_cgt_bn": 15.940534702099313,
+        "cgt_change_bn": 2.243504761758947,
+        "total_tax_change_bn": 2.2435047439505613,
+        "gov_balance_change_bn": 2.2435047530808108,
+        "cgt_change_from_entrants_bn": -0.000616333042972736
+      },
+      "microcosm_uk_2024_25_979": {
+        "year": "2027-28",
+        "baseline_cgt_bn": 31.113426705752023,
+        "reform_cgt_bn": 36.43859838441018,
+        "cgt_change_bn": 5.325171678658157,
+        "total_tax_change_bn": 5.325171462160034,
+        "gov_balance_change_bn": 5.3251714052969055,
+        "cgt_change_from_entrants_bn": -0.0011781069555780327
+      }
+    },
+    {
+      "year": "2028-29",
+      "enhanced_frs_2024_25": {
+        "year": "2028-29",
+        "baseline_cgt_bn": 14.196536426542675,
+        "reform_cgt_bn": 16.529208497270858,
+        "cgt_change_bn": 2.332672070728182,
+        "total_tax_change_bn": 2.3326720803079835,
+        "gov_balance_change_bn": 2.3326720887109373,
+        "cgt_change_from_entrants_bn": -0.0011560423657994512
+      },
+      "microcosm_uk_2024_25_979": {
+        "year": "2028-29",
+        "baseline_cgt_bn": 32.231372378654214,
+        "reform_cgt_bn": 37.72070237098862,
+        "cgt_change_bn": 5.4893299923344,
+        "total_tax_change_bn": 5.489329739841553,
+        "gov_balance_change_bn": 5.489329823408081,
+        "cgt_change_from_entrants_bn": -0.0020737237438089684
+      }
+    },
+    {
+      "year": "2029-30",
+      "enhanced_frs_2024_25": {
+        "year": "2029-30",
+        "baseline_cgt_bn": 14.699049176761703,
+        "reform_cgt_bn": 17.121864903362752,
+        "cgt_change_bn": 2.4228157266010495,
+        "total_tax_change_bn": 2.422815776750366,
+        "gov_balance_change_bn": 2.422815773489624,
+        "cgt_change_from_entrants_bn": -0.0017559616944063977
+      },
+      "microcosm_uk_2024_25_979": {
+        "year": "2029-30",
+        "baseline_cgt_bn": 33.35603520121359,
+        "reform_cgt_bn": 39.22698111131389,
+        "cgt_change_bn": 5.8709459101003,
+        "total_tax_change_bn": 5.870946039901001,
+        "gov_balance_change_bn": 5.870945609673828,
+        "cgt_change_from_entrants_bn": -0.0030455001415953965
+      }
+    },
+    {
+      "year": "2030-31",
+      "enhanced_frs_2024_25": {
+        "year": "2030-31",
+        "baseline_cgt_bn": 15.250158431991427,
+        "reform_cgt_bn": 17.77150559929505,
+        "cgt_change_bn": 2.521347167303625,
+        "total_tax_change_bn": 2.5213471824731446,
+        "gov_balance_change_bn": 2.521347184833008,
+        "cgt_change_from_entrants_bn": -0.002327293809705939
+      },
+      "microcosm_uk_2024_25_979": {
+        "year": "2030-31",
+        "baseline_cgt_bn": 34.58843687509989,
+        "reform_cgt_bn": 40.51812020109761,
+        "cgt_change_bn": 5.929683325997726,
+        "total_tax_change_bn": 5.929683152027222,
+        "gov_balance_change_bn": 5.929683324889771,
+        "cgt_change_from_entrants_bn": -0.004217337778328085
+      }
+    }
+  ],
+  "five_year_total_bn": {
+    "enhanced_frs_2024_25": 11.67447924512201,
+    "microcosm_uk_2024_25_979": 27.688256951156553
+  },
+  "sensitivity": [
+    {
+      "name": "Static (Advani & Summers 2020 style)",
+      "e_mtr": 0.0,
+      "enhanced_frs_2024_25": 10.671796020233026,
+      "microcosm_uk_2024_25_979": 24.720886159871625
+    },
+    {
+      "name": "CenTax lower (retention e=0.5)",
+      "e_mtr": -0.35,
+      "enhanced_frs_2024_25": 5.946626057094931,
+      "microcosm_uk_2024_25_979": 13.819269408332593
+    },
+    {
+      "name": "CenTax central (retention e=1.0)",
+      "e_mtr": -0.7,
+      "enhanced_frs_2024_25": 2.1541394767543562,
+      "microcosm_uk_2024_25_979": 5.073126444644558
+    }
+  ],
+  "top_quintile": {
+    "enhanced_frs_2024_25": {
+      "group": "Highest 20%",
+      "avg_change_gbp": -3328.2888453500627,
+      "relative_change_pct": -2.777450983407556
+    },
+    "microcosm_uk_2024_25_979": {
+      "group": "Highest 20%",
+      "avg_change_gbp": -8268.80226300816,
+      "relative_change_pct": -6.032749876457384
+    }
+  },
+  "household_type": {
+    "enhanced_frs_2024_25": [
+      {
+        "group": "With children",
+        "avg_change_gbp": -606.81746424496,
+        "relative_change_pct": -0.8058755725738498
+      },
+      {
+        "group": "Pensioner",
+        "avg_change_gbp": -650.5541144313593,
+        "relative_change_pct": -1.5806237825225466
+      },
+      {
+        "group": "Working-age, no children",
+        "avg_change_gbp": -742.4873087566232,
+        "relative_change_pct": -1.453713105789355
+      }
+    ],
+    "microcosm_uk_2024_25_979": [
+      {
+        "group": "With children",
+        "avg_change_gbp": -2527.8019737058885,
+        "relative_change_pct": -2.8847749959111515
+      },
+      {
+        "group": "Pensioner",
+        "avg_change_gbp": -1313.4627954020473,
+        "relative_change_pct": -2.922377545150148
+      },
+      {
+        "group": "Working-age, no children",
+        "avg_change_gbp": -1358.9830507429529,
+        "relative_change_pct": -2.389832412536235
+      }
+    ]
+  },
+  "region": {
+    "enhanced_frs_2024_25": [
+      {
+        "group": "North East",
+        "avg_change_gbp": -476.5177929006317,
+        "relative_change_pct": -0.993567820597439
+      },
+      {
+        "group": "North West",
+        "avg_change_gbp": -641.1354187030998,
+        "relative_change_pct": -1.2596466929890304
+      },
+      {
+        "group": "Yorkshire and the Humber",
+        "avg_change_gbp": -582.8026360775725,
+        "relative_change_pct": -1.1201323167881791
+      },
+      {
+        "group": "East Midlands",
+        "avg_change_gbp": -391.5689656771249,
+        "relative_change_pct": -0.7196282545811037
+      },
+      {
+        "group": "West Midlands",
+        "avg_change_gbp": -447.79605019560876,
+        "relative_change_pct": -0.8482025745915929
+      },
+      {
+        "group": "East of England",
+        "avg_change_gbp": -829.6511179779943,
+        "relative_change_pct": -1.3292859760844469
+      },
+      {
+        "group": "London",
+        "avg_change_gbp": -671.8044576613416,
+        "relative_change_pct": -0.9704755433600663
+      },
+      {
+        "group": "South East",
+        "avg_change_gbp": -772.5401847501957,
+        "relative_change_pct": -1.3710439544793624
+      },
+      {
+        "group": "South West",
+        "avg_change_gbp": -673.0099289464913,
+        "relative_change_pct": -1.257467170594974
+      },
+      {
+        "group": "Wales",
+        "avg_change_gbp": -1685.5279827901818,
+        "relative_change_pct": -3.1909857609508983
+      },
+      {
+        "group": "Scotland",
+        "avg_change_gbp": -547.3724731690872,
+        "relative_change_pct": -1.084728486269157
+      },
+      {
+        "group": "Northern Ireland",
+        "avg_change_gbp": -701.8288369369916,
+        "relative_change_pct": -1.2444474937254402
+      }
+    ],
+    "microcosm_uk_2024_25_979": [
+      {
+        "group": "North East",
+        "avg_change_gbp": -486.5632209517264,
+        "relative_change_pct": -0.8554159044484411
+      },
+      {
+        "group": "North West",
+        "avg_change_gbp": -1114.0897163551176,
+        "relative_change_pct": -1.903263078761753
+      },
+      {
+        "group": "Yorkshire and the Humber",
+        "avg_change_gbp": -1223.5420029094926,
+        "relative_change_pct": -2.066558206371693
+      },
+      {
+        "group": "East Midlands",
+        "avg_change_gbp": -1216.7182686324518,
+        "relative_change_pct": -2.0799554557438182
+      },
+      {
+        "group": "West Midlands",
+        "avg_change_gbp": -938.7683519236215,
+        "relative_change_pct": -1.677829477812773
+      },
+      {
+        "group": "East of England",
+        "avg_change_gbp": -1747.7091764207898,
+        "relative_change_pct": -2.5389533966402755
+      },
+      {
+        "group": "London",
+        "avg_change_gbp": -3835.017439778462,
+        "relative_change_pct": -4.790045785983905
+      },
+      {
+        "group": "South East",
+        "avg_change_gbp": -2521.0903385744537,
+        "relative_change_pct": -3.646540201672752
+      },
+      {
+        "group": "South West",
+        "avg_change_gbp": -1686.3909134689673,
+        "relative_change_pct": -2.7843824261020753
+      },
+      {
+        "group": "Wales",
+        "avg_change_gbp": -707.9694094792363,
+        "relative_change_pct": -1.2494809603731862
+      },
+      {
+        "group": "Scotland",
+        "avg_change_gbp": -892.0186606880129,
+        "relative_change_pct": -1.7065732995117726
+      },
+      {
+        "group": "Northern Ireland",
+        "avg_change_gbp": -952.8712087677148,
+        "relative_change_pct": -1.6516873459453596
+      }
+    ]
+  }
+}

@@ -20,12 +20,17 @@ import {
   formatSignedPct,
 } from "../lib/formatters";
 import {
+  BASELINE_SCHEDULE_RATES,
   getBudget,
+  getDatasetInfo,
+  getEntrants,
   getFirstYear,
   getFiveYearTotal,
   getIncomeChangeGroups,
+  getReformSchedules,
   getSensitivity,
   getReform,
+  getValidation,
   getYearLabels,
 } from "../lib/dataHelpers";
 import ChartLogo from "./ChartLogo";
@@ -167,7 +172,15 @@ export default function ReformTab({ data }) {
   const headlineGroups = getIncomeChangeGroups(data, firstYear);
   const sensitivity = getSensitivity(data);
   const reform = getReform(data);
+  const schedules = getReformSchedules(data);
+  const validation = getValidation(data);
+  const dataset = getDatasetInfo(data);
+  const entrants = getEntrants(data);
+  const entrantShare = entrants.count / validation.cgt_taxpayers;
   const firstYearRow = budget[0];
+  const entrantShareOfChange =
+    firstYearRow.cgt_change_from_entrants_bn / firstYearRow.gov_balance_change_bn;
+  const recorded = (gains) => (gains > 0 ? "" : ` ${dataset.shortLabel} records no such gains, so this line is inert here.`);
   const topQuintile = headlineGroups.quintile[headlineGroups.quintile.length - 1];
   const isRelative = groupMetric === "relative";
   const metricSortKey = groupMetric === "relative" ? "relative_change_pct" : "avg_change_gbp";
@@ -220,7 +233,7 @@ export default function ReformTab({ data }) {
       <section className="section-card">
         <SectionHeading
           title={`Headline results, ${firstYear}`}
-          description="Revenue after the behavioural response; distributional figures cover all households."
+          description={`Revenue after the behavioural response on ${dataset.shortLabel}; distributional figures cover all households.`}
         />
         <div className="grid gap-4 md:grid-cols-3">
           <MetricCard
@@ -280,6 +293,43 @@ export default function ReformTab({ data }) {
                 <td>{formatPct(reform.additional_rate.baseline * 100, 0)}</td>
                 <td className="font-semibold">{formatPct(reform.additional_rate.reform * 100, 0)}</td>
                 <td>Gains in the additional band (income over £125,140) are taxed at the 45% additional income tax rate.</td>
+              </tr>
+              <tr>
+                <td>Residential property CGT rates</td>
+                <td>
+                  {formatPct(BASELINE_SCHEDULE_RATES.residential_property.basic_rate * 100, 0)} /{" "}
+                  {formatPct(BASELINE_SCHEDULE_RATES.residential_property.higher_rate * 100, 0)}
+                </td>
+                <td className="font-semibold">
+                  {formatPct(schedules.residential_property.basic_rate * 100, 0)} /{" "}
+                  {formatPct(schedules.residential_property.higher_rate * 100, 0)} /{" "}
+                  {formatPct(schedules.residential_property.additional_rate * 100, 0)}
+                </td>
+                <td>
+                  Gains on UK residential property, charged on their own schedule, take the same
+                  income tax rates.{recorded(validation.residential_property_gains_bn)}
+                </td>
+              </tr>
+              <tr>
+                <td>Carried interest CGT rate</td>
+                <td>{formatPct(BASELINE_SCHEDULE_RATES.carried_interest.higher_rate * 100, 0)} flat</td>
+                <td className="font-semibold">
+                  {formatPct(schedules.carried_interest.basic_rate * 100, 0)} /{" "}
+                  {formatPct(schedules.carried_interest.higher_rate * 100, 0)} /{" "}
+                  {formatPct(schedules.carried_interest.additional_rate * 100, 0)}
+                </td>
+                <td>
+                  Carried interest takes the income tax rates too.{recorded(validation.carried_interest_gains_bn)}
+                </td>
+              </tr>
+              <tr>
+                <td>Business Asset Disposal Relief lifetime limit</td>
+                <td>£{BASELINE_SCHEDULE_RATES.badr_lifetime_limit.toLocaleString("en-GB")}</td>
+                <td className="font-semibold">£{schedules.badr_lifetime_limit.toLocaleString("en-GB")}</td>
+                <td>
+                  The relief is withdrawn: qualifying gains fall onto the main schedule at the
+                  reformed rates.{recorded(validation.badr_gains_bn)}
+                </td>
               </tr>
               <tr>
                 <td>Annual exempt amount</td>
@@ -347,6 +397,16 @@ export default function ReformTab({ data }) {
           </ResponsiveContainer>
         </div>
         <ChartLogo />
+        {entrantShare > 0.05 ? (
+          <p className="mt-4 text-sm leading-6 text-slate-600">
+            {formatPct(100 * entrantShare, 0)} of this dataset&apos;s {firstYear} CGT taxpayers
+            are entrants by uprating (see the Baseline tab): people whose base-year gains sit at
+            or below the frozen £3,000 exempt amount and cross it once the engine uprates gains.
+            They contribute {formatSignedBn(firstYearRow.cgt_change_from_entrants_bn, 2)} of the{" "}
+            {firstYear} change ({formatPct(100 * entrantShareOfChange, 0)}), so the revenue
+            figures are little affected; the share of people affected is.
+          </p>
+        ) : null}
       </section>
 
       <section className="section-card">

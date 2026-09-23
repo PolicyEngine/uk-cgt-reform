@@ -12,9 +12,25 @@ Streeting — equalises CGT rates with income tax rates from 2026-27:
 
 The annual exempt amount is unchanged at £3,000.
 
-Behavioural response — aligned with Arun Advani (CenTax): PolicyEngine's
-``gov.simulation.capital_gains_responses.elasticity`` is the elasticity of
-taxable gains with respect to the MARGINAL TAX RATE (default 0 = static).
+Schedules (policyengine-uk 2.99.0+): the engine charges residential
+property gains, carried interest and gains qualifying for Business Asset
+Disposal Relief on their own schedules when a dataset reports them, and a
+reform that touches only ``gov.hmrc.cgt.{basic,higher,additional}_rate``
+no longer reaches them. Equalising CGT with income tax means every gain,
+whatever the asset, so the reform sets the residential property and
+carried interest schedules to the same income tax rates and withdraws the
+BADR lifetime limit (relief gains fall to the main schedule), the recipe
+the engine's changelog gives for "tax every gain at income tax rates". On
+a dataset without those columns the extra parameters are inert, so the
+incumbent's results are unchanged by them.
+
+Behavioural response — aligned with Arun Advani (CenTax). policyengine-uk
+now carries two conventions: ``gov.simulation.capital_gains_responses.
+elasticity`` is the elasticity of realisations with respect to the RETENTION
+RATE (1 - t, positive, CenTax's own convention) and ``...mtr_elasticity`` the
+elasticity with respect to the MARGINAL TAX RATE itself (negative); the two
+may not both be set. This pipeline keeps the MTR convention it has always
+reported (default 0 = static) and sets ``mtr_elasticity``.
 Advani, Lonsdale & Summers (CenTax, Oct 2024, *Reforming Capital Gains Tax*)
 use a central medium-term elasticity of 1.0 with respect to the retention
 rate (1 - t), sensitivity range 0.5-2.0, anchored on Agersnap & Zidar (2021)
@@ -32,6 +48,9 @@ elasticity abstracting from short-run forestalling.
 
 from __future__ import annotations
 
+import hashlib
+import json
+
 YEARS = [2026, 2027, 2028, 2029, 2030]  # fiscal years 2026-27 .. 2030-31
 # policyengine.py reform dicts take a single effective date per value and
 # apply it open-endedly (equivalent to the old "2026-01-01.2035-12-31"
@@ -43,6 +62,11 @@ PERIOD = "2026-01-01"
 # (which implies ~-0.5 for a change this size). Matches PolicyEngine's own
 # Autumn Budget 2024 CGT house assumption.
 ELASTICITY = -0.7
+# The engine parameter that carries it: the marginal-tax-rate convention.
+# ``gov.simulation.capital_gains_responses.elasticity`` is the retention-rate
+# convention (positive) and must stay at its default of zero.
+ELASTICITY_PARAMETER = "gov.simulation.capital_gains_responses.mtr_elasticity"
+RETENTION_ELASTICITY_PARAMETER = "gov.simulation.capital_gains_responses.elasticity"
 
 # Reformed CGT rates, equal to the income tax rates for each band.
 BURNHAM_RATES = {
@@ -51,14 +75,38 @@ BURNHAM_RATES = {
     "additional_rate": 0.45,  # from 24%
 }
 
+# Schedules the engine charges separately (policyengine-uk 2.99.0+). Each
+# takes the same income tax rates as the main schedule.
+SCHEDULES = ("residential_property", "carried_interest")
+
+# Business Asset Disposal Relief: the lifetime limit goes to zero, so
+# qualifying gains are charged on the main schedule at the reformed rates.
+BADR_LIFETIME_LIMIT = 0
+
 
 def burnham_reform(elasticity: float = ELASTICITY) -> dict:
     """The Burnham reform as a PolicyEngine parametric reform dict."""
+    reform = {f"gov.hmrc.cgt.{band}": {PERIOD: rate} for band, rate in BURNHAM_RATES.items()}
+    for schedule in SCHEDULES:
+        for band, rate in BURNHAM_RATES.items():
+            reform[f"gov.hmrc.cgt.{schedule}.{band}"] = {PERIOD: rate}
+    reform["gov.hmrc.cgt.badr.lifetime_limit"] = {PERIOD: BADR_LIFETIME_LIMIT}
+    reform[ELASTICITY_PARAMETER] = {PERIOD: elasticity}
+    return reform
+
+
+def reform_fingerprint(reform: dict) -> str:
+    """Short digest of a reform dict, folded into simulation ids so a change
+    in the reform definition cannot reuse cached simulation outputs."""
+    payload = json.dumps(reform, sort_keys=True).encode()
+    return hashlib.sha256(payload).hexdigest()[:12]
+
+
+def reform_schedules() -> dict:
+    """The schedule part of the reform, for the results metadata."""
     return {
-        "gov.hmrc.cgt.basic_rate": {PERIOD: BURNHAM_RATES["basic_rate"]},
-        "gov.hmrc.cgt.higher_rate": {PERIOD: BURNHAM_RATES["higher_rate"]},
-        "gov.hmrc.cgt.additional_rate": {PERIOD: BURNHAM_RATES["additional_rate"]},
-        "gov.simulation.capital_gains_responses.elasticity": {PERIOD: elasticity},
+        **{schedule: dict(BURNHAM_RATES) for schedule in SCHEDULES},
+        "badr_lifetime_limit": BADR_LIFETIME_LIMIT,
     }
 
 
