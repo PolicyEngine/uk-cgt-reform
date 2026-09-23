@@ -40,6 +40,20 @@ app = modal.App(WARM_APP_NAME)
     timeout=3600,
 )
 def warm(dataset_keys: list[str]) -> dict:
+    import os
+
+    # The engine reads HUGGING_FACE_TOKEN; accept HF_TOKEN too, and refuse an
+    # empty or missing value here rather than as a 401 deep inside the download.
+    token = os.environ.get("HUGGING_FACE_TOKEN") or os.environ.get("HF_TOKEN") or ""
+    if not token.strip():
+        raise RuntimeError(
+            f"The Modal secret {HF_SECRET_NAME!r} must define HUGGING_FACE_TOKEN (or HF_TOKEN) "
+            "with a non-empty Hugging Face token that can read the private PolicyEngine data "
+            'repos. Recreate it: modal secret create huggingface HUGGING_FACE_TOKEN="$HF_TOKEN" --force'
+        )
+    os.environ["HUGGING_FACE_TOKEN"] = token
+    os.environ["HF_TOKEN"] = token
+
     from uk_equalising_cgt.explore import engine_context, manifest_payload
     from uk_equalising_cgt.pipeline import simulation_folder
     from uk_equalising_cgt.reform import YEARS

@@ -359,7 +359,7 @@ dependency; `uv pip install modal` into the venv):
 
 ```bash
 unset MODAL_TOKEN_ID MODAL_TOKEN_SECRET                    # a stale token deploys to the wrong workspace
-modal secret create huggingface HUGGING_FACE_TOKEN=<token>  # once; the private data repos
+modal secret create huggingface HUGGING_FACE_TOKEN="$HF_TOKEN"   # once; use whichever variable your shell exports the token in
 modal deploy backend/workers.py
 modal run backend/warm.py                                  # both datasets; about ten minutes
 modal deploy backend/modal_app.py                          # prints the gateway URL
