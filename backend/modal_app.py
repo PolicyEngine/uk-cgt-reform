@@ -55,16 +55,27 @@ def build_web_app():
         return JSONResponse({"detail": detail}, status_code=status, headers=no_store)
 
     def manifest_or_error():
+        """The manifest and the request context built from it, or a 503 that
+        names the fix: a missing manifest, or one written by an older warm
+        step that lacks a field this code keys on, both mean re-run warm."""
         try:
-            return read_manifest(), None
+            manifest = read_manifest()
+            return (manifest, context_from_manifest(manifest)), None
         except FileNotFoundError as exc:
             return None, error(str(exc), 503)
+        except ValueError as exc:
+            return None, error(
+                f"The Volume's manifest is stale ({exc}); re-run `modal run backend/warm.py` "
+                "after deploying this code.",
+                503,
+            )
 
     @web_app.get("/metadata")
     def metadata():
-        manifest, failure = manifest_or_error()
+        loaded, failure = manifest_or_error()
         if failure:
             return failure
+        manifest, _ = loaded
         return JSONResponse({"manifest": manifest, "options": api_options()}, headers=no_store)
 
     @web_app.post("/submit")
@@ -73,10 +84,11 @@ def build_web_app():
             request = validate_request(payload)
         except ExploreValidationError as exc:
             return error(str(exc), 400)
-        manifest, failure = manifest_or_error()
+        loaded, failure = manifest_or_error()
         if failure:
             return failure
-        key = cache_key(request, context_from_manifest(manifest))
+        _, context = loaded
+        key = cache_key(request, context)
         cached = results.get(key)
         if cached is None:
             cached = ResultStore(RESULTS_DIR).get(key)

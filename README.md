@@ -415,9 +415,10 @@ nobody has run took 53 s wall from a cold start and 32 s with warm workers
 schedule returned in 0.5 s from the Dict, and still did after the Dict was
 cleared, from the Volume copy. Modal and local CLI results agree to within
 5e-7 relative (float differences between platforms). Re-run
-`backend/warm.py` after any engine, wrapper or dataset change: `run_year`
+`backend/warm.py` after any engine, wrapper or dataset change (`run_year`
 refuses to score when the Volume's projection fingerprint differs from the
-installed engine's.
+installed engine's) and after deploying code that adds a manifest field (the
+gateway answers 503 naming the re-warm until then).
 
 Qualification after a deploy: `GET /metadata` returns the pinned digests; one
 genuine run matches the local CLI on the same tuple; the same schedule
