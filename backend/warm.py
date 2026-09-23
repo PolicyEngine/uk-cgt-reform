@@ -55,7 +55,7 @@ def warm(dataset_keys: list[str]) -> dict:
     os.environ["HF_TOKEN"] = token
 
     from uk_equalising_cgt.explore import engine_context, manifest_payload
-    from uk_equalising_cgt.pipeline import simulation_folder
+    from uk_equalising_cgt.pipeline import dataset_folder
     from uk_equalising_cgt.reform import YEARS
     from uk_equalising_cgt.simulations import DATASETS, ensure_uk_datasets, run_simulation
 
@@ -63,7 +63,7 @@ def warm(dataset_keys: list[str]) -> dict:
     print(f"engine projection {context['projection_fingerprint']}")
     for key in dataset_keys:
         spec = DATASETS[key]
-        folder = simulation_folder(spec, context["projection_fingerprint"], DATASETS_ROOT)
+        folder = dataset_folder(spec, context["projection_fingerprint"], Path(DATASETS_ROOT))
         print(f"[{key}] per-year datasets in {folder}")
         datasets = ensure_uk_datasets(spec, YEARS, folder)
         for year in YEARS:

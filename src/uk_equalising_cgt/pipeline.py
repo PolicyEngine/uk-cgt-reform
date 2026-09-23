@@ -84,14 +84,6 @@ def dataset_folder(spec: DatasetSpec, fingerprint: str, root: Path = DATASET_FOL
     return root / simulation_stem(spec, fingerprint)
 
 
-def simulation_folder(
-    spec: DatasetSpec, fingerprint: str, dataset_folder_root: Path = DATASET_FOLDER
-) -> Path:
-    """Alias of :func:`dataset_folder` kept while the rate explorer's callers
-    move to it."""
-    return dataset_folder(spec, fingerprint, Path(dataset_folder_root))
-
-
 def shared_base_year(specs: list[DatasetSpec]) -> int:
     years = {spec.base_year for spec in specs}
     if len(years) != 1:

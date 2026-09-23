@@ -548,7 +548,7 @@ def run_locally(
     per-year files under ``data_folder`` (default: the pipeline's
     ``data/policyengine_datasets``), served from and written to ``store``
     (default: ``data/explore_results``)."""
-    from .pipeline import DATA_DIR, DATASET_FOLDER, simulation_folder
+    from .pipeline import DATA_DIR, DATASET_FOLDER, dataset_folder
 
     context = engine_context()
     store = store or ResultStore(DATA_DIR / LOCAL_RESULT_DIR_NAME)
@@ -557,7 +557,7 @@ def run_locally(
         cached = store.get(key)
         if cached is not None:
             return mark_cache_hit(cached)
-    folder = simulation_folder(
+    folder = dataset_folder(
         req.spec,
         context["projection_fingerprint"],
         Path(data_folder) if data_folder else DATASET_FOLDER,

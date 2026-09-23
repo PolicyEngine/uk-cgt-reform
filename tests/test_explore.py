@@ -21,7 +21,6 @@ from uk_equalising_cgt.explore import (
     validate_request,
 )
 from uk_equalising_cgt.impacts import fiscal_year_label
-from uk_equalising_cgt.pipeline import DATASET_FOLDER, simulation_folder
 from uk_equalising_cgt.reform import (
     BURNHAM_RATES,
     ELASTICITY,
@@ -283,18 +282,6 @@ def test_mark_cache_hit_flags_a_copy():
     assert hit["metadata"]["cache"]["key"] == result["metadata"]["cache"]["key"]
     assert result["metadata"]["cache"]["hit"] is False
     assert hit["budget"] == result["budget"]
-
-
-# --- folders shared with the pipeline ----------------------------------------
-
-
-def test_simulation_folder_matches_the_pipeline_stem():
-    folder = simulation_folder(CANDIDATE, "1b0cd0dff144")
-    assert folder == DATASET_FOLDER / f"{CANDIDATE.key}_{CANDIDATE.digest}_1b0cd0dff144"
-    assert folder.name == f"{CANDIDATE.key}_{CANDIDATE.digest}_1b0cd0dff144"
-    assert simulation_folder(INCUMBENT, "x", "/data").as_posix() == (
-        f"/data/{INCUMBENT.key}_{INCUMBENT.digest}_x"
-    )
 
 
 # --- manifest round trip (Modal containers assemble without the engine) ------

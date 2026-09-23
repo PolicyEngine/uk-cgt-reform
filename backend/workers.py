@@ -11,6 +11,8 @@ Deploy order: ``modal deploy backend/workers.py`` → ``modal run
 backend/warm.py`` → ``modal deploy backend/modal_app.py``.
 """
 
+from pathlib import Path
+
 import modal
 from common import (
     DATA_ROOT,
@@ -39,7 +41,7 @@ def run_year(dataset_key: str, year: int, rates: dict, elasticity: float) -> dic
     """One (dataset, year): cached baseline versus an in-memory reform run."""
     from uk_equalising_cgt.explore import engine_context, validate_request
     from uk_equalising_cgt.explore import run_year as score_year
-    from uk_equalising_cgt.pipeline import simulation_folder
+    from uk_equalising_cgt.pipeline import dataset_folder
 
     request = validate_request({"dataset": dataset_key, "rates": rates, "elasticity": elasticity})
     context = engine_context()
@@ -50,7 +52,7 @@ def run_year(dataset_key: str, year: int, rates: dict, elasticity: float) -> dic
             f"{manifest['projection_fingerprint']} but the installed engine applies "
             f"{context['projection_fingerprint']}: re-run `modal run backend/warm.py`."
         )
-    folder = simulation_folder(request.spec, context["projection_fingerprint"], DATASETS_ROOT)
+    folder = dataset_folder(request.spec, context["projection_fingerprint"], Path(DATASETS_ROOT))
     return score_year(request, year, folder, context)
 
 
