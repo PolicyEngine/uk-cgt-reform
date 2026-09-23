@@ -16,10 +16,17 @@ export function proxyHeaders(config) {
 
 export const NO_STORE = { "Cache-Control": "no-store" };
 
-// Pass an upstream JSON response through unchanged (status and body).
+// Pass an upstream response through with its status. A non-JSON body (Modal's
+// own proxy-auth rejection is plain text) is wrapped so clients always get JSON.
 export async function passThrough(upstream) {
   const text = await upstream.text();
-  return new Response(text, {
+  let body = text;
+  try {
+    JSON.parse(text);
+  } catch {
+    body = JSON.stringify({ detail: text.trim().slice(0, 300) || `HTTP ${upstream.status}` });
+  }
+  return new Response(body, {
     status: upstream.status,
     headers: { "Content-Type": "application/json", ...NO_STORE },
   });
