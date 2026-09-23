@@ -1,24 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Legend,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
-import { colors } from "../lib/colors";
-import {
-  formatBn,
-  formatPct,
-  formatSignedBn,
-  formatSignedCurrency,
-  formatSignedPct,
-} from "../lib/formatters";
+import { formatPct, formatSignedBn, formatSignedCurrency, formatSignedPct } from "../lib/formatters";
 import {
   BASELINE_SCHEDULE_RATES,
   getBudget,
@@ -27,102 +9,16 @@ import {
   getFirstYear,
   getFiveYearTotal,
   getIncomeChangeGroups,
+  getIncomeChangeGroupsByYear,
   getReformSchedules,
   getSensitivity,
   getReform,
   getValidation,
-  getYearLabels,
 } from "../lib/dataHelpers";
-import ChartLogo from "./ChartLogo";
+import BudgetChart from "./charts/BudgetChart";
+import GroupImpactChart from "./charts/GroupImpactChart";
+import { MetricCard, TipHeader } from "./controls";
 import SectionHeading from "./SectionHeading";
-
-const AXIS_STYLE = { fontSize: 12, fill: colors.gray[500] };
-
-function Toggle({ options, value, onChange }) {
-  return (
-    <div className="inline-flex overflow-hidden rounded-md border border-slate-300 text-sm">
-      {options.map((option) => (
-        <button
-          key={option.value}
-          type="button"
-          onClick={() => onChange(option.value)}
-          className={
-            option.value === value
-              ? "bg-[color:var(--pe-color-primary-600)] px-3 py-1.5 font-semibold text-white"
-              : "bg-white px-3 py-1.5 text-slate-600 hover:bg-slate-50"
-          }
-        >
-          {option.label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function LabelledSelect({ label, options, value, onChange }) {
-  return (
-    <label className="inline-flex items-center gap-2 text-sm text-slate-600">
-      {label}
-      <select
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className="rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-800"
-      >
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-    </label>
-  );
-}
-
-function YearSelect({ years, value, onChange }) {
-  return (
-    <label className="inline-flex items-center gap-2 text-sm text-slate-600">
-      Year
-      <select
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className="rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-800"
-      >
-        {years.map((year) => (
-          <option key={year} value={year}>
-            {year}
-          </option>
-        ))}
-      </select>
-    </label>
-  );
-}
-
-function MetricCard({ label, value, note }) {
-  return (
-    <div className="metric-card">
-      <p className="text-sm font-semibold leading-snug text-slate-700">
-        {label}
-      </p>
-      <p className="mt-1 text-3xl font-bold">{value}</p>
-      {note && (
-        <p className="mt-2 border-t border-slate-100 pt-2 text-xs leading-5 text-slate-500">
-          {note}
-        </p>
-      )}
-    </div>
-  );
-}
-
-function TipHeader({ label, tip }) {
-  return (
-    <th>
-      {label}{" "}
-      <span className="info-tip" tabIndex={0}>
-        i<span className="info-tip-bubble">{tip}</span>
-      </span>
-    </th>
-  );
-}
 
 // Where each sensitivity scenario's elasticity comes from. Keys match the
 // scenario names emitted by the pipeline's SENSITIVITY_CASES.
@@ -162,13 +58,7 @@ function SourceLink({ name }) {
 export default function ReformTab({ data }) {
   const budget = getBudget(data);
   const firstYear = getFirstYear(data);
-  const years = getYearLabels(data);
   const fiveYearTotal = getFiveYearTotal(data);
-  const [budgetView, setBudgetView] = useState("change");
-  const [groupYear, setGroupYear] = useState(firstYear);
-  const [groupMetric, setGroupMetric] = useState("absolute");
-  const [grouping, setGrouping] = useState("quintile");
-  const groups = getIncomeChangeGroups(data, groupYear);
   const headlineGroups = getIncomeChangeGroups(data, firstYear);
   const sensitivity = getSensitivity(data);
   const reform = getReform(data);
@@ -182,20 +72,6 @@ export default function ReformTab({ data }) {
     firstYearRow.cgt_change_from_entrants_bn / firstYearRow.gov_balance_change_bn;
   const recorded = (gains) => (gains > 0 ? "" : ` ${dataset.shortLabel} records no such gains, so this line is inert here.`);
   const topQuintile = headlineGroups.quintile[headlineGroups.quintile.length - 1];
-  const isRelative = groupMetric === "relative";
-  const metricSortKey = groupMetric === "relative" ? "relative_change_pct" : "avg_change_gbp";
-  // Regions are ordered by impact (largest loss first); the quantile and
-  // household-type groupings keep their natural order.
-  const chartData =
-    grouping === "region"
-      ? [...groups.region].sort((a, b) => a[metricSortKey] - b[metricSortKey])
-      : groups[grouping];
-  const metricKey = isRelative ? "relative_change_pct" : "avg_change_gbp";
-  const metricName = isRelative
-    ? "Relative net income change"
-    : "Average change per household";
-  const formatMetric = (v) =>
-    isRelative ? formatSignedPct(v, 1) : formatSignedCurrency(v);
 
   return (
     <div className="space-y-6">
@@ -347,56 +223,7 @@ export default function ReformTab({ data }) {
           title="Budgetary impact by year"
           description="Baseline and reform CGT revenue, and the net change in the government balance, for each fiscal year. Baseline revenue grows as the dataset is uprated to each year; the reform raises a broadly stable increment on top."
         />
-        <div className="mb-3 flex flex-wrap items-center gap-4">
-          <Toggle
-            options={[
-              { value: "levels", label: "Revenue levels" },
-              { value: "change", label: "Change vs baseline" },
-            ]}
-            value={budgetView}
-            onChange={setBudgetView}
-          />
-        </div>
-        <div className="h-[380px] w-full">
-          <ResponsiveContainer>
-            <BarChart data={budget} margin={{ top: 10, right: 20, bottom: 5, left: 10 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke={colors.border.light} />
-              <XAxis dataKey="year" tick={AXIS_STYLE} />
-              <YAxis
-                tick={AXIS_STYLE}
-                tickFormatter={(v) => formatBn(v)}
-                tickLine={false}
-                axisLine={false}
-              />
-              <Tooltip formatter={(v) => formatBn(v)} />
-              <Legend />
-              {budgetView === "levels" ? (
-                <>
-                  <Bar
-                    dataKey="baseline_cgt_bn"
-                    name="Baseline CGT revenue"
-                    fill={colors.gray[400]}
-                    radius={[6, 6, 0, 0]}
-                  />
-                  <Bar
-                    dataKey="reform_cgt_bn"
-                    name="Reform CGT revenue"
-                    fill={colors.primary[600]}
-                    radius={[6, 6, 0, 0]}
-                  />
-                </>
-              ) : (
-                <Bar
-                  dataKey="gov_balance_change_bn"
-                  name="Government balance change"
-                  fill={colors.primary[600]}
-                  radius={[6, 6, 0, 0]}
-                />
-              )}
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-        <ChartLogo />
+        <BudgetChart budget={budget} />
         {entrantShare > 0.05 ? (
           <p className="mt-4 text-sm leading-6 text-slate-600">
             {formatPct(100 * entrantShare, 0)} of this dataset&apos;s {firstYear} CGT taxpayers
@@ -414,110 +241,7 @@ export default function ReformTab({ data }) {
           title="Who bears the cost of the reform"
           description="Change in household net income, grouped by the household's position in the baseline income distribution. Almost the entire cost falls on the highest-income group, where realised capital gains are concentrated: losses include both the extra tax paid and the gains that taxpayers choose not to realise in response, so they exceed the revenue raised. The switches show the same change grouped by income quintile or quartile, by household type, or by region."
         />
-        <div className="mb-3 flex flex-wrap items-center gap-4">
-          <YearSelect years={years} value={groupYear} onChange={setGroupYear} />
-          <LabelledSelect
-            label="Group by"
-            options={[
-              { value: "quintile", label: "Income quintiles" },
-              { value: "quartile", label: "Income quartiles" },
-              { value: "household_type", label: "Household type" },
-              { value: "region", label: "Region" },
-            ]}
-            value={grouping}
-            onChange={setGrouping}
-          />
-          <LabelledSelect
-            label="Metric"
-            options={[
-              { value: "absolute", label: "Average £ per household" },
-              { value: "relative", label: "Relative (%)" },
-            ]}
-            value={groupMetric}
-            onChange={setGroupMetric}
-          />
-        </div>
-        <div className="h-[420px] w-full">
-          <ResponsiveContainer>
-            <BarChart
-              data={chartData}
-              layout={grouping === "region" ? "vertical" : "horizontal"}
-              margin={{ top: 10, right: 20, bottom: 15, left: grouping === "region" ? 30 : 10 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" stroke={colors.border.light} />
-              {grouping === "region" ? (
-                <>
-                  <XAxis
-                    type="number"
-                    tick={AXIS_STYLE}
-                    tickFormatter={formatMetric}
-                    tickLine={false}
-                    axisLine={false}
-                  />
-                  <YAxis
-                    type="category"
-                    dataKey="group"
-                    width={130}
-                    tick={{ ...AXIS_STYLE, fontSize: 11 }}
-                    tickLine={false}
-                    axisLine={false}
-                  />
-                </>
-              ) : (
-                <>
-                  <XAxis
-                    dataKey="group"
-                    tick={AXIS_STYLE}
-                    label={
-                      grouping === "household_type"
-                        ? undefined
-                        : {
-                            value: "Baseline household income group",
-                            position: "insideBottom",
-                            offset: -8,
-                            fontSize: 12,
-                          }
-                    }
-                  />
-                  <YAxis
-                    tick={AXIS_STYLE}
-                    tickFormatter={formatMetric}
-                    tickLine={false}
-                    axisLine={false}
-                  />
-                </>
-              )}
-              <Tooltip
-                formatter={(v, name, item) => [
-                  `${formatSignedPct(item.payload.relative_change_pct)} (${formatSignedCurrency(item.payload.avg_change_gbp)}/household)`,
-                  "Net income change",
-                ]}
-              />
-              <Bar
-                dataKey={metricKey}
-                name={metricName}
-                fill={colors.primary[600]}
-                radius={grouping === "region" ? [0, 6, 6, 0] : [6, 6, 0, 0]}
-              />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-        <ChartLogo />
-
-        <details className="group mt-4 border-t border-slate-100 pt-4">
-          <summary className="cursor-pointer select-none text-sm font-semibold text-slate-700 marker:text-[color:var(--pe-color-primary-600)]">
-            How the groups are defined
-          </summary>
-          <p className="mt-2 text-sm leading-6 text-slate-600">
-            Income groups are weighted quantiles of baseline household net
-            income. Household types: &ldquo;Pensioner&rdquo; households have no
-            working-age adults; &ldquo;With children&rdquo; households contain
-            at least one child. Regional averages reflect where households
-            holding taxable gains live in the survey data and carry more
-            sampling noise than the income groups; households without an
-            assigned area are excluded.
-          </p>
-        </details>
+        <GroupImpactChart groupsByYear={getIncomeChangeGroupsByYear(data)} initialYear={firstYear} />
       </section>
 
       <details className="section-card group">

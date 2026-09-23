@@ -6,6 +6,7 @@ import BaselineTab from "../src/components/BaselineTab";
 import ComparisonTab from "../src/components/ComparisonTab";
 import MethodologyTab from "../src/components/MethodologyTab";
 import PolicyEngineHeader from "../src/components/PolicyEngineHeader";
+import RateExplorerTab from "../src/components/RateExplorerTab";
 import ReformTab from "../src/components/ReformTab";
 import { getDatasetInfo, getDatasetOptions } from "../src/lib/dataHelpers";
 import comparison from "../public/data/dataset_comparison.json";
@@ -25,6 +26,7 @@ const DATASET_OPTIONS = getDatasetOptions(resultsCandidate).filter((o) => o.valu
 
 const TAB_OPTIONS = [
   { id: "reform", label: "Reform impacts" },
+  { id: "explorer", label: "Rate explorer" },
   { id: "baseline", label: "Baseline" },
   { id: "datasets", label: "Dataset comparison" },
   { id: "methodology", label: "Methodology" },
@@ -78,8 +80,8 @@ function DatasetSwitch({ options, value, onChange, info }) {
         ))}
       </div>
       <span className="text-slate-500">
-        {info.label}. The Reform impacts, Baseline and Methodology tabs read from this dataset;
-        Dataset comparison shows both side by side.
+        {info.label}. The Reform impacts, Rate explorer, Baseline and Methodology tabs read from
+        this dataset; Dataset comparison shows both side by side.
       </span>
     </div>
   );
@@ -102,9 +104,12 @@ function Dashboard() {
   }, [searchParams]);
 
   function replaceUrl(tab, key) {
-    const params = new URLSearchParams();
+    // Keep any other parameters (the Rate explorer's schedule) in place.
+    const params = new URLSearchParams(searchParams.toString());
     if (tab !== "reform") params.set("tab", tab);
+    else params.delete("tab");
     if (key !== DEFAULT_DATASET) params.set("dataset", key);
+    else params.delete("dataset");
     const query = params.toString();
     router.replace(query ? `/?${query}` : "/", { scroll: false });
   }
@@ -161,6 +166,8 @@ function Dashboard() {
             reform, so the next government may well consider it.{" "}
             <TabLink onSelect={() => handleTabChange("reform")}>Reform impacts</TabLink>{" "}
             shows revenue and distributional effects,{" "}
+            <TabLink onSelect={() => handleTabChange("explorer")}>Rate explorer</TabLink>{" "}
+            scores a schedule of CGT rates you choose,{" "}
             <TabLink onSelect={() => handleTabChange("baseline")}>
               Baseline
             </TabLink>{" "}
@@ -194,6 +201,7 @@ function Dashboard() {
         )}
 
         {activeTab === "reform" && <ReformTab data={data} />}
+        {activeTab === "explorer" && <RateExplorerTab data={data} datasetKey={datasetKey} />}
         {activeTab === "baseline" && <BaselineTab data={data} />}
         {activeTab === "datasets" && <ComparisonTab comparison={comparison} />}
         {activeTab === "methodology" && <MethodologyTab data={data} />}

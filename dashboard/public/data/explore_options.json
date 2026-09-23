@@ -1,0 +1,109 @@
+{
+  "rate_bands": [
+    "basic_rate",
+    "higher_rate",
+    "additional_rate"
+  ],
+  "rate_bounds": [
+    0.0,
+    0.75
+  ],
+  "rate_decimals": 4,
+  "elasticity_options": [
+    {
+      "id": "static",
+      "label": "Static (no behavioural response)",
+      "e_mtr": 0.0
+    },
+    {
+      "id": "centax_lower",
+      "label": "CenTax lower (retention elasticity 0.5)",
+      "e_mtr": -0.35
+    },
+    {
+      "id": "centax_central",
+      "label": "CenTax central (retention elasticity 1.0)",
+      "e_mtr": -0.7
+    }
+  ],
+  "default_elasticity": -0.7,
+  "elasticity_parameter": "gov.simulation.capital_gains_responses.mtr_elasticity",
+  "presets": [
+    {
+      "id": "current_law",
+      "label": "Current law (18% / 24% / 24%)",
+      "rates": {
+        "basic_rate": 0.18,
+        "higher_rate": 0.24,
+        "additional_rate": 0.24
+      }
+    },
+    {
+      "id": "income_tax",
+      "label": "Equalise with income tax (20% / 40% / 45%)",
+      "rates": {
+        "basic_rate": 0.2,
+        "higher_rate": 0.4,
+        "additional_rate": 0.45
+      }
+    },
+    {
+      "id": "flat_30",
+      "label": "30% above the basic rate band (18% / 30% / 30%)",
+      "rates": {
+        "basic_rate": 0.18,
+        "higher_rate": 0.3,
+        "additional_rate": 0.3
+      }
+    },
+    {
+      "id": "flat_35",
+      "label": "35% above the basic rate band (18% / 35% / 35%)",
+      "rates": {
+        "basic_rate": 0.18,
+        "higher_rate": 0.35,
+        "additional_rate": 0.35
+      }
+    }
+  ],
+  "scope": "main_and_residential",
+  "years": [
+    2026,
+    2027,
+    2028,
+    2029,
+    2030
+  ],
+  "reform_period_start": "2026-01-01",
+  "datasets": [
+    {
+      "key": "enhanced_frs_2024_25",
+      "label": "Enhanced FRS 2024-25 (policyengine-uk-data 1.57.3)",
+      "short_label": "Enhanced FRS 2024-25",
+      "role": "incumbent",
+      "uri": "hf://policyengine/policyengine-uk-data/enhanced_frs_2024_25.h5@1.57.3",
+      "sha256": "ef34c1ae28219367981fbc3c1144f58ea1f8a77554165fe02ff395b04c5ffea5",
+      "base_year": 2024,
+      "producer": "policyengine-uk-data 1.57.3, Hugging Face model repo policyengine/policyengine-uk-data at tag 1.57.3 (commit 25af520a, 2026-09-04)",
+      "observation": "FRS 2024-25 households; capital gains imputed onto survey households and household weights calibrated to HMRC CGT aggregates and size-of-gain bands",
+      "notes": "Carries capital_gains only: no asset-type breakdown, so the engine charges every gain on the main CGT schedule.",
+      "digest": "ef34c1ae2821",
+      "revision": "1.57.3"
+    },
+    {
+      "key": "microcosm_uk_2024_v20",
+      "label": "Microcosm UK 2024, spine assessment v20 (staged candidate)",
+      "short_label": "Microcosm UK v20",
+      "role": "candidate",
+      "uri": "hf://policyengine/populace-uk-private/staged/uk-spine-assessment-v20-calibration/microcosm_uk_2024.h5@25e40b2469e9cab63bc5562cd7f38d0b7faee11a",
+      "sha256": "8883e59256792525afcff2fe17af7f659ba3982cd0ac7a95a4005bac5ee7b389",
+      "base_year": 2024,
+      "producer": "microcosm build uk-frs-calibration-attempt-20260918T174754Z-3f928f19, staged 2026-09-18 as run uk-spine-assessment-v20-calibration in the Hugging Face dataset repo policyengine/populace-uk-private (commit 25e40b24); a staging candidate whose terminal gates passed, not a certified release",
+      "observation": "FRS 2024-25 spine; capital gains amounts redrawn from HMRC Table 3 (size of gain by taxable income, 2024-25) with asset types from HMRC Tables 7 and 8, and household weights calibrated to HMRC CGT totals, age, region and size bands for 2024-25",
+      "notes": "Carries capital_gains and capital_gains_residential_property (the residential schedule); no BADR or carried-interest columns. Gainers beyond HMRC's taxpayer count keep their gains capped at the annual exempt amount, so 10.8 million people sit at exactly GBP 3,000 in the base year.",
+      "digest": "8883e5925679",
+      "revision": "25e40b2469e9cab63bc5562cd7f38d0b7faee11a"
+    }
+  ],
+  "default_dataset_key": "microcosm_uk_2024_v20"
+}

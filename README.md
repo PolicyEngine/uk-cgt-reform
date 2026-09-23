@@ -279,6 +279,107 @@ The projection is fingerprinted into the results metadata
 (`metadata.projection`) and into every simulation id, so a change in the
 engine's uprating cannot reuse cached simulation outputs.
 
+## Rate explorer
+
+The dashboard's **Rate explorer** tab scores any schedule of main CGT rates
+(basic / higher / additional, applied to the main schedule and to the
+residential property schedule) on the selected dataset for 2026-27 to
+2030-31, through the pipeline's own code path: the pinned per-year
+datasets, the cached baseline simulations, the `Policy.simulation_modifier`
+reform with the behavioural response, and `impacts.budget_impact` /
+`impacts.income_change_groups`. Nothing is precomputed or interpolated: an
+explorer run at 20/40/45 reproduces the committed results (checked to a
+relative 1e-6 on the candidate), and 18/24/24 gives zero change.
+
+Scope: carried interest and Business Asset Disposal Relief stay at current
+law. Neither registered dataset records those gains, so the choice is inert
+on results; it only means the explorer's reform dict differs from the
+Burnham dict in inert parameters (`reform.EXPLORER_SCOPE`,
+`reform.cgt_rate_reform`). Widening the scope once a dataset carries them is
+tracked as a repo issue.
+
+### Locally
+
+```bash
+uk-equalising-cgt-explore --basic 0.18 --higher 0.30 --additional 0.30              # candidate
+uk-equalising-cgt-explore --dataset enhanced_frs_2024_25 --basic 0.18 --higher 0.30 --additional 0.30
+uk-equalising-cgt-explore --basic 0.20 --higher 0.40 --additional 0.45 --json       # full result on stdout
+uk-equalising-cgt-explore --options                                                 # bounds, presets, datasets
+```
+
+Rates are fractions; the additional rate may not fall below the higher rate.
+Runs use `data/policyengine_datasets` (run the pipeline once first so the
+per-year files and baselines exist) and never write a simulation output
+file: reform simulations run in memory. Measured on an M5 Pro: about 40 s
+for the five years of one dataset (9–11 s for the first year, which includes
+one-off loading, then 6–8 s per year).
+
+### Result cache (every run)
+
+Every completed run is written to `data/explore_results/<key>.json`
+(gitignored) and, on Modal, to the Volume's `explore_results/` and a
+`modal.Dict` in front of it. The key is
+`<dataset key>__<dataset digest>__<projection fingerprint>__<policyengine-uk version>__<policyengine version>__<reform fingerprint>`,
+and the reform fingerprint digests the rates and the elasticity. A later
+request for the same schedule on the same inputs is served from the store
+(1.4 s locally, at once on Modal without starting a worker); a new engine,
+projection or dataset never hits. Responses carry `metadata.cache`
+(`hit`, `key`, `computed_at`). To force a recomputation delete the file
+(and, on Modal, the Dict entry); `--no-cache` recomputes locally.
+
+### Dashboard wiring
+
+`dashboard/app/api/explore/route.js` (`POST`) and
+`dashboard/app/api/explore/status/route.js` (`GET`) are the tab's only
+endpoints. With `CGT_EXPLORER_URL` set they forward to the Modal gateway with
+the proxy-auth headers from `CGT_EXPLORER_MODAL_KEY` /
+`CGT_EXPLORER_MODAL_SECRET` (server-only variables). Without it, off Vercel,
+the `POST` route runs the CLI above through the repo's `.venv` (set `PYTHON`
+to use another interpreter). On Vercel without a backend the tab reports that
+the backend is not configured. The controls read
+`dashboard/public/data/explore_options.json`, written by
+`uk-equalising-cgt-explore --options`; regenerate it when the presets,
+bounds or elasticity options change.
+
+### Modal backend
+
+`backend/` holds three Modal apps sharing one image
+(`backend/requirements.txt` pins the runtime; the pipeline package is added
+from `src/`), one Volume (`uk-equalising-cgt-data`, laid out like `data/`)
+and one Dict (`uk-equalising-cgt-results`):
+
+| File | App | Role |
+|---|---|---|
+| `backend/workers.py` | `uk-equalising-cgt-workers` | `run_year` scores one (dataset, year) per container (4 CPU, 16 GiB, scales to zero); `run_reform` fans the five years out in parallel, assembles the result and writes both cache layers |
+| `backend/warm.py` | `uk-equalising-cgt-warm` | one-off `modal run`: sha256-verified download, per-year datasets, baseline outputs, `manifest.json` (versions, projection fingerprint, exempt amounts, ceilings, baseline rates) |
+| `backend/modal_app.py` | `uk-equalising-cgt` | gateway: `GET /metadata`; `POST /submit` (a cached schedule is returned at once, otherwise a job is spawned); `GET /status/{job}`; proxy authentication required |
+
+Deploy, from the PolicyEngine Modal workspace (`modal` is not a project
+dependency; `uv pip install modal` into the venv):
+
+```bash
+unset MODAL_TOKEN_ID MODAL_TOKEN_SECRET                    # a stale token deploys to the wrong workspace
+modal secret create huggingface HUGGING_FACE_TOKEN=<token>  # once; the private data repos
+modal deploy backend/workers.py
+modal run backend/warm.py                                  # both datasets; about ten minutes
+modal deploy backend/modal_app.py                          # prints the gateway URL
+```
+
+Create a proxy token for the gateway (workspace settings, or
+`modal workspace proxy-tokens` on Modal 1.5.5 or later) and set
+`CGT_EXPLORER_URL`, `CGT_EXPLORER_MODAL_KEY` and `CGT_EXPLORER_MODAL_SECRET`
+as server-only Vercel variables. Expected request latency: about 20–40 s
+warm (the five years run in parallel containers) plus 10–20 s when the
+workers have scaled to zero; a cached schedule returns at once. Re-run
+`backend/warm.py` after any engine, wrapper or dataset change: `run_year`
+refuses to score when the Volume's projection fingerprint differs from the
+installed engine's.
+
+Qualification after a deploy: `GET /metadata` returns the pinned digests; one
+genuine run matches the local CLI on the same tuple; the same schedule
+submitted again comes back from `/submit` as `status: "done"` without a job
+id, and still does after the Dict entry is deleted (the Volume copy).
+
 ## Run
 
 ```bash
@@ -307,6 +408,6 @@ reuse policyengine.py's output cache). Copy the four results files from
 them at build time.
 
 ```bash
-pytest        # pure-logic tests only, no simulation
+pytest        # pure-logic tests only, no simulation (pipeline and rate explorer)
 ruff check .
 ```

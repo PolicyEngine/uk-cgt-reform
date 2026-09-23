@@ -8,10 +8,15 @@ from uk_equalising_cgt.reform import (
     BURNHAM_RATES,
     ELASTICITY,
     ELASTICITY_PARAMETER,
+    EXPLORER_SCHEDULES,
+    EXPLORER_SCOPE,
     PERIOD,
+    RATE_BANDS,
     RETENTION_ELASTICITY_PARAMETER,
     SCHEDULES,
     burnham_reform,
+    cgt_rate_reform,
+    rate_reform_schedules,
     reform_fingerprint,
     reform_schedules,
     retention_to_mtr_elasticity,
@@ -85,3 +90,38 @@ def test_retention_to_mtr_rejects_invalid_rates():
         retention_to_mtr_elasticity(1.0, 1.0)
     with pytest.raises(ValueError):
         retention_to_mtr_elasticity(1.0, -0.1)
+
+
+def test_burnham_fingerprints_are_pinned_to_the_cached_simulation_ids():
+    # data/policyengine_datasets/<dataset>/*_burnham_e07_d33c3951fbea_<year>.h5
+    # and the e=0 / e=-0.35 sensitivity outputs carry these digests; a change
+    # here would silently orphan every cached output.
+    assert reform_fingerprint(burnham_reform()) == "d33c3951fbea"
+    assert reform_fingerprint(burnham_reform(0.0)) == "45576cc53935"
+    assert reform_fingerprint(burnham_reform(-0.35)) == "885c3d31e932"
+
+
+def test_burnham_reform_is_the_generic_builder_with_every_schedule():
+    assert burnham_reform(-0.35) == cgt_rate_reform(
+        BURNHAM_RATES, -0.35, schedules=SCHEDULES, badr_lifetime_limit=0
+    )
+
+
+def test_explorer_reform_reaches_main_and_residential_only():
+    rates = {"basic_rate": 0.18, "higher_rate": 0.30, "additional_rate": 0.30}
+    reform = cgt_rate_reform(rates)
+    assert RATE_BANDS == ("basic_rate", "higher_rate", "additional_rate")
+    assert EXPLORER_SCHEDULES == ("residential_property",)
+    assert EXPLORER_SCOPE == "main_and_residential"
+    for band, rate in rates.items():
+        assert reform[f"gov.hmrc.cgt.{band}"] == {PERIOD: rate}
+        assert reform[f"gov.hmrc.cgt.residential_property.{band}"] == {PERIOD: rate}
+    assert not any("carried_interest" in key or "badr" in key for key in reform)
+    assert reform[ELASTICITY_PARAMETER] == {PERIOD: ELASTICITY}
+    assert RETENTION_ELASTICITY_PARAMETER not in reform
+    assert rate_reform_schedules(rates) == {"residential_property": rates}
+
+
+def test_cgt_rate_reform_requires_every_band():
+    with pytest.raises(ValueError, match="missing"):
+        cgt_rate_reform({"basic_rate": 0.18, "higher_rate": 0.3})

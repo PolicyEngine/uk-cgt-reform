@@ -45,6 +45,7 @@ dev = [
 
 [project.scripts]
 uk-equalising-cgt-build = "uk_equalising_cgt.cli:main"
+uk-equalising-cgt-explore = "uk_equalising_cgt.explore_cli:main"
 
 [project.urls]
 Homepage = "https://github.com/PolicyEngine/uk-equalising-cgt"

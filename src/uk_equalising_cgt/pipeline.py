@@ -78,8 +78,18 @@ def simulation_stem(spec: DatasetSpec, fingerprint: str) -> str:
 def dataset_folder(spec: DatasetSpec, fingerprint: str, root: Path = DATASET_FOLDER) -> Path:
     """Where ``pe.uk.ensure_datasets`` materialises and reuses one dataset's
     per-year files. The wrapper reuses any ``<stem>_year_<year>.h5`` it finds
-    in the folder it is given, so the folder carries the same key."""
+    in the folder it is given, so the folder carries the same key. The rate
+    explorer (locally and on Modal) resolves the same folder, so both share
+    the baselines."""
     return root / simulation_stem(spec, fingerprint)
+
+
+def simulation_folder(
+    spec: DatasetSpec, fingerprint: str, dataset_folder_root: Path = DATASET_FOLDER
+) -> Path:
+    """Alias of :func:`dataset_folder` kept while the rate explorer's callers
+    move to it."""
+    return dataset_folder(spec, fingerprint, Path(dataset_folder_root))
 
 
 def shared_base_year(specs: list[DatasetSpec]) -> int:

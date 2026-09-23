@@ -253,10 +253,16 @@ def make_policy(reform: dict, name: str):
     return Policy(name=name, simulation_modifier=modifier)
 
 
-def run_simulation(dataset, policy=None, sim_id: str | None = None):
-    """Build and run (with output-dataset caching) a policyengine.py
-    Simulation. ``policy`` is a ``Policy`` from :func:`make_policy` (or
-    None for the baseline)."""
+def run_simulation(dataset, policy=None, sim_id: str | None = None, *, persist: bool = True):
+    """Build and run a policyengine.py Simulation. ``policy`` is a ``Policy``
+    from :func:`make_policy` (or None for the baseline).
+
+    With ``persist`` (the pipeline) the wrapper's output-dataset cache is
+    used: a completed ``<id>.h5`` beside the input file is loaded instead of
+    re-run, and a fresh run is written there. With ``persist=False`` (the
+    rate explorer's reform runs) the simulation runs in memory and nothing
+    is written.
+    """
     import policyengine as pe
 
     sim = pe.Simulation(
@@ -266,5 +272,8 @@ def run_simulation(dataset, policy=None, sim_id: str | None = None):
         policy=policy,
         extra_variables=EXTRA_VARIABLES,
     )
-    sim.ensure()
+    if persist:
+        sim.ensure()
+    else:
+        sim.run()
     return sim

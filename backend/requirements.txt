@@ -1,0 +1,15 @@
+# The rate explorer's Modal runtime. Pinned to the environment the committed
+# results were produced with (README, "Results side by side"); upgrade the
+# engine, the wrapper and this file together, then re-run backend/warm.py so
+# the Volume's per-year datasets and baselines match the new projection.
+policyengine==4.22.3
+policyengine-uk==2.99.1
+policyengine-core==3.32.6
+microdf-python==1.3.10
+numpy==2.5.3
+pandas==3.0.6
+h5py==3.16.0
+tables==3.11.1
+pyyaml==6.0.3
+huggingface_hub==1.32.0
+fastapi==0.141.1

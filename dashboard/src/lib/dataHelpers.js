@@ -26,6 +26,11 @@ export function getIncomeChangeGroups(data, year) {
   return data.income_change_groups[year];
 }
 
+// Every year's groupings, keyed by fiscal label (the shape GroupImpactChart takes).
+export function getIncomeChangeGroupsByYear(data) {
+  return data.income_change_groups;
+}
+
 export function getYearLabels(data) {
   return Object.keys(data.income_change_groups);
 }
