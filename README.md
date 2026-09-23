@@ -239,7 +239,7 @@ reading the installed engine's index map and growth parameters:
 | | 2026 | 2027 | 2028 | 2029 | 2030 | source |
 |---|---:|---:|---:|---:|---:|---|
 | gains (GDP per capita) | 1.074 | 1.109 | 1.143 | 1.177 | 1.214 | OBR EFO March 2026, Table A.1 |
-| weights (population) | 1.011 | 1.015 | 1.019 | 1.023 | 1.028 | ONS population projections |
+| weights (population) | 1.011 | 1.015 | 1.019 | 1.023 | 1.028 | OBR long-term economic determinants, March 2025 EFO (ONS 2022-based projections); see below |
 | CPI (sensitivity, not applied) | 1.058 | 1.079 | 1.100 | 1.123 | 1.145 | OBR EFO March 2026, Table A.1 |
 
 Cumulative factors from the 2024 base on policyengine-uk 2.99.1; the
@@ -248,7 +248,19 @@ the parameter references, the OBR March 2026 CGT receipts path (unbridged:
 receipts are not gains and lag them), the entrant ceilings (the base-year
 exempt amount carried forward by the gains factor) and, per dataset, the
 per-year baseline gains, taxpayer counts, liability and entrants.
-`uk-equalising-cgt-build --audit-only` writes the factor table alone.
+`uk-equalising-cgt-build --audit-only` rewrites the factor table and carries
+the measured baselines forward when the projection fingerprint is unchanged.
+
+The engine's population series names only "ONS Population Projections" with
+an unversioned link, so the audit records a reviewed vintage beside it: the
+values were set by policyengine-uk PR #1305 (commit `b9efbaf8`) from the OBR's
+*Long-term economic determinants - March 2025 Economic and fiscal outlook*
+(published 19 June 2025), which adopt the ONS 2022-based national population
+projections; the March 2026 EFO refresh left the series unchanged. The audit
+stores those rates as the values of record and reports whether the installed
+engine still matches them (`reviewed_vintage.engine_matches_values_of_record`),
+so an engine bump that moves the population path shows up in the audit rather
+than silently in the weights.
 
 The projection is fingerprinted into the results metadata
 (`metadata.projection`) and into every simulation id, so a change in the

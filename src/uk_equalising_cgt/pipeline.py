@@ -92,6 +92,22 @@ def entrant_ceilings(audit: dict, base_exempt_amount: float, years: list[int]) -
     }
 
 
+def _carried_baselines(path: Path, fingerprint: str) -> dict | None:
+    """The previous audit's populated baseline block, if the file at
+    ``path`` exists and was written under ``fingerprint``."""
+    if not path.exists():
+        return None
+    try:
+        previous = json.loads(path.read_text())
+    except (OSError, ValueError):
+        return None
+    if previous.get("projection_fingerprint") != fingerprint:
+        return None
+    if not previous.get("baseline_by_year"):
+        return None
+    return {k: previous[k] for k in ("baseline_by_year", "entrant_ceiling_gbp") if k in previous}
+
+
 def write_uprating_audit(
     baselines: dict[str, dict] | None = None,
     path: Path = AUDIT_PATH,
@@ -112,6 +128,17 @@ def write_uprating_audit(
         audit["baseline_by_year"] = {
             key: baseline_by_year(sims, aea, ceilings) for key, sims in baselines.items()
         }
+    elif _carried_baselines(path, audit["projection_fingerprint"]):
+        carried = _carried_baselines(path, audit["projection_fingerprint"])
+        audit["baseline_by_year"] = carried["baseline_by_year"]
+        if "entrant_ceiling_gbp" in carried and not ceilings:
+            audit["entrant_ceiling_gbp"] = carried["entrant_ceiling_gbp"]
+        audit["baseline_by_year_note"] = (
+            "Carried forward from the previous audit at this path, which was "
+            "produced under the same projection fingerprint; an audit-only "
+            "rewrite refreshes the factor table without discarding measured "
+            "baselines."
+        )
     else:
         audit["baseline_by_year"] = {}
         audit["baseline_by_year_note"] = (

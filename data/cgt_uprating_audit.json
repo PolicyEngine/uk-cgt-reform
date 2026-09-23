@@ -83,6 +83,30 @@
           "href": "https://www.ons.gov.uk/"
         }
       ],
+      "reviewed_vintage": {
+        "publisher": "Office for Budget Responsibility",
+        "release": "Long-term economic determinants - March 2025 Economic and fiscal outlook (xlsx, published 19 June 2025), population growth row",
+        "href": "https://obr.uk/download/long-term-economic-determinants-march-2025-economic-and-fiscal-outlook/",
+        "basis": "ONS 2022-based national population projections as adopted by the OBR",
+        "engine_provenance": {
+          "repository": "PolicyEngine/policyengine-uk",
+          "parameter": "gov.economic_assumptions.yoy_growth.ons.population",
+          "pull_request": 1305,
+          "commit": "b9efbaf8",
+          "note": "Engine metadata cites 'ONS Population Projections' with an unversioned href; the March 2026 EFO refresh (PR #1514) left this series unchanged."
+        },
+        "workbook_reread": "not re-read for this audit: the OBR download endpoint refuses non-browser requests; values of record are the engine series as committed in PR #1305",
+        "values_of_record": {
+          "2025": 0.0072,
+          "2026": 0.0038,
+          "2027": 0.0037,
+          "2028": 0.004,
+          "2029": 0.0044,
+          "2030": 0.0045
+        },
+        "engine_matches_values_of_record": true,
+        "drift": {}
+      },
       "by_year": {
         "2026": {
           "yoy_growth": 0.0038,
@@ -188,13 +212,6 @@
       "digest": "8883e5925679",
       "revision": "25e40b2469e9cab63bc5562cd7f38d0b7faee11a"
     }
-  },
-  "entrant_ceiling_gbp": {
-    "2026": 3222.83688,
-    "2027": 3326.934511224,
-    "2028": 3430.0694810719438,
-    "2029": 3531.5995377116737,
-    "2030": 3642.844923149592
   },
   "baseline_by_year": {
     "enhanced_frs_2024_25": {
@@ -451,5 +468,13 @@
         "total_gains_excluding_entrants_bn": 146.8135569593228
       }
     }
-  }
+  },
+  "entrant_ceiling_gbp": {
+    "2026": 3222.83688,
+    "2027": 3326.934511224,
+    "2028": 3430.0694810719438,
+    "2029": 3531.5995377116737,
+    "2030": 3642.844923149592
+  },
+  "baseline_by_year_note": "Carried forward from the previous audit at this path, which was produced under the same projection fingerprint; an audit-only rewrite refreshes the factor table without discarding measured baselines."
 }

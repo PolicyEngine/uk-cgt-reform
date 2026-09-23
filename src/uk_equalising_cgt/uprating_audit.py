@@ -124,6 +124,76 @@ def cumulative_factors(
     return rows
 
 
+# Reviewed source vintages for indices whose engine metadata does not name
+# a versioned release. The engine's ``ons.population`` series carries only
+# "ONS Population Projections" and the ONS homepage; its values were set by
+# policyengine-uk PR #1305 (commit b9efbaf8, 2025-08-08) from the OBR's
+# long-term economic determinants published with the March 2025 EFO, which
+# adopt the ONS 2022-based national population projections. The March 2026
+# EFO refresh (policyengine-uk PR #1514) did not revise the series. The
+# ``values_of_record`` are the rates the audit was reviewed against; the
+# audit reports whether the installed engine still carries them, so an
+# engine bump that moves the population path is visible rather than silent.
+REVIEWED_VINTAGES: dict[str, dict] = {
+    "gov.economic_assumptions.yoy_growth.ons.population": {
+        "publisher": "Office for Budget Responsibility",
+        "release": (
+            "Long-term economic determinants - March 2025 Economic and fiscal "
+            "outlook (xlsx, published 19 June 2025), population growth row"
+        ),
+        "href": (
+            "https://obr.uk/download/long-term-economic-determinants-march-2025-"
+            "economic-and-fiscal-outlook/"
+        ),
+        "basis": "ONS 2022-based national population projections as adopted by the OBR",
+        "engine_provenance": {
+            "repository": "PolicyEngine/policyengine-uk",
+            "parameter": "gov.economic_assumptions.yoy_growth.ons.population",
+            "pull_request": 1305,
+            "commit": "b9efbaf8",
+            "note": (
+                "Engine metadata cites 'ONS Population Projections' with an "
+                "unversioned href; the March 2026 EFO refresh (PR #1514) left "
+                "this series unchanged."
+            ),
+        },
+        "values_of_record": {
+            "2025": 0.0072,
+            "2026": 0.0038,
+            "2027": 0.0037,
+            "2028": 0.0040,
+            "2029": 0.0044,
+            "2030": 0.0045,
+        },
+        "workbook_reread": (
+            "not re-read for this audit: the OBR download endpoint refuses "
+            "non-browser requests; values of record are the engine series as "
+            "committed in PR #1305"
+        ),
+    }
+}
+
+
+def reviewed_vintage(index: str, growth: GrowthLookup) -> dict | None:
+    """The reviewed vintage for ``index`` with a check of the installed
+    engine against the values of record, or None if the engine's own
+    reference is already versioned."""
+    vintage = REVIEWED_VINTAGES.get(index)
+    if vintage is None:
+        return None
+    drift = {}
+    for year, expected in vintage["values_of_record"].items():
+        observed = growth(index, int(year))
+        if abs(observed - expected) > 1e-9:
+            drift[year] = {"engine": observed, "of_record": expected}
+    return {
+        **{k: v for k, v in vintage.items() if k != "values_of_record"},
+        "values_of_record": dict(vintage["values_of_record"]),
+        "engine_matches_values_of_record": not drift,
+        "drift": drift,
+    }
+
+
 def _reference(metadata: dict) -> dict:
     refs = metadata.get("reference") or []
     return {
@@ -154,9 +224,11 @@ def audit_uprating(
         if index is None:
             table[variable] = {"index": None, "note": "held nominal (no uprating index)"}
             continue
+        vintage = reviewed_vintage(index, growth)
         table[variable] = {
             "index": index,
             **_reference(metadata(index)),
+            **({"reviewed_vintage": vintage} if vintage else {}),
             "by_year": {
                 str(y): row
                 for y, row in cumulative_factors(index, growth, base_year, years).items()

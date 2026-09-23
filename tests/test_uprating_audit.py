@@ -97,3 +97,55 @@ def test_fingerprint_moves_with_the_factors_and_the_version():
         )
     )
     assert c != a
+
+
+def test_reviewed_vintage_names_the_release_and_checks_the_engine_against_it():
+    from uk_equalising_cgt.uprating_audit import REVIEWED_VINTAGES, reviewed_vintage
+
+    of_record = REVIEWED_VINTAGES[POP]["values_of_record"]
+
+    def matching(index: str, year: int) -> float:
+        return of_record[str(year)]
+
+    vintage = reviewed_vintage(POP, matching)
+    assert vintage["publisher"] == "Office for Budget Responsibility"
+    assert "March 2025" in vintage["release"]
+    assert vintage["engine_provenance"]["pull_request"] == 1305
+    assert vintage["engine_matches_values_of_record"] is True
+    assert vintage["drift"] == {}
+
+    def drifted(index: str, year: int) -> float:
+        return of_record[str(year)] + (0.001 if year == 2027 else 0.0)
+
+    vintage = reviewed_vintage(POP, drifted)
+    assert vintage["engine_matches_values_of_record"] is False
+    assert set(vintage["drift"]) == {"2027"}
+    assert vintage["drift"]["2027"]["of_record"] == of_record["2027"]
+
+    assert reviewed_vintage(GDP, matching) is None
+
+
+def test_audit_row_carries_the_reviewed_vintage_only_where_one_is_declared():
+    audit = audit_uprating(
+        indices=INDICES,
+        growth=growth,
+        metadata=metadata,
+        base_year=2024,
+        years=[2026, 2030],
+        version="test",
+    )
+    weights = audit["variables"]["household_weight"]
+    assert weights["reviewed_vintage"]["engine_provenance"]["commit"] == "b9efbaf8"
+    # The synthetic 1% path is not the path of record, and the audit says so.
+    assert weights["reviewed_vintage"]["engine_matches_values_of_record"] is False
+    assert "reviewed_vintage" not in audit["variables"]["capital_gains"]
+    # The fingerprint keys on the factors alone, so the vintage block cannot
+    # move simulation ids.
+    stripped = {
+        **audit,
+        "variables": {
+            v: {k: val for k, val in row.items() if k != "reviewed_vintage"}
+            for v, row in audit["variables"].items()
+        },
+    }
+    assert projection_fingerprint(stripped) == projection_fingerprint(audit)
