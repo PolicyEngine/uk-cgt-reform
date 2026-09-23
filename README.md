@@ -378,9 +378,14 @@ the gateway joins a request to a job already computing the same schedule
 and answers 429 when `MAX_IN_FLIGHT` (3) uncached schedules are computing;
 the workers cap at 10 year-containers and 5 orchestrators; the Next route
 applies a best-effort per-address limit (20 submissions per 10 minutes per
-instance). Two guards live outside this repo and must be in place before
-the tab is public: a Vercel Firewall rate-limiting rule on
-`/uk/equalising-cgt/api/explore`, and a spend cap on the Modal workspace.
+instance). Two guards live outside this repo: the Vercel Firewall rule "Rate explorer
+submissions" (project `uk-equalising-cgt`, custom rule: `POST
+/uk/equalising-cgt/api/explore`, at most 10 requests per 60 s per address,
+deny beyond that, which the edge answers with 403; published 2026-09-23 and
+verified with a burst of twelve requests), and a spend cap on the Modal
+workspace (Settings, Usage limits), which must be set before the tab is
+public. Manage the rule with `bunx vercel firewall rules list --scope
+policy-engine` from `dashboard/`.
 
 Deploy, from the PolicyEngine Modal workspace (`modal` is not a project
 dependency; `uv pip install modal` into the venv):
@@ -424,8 +429,8 @@ Qualification after a deploy: `GET /metadata` returns the pinned digests; one
 genuine run matches the local CLI on the same tuple; the same schedule
 submitted again comes back from `/submit` as `status: "done"` without a job
 id, and still does after the Dict entry is deleted (the Volume copy). Before
-the tab goes public: the Vercel Firewall rate-limit rule and the Modal spend
-cap above are set. A failed job reports only its exception type; the detail
+the tab goes public: the Modal spend cap is set (the Firewall rule already
+is). A failed job reports only its exception type; the detail
 is in the Modal logs for `uk-equalising-cgt-workers`.
 
 ## Run

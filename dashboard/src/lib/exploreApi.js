@@ -17,6 +17,14 @@ async function parse(response) {
     body = { detail: text.slice(0, 300) || `HTTP ${response.status}` };
   }
   if (!response.ok) {
+    // The Vercel firewall's rate limit answers 403 (or 429) with a non-JSON body.
+    if ((response.status === 403 || response.status === 429) && !body.detail?.startsWith("{")) {
+      throw new Error(
+        body.detail && body.detail.length < 200 && !body.detail.includes("<")
+          ? body.detail
+          : "Too many submissions from this address; wait a minute and try again.",
+      );
+    }
     throw new Error(body.detail || `HTTP ${response.status}`);
   }
   return body;
