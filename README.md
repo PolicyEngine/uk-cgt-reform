@@ -389,9 +389,15 @@ credentials for proxy authorization"):
 Set `CGT_EXPLORER_URL` (the gateway URL the deploy printed),
 `CGT_EXPLORER_MODAL_KEY` and `CGT_EXPLORER_MODAL_SECRET` as server-only
 Vercel variables, and in `dashboard/.env.local` (gitignored) for a local dev
-server that should use the backend. Expected request latency: about 20–40 s
-warm (the five years run in parallel containers) plus 10–20 s when the
-workers have scaled to zero; a cached schedule returns at once. Re-run
+server that should use the backend.
+
+Measured on 2026-09-23 through the dashboard's route (Modal `main`, workers
+at 4 CPU / 16 GiB, the five years in parallel containers): a schedule
+nobody has run took 53 s wall from a cold start and 32 s with warm workers
+(each year's container spent 21–29 s simulating); a repeat of the same
+schedule returned in 0.5 s from the Dict, and still did after the Dict was
+cleared, from the Volume copy. Modal and local CLI results agree to within
+5e-7 relative (float differences between platforms). Re-run
 `backend/warm.py` after any engine, wrapper or dataset change: `run_year`
 refuses to score when the Volume's projection fingerprint differs from the
 installed engine's.
