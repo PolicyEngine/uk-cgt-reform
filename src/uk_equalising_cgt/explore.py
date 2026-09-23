@@ -53,7 +53,15 @@ from .reform import (
     rate_reform_schedules,
     reform_fingerprint,
 )
-from .simulations import DATASETS, DEFAULT_DATASET_KEY, DatasetSpec, make_policy, run_simulation
+from .simulations import (
+    DATASETS,
+    DEFAULT_DATASET_KEY,
+    DatasetSpec,
+    import_wrapper,
+    make_policy,
+    run_simulation,
+    wrapper_certification,
+)
 
 #: Each rate must lie in this closed interval (a fraction, not a percentage).
 RATE_BOUNDS = (0.0, 0.75)
@@ -243,6 +251,7 @@ def engine_context() -> dict:
         "baseline_rates": baseline_rates(),
         "policyengine_version": importlib.metadata.version("policyengine"),
         "policyengine_uk_version": importlib.metadata.version("policyengine-uk"),
+        "wrapper_certification": wrapper_certification(),
     }
 
 
@@ -254,6 +263,7 @@ MANIFEST_FIELDS = (
     "policyengine_version",
     "policyengine_uk_version",
     "baseline_rates",
+    "wrapper_certification",
 )
 
 
@@ -349,6 +359,7 @@ def dataset_metadata(spec: DatasetSpec) -> dict:
 def per_year_dataset(spec: DatasetSpec, year: int, folder: Path):
     """Load the per-year dataset file the pipeline (or ``backend/warm.py``)
     materialised for ``spec`` in ``folder``."""
+    import_wrapper()
     from policyengine.tax_benefit_models.uk.datasets import PolicyEngineUKDataset
 
     path = Path(folder) / f"{spec.stem}_year_{year}.h5"
@@ -422,6 +433,7 @@ def assemble_response(
             "generated": generated,
             "policyengine_version": context["policyengine_version"],
             "policyengine_uk_version": context["policyengine_uk_version"],
+            "wrapper_certification": dict(context["wrapper_certification"]),
             **dataset_metadata(req.spec),
             "reform_period_start": PERIOD,
             "elasticity": req.elasticity,

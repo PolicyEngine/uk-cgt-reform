@@ -175,8 +175,19 @@ policyengine.py 5.0.3 onwards certifies the UK bundle against one pinned
 policyengine-uk (2.90.2 in 6.0.0) and refuses to import with any other
 version installed. The asset-type CGT schedules need policyengine-uk 2.99.0
 or later, so the pipeline pins the wrapper to the 4.x series (4.22.3 is the
-last release), which warns on the mismatch but runs against the installed
-engine. `pyproject.toml` carries the pins.
+last release). `pyproject.toml` carries the pins.
+
+4.22.3 is only lenient when it cannot see the data-release manifest. With
+`HUGGING_FACE_TOKEN` set it fetches the live manifest from Hugging Face on
+first import, finds the bundled populace-uk-2023 data certified for
+policyengine-uk 2.89.2 rather than 2.99.x, and raises. Without the token the
+manifest is unavailable and the wrapper falls back to its bundled
+certification (basis `unverified_data_release_manifest_unavailable`) and
+runs against the installed engine. Every committed result was produced that
+way, so `simulations.import_wrapper` performs the first import with the
+variable removed and restores it straight after (downloads read it at call
+time); the basis is recorded in the explorer's `metadata.wrapper_certification`
+and in the Modal Volume's `manifest.json`.
 
 ### Behavioural response (aligned with Arun Advani / CenTax)
 

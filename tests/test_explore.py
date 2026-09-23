@@ -44,6 +44,12 @@ def context(**overrides):
         "exempt_amounts": {y: 3_000.0 for y in (2024, *YEARS)},
         "entrant_ceilings": {y: 3_222.0 for y in YEARS},
         "baseline_rates": {"basic_rate": 0.18, "higher_rate": 0.24, "additional_rate": 0.24},
+        "wrapper_certification": {
+            "compatibility_basis": "unverified_data_release_manifest_unavailable",
+            "certified_for_model_version": "2.99.1",
+            "data_build_id": "populace-uk-2023-dd68c73-4aa4b14-20260619T023711Z",
+            "built_with_model_version": "2.89.2",
+        },
     }
     return {**base, **overrides}
 
@@ -232,6 +238,9 @@ def test_assemble_response_has_the_pipeline_shapes():
     assert md["reform_dict"] == req.reform()
     assert md["reform_fingerprint"] == req.fingerprint
     assert md["baseline_rates"] == ctx["baseline_rates"]
+    assert md["wrapper_certification"]["compatibility_basis"] == (
+        "unverified_data_release_manifest_unavailable"
+    )
     assert md["elasticity"] == -0.7
     assert md["years"] == list(YEARS)
     assert list(md["exempt_amount_gbp"]) == labels

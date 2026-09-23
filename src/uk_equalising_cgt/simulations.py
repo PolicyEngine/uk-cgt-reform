@@ -54,8 +54,53 @@ results.
 from __future__ import annotations
 
 import hashlib
+import importlib
+import os
+import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
+
+#: The variable policyengine.py reads to fetch the data-release manifest.
+WRAPPER_TOKEN_VARIABLE = "HUGGING_FACE_TOKEN"
+
+
+def import_wrapper(_import=None):
+    """Import ``policyengine`` (the wrapper) the way this pipeline needs it.
+
+    On first import policyengine.py 4.22.3 fetches the UK data-release
+    manifest from Hugging Face when ``HUGGING_FACE_TOKEN`` is set. That
+    manifest certifies the bundled populace-uk-2023 data for policyengine-uk
+    2.89.2, not the 2.99.x this pipeline runs on (see the module docstring),
+    and the import raises. Without the token the manifest is unavailable and
+    the wrapper falls back to its bundled certification with basis
+    ``unverified_data_release_manifest_unavailable`` and runs against the
+    installed engine, which is how every committed result was produced. So
+    the first import happens with the variable removed from the environment,
+    and it is restored immediately after: downloads read it at call time.
+    :func:`wrapper_certification` exposes the basis for results metadata.
+    """
+    if "policyengine" in sys.modules:
+        return sys.modules["policyengine"]
+    do_import = _import or (lambda: importlib.import_module("policyengine"))
+    token = os.environ.pop(WRAPPER_TOKEN_VARIABLE, None)
+    try:
+        return do_import()
+    finally:
+        if token is not None:
+            os.environ[WRAPPER_TOKEN_VARIABLE] = token
+
+
+def wrapper_certification() -> dict:
+    """How the wrapper certified the installed engine against its bundled
+    data release (``compatibility_basis`` is the field to read)."""
+    pe = import_wrapper()
+    certification = pe.uk.model.data_certification
+    return {
+        "compatibility_basis": certification.compatibility_basis,
+        "certified_for_model_version": certification.certified_for_model_version,
+        "data_build_id": certification.data_build_id,
+        "built_with_model_version": certification.built_with_model_version,
+    }
 
 
 @dataclass(frozen=True)
@@ -199,6 +244,7 @@ def sha256_file(path: Path) -> str:
 def materialise_source(spec: DatasetSpec) -> Path:
     """Download (or reuse from the Hugging Face cache) the pinned source file
     and verify its digest against the registry."""
+    import_wrapper()
     from policyengine.provenance.dataset_sources import materialize_dataset_source
 
     path = Path(materialize_dataset_source(spec.uri))
@@ -220,7 +266,7 @@ def ensure_uk_datasets(
     ``data_folder`` must be specific to the dataset digest and the engine's
     projection: the wrapper reuses any per-year file it finds there.
     """
-    import policyengine as pe
+    pe = import_wrapper()
 
     materialise_source(spec)
     datasets = pe.uk.ensure_datasets(
@@ -236,6 +282,7 @@ def make_policy(reform: dict, name: str):
     policyengine.py ``Policy`` whose ``simulation_modifier`` registers the
     baseline branch (required for the CGT elasticity — see module
     docstring) before applying the parameter updates."""
+    import_wrapper()
     from policyengine.core.policy import Policy
     from policyengine_core.periods import period
 
@@ -263,7 +310,7 @@ def run_simulation(dataset, policy=None, sim_id: str | None = None, *, persist: 
     rate explorer's reform runs) the simulation runs in memory and nothing
     is written.
     """
-    import policyengine as pe
+    pe = import_wrapper()
 
     sim = pe.Simulation(
         **({"id": sim_id} if sim_id else {}),
