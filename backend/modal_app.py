@@ -103,6 +103,11 @@ def build_web_app():
             )
         # Bound the work a stream of misses can start: join a job already
         # computing this schedule, and refuse when the in-flight cap is hit.
+        # This is check-then-spawn under @modal.concurrent, so two requests
+        # for one key that arrive within the same few milliseconds can both
+        # spawn and the cap can overshoot by that window; run_reform's
+        # max_containers=5 bounds the overshoot, and the second job finds the
+        # first's result in the cache if it finishes later.
         now = time.time()
         in_flight = {}
         for job_key, entry in list(jobs.items()):

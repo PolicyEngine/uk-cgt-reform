@@ -401,6 +401,13 @@ modal run backend/warm.py                                  # both datasets; abou
 modal deploy backend/modal_app.py                          # prints the gateway URL
 ```
 
+After any change under `src/`, deploy `backend/workers.py` and
+`backend/modal_app.py` again from the same checkout, one after the other:
+each keys the cache on the copy of the source it carries, and a gateway on a
+different fingerprint from the workers never finds what they store, so
+every request would spawn. Re-run `backend/warm.py` too when the projection
+fingerprint or a manifest field changes (`run_year` and the gateway say so).
+
 Create a proxy token for the gateway and, because the PolicyEngine workspace
 scopes proxy tokens to environments, allow it into the environment the apps
 were deployed to (a scoped token with no environment answers 401 "invalid
