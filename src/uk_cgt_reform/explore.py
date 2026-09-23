@@ -9,7 +9,7 @@ figures: its scope (``reform.EXPLORER_SCOPE``) differs from the Burnham
 reform only in parameters that are inert on both registered datasets.
 
 Two runners share every function here. ``run_locally`` backs the
-``uk-equalising-cgt-explore`` command, which the dashboard's Next route also
+``uk-cgt-reform-explore`` command, which the dashboard's Next route also
 shells out to when no backend is configured; the Modal workers in
 ``backend/`` call ``run_year`` for the five years in parallel and
 ``assemble_response`` once. Neither writes a simulation output file: reform
@@ -421,7 +421,7 @@ def per_year_dataset(spec: DatasetSpec, year: int, folder: Path):
     path = Path(folder) / f"{spec.stem}_year_{year}.h5"
     if not path.exists():
         raise FileNotFoundError(
-            f"Per-year dataset {path} is missing; run uk-equalising-cgt-build (locally) or "
+            f"Per-year dataset {path} is missing; run uk-cgt-reform-build (locally) or "
             "backend/warm.py (Modal) first."
         )
     return PolicyEngineUKDataset(
@@ -446,7 +446,7 @@ def run_year(req: ExploreRequest, year: int, folder: Path, context: dict | None 
     if not (folder / f"{baseline_id}.h5").exists():
         raise FileNotFoundError(
             f"Baseline output {folder / (baseline_id + '.h5')} is missing; run "
-            "uk-equalising-cgt-build (locally) or backend/warm.py (Modal) first."
+            "uk-cgt-reform-build (locally) or backend/warm.py (Modal) first."
         )
     started = time.perf_counter()
     dataset = per_year_dataset(req.spec, year, folder)

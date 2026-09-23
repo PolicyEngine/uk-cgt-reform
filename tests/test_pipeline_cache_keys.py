@@ -5,8 +5,8 @@ reusing the per-year files an earlier run materialised."""
 
 from dataclasses import replace
 
-from uk_equalising_cgt.pipeline import DATASET_FOLDER, dataset_folder, simulation_stem
-from uk_equalising_cgt.simulations import CANDIDATE, INCUMBENT
+from uk_cgt_reform.pipeline import DATASET_FOLDER, dataset_folder, simulation_stem
+from uk_cgt_reform.simulations import CANDIDATE, INCUMBENT
 
 FINGERPRINT = "1b0cd0dff144"
 

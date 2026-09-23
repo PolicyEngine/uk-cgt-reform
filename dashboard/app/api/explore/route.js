@@ -64,7 +64,7 @@ function cliArgs(body) {
   }
   const args = [
     "-m",
-    "uk_equalising_cgt.explore_cli",
+    "uk_cgt_reform.explore_cli",
     "--json",
     "--quiet",
     "--basic",

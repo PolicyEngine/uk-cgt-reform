@@ -4,7 +4,7 @@ PolicyEngine needed)."""
 import numpy as np
 import pytest
 
-from uk_equalising_cgt.reform import (
+from uk_cgt_reform.reform import (
     BURNHAM_RATES,
     ELASTICITY,
     ELASTICITY_PARAMETER,

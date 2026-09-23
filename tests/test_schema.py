@@ -1,16 +1,16 @@
 """Schema tests: the results-JSON shape agreed with the dashboard, checked
 against a fake results dict (no simulation)."""
 
-from uk_equalising_cgt.comparison import (
+from uk_cgt_reform.comparison import (
     EXTERNAL_ESTIMATES,
     SENSITIVITY_CASES,
     VALIDATION_METRICS,
     comparison_rows,
     dataset_comparison,
 )
-from uk_equalising_cgt.impacts import fiscal_year_label
-from uk_equalising_cgt.reform import YEARS, reform_schedules
-from uk_equalising_cgt.simulations import DATASETS, DEFAULT_DATASET_KEY, INCUMBENT
+from uk_cgt_reform.impacts import fiscal_year_label
+from uk_cgt_reform.reform import YEARS, reform_schedules
+from uk_cgt_reform.simulations import DATASETS, DEFAULT_DATASET_KEY, INCUMBENT
 
 YEAR_LABELS = [fiscal_year_label(y) for y in range(2026, 2031)]
 

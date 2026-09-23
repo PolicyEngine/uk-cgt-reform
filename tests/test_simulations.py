@@ -4,7 +4,7 @@ HUGGING_FACE_TOKEN in the environment (see simulations.import_wrapper)."""
 import sys
 import types
 
-from uk_equalising_cgt.simulations import WRAPPER_TOKEN_VARIABLE, import_wrapper
+from uk_cgt_reform.simulations import WRAPPER_TOKEN_VARIABLE, import_wrapper
 
 
 def test_import_wrapper_hides_the_token_during_import_and_restores_it(monkeypatch):

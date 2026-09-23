@@ -1,10 +1,10 @@
 /** @type {import('next').NextConfig} */
-const BASE_PATH = "/uk/equalising-cgt";
+const BASE_PATH = "/uk/cgt-reform";
 
 const nextConfig = {
   reactStrictMode: true,
   transpilePackages: ["@policyengine/design-system"],
-  // Mounted as a Next.js multizone under policyengine.org/uk/equalising-cgt,
+  // Mounted as a Next.js multizone under policyengine.org/uk/cgt-reform,
   // so pages and /_next assets must resolve under that path prefix.
   basePath: BASE_PATH,
   // Exposed so raw fetch() and plain <img> tags — which Next.js does not

@@ -3,7 +3,7 @@
 import numpy as np
 from microdf import MicroSeries
 
-from uk_equalising_cgt.impacts import QUANTILE_LABELS, REGION_NAMES, entrant_mask
+from uk_cgt_reform.impacts import QUANTILE_LABELS, REGION_NAMES, entrant_mask
 
 # policyengine_uk's Region enum names, which every UK dataset's ``region``
 # household variable reports.
