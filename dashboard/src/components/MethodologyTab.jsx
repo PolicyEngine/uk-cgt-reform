@@ -171,6 +171,37 @@ export default function MethodologyTab({ data }) {
           analysis under the static case and the lower end of CenTax&apos;s range.
         </p>
       </section>
+
+      <section className="section-card scroll-mt-24" id="explorer">
+        <SectionHeading title="Rate explorer" />
+        <ul className="mt-2 list-disc space-y-2 pl-5 text-sm leading-6 text-slate-600">
+          <li>
+            <strong>Same pipeline, run live.</strong> The Rate explorer tab scores a schedule of
+            main CGT rates you choose on the selected dataset for every modelled year. It runs the
+            pipeline&apos;s own code (the same pinned per-year datasets, cached baseline
+            simulations, behavioural response and impact calculations) on a Modal backend, or
+            locally through the{" "}
+            <span className="font-mono text-xs">uk-equalising-cgt-explore</span> command. Nothing
+            is precomputed or interpolated: an explorer run at 20% / 40% / 45% reproduces the
+            Reform impacts tab.
+          </li>
+          <li>
+            <strong>Scope.</strong> The chosen rates reach the main schedule and the residential
+            property schedule, which the law aligned with the main rates from April 2025. Carried
+            interest and Business Asset Disposal Relief stay at current law: neither registered
+            dataset records such gains, so their treatment is inert here. The equalisation reform
+            on the Reform impacts tab also sets those schedules; the difference is invisible on
+            these datasets.
+          </li>
+          <li>
+            <strong>Cache.</strong> Every completed run is stored under a key made of the dataset
+            digest, the projection fingerprint, the engine and wrapper versions and the reform
+            fingerprint (the rates and the elasticity). Anyone who later asks for the same schedule
+            is served the stored result at once, and a change to the data or the engine can never
+            reuse a stale one.
+          </li>
+        </ul>
+      </section>
     </div>
   );
 }

@@ -1,0 +1,110 @@
+{
+  "rate_bands": [
+    "basic_rate",
+    "higher_rate",
+    "additional_rate"
+  ],
+  "rate_bounds": [
+    0.0,
+    0.75
+  ],
+  "rate_decimals": 4,
+  "rate_step": 0.01,
+  "elasticity_options": [
+    {
+      "id": "static",
+      "label": "Static (no behavioural response)",
+      "e_mtr": 0.0
+    },
+    {
+      "id": "centax_lower",
+      "label": "CenTax lower (retention elasticity 0.5)",
+      "e_mtr": -0.35
+    },
+    {
+      "id": "centax_central",
+      "label": "CenTax central (retention elasticity 1.0)",
+      "e_mtr": -0.7
+    }
+  ],
+  "default_elasticity": -0.7,
+  "elasticity_parameter": "gov.simulation.capital_gains_responses.mtr_elasticity",
+  "presets": [
+    {
+      "id": "current_law",
+      "label": "Current law (18% / 24% / 24%)",
+      "rates": {
+        "basic_rate": 0.18,
+        "higher_rate": 0.24,
+        "additional_rate": 0.24
+      }
+    },
+    {
+      "id": "income_tax",
+      "label": "Equalise with income tax (20% / 40% / 45%)",
+      "rates": {
+        "basic_rate": 0.2,
+        "higher_rate": 0.4,
+        "additional_rate": 0.45
+      }
+    },
+    {
+      "id": "flat_30",
+      "label": "30% above the basic rate band (18% / 30% / 30%)",
+      "rates": {
+        "basic_rate": 0.18,
+        "higher_rate": 0.3,
+        "additional_rate": 0.3
+      }
+    },
+    {
+      "id": "flat_35",
+      "label": "35% above the basic rate band (18% / 35% / 35%)",
+      "rates": {
+        "basic_rate": 0.18,
+        "higher_rate": 0.35,
+        "additional_rate": 0.35
+      }
+    }
+  ],
+  "scope": "main_and_residential",
+  "years": [
+    2026,
+    2027,
+    2028,
+    2029,
+    2030
+  ],
+  "reform_period_start": "2026-01-01",
+  "datasets": [
+    {
+      "key": "enhanced_frs_2024_25",
+      "label": "Enhanced FRS 2024-25 (policyengine-uk-data 1.57.3)",
+      "short_label": "Enhanced FRS 2024-25",
+      "role": "incumbent",
+      "uri": "hf://policyengine/policyengine-uk-data/enhanced_frs_2024_25.h5@1.57.3",
+      "sha256": "ef34c1ae28219367981fbc3c1144f58ea1f8a77554165fe02ff395b04c5ffea5",
+      "base_year": 2024,
+      "producer": "policyengine-uk-data 1.57.3, Hugging Face model repo policyengine/policyengine-uk-data at tag 1.57.3 (commit 25af520a, 2026-09-04)",
+      "observation": "FRS 2024-25 households; capital gains imputed onto survey households and household weights calibrated to HMRC CGT aggregates and size-of-gain bands",
+      "notes": "Carries capital_gains only: no asset-type breakdown, so the engine charges every gain on the main CGT schedule.",
+      "digest": "ef34c1ae2821",
+      "revision": "1.57.3"
+    },
+    {
+      "key": "microcosm_uk_2024_25_979",
+      "label": "Microcosm UK 2024-25, national line on microcosm#979 (staged candidate)",
+      "short_label": "Microcosm UK #979",
+      "role": "candidate",
+      "uri": "hf://policyengine/populace-uk-private/staged/uk-frs-calibration-attempt-20260923T134002Z-c1be1c9f/microcosm_uk_2024_25.h5@f6df65b1e98675ad305bcacf7ede3e0d34b57063",
+      "sha256": "c5f107ab6eaf74d05c1e17ecd65a4f6876666c4554bd004f76102099aa6de821",
+      "base_year": 2024,
+      "producer": "microcosm build uk-frs-calibration-attempt-20260923T134002Z-c1be1c9f (tools/build_uk_rowwise_candidate.py --release-role national on code e01c6846, main 0f00021c plus PolicyEngine/microcosm#979), staged 2026-09-23 in the Hugging Face dataset repo policyengine/populace-uk-private (commit f6df65b1); a staging candidate whose seven calibration-seam gates passed, not a certified release",
+      "observation": "FRS 2024-25 spine; capital gains amounts redrawn from HMRC Table 3 (size of gain by taxable income, 2024-25) with asset types from HMRC Tables 7 and 8, the sub-exempt remainder drawn from the Advani-Summers within-band distribution restricted to (0, exempt amount] and the clone incidence anchored to the redrawn liable mass (microcosm#970); household weights calibrated to HMRC CGT totals, age, region and size bands for 2024-25",
+      "notes": "Carries capital_gains and capital_gains_residential_property (the residential schedule); no BADR or carried-interest columns. Sub-exempt gainers hold gains strictly inside (0, GBP 3,000) rather than at the cap, and the build's projection fence bounds the stock of them that uprating carries over the frozen exempt amount by 2030 (68.5k against HMRC's 73k in the GBP 3,000 to 5,999 band).",
+      "digest": "c5f107ab6eaf",
+      "revision": "f6df65b1e98675ad305bcacf7ede3e0d34b57063"
+    }
+  ],
+  "default_dataset_key": "microcosm_uk_2024_25_979"
+}

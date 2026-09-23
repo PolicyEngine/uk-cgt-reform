@@ -84,15 +84,57 @@ SCHEDULES = ("residential_property", "carried_interest")
 BADR_LIFETIME_LIMIT = 0
 
 
-def burnham_reform(elasticity: float = ELASTICITY) -> dict:
-    """The Burnham reform as a PolicyEngine parametric reform dict."""
-    reform = {f"gov.hmrc.cgt.{band}": {PERIOD: rate} for band, rate in BURNHAM_RATES.items()}
-    for schedule in SCHEDULES:
-        for band, rate in BURNHAM_RATES.items():
-            reform[f"gov.hmrc.cgt.{schedule}.{band}"] = {PERIOD: rate}
-    reform["gov.hmrc.cgt.badr.lifetime_limit"] = {PERIOD: BADR_LIFETIME_LIMIT}
+# The three rate bands every CGT schedule carries, in the engine's order.
+RATE_BANDS = ("basic_rate", "higher_rate", "additional_rate")
+
+# The rate explorer's scope. A chosen schedule reaches the main rates and the
+# residential property schedule, which the law aligned with the main rates
+# from April 2025; carried interest (32% flat) and Business Asset Disposal
+# Relief (lifetime limit and its own rate) stay at current law, because no
+# registered dataset records those gains and any treatment would be inert
+# today. Widening the scope once the data supports it is a repo issue.
+EXPLORER_SCHEDULES = ("residential_property",)
+EXPLORER_SCOPE = "main_and_residential"
+
+
+def cgt_rate_reform(
+    rates: dict,
+    elasticity: float = ELASTICITY,
+    *,
+    schedules: tuple[str, ...] = EXPLORER_SCHEDULES,
+    badr_lifetime_limit: float | None = None,
+) -> dict:
+    """A CGT rate schedule as a PolicyEngine parametric reform dict.
+
+    ``rates`` maps every band in :data:`RATE_BANDS` to its reformed rate. The
+    main schedule and each schedule in ``schedules`` take those rates; the
+    BADR lifetime limit is set only when ``badr_lifetime_limit`` is given.
+    The behavioural elasticity goes to :data:`ELASTICITY_PARAMETER`.
+    """
+    missing = [band for band in RATE_BANDS if band not in rates]
+    if missing:
+        raise ValueError(f"rates must name every band in {RATE_BANDS}; missing {missing}")
+    reform = {f"gov.hmrc.cgt.{band}": {PERIOD: rates[band]} for band in RATE_BANDS}
+    for schedule in schedules:
+        for band in RATE_BANDS:
+            reform[f"gov.hmrc.cgt.{schedule}.{band}"] = {PERIOD: rates[band]}
+    if badr_lifetime_limit is not None:
+        reform["gov.hmrc.cgt.badr.lifetime_limit"] = {PERIOD: badr_lifetime_limit}
     reform[ELASTICITY_PARAMETER] = {PERIOD: elasticity}
     return reform
+
+
+def burnham_reform(elasticity: float = ELASTICITY) -> dict:
+    """The Burnham reform as a PolicyEngine parametric reform dict: every
+    schedule takes the income tax rates and the BADR lifetime limit goes to
+    zero. The dict is the one the cached simulation ids were minted from, so
+    its fingerprint is pinned in the tests."""
+    return cgt_rate_reform(
+        BURNHAM_RATES,
+        elasticity,
+        schedules=SCHEDULES,
+        badr_lifetime_limit=BADR_LIFETIME_LIMIT,
+    )
 
 
 def reform_fingerprint(reform: dict) -> str:
@@ -103,11 +145,17 @@ def reform_fingerprint(reform: dict) -> str:
 
 
 def reform_schedules() -> dict:
-    """The schedule part of the reform, for the results metadata."""
+    """The schedule part of the Burnham reform, for the results metadata."""
     return {
         **{schedule: dict(BURNHAM_RATES) for schedule in SCHEDULES},
         "badr_lifetime_limit": BADR_LIFETIME_LIMIT,
     }
+
+
+def rate_reform_schedules(rates: dict, schedules: tuple[str, ...] = EXPLORER_SCHEDULES) -> dict:
+    """The schedule part of a rate reform built by :func:`cgt_rate_reform`
+    with no BADR change, for the explorer's results metadata."""
+    return {schedule: {band: rates[band] for band in RATE_BANDS} for schedule in schedules}
 
 
 def retention_to_mtr_elasticity(e_retention: float, tax_rate: float) -> float:

@@ -175,8 +175,19 @@ policyengine.py 5.0.3 onwards certifies the UK bundle against one pinned
 policyengine-uk (2.90.2 in 6.0.0) and refuses to import with any other
 version installed. The asset-type CGT schedules need policyengine-uk 2.99.0
 or later, so the pipeline pins the wrapper to the 4.x series (4.22.3 is the
-last release), which warns on the mismatch but runs against the installed
-engine. `pyproject.toml` carries the pins.
+last release). `pyproject.toml` carries the pins.
+
+4.22.3 is only lenient when it cannot see the data-release manifest. With
+`HUGGING_FACE_TOKEN` set it fetches the live manifest from Hugging Face on
+first import, finds the bundled populace-uk-2023 data certified for
+policyengine-uk 2.89.2 rather than 2.99.x, and raises. Without the token the
+manifest is unavailable and the wrapper falls back to its bundled
+certification (basis `unverified_data_release_manifest_unavailable`) and
+runs against the installed engine. Every committed result was produced that
+way, so `simulations.import_wrapper` performs the first import with the
+variable removed and restores it straight after (downloads read it at call
+time); the basis is recorded in the explorer's `metadata.wrapper_certification`
+and in the Modal Volume's `manifest.json`.
 
 ### Behavioural response (aligned with Arun Advani / CenTax)
 
@@ -279,6 +290,159 @@ The projection is fingerprinted into the results metadata
 (`metadata.projection`) and into every simulation id, so a change in the
 engine's uprating cannot reuse cached simulation outputs.
 
+## Rate explorer
+
+The dashboard's **Rate explorer** tab scores any schedule of main CGT rates
+(basic / higher / additional, applied to the main schedule and to the
+residential property schedule) on the selected dataset for 2026-27 to
+2030-31, through the pipeline's own code path: the pinned per-year
+datasets, the cached baseline simulations, the `Policy.simulation_modifier`
+reform with the behavioural response, and `impacts.budget_impact` /
+`impacts.income_change_groups`. Nothing is precomputed or interpolated: an
+explorer run at 20/40/45 reproduces the committed results (worst relative
+difference 0.0 on this Mac, 5e-7 between Modal and this Mac), and 18/24/24 gives zero change.
+
+Scope: carried interest and Business Asset Disposal Relief stay at current
+law. Neither registered dataset records those gains, so the choice is inert
+on results; it only means the explorer's reform dict differs from the
+Burnham dict in inert parameters (`reform.EXPLORER_SCOPE`,
+`reform.cgt_rate_reform`). Widening the scope once a dataset carries them is
+tracked as a repo issue.
+
+### Locally
+
+```bash
+uk-equalising-cgt-explore --basic 0.18 --higher 0.30 --additional 0.30              # candidate
+uk-equalising-cgt-explore --dataset enhanced_frs_2024_25 --basic 0.18 --higher 0.30 --additional 0.30
+uk-equalising-cgt-explore --basic 0.20 --higher 0.40 --additional 0.45 --json       # full result on stdout
+uk-equalising-cgt-explore --options                                                 # bounds, presets, datasets
+```
+
+Rates are fractions in whole percentage points (0.30, not 0.305), ordered
+basic ≤ higher ≤ additional: the additional rate exists only so a reform can
+charge more above £125,140 of income and gains.
+Runs use `data/policyengine_datasets` (run the pipeline once first so the
+per-year files and baselines exist) and never write a simulation output
+file: reform simulations run in memory. Measured on an M5 Pro: about 40 s
+for the five years of one dataset (9–11 s for the first year, which includes
+one-off loading, then 6–8 s per year).
+
+### Result cache (every run)
+
+Every completed run is written to `data/explore_results/<key>.json`
+(gitignored) and, on Modal, to the Volume's `explore_results/` and a
+`modal.Dict` in front of it. The key is
+`<dataset key>__<dataset digest>__<projection fingerprint>__<policyengine-uk version>__<policyengine version>__<policyengine-core version>__<code fingerprint>__<reform fingerprint>`;
+the reform fingerprint digests the rates and the elasticity, and the code
+fingerprint digests this package's result-shaping modules (`reform`,
+`impacts`, `explore`, `simulations`, `pipeline`, `uprating_audit`), so a
+code change cannot serve a stale result. Redeploy the workers and the
+gateway together after a code change: each keys on the source it carries. A later
+request for the same schedule on the same inputs is served from the store
+(1.4 s locally, at once on Modal without starting a worker); a new engine,
+projection or dataset never hits. Responses carry `metadata.cache`
+(`hit`, `key`, `computed_at`). To force a recomputation delete the file
+(and, on Modal, the Dict entry); `--no-cache` recomputes locally.
+
+### Dashboard wiring
+
+`dashboard/app/api/explore/route.js` (`POST`) and
+`dashboard/app/api/explore/status/route.js` (`GET`) are the tab's only
+endpoints. With `CGT_EXPLORER_URL` set they forward to the Modal gateway with
+the proxy-auth headers from `CGT_EXPLORER_MODAL_KEY` /
+`CGT_EXPLORER_MODAL_SECRET` (server-only variables). Without it, off Vercel,
+the `POST` route runs the CLI above through the repo's `.venv` (set `PYTHON`
+to use another interpreter). On Vercel without a backend the tab reports that
+the backend is not configured. The controls read
+`dashboard/public/data/explore_options.json`, written by
+`uk-equalising-cgt-explore --options`; regenerate it when the presets,
+bounds or elasticity options change.
+
+### Modal backend
+
+`backend/` holds three Modal apps sharing one image
+(`backend/requirements.txt` pins the runtime; the pipeline package is added
+from `src/`), one Volume (`uk-equalising-cgt-data`, laid out like `data/`)
+and one Dict (`uk-equalising-cgt-results`):
+
+| File | App | Role |
+|---|---|---|
+| `backend/workers.py` | `uk-equalising-cgt-workers` | `run_year` scores one (dataset, year) per container (4 CPU, 16 GiB, scales to zero); `run_reform` fans the five years out in parallel, assembles the result and writes both cache layers |
+| `backend/warm.py` | `uk-equalising-cgt-warm` | one-off `modal run`: sha256-verified download, per-year datasets, baseline outputs, `manifest.json` (versions, projection fingerprint, exempt amounts, ceilings, baseline rates) |
+| `backend/modal_app.py` | `uk-equalising-cgt` | gateway: `GET /metadata`; `POST /submit` (a cached schedule is returned at once, otherwise a job is spawned); `GET /status/{job}`; proxy authentication required |
+
+Abuse guards, because every visitor can start workers through the
+dashboard's route: custom rates are whole percentage points ordered basic ≤
+higher ≤ additional (about 76,000 schedules per dataset and elasticity);
+the gateway joins a request to a job already computing the same schedule,
+answers 429 when `MAX_IN_FLIGHT` (3) uncached schedules are computing, and
+starts at most `DAILY_COMPUTE_BUDGET` (250) new schedules per UTC day (a
+count in the `uk-equalising-cgt-usage` Dict, about $25 of compute; cached
+schedules are always served);
+the workers cap at 10 year-containers and 5 orchestrators; the Next route
+applies a best-effort per-address limit (20 submissions per 10 minutes per
+instance). Two guards live outside this repo: the Vercel Firewall rule "Rate explorer
+submissions" (project `uk-equalising-cgt`, custom rule: `POST
+/uk/equalising-cgt/api/explore`, at most 10 requests per 60 s per address,
+deny beyond that, which the edge answers with 403; published 2026-09-23 and
+verified with a burst of twelve requests), and a spend cap on the Modal
+workspace (Settings, Usage limits), which only a workspace admin can set;
+the daily budget above is the cap that needs no such access. Manage the rule with `bunx vercel firewall rules list --scope
+policy-engine` from `dashboard/`.
+
+Deploy, from the PolicyEngine Modal workspace (`modal` is not a project
+dependency; `uv pip install modal` into the venv):
+
+```bash
+unset MODAL_TOKEN_ID MODAL_TOKEN_SECRET                    # a stale token deploys to the wrong workspace
+modal secret create huggingface HUGGING_FACE_TOKEN="$HF_TOKEN"   # once; use whichever variable your shell exports the token in
+modal deploy backend/workers.py
+modal run backend/warm.py                                  # both datasets; about ten minutes
+modal deploy backend/modal_app.py                          # prints the gateway URL
+```
+
+After any change under `src/`, deploy `backend/workers.py` and
+`backend/modal_app.py` again from the same checkout, one after the other:
+each keys the cache on the copy of the source it carries, and a gateway on a
+different fingerprint from the workers never finds what they store, so
+every request would spawn. Re-run `backend/warm.py` too when the projection
+fingerprint or a manifest field changes (`run_year` and the gateway say so).
+
+Create a proxy token for the gateway and, because the PolicyEngine workspace
+scopes proxy tokens to environments, allow it into the environment the apps
+were deployed to (a scoped token with no environment answers 401 "invalid
+credentials for proxy authorization"):
+
+```bash
+.venv/bin/modal workspace proxy-tokens create          # prints wk-… and ws-… once
+.venv/bin/modal workspace proxy-tokens allow wk-… main
+```
+
+Set `CGT_EXPLORER_URL` (the gateway URL the deploy printed),
+`CGT_EXPLORER_MODAL_KEY` and `CGT_EXPLORER_MODAL_SECRET` as server-only
+Vercel variables, and in `dashboard/.env.local` (gitignored) for a local dev
+server that should use the backend.
+
+Measured on 2026-09-23 through the dashboard's route (Modal `main`, workers
+at 4 CPU / 16 GiB, the five years in parallel containers): a schedule
+nobody has run took 53 s wall from a cold start and 32 s with warm workers
+(each year's container spent 21–29 s simulating); a repeat of the same
+schedule returned in 0.5 s from the Dict, and still did after the Dict was
+cleared, from the Volume copy. Modal and local CLI results agree to within
+5e-7 relative (float differences between platforms). Re-run
+`backend/warm.py` after any engine, wrapper or dataset change (`run_year`
+refuses to score when the Volume's projection fingerprint differs from the
+installed engine's) and after deploying code that adds a manifest field (the
+gateway answers 503 naming the re-warm until then).
+
+Qualification after a deploy: `GET /metadata` returns the pinned digests; one
+genuine run matches the local CLI on the same tuple; the same schedule
+submitted again comes back from `/submit` as `status: "done"` without a job
+id, and still does after the Dict entry is deleted (the Volume copy). Before
+the tab goes public: a workspace admin has set the Modal spend cap (the
+Firewall rule and the daily budget are already in place). A failed job reports only its exception type; the detail
+is in the Modal logs for `uk-equalising-cgt-workers`.
+
 ## Run
 
 ```bash
@@ -307,6 +471,6 @@ reuse policyengine.py's output cache). Copy the four results files from
 them at build time.
 
 ```bash
-pytest        # pure-logic tests only, no simulation
+pytest        # pure-logic tests only, no simulation (pipeline and rate explorer)
 ruff check .
 ```

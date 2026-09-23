@@ -54,8 +54,69 @@ results.
 from __future__ import annotations
 
 import hashlib
+import importlib
+import os
+import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
+
+#: The variable policyengine.py reads to fetch the data-release manifest.
+WRAPPER_TOKEN_VARIABLE = "HUGGING_FACE_TOKEN"
+
+
+def import_wrapper(_import=None):
+    """Import ``policyengine`` (the wrapper) the way this pipeline needs it.
+
+    On first import policyengine.py 4.22.3 fetches the UK data-release
+    manifest from Hugging Face when ``HUGGING_FACE_TOKEN`` is set. That
+    manifest certifies the bundled populace-uk-2023 data for policyengine-uk
+    2.89.2, not the 2.99.x this pipeline runs on (see the module docstring),
+    and the import raises. Without the token the manifest is unavailable and
+    the wrapper falls back to its bundled certification with basis
+    ``unverified_data_release_manifest_unavailable`` and runs against the
+    installed engine, which is how every committed result was produced. So
+    the first import happens with the variable removed from the environment,
+    and it is restored immediately after: downloads read it at call time.
+    :func:`wrapper_certification` exposes the basis for results metadata.
+
+    Observed 2026-09-23 (policyengine 4.22.3, policyengine-uk 2.99.1) with
+    ``HUGGING_FACE_TOKEN`` set to a token that can read
+    ``policyengine/populace-uk-private``, locally and in a Modal container::
+
+        policyengine/tax_benefit_models/uk/model.py:333   uk_latest = PolicyEngineUKLatest()
+        policyengine/tax_benefit_models/common/model_version.py:114
+            certify_data_release_compatibility(...)
+        policyengine/provenance/manifest.py:505
+        ValueError: Data release manifest is not certified for the runtime
+        model version 2.99.1 in country 'uk'.
+
+    ``get_data_release_manifest`` reads the variable inside the function, so
+    popping it around the import affects only that fetch. A token without
+    access to the private data repo gets a 401 on the manifest, which is
+    the lenient path, so the failure does not reproduce with such a token.
+    """
+    if "policyengine" in sys.modules:
+        return sys.modules["policyengine"]
+    do_import = _import or (lambda: importlib.import_module("policyengine"))
+    token = os.environ.pop(WRAPPER_TOKEN_VARIABLE, None)
+    try:
+        return do_import()
+    finally:
+        if token is not None:
+            os.environ[WRAPPER_TOKEN_VARIABLE] = token
+
+
+def wrapper_certification() -> dict:
+    """How the wrapper certified the installed engine against its bundled
+    data release (``compatibility_basis`` is the field to read)."""
+    pe = import_wrapper()
+    certification = pe.uk.model.data_certification
+    return {
+        "compatibility_basis": certification.compatibility_basis,
+        "certified_for_model_version": certification.certified_for_model_version,
+        "data_build_id": certification.data_build_id,
+        "built_with_model_version": certification.built_with_model_version,
+    }
 
 
 @dataclass(frozen=True)
@@ -199,6 +260,7 @@ def sha256_file(path: Path) -> str:
 def materialise_source(spec: DatasetSpec) -> Path:
     """Download (or reuse from the Hugging Face cache) the pinned source file
     and verify its digest against the registry."""
+    import_wrapper()
     from policyengine.provenance.dataset_sources import materialize_dataset_source
 
     path = Path(materialize_dataset_source(spec.uri))
@@ -220,7 +282,7 @@ def ensure_uk_datasets(
     ``data_folder`` must be specific to the dataset digest and the engine's
     projection: the wrapper reuses any per-year file it finds there.
     """
-    import policyengine as pe
+    pe = import_wrapper()
 
     materialise_source(spec)
     datasets = pe.uk.ensure_datasets(
@@ -236,6 +298,7 @@ def make_policy(reform: dict, name: str):
     policyengine.py ``Policy`` whose ``simulation_modifier`` registers the
     baseline branch (required for the CGT elasticity — see module
     docstring) before applying the parameter updates."""
+    import_wrapper()
     from policyengine.core.policy import Policy
     from policyengine_core.periods import period
 
@@ -253,11 +316,17 @@ def make_policy(reform: dict, name: str):
     return Policy(name=name, simulation_modifier=modifier)
 
 
-def run_simulation(dataset, policy=None, sim_id: str | None = None):
-    """Build and run (with output-dataset caching) a policyengine.py
-    Simulation. ``policy`` is a ``Policy`` from :func:`make_policy` (or
-    None for the baseline)."""
-    import policyengine as pe
+def run_simulation(dataset, policy=None, sim_id: str | None = None, *, persist: bool = True):
+    """Build and run a policyengine.py Simulation. ``policy`` is a ``Policy``
+    from :func:`make_policy` (or None for the baseline).
+
+    With ``persist`` (the pipeline) the wrapper's output-dataset cache is
+    used: a completed ``<id>.h5`` beside the input file is loaded instead of
+    re-run, and a fresh run is written there. With ``persist=False`` (the
+    rate explorer's reform runs) the simulation runs in memory and nothing
+    is written.
+    """
+    pe = import_wrapper()
 
     sim = pe.Simulation(
         **({"id": sim_id} if sim_id else {}),
@@ -266,5 +335,8 @@ def run_simulation(dataset, policy=None, sim_id: str | None = None):
         policy=policy,
         extra_variables=EXTRA_VARIABLES,
     )
-    sim.ensure()
+    if persist:
+        sim.ensure()
+    else:
+        sim.run()
     return sim

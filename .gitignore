@@ -8,3 +8,7 @@ dist/
 .venv/
 .DS_Store
 data/policyengine_datasets/
+data/explore_results/
+.vercel
+.env*
+.vercel/
