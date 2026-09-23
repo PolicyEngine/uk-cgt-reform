@@ -9,6 +9,7 @@
     0.75
   ],
   "rate_decimals": 4,
+  "rate_step": 0.01,
   "elasticity_options": [
     {
       "id": "static",

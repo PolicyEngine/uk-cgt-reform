@@ -39,8 +39,19 @@ MANIFEST_PATH = f"{DATA_ROOT}/manifest.json"
 PYTHON_VERSION = "3.13"
 SOURCE_IGNORE = ["**/__pycache__/**", "**/*.pyc"]
 
+JOBS_DICT_NAME = "uk-equalising-cgt-jobs"
+#: Uncached schedules computing at once, across every visitor. Each fans out
+#: five 4-CPU containers, so this bounds the queue, not only concurrency.
+MAX_IN_FLIGHT = 3
+#: A job entry older than this is treated as dead (run_reform times out at 1500 s).
+JOB_TTL_SECONDS = 1800
+
 volume = modal.Volume.from_name(VOLUME_NAME, create_if_missing=True)
 results = modal.Dict.from_name(RESULTS_DICT_NAME, create_if_missing=True)
+# cache key -> {"job_id", "submitted_at"} for schedules being computed, so a
+# second request for the same schedule joins the running job instead of
+# starting another, and the number in flight stays bounded.
+jobs = modal.Dict.from_name(JOBS_DICT_NAME, create_if_missing=True)
 
 # The engine image: the pinned runtime plus the pipeline package.
 engine_image = (

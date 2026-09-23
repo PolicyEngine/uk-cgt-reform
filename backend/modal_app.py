@@ -14,13 +14,18 @@ Deploy: ``modal deploy backend/modal_app.py`` (after the workers and the warm
 run); the URL is ``https://<workspace>--uk-equalising-cgt-fastapi-app.modal.run``.
 """
 
+import time
+
 import modal
 from common import (
     DATA_ROOT,
     GATEWAY_APP_NAME,
+    JOB_TTL_SECONDS,
+    MAX_IN_FLIGHT,
     RESULTS_DIR,
     WORKERS_APP_NAME,
     gateway_image,
+    jobs,
     read_manifest,
     results,
     volume,
@@ -38,6 +43,7 @@ def build_web_app():
         ResultStore,
         api_options,
         cache_key,
+        context_from_manifest,
         mark_cache_hit,
         validate_request,
     )
@@ -70,7 +76,7 @@ def build_web_app():
         manifest, failure = manifest_or_error()
         if failure:
             return failure
-        key = cache_key(request, manifest)
+        key = cache_key(request, context_from_manifest(manifest))
         cached = results.get(key)
         if cached is None:
             cached = ResultStore(RESULTS_DIR).get(key)
@@ -81,8 +87,29 @@ def build_web_app():
                 {"status": "done", "result": mark_cache_hit(cached), "cache_key": key},
                 headers=no_store,
             )
+        # Bound the work a stream of misses can start: join a job already
+        # computing this schedule, and refuse when the in-flight cap is hit.
+        now = time.time()
+        in_flight = {}
+        for job_key, entry in list(jobs.items()):
+            if now - entry.get("submitted_at", 0) < JOB_TTL_SECONDS:
+                in_flight[job_key] = entry
+            else:
+                jobs.pop(job_key, None)
+        if key in in_flight:
+            return JSONResponse(
+                {"status": "queued", "job_id": in_flight[key]["job_id"], "cache_key": key},
+                headers=no_store,
+            )
+        if len(in_flight) >= MAX_IN_FLIGHT:
+            return error(
+                f"The explorer is already computing {len(in_flight)} schedules; "
+                "try again in a minute.",
+                429,
+            )
         run_reform = modal.Function.from_name(WORKERS_APP_NAME, "run_reform")
         call = run_reform.spawn(request.to_payload())
+        jobs[key] = {"job_id": call.object_id, "submitted_at": now}
         return JSONResponse(
             {"status": "queued", "job_id": call.object_id, "cache_key": key}, headers=no_store
         )
@@ -95,9 +122,15 @@ def build_web_app():
         except TimeoutError:
             return JSONResponse({"status": "running"}, headers=no_store)
         except Exception as exc:  # the job raised: report, never cache
-            return JSONResponse(
-                {"status": "failed", "detail": f"{type(exc).__name__}: {exc}"}, headers=no_store
+            name = type(exc).__name__
+            # Validation messages are written for users; anything else may
+            # carry paths or internals, so the detail stays in the logs.
+            detail = (
+                str(exc)
+                if name == "ExploreValidationError"
+                else f"The run failed ({name}); details are in the Modal logs for {WORKERS_APP_NAME}."
             )
+            return JSONResponse({"status": "failed", "detail": detail}, headers=no_store)
         return JSONResponse({"status": "done", "result": result}, headers=no_store)
 
     return web_app

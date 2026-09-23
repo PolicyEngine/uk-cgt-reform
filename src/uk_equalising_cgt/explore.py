@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import datetime
 import functools
+import hashlib
 import importlib.metadata
 import json
 import math
@@ -67,6 +68,11 @@ from .simulations import (
 RATE_BOUNDS = (0.0, 0.75)
 #: Rates are rounded to this many decimals before anything is keyed on them.
 RATE_DECIMALS = 4
+#: Custom rates are whole percentage points: each rate must be a multiple of
+#: this fraction. With the ordering rule (basic <= higher <= additional) this
+#: bounds the number of distinct schedules a visitor can ask the backend to
+#: compute to about 76,000 per dataset and elasticity.
+RATE_STEP = 0.01
 
 #: The behavioural assumptions a request may pick from: the pipeline's
 #: sensitivity cases in the marginal-tax-rate convention, keyed for the API.
@@ -103,9 +109,39 @@ PRESETS = (
 )
 
 #: Context fields a cache key needs. ``engine_context`` provides them from
-#: the installed engine; the Modal manifest records the same values so the
-#: gateway can key a lookup without importing the engine.
-CONTEXT_KEYS = ("projection_fingerprint", "policyengine_uk_version", "policyengine_version")
+#: the installed engine; the Modal manifest records the versions and the
+#: projection so the gateway can key a lookup without importing the engine,
+#: and ``code_fingerprint`` always comes from the code that is running.
+CONTEXT_KEYS = (
+    "projection_fingerprint",
+    "policyengine_uk_version",
+    "policyengine_version",
+    "policyengine_core_version",
+    "code_fingerprint",
+)
+
+#: Source files whose logic shapes a result. Their digest is part of every
+#: cache key, so a change to the impact code cannot serve a stale result.
+CODE_FINGERPRINT_FILES = (
+    "reform.py",
+    "impacts.py",
+    "explore.py",
+    "simulations.py",
+    "pipeline.py",
+    "uprating_audit.py",
+)
+
+
+@functools.lru_cache(maxsize=1)
+def code_fingerprint() -> str:
+    """Short digest of this package's result-shaping source files."""
+    here = Path(__file__).resolve().parent
+    digest = hashlib.sha256()
+    for name in CODE_FINGERPRINT_FILES:
+        digest.update(name.encode())
+        digest.update((here / name).read_bytes())
+    return digest.hexdigest()[:12]
+
 
 #: Directory name of the local result cache under ``data/``.
 LOCAL_RESULT_DIR_NAME = "explore_results"
@@ -153,7 +189,12 @@ def _as_rate(value, band: str) -> float:
     rate = float(value)
     if not math.isfinite(rate) or not lo <= rate <= hi:
         raise ExploreValidationError(f"{band} must be between {lo} and {hi}; got {value}.")
-    return round(rate, RATE_DECIMALS)
+    steps = rate / RATE_STEP
+    if abs(steps - round(steps)) > 1e-6:
+        raise ExploreValidationError(
+            f"{band} must be a whole percentage point (a multiple of {RATE_STEP}); got {value}."
+        )
+    return round(round(steps) * RATE_STEP, RATE_DECIMALS)
 
 
 def _as_elasticity(value) -> float:
@@ -172,9 +213,12 @@ def validate_request(payload) -> ExploreRequest:
     ``payload`` is ``{"dataset": key, "rates": {band: fraction}, "elasticity": e}``;
     ``dataset`` defaults to the dashboard's default dataset and ``elasticity``
     to the central case. Every band must be present, within
-    :data:`RATE_BOUNDS`, and the additional rate may not fall below the
-    higher rate: the engine splits gains above the basic rate band only so
-    that a reform can charge an additional rate on top.
+    :data:`RATE_BOUNDS`, a whole percentage point (:data:`RATE_STEP`), and
+    ordered basic <= higher <= additional: the engine splits gains above the
+    basic rate band only so that a reform can charge an additional rate on
+    top, and a basic rate above the higher rate is not a schedule anyone
+    proposes. The ordering and the step keep the space of computable
+    schedules bounded.
     """
     if not isinstance(payload, dict):
         raise ExploreValidationError("The request body must be a JSON object.")
@@ -198,6 +242,8 @@ def validate_request(payload) -> ExploreRequest:
             "The additional rate must be at least the higher rate; set them equal for a "
             "single rate above the basic rate band, as in current law."
         )
+    if rates["basic_rate"] > rates["higher_rate"] + 1e-9:
+        raise ExploreValidationError("The basic rate may not exceed the higher rate.")
     elasticity = _as_elasticity(payload.get("elasticity", DEFAULT_ELASTICITY))
     return ExploreRequest(dataset_key=dataset_key, rates=rates, elasticity=elasticity)
 
@@ -209,6 +255,7 @@ def api_options() -> dict:
         "rate_bands": list(RATE_BANDS),
         "rate_bounds": list(RATE_BOUNDS),
         "rate_decimals": RATE_DECIMALS,
+        "rate_step": RATE_STEP,
         "elasticity_options": [dict(o) for o in ELASTICITY_OPTIONS],
         "default_elasticity": DEFAULT_ELASTICITY,
         "elasticity_parameter": ELASTICITY_PARAMETER,
@@ -251,6 +298,8 @@ def engine_context() -> dict:
         "baseline_rates": baseline_rates(),
         "policyengine_version": importlib.metadata.version("policyengine"),
         "policyengine_uk_version": importlib.metadata.version("policyengine-uk"),
+        "policyengine_core_version": importlib.metadata.version("policyengine-core"),
+        "code_fingerprint": code_fingerprint(),
         "wrapper_certification": wrapper_certification(),
     }
 
@@ -262,6 +311,7 @@ MANIFEST_FIELDS = (
     "projection_fingerprint",
     "policyengine_version",
     "policyengine_uk_version",
+    "policyengine_core_version",
     "baseline_rates",
     "wrapper_certification",
 )
@@ -280,7 +330,9 @@ def manifest_payload(context: dict) -> dict:
 
 
 def context_from_manifest(manifest: dict) -> dict:
-    """The context :func:`assemble_response` needs, from a manifest."""
+    """The context :func:`assemble_response` and :func:`cache_key` need,
+    from a manifest plus the fingerprint of the code that is running (never
+    the manifest's: a code change must miss the cache without a re-warm)."""
     missing = [field for field in MANIFEST_FIELDS if field not in manifest]
     if missing:
         raise ValueError(f"manifest is missing {missing}")
@@ -288,12 +340,14 @@ def context_from_manifest(manifest: dict) -> dict:
         **{field: manifest[field] for field in MANIFEST_FIELDS},
         "exempt_amounts": {int(y): float(v) for y, v in manifest["exempt_amounts"].items()},
         "entrant_ceilings": {int(y): float(v) for y, v in manifest["entrant_ceilings"].items()},
+        "code_fingerprint": code_fingerprint(),
     }
 
 
 def cache_key(req: ExploreRequest, context: dict) -> str:
     """The result-cache key: dataset key and digest, projection fingerprint,
-    engine and wrapper versions, reform fingerprint. Safe as a file name."""
+    engine, wrapper and core versions, this package's code fingerprint,
+    reform fingerprint. Safe as a file name."""
     missing = [key for key in CONTEXT_KEYS if key not in context]
     if missing:
         raise ValueError(f"context is missing {missing}")
@@ -303,6 +357,8 @@ def cache_key(req: ExploreRequest, context: dict) -> str:
         context["projection_fingerprint"],
         context["policyengine_uk_version"],
         context["policyengine_version"],
+        context["policyengine_core_version"],
+        context["code_fingerprint"],
         req.fingerprint,
     )
     key = "__".join(str(part) for part in parts)
@@ -382,10 +438,19 @@ def run_year(req: ExploreRequest, year: int, folder: Path, context: dict | None 
     the pipeline's shapes, plus the seconds it took."""
     context = context or engine_context()
     folder = Path(folder)
+    sim_stem = folder.name
+    baseline_id = f"{sim_stem}_baseline_{year}"
+    # Baselines are built and persisted once (the pipeline locally,
+    # backend/warm.py on Modal); a request never recomputes one, because a
+    # worker's write would not be committed to the Volume.
+    if not (folder / f"{baseline_id}.h5").exists():
+        raise FileNotFoundError(
+            f"Baseline output {folder / (baseline_id + '.h5')} is missing; run "
+            "uk-equalising-cgt-build (locally) or backend/warm.py (Modal) first."
+        )
     started = time.perf_counter()
     dataset = per_year_dataset(req.spec, year, folder)
-    sim_stem = folder.name
-    baseline = run_simulation(dataset, sim_id=f"{sim_stem}_baseline_{year}")
+    baseline = run_simulation(dataset, sim_id=baseline_id)
     reform = run_simulation(
         dataset,
         policy=make_policy(req.reform(), f"explore_{req.fingerprint}"),

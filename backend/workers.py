@@ -18,6 +18,7 @@ from common import (
     RESULTS_DIR,
     WORKERS_APP_NAME,
     engine_image,
+    jobs,
     read_manifest,
     results,
     volume,
@@ -75,24 +76,29 @@ def run_reform(payload: dict) -> dict:
 
     request = validate_request(payload)
     manifest = read_manifest()
-    key = cache_key(request, manifest)
+    context = context_from_manifest(manifest)
+    key = cache_key(request, context)
     store = ResultStore(RESULTS_DIR)
 
-    cached = results.get(key)
-    if cached is None:
-        cached = store.get(key)
+    try:
+        cached = results.get(key)
+        if cached is None:
+            cached = store.get(key)
+            if cached is not None:
+                results[key] = cached
         if cached is not None:
-            results[key] = cached
-    if cached is not None:
-        return mark_cache_hit(cached)
+            return mark_cache_hit(cached)
 
-    rows = list(
-        run_year.starmap(
-            [(request.dataset_key, year, request.rates, request.elasticity) for year in YEARS]
+        rows = list(
+            run_year.starmap(
+                [(request.dataset_key, year, request.rates, request.elasticity) for year in YEARS]
+            )
         )
-    )
-    result = assemble_response(request, context_from_manifest(manifest), rows)
-    store.put(key, result)
-    volume.commit()
-    results[key] = result
-    return result
+        result = assemble_response(request, context, rows)
+        store.put(key, result)
+        volume.commit()
+        results[key] = result
+        return result
+    finally:
+        # Whatever happened, this schedule is no longer in flight.
+        jobs.pop(key, None)

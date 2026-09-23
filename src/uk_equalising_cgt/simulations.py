@@ -78,6 +78,22 @@ def import_wrapper(_import=None):
     the first import happens with the variable removed from the environment,
     and it is restored immediately after: downloads read it at call time.
     :func:`wrapper_certification` exposes the basis for results metadata.
+
+    Observed 2026-09-23 (policyengine 4.22.3, policyengine-uk 2.99.1) with
+    ``HUGGING_FACE_TOKEN`` set to a token that can read
+    ``policyengine/populace-uk-private``, locally and in a Modal container::
+
+        policyengine/tax_benefit_models/uk/model.py:333   uk_latest = PolicyEngineUKLatest()
+        policyengine/tax_benefit_models/common/model_version.py:114
+            certify_data_release_compatibility(...)
+        policyengine/provenance/manifest.py:505
+        ValueError: Data release manifest is not certified for the runtime
+        model version 2.99.1 in country 'uk'.
+
+    ``get_data_release_manifest`` reads the variable inside the function, so
+    popping it around the import affects only that fetch. A token without
+    access to the private data repo gets a 401 on the manifest, which is
+    the lenient path, so the failure does not reproduce with such a token.
     """
     if "policyengine" in sys.modules:
         return sys.modules["policyengine"]

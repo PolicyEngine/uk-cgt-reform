@@ -299,8 +299,8 @@ residential property schedule) on the selected dataset for 2026-27 to
 datasets, the cached baseline simulations, the `Policy.simulation_modifier`
 reform with the behavioural response, and `impacts.budget_impact` /
 `impacts.income_change_groups`. Nothing is precomputed or interpolated: an
-explorer run at 20/40/45 reproduces the committed results (checked to a
-relative 1e-6 on the candidate), and 18/24/24 gives zero change.
+explorer run at 20/40/45 reproduces the committed results (worst relative
+difference 0.0 on this Mac, 5e-7 between Modal and this Mac), and 18/24/24 gives zero change.
 
 Scope: carried interest and Business Asset Disposal Relief stay at current
 law. Neither registered dataset records those gains, so the choice is inert
@@ -318,7 +318,9 @@ uk-equalising-cgt-explore --basic 0.20 --higher 0.40 --additional 0.45 --json   
 uk-equalising-cgt-explore --options                                                 # bounds, presets, datasets
 ```
 
-Rates are fractions; the additional rate may not fall below the higher rate.
+Rates are fractions in whole percentage points (0.30, not 0.305), ordered
+basic ≤ higher ≤ additional: the additional rate exists only so a reform can
+charge more above £125,140 of income and gains.
 Runs use `data/policyengine_datasets` (run the pipeline once first so the
 per-year files and baselines exist) and never write a simulation output
 file: reform simulations run in memory. Measured on an M5 Pro: about 40 s
@@ -330,8 +332,12 @@ one-off loading, then 6–8 s per year).
 Every completed run is written to `data/explore_results/<key>.json`
 (gitignored) and, on Modal, to the Volume's `explore_results/` and a
 `modal.Dict` in front of it. The key is
-`<dataset key>__<dataset digest>__<projection fingerprint>__<policyengine-uk version>__<policyengine version>__<reform fingerprint>`,
-and the reform fingerprint digests the rates and the elasticity. A later
+`<dataset key>__<dataset digest>__<projection fingerprint>__<policyengine-uk version>__<policyengine version>__<policyengine-core version>__<code fingerprint>__<reform fingerprint>`;
+the reform fingerprint digests the rates and the elasticity, and the code
+fingerprint digests this package's result-shaping modules (`reform`,
+`impacts`, `explore`, `simulations`, `pipeline`, `uprating_audit`), so a
+code change cannot serve a stale result. Redeploy the workers and the
+gateway together after a code change: each keys on the source it carries. A later
 request for the same schedule on the same inputs is served from the store
 (1.4 s locally, at once on Modal without starting a worker); a new engine,
 projection or dataset never hits. Responses carry `metadata.cache`
@@ -364,6 +370,17 @@ and one Dict (`uk-equalising-cgt-results`):
 | `backend/workers.py` | `uk-equalising-cgt-workers` | `run_year` scores one (dataset, year) per container (4 CPU, 16 GiB, scales to zero); `run_reform` fans the five years out in parallel, assembles the result and writes both cache layers |
 | `backend/warm.py` | `uk-equalising-cgt-warm` | one-off `modal run`: sha256-verified download, per-year datasets, baseline outputs, `manifest.json` (versions, projection fingerprint, exempt amounts, ceilings, baseline rates) |
 | `backend/modal_app.py` | `uk-equalising-cgt` | gateway: `GET /metadata`; `POST /submit` (a cached schedule is returned at once, otherwise a job is spawned); `GET /status/{job}`; proxy authentication required |
+
+Abuse guards, because every visitor can start workers through the
+dashboard's route: custom rates are whole percentage points ordered basic ≤
+higher ≤ additional (about 76,000 schedules per dataset and elasticity);
+the gateway joins a request to a job already computing the same schedule
+and answers 429 when `MAX_IN_FLIGHT` (3) uncached schedules are computing;
+the workers cap at 10 year-containers and 5 orchestrators; the Next route
+applies a best-effort per-address limit (20 submissions per 10 minutes per
+instance). Two guards live outside this repo and must be in place before
+the tab is public: a Vercel Firewall rate-limiting rule on
+`/uk/equalising-cgt/api/explore`, and a spend cap on the Modal workspace.
 
 Deploy, from the PolicyEngine Modal workspace (`modal` is not a project
 dependency; `uv pip install modal` into the venv):
@@ -405,7 +422,10 @@ installed engine's.
 Qualification after a deploy: `GET /metadata` returns the pinned digests; one
 genuine run matches the local CLI on the same tuple; the same schedule
 submitted again comes back from `/submit` as `status: "done"` without a job
-id, and still does after the Dict entry is deleted (the Volume copy).
+id, and still does after the Dict entry is deleted (the Volume copy). Before
+the tab goes public: the Vercel Firewall rate-limit rule and the Modal spend
+cap above are set. A failed job reports only its exception type; the detail
+is in the Modal logs for `uk-equalising-cgt-workers`.
 
 ## Run
 

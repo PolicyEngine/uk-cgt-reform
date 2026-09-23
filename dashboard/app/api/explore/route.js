@@ -28,6 +28,27 @@ function json(body, status = 200) {
   return NextResponse.json(body, { status, headers: NO_STORE });
 }
 
+// Best-effort per-address limit, per serverless instance. The durable limit
+// is a Vercel Firewall rate-limiting rule on this path (README); the Modal
+// gateway separately caps how many uncached schedules compute at once.
+const WINDOW_MS = 10 * 60 * 1000;
+const LIMIT_PER_WINDOW = 20;
+const hits = new Map();
+
+function rateLimited(request) {
+  const ip = (request.headers.get("x-forwarded-for") || "").split(",")[0].trim() || "unknown";
+  const now = Date.now();
+  const recent = (hits.get(ip) || []).filter((t) => now - t < WINDOW_MS);
+  if (recent.length >= LIMIT_PER_WINDOW) {
+    hits.set(ip, recent);
+    return true;
+  }
+  recent.push(now);
+  hits.set(ip, recent);
+  if (hits.size > 5000) hits.clear();
+  return false;
+}
+
 // Only clean scalars reach the command line; the CLI validates the rest.
 function cliArgs(body) {
   const rates = body?.rates ?? {};
@@ -75,6 +96,9 @@ export async function POST(request) {
     body = await request.json();
   } catch {
     return json({ detail: "The request body must be JSON." }, 400);
+  }
+  if (rateLimited(request)) {
+    return json({ detail: "Too many schedules from this address; try again in a few minutes." }, 429);
   }
   const config = backendConfig();
   if (config) {

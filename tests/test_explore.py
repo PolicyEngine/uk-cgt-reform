@@ -41,6 +41,8 @@ def context(**overrides):
         "projection_fingerprint": "1b0cd0dff144",
         "policyengine_uk_version": "2.99.1",
         "policyengine_version": "4.22.3",
+        "policyengine_core_version": "3.32.6",
+        "code_fingerprint": "c0dec0dec0de",
         "exempt_amounts": {y: 3_000.0 for y in (2024, *YEARS)},
         "entrant_ceilings": {y: 3_222.0 for y in YEARS},
         "baseline_rates": {"basic_rate": 0.18, "higher_rate": 0.24, "additional_rate": 0.24},
@@ -86,7 +88,7 @@ def test_validate_request_defaults_dataset_and_elasticity():
 
 
 def test_validate_request_rounds_rates():
-    req = validate_request({"rates": {**FLAT_30, "higher_rate": 0.300049}})
+    req = validate_request({"rates": {**FLAT_30, "higher_rate": 0.3000000001}})
     assert req.rates["higher_rate"] == 0.3
 
 
@@ -98,6 +100,11 @@ def test_validate_request_rounds_rates():
         ({"rates": {**FLAT_30, "basic_rate": -0.01}}, "between"),
         ({"rates": {**FLAT_30, "additional_rate": 0.76}}, "between"),
         ({"rates": {**FLAT_30, "additional_rate": 0.29}}, "additional rate must be at least"),
+        (
+            {"rates": {**FLAT_30, "basic_rate": 0.31, "additional_rate": 0.31}},
+            "basic rate may not exceed",
+        ),
+        ({"rates": {**FLAT_30, "higher_rate": 0.305}}, "whole percentage point"),
         ({"rates": {**FLAT_30, "basic_rate": "18"}}, "must be a number"),
         ({"rates": {**FLAT_30, "basic_rate": True}}, "must be a number"),
         ({"rates": FLAT_30, "elasticity": -0.5}, "elasticity must be one of"),
@@ -132,6 +139,7 @@ def test_presets_are_valid_requests():
 def test_api_options_carry_what_a_client_needs():
     options = api_options()
     assert options["scope"] == EXPLORER_SCOPE
+    assert options["rate_step"] == 0.01
     assert options["years"] == list(YEARS)
     assert {d["key"] for d in options["datasets"]} == set(DATASETS)
     assert options["default_dataset_key"] == DEFAULT_DATASET_KEY
@@ -169,12 +177,16 @@ def test_explorer_reform_at_income_tax_rates_matches_burnham_on_the_rates():
 def test_cache_key_tracks_every_input_and_nothing_else():
     req = validate_request({"dataset": CANDIDATE.key, "rates": FLAT_30})
     key = cache_key(req, context())
-    assert key.startswith(f"{CANDIDATE.key}__{CANDIDATE.digest}__1b0cd0dff144__2.99.1__4.22.3__")
+    assert key.startswith(
+        f"{CANDIDATE.key}__{CANDIDATE.digest}__1b0cd0dff144__2.99.1__4.22.3__3.32.6__c0dec0dec0de__"
+    )
     assert key.endswith(req.fingerprint)
     # Changes that must miss.
     assert cache_key(req, context(projection_fingerprint="other")) != key
     assert cache_key(req, context(policyengine_uk_version="2.99.2")) != key
     assert cache_key(req, context(policyengine_version="4.23.0")) != key
+    assert cache_key(req, context(policyengine_core_version="3.33.0")) != key
+    assert cache_key(req, context(code_fingerprint="deadbeef0000")) != key
     other_rates = validate_request(
         {"dataset": CANDIDATE.key, "rates": {**FLAT_30, "higher_rate": 0.29}}
     )
@@ -289,10 +301,17 @@ def test_simulation_folder_matches_the_pipeline_stem():
 
 
 def test_manifest_round_trips_the_context_fields():
-    from uk_equalising_cgt.explore import MANIFEST_FIELDS, context_from_manifest, manifest_payload
+    from uk_equalising_cgt.explore import (
+        MANIFEST_FIELDS,
+        code_fingerprint,
+        context_from_manifest,
+        manifest_payload,
+    )
 
-    ctx = context()
+    # The manifest never carries the code fingerprint; the running code does.
+    ctx = context(code_fingerprint=code_fingerprint())
     manifest = manifest_payload(ctx)
+    assert "code_fingerprint" not in manifest
     json.dumps(manifest)  # JSON-safe: year keys are strings
     assert set(manifest) == {
         *MANIFEST_FIELDS,
@@ -309,10 +328,31 @@ def test_manifest_round_trips_the_context_fields():
     assert restored["entrant_ceilings"] == ctx["entrant_ceilings"]
     # A manifest keys the cache exactly as the live context does.
     req = validate_request({"rates": FLAT_30})
-    assert cache_key(req, manifest) == cache_key(req, ctx)
+    assert restored["code_fingerprint"] == code_fingerprint()
+    assert cache_key(req, restored) == cache_key(req, ctx)
     # And assembles the same response (apart from the generation time).
     a = assemble_response(req, ctx, year_rows(), computed_at="t")
     b = assemble_response(req, restored, year_rows(), computed_at="t")
     assert a == b
     with pytest.raises(ValueError, match="missing"):
         context_from_manifest({"base_year": 2024})
+
+
+# --- code fingerprint and baseline guard --------------------------------------
+
+
+def test_code_fingerprint_is_a_stable_short_hex_digest():
+    from uk_equalising_cgt.explore import CODE_FINGERPRINT_FILES, code_fingerprint
+
+    assert "impacts.py" in CODE_FINGERPRINT_FILES and "explore.py" in CODE_FINGERPRINT_FILES
+    first = code_fingerprint()
+    assert len(first) == 12 and int(first, 16) >= 0
+    assert code_fingerprint() == first
+
+
+def test_run_year_refuses_to_recompute_a_missing_baseline(tmp_path):
+    from uk_equalising_cgt.explore import run_year
+
+    req = validate_request({"dataset": CANDIDATE.key, "rates": FLAT_30})
+    with pytest.raises(FileNotFoundError, match="Baseline output"):
+        run_year(req, 2026, tmp_path, context())

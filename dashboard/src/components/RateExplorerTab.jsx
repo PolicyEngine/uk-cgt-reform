@@ -44,6 +44,7 @@ const BANDS = [
 ];
 const PCT_MIN = options.rate_bounds[0] * 100;
 const PCT_MAX = options.rate_bounds[1] * 100;
+const STEP_PCT = (options.rate_step ?? 0.01) * 100;
 const PRESETS = options.presets;
 const ELASTICITIES = options.elasticity_options;
 const DEFAULT_ELASTICITY = options.default_elasticity;
@@ -66,7 +67,13 @@ function validatePercents(percents) {
     if (value < PCT_MIN || value > PCT_MAX) {
       return { error: `The ${band.label.toLowerCase()} must be between ${PCT_MIN}% and ${PCT_MAX}%.` };
     }
+    if (Math.abs(value / STEP_PCT - Math.round(value / STEP_PCT)) > 1e-6) {
+      return { error: `Rates are whole percentage points; ${value}% for the ${band.label.toLowerCase()} is not.` };
+    }
     numbers[band.key] = value;
+  }
+  if (numbers.basic_rate > numbers.higher_rate) {
+    return { error: "The basic rate may not exceed the higher rate." };
   }
   if (numbers.additional_rate < numbers.higher_rate) {
     return {
@@ -81,7 +88,9 @@ function readUrlState(searchParams) {
   const values = BANDS.map((band) => searchParams.get(band.param));
   if (values.some((value) => value === null || value === "")) return null;
   const percents = Object.fromEntries(BANDS.map((band, i) => [band.key, values[i]]));
-  const e = Number(searchParams.get("e"));
+  // An absent or empty `e` means the default; Number(null) would be 0, the static case.
+  const rawE = searchParams.get("e");
+  const e = rawE === null || rawE.trim() === "" ? NaN : Number(rawE);
   const elasticity = ELASTICITIES.some((option) => Math.abs(option.e_mtr - e) < 1e-9)
     ? e
     : DEFAULT_ELASTICITY;
@@ -98,7 +107,7 @@ function RateInput({ band, value, onChange }) {
           inputMode="decimal"
           min={PCT_MIN}
           max={PCT_MAX}
-          step="1"
+          step={STEP_PCT}
           value={value}
           onChange={(event) => onChange(event.target.value)}
           className="w-28 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-base font-semibold text-slate-800"
