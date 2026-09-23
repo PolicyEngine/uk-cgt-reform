@@ -376,10 +376,20 @@ modal run backend/warm.py                                  # both datasets; abou
 modal deploy backend/modal_app.py                          # prints the gateway URL
 ```
 
-Create a proxy token for the gateway (workspace settings, or
-`modal workspace proxy-tokens` on Modal 1.5.5 or later) and set
-`CGT_EXPLORER_URL`, `CGT_EXPLORER_MODAL_KEY` and `CGT_EXPLORER_MODAL_SECRET`
-as server-only Vercel variables. Expected request latency: about 20–40 s
+Create a proxy token for the gateway and, because the PolicyEngine workspace
+scopes proxy tokens to environments, allow it into the environment the apps
+were deployed to (a scoped token with no environment answers 401 "invalid
+credentials for proxy authorization"):
+
+```bash
+.venv/bin/modal workspace proxy-tokens create          # prints wk-… and ws-… once
+.venv/bin/modal workspace proxy-tokens allow wk-… main
+```
+
+Set `CGT_EXPLORER_URL` (the gateway URL the deploy printed),
+`CGT_EXPLORER_MODAL_KEY` and `CGT_EXPLORER_MODAL_SECRET` as server-only
+Vercel variables, and in `dashboard/.env.local` (gitignored) for a local dev
+server that should use the backend. Expected request latency: about 20–40 s
 warm (the five years run in parallel containers) plus 10–20 s when the
 workers have scaled to zero; a cached schedule returns at once. Re-run
 `backend/warm.py` after any engine, wrapper or dataset change: `run_year`
