@@ -2,7 +2,7 @@
 touches Hugging Face or builds a dataset.
 
     modal run backend/warm.py            # every registered dataset
-    modal run backend/warm.py --dataset microcosm_uk_2024_v20
+    modal run backend/warm.py --dataset microcosm_uk_2024_25_979
 
 For each dataset: verify the pinned source's sha256, materialise the
 per-year files with ``pe.uk.ensure_datasets`` (the wrapper's own code, as
