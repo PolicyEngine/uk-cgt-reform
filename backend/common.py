@@ -51,6 +51,9 @@ engine_image = (
         "/root/uk_equalising_cgt",
         ignore=SOURCE_IGNORE,
     )
+    # Modal ships the entrypoint file on its own; this shared module must be
+    # added explicitly or the container's import of it fails.
+    .add_local_python_source("common")
 )
 
 # The gateway image: no engine. ``uk_equalising_cgt.explore`` imports numpy
@@ -63,6 +66,7 @@ gateway_image = (
         "/root/uk_equalising_cgt",
         ignore=SOURCE_IGNORE,
     )
+    .add_local_python_source("common")
 )
 
 
