@@ -89,17 +89,21 @@ projection (fingerprint `1b0cd0dff144`) and reform on each dataset.
 | Share of gains from gains of £1m or more | 67% | 67% | HMRC Table 2: 61% (2023-24), 65% (2024-25) |
 | Taxpayers with gains over £500k | 17.9k | 35.5k | HMRC Table 2: 19k (2023-24), 33k (2024-25) |
 | Largest single gain | £12.2m | £185m | none: HMRC's top band is £5m and over (2k taxpayers, £23.6bn in 2023-24; 3k, £48.5bn in 2024-25) |
-| Static yield (e = 0) | +£10.7bn | +£24.7bn | Advani & Summers (2020), static, GDP-uprated: £16.7bn |
+| Static yield (e = 0) | +£10.7bn | +£24.7bn | JRF (2026): about £13bn, static, equalisation alone (see [Benchmarks](#benchmarks)) |
+| Uplift from equalising at 2019/20 rules (static) | +122% | +113% | CenTax (2024), Table 3: +139% on 2019/20 data |
 | Yield, CenTax lower (e = −0.35) | +£5.9bn | +£13.8bn | none |
-| **Yield, central (e = −0.7)** | **+£2.2bn** | **+£5.1bn** | CenTax (2024): £14.0bn central, £9.7bn worst case, both with base broadening; HMRC ready reckoner: −£2bn by year 3 for +10pp on the higher rates alone |
+| **Yield, central (e = −0.7)** | **+£2.2bn** | **+£5.1bn** | none for equalisation alone; CenTax's £14.3bn (2025-26) and £11.3bn (2026-27) add an investment allowance and base broadening |
+| Yield, official HMRC/OBR elasticity (retention 3.6) | −£5.7bn | −£13.1bn | none |
 | Five-year total, 2026-27 to 2030-31 | +£11.7bn | +£27.7bn | none |
 | Top income quintile, net income change | −2.8% (−£3,328/household) | −6.0% (−£8,269/household) | none |
 | Lowest income quintile, net income change | −0.04% (−£7) | −0.01% (−£2) | none |
 
 Benchmarks are outturns for the tax year stated (HMRC Capital Gains Tax
 statistics, 2026 release, Tables 1, 2 and 8) or other institutions'
-estimates of a similar reform; only the OBR receipts describe a projected
-year. HMRC's 2026 release revised 2023-24 to 382,000 taxpayers and £66.6bn
+estimates of the same reform (described in [Benchmarks](#benchmarks)); only
+the OBR receipts and JRF describe a projected year. The sensitivity rows are
+changes in CGT revenue; the central row is the change in the government
+balance. HMRC's 2026 release revised 2023-24 to 382,000 taxpayers and £66.6bn
 of gains; the incumbent's calibration targets came from the 2025 release
 (378,000 and £65.9bn). Uprating each dataset's own HMRC vintage to 2026 by
 the engine's 1.074 factor gives £71.5bn on the 2023-24 basis and £128.1bn on
@@ -158,6 +162,56 @@ its regional pattern concentrates the cost in London and the South East,
 where HMRC's Table 5 places the taxpayers, while the incumbent's regional
 averages are noisier (Wales carries its largest average loss).
 
+## Benchmarks
+
+The dashboard's Benchmarks tab and each results file's `benchmarks` block
+set this repo's figures beside published estimates of the same reform or
+the same kind of rate change (issue #7). `comparison.py` holds every
+external figure with its source, locator, scope, year and basis.
+
+- **JRF (2026), static equalisation.** [Rebuilding living standards and
+  economic security](https://www.jrf.org.uk/income-savings-and-debt/rebuilding-living-standards-and-economic-security)
+  puts equalisation at about £13bn in 2026/27 and £17bn in 2029/30 (2026/27
+  prices), applying HMRC's CGT statistics by income band to the OBR's March
+  2026 receipts projection: an implied uplift of about 60% in 2026-27. This
+  repo's static uplift is 81% on the incumbent and 82% on the candidate;
+  applied to the same OBR receipts that is £16.8bn and £17.1bn in 2026-27,
+  and £24.5bn and £25.0bn in 2029-30 (deflated with the OBR's CPI path).
+- **CenTax (2024), rates only at 2019/20 rules.** CenTax's static uplift from
+  equalising alone is +139% on 2019/20 data (Table 3). Applying the same
+  rules to this repo's 2026-27 data (main rates 10/20, residential and
+  carried interest 18/28, an exempt amount of £12,000; `reform.centax_1920_reforms`)
+  and equalising gives +122% on the incumbent and +113% on the candidate.
+  By region (Table 8), the candidate's shares of baseline CGT track
+  CenTax's (London 27.5% against 27.0%, South East 20.1% against 21.6%);
+  the incumbent puts 12% in London and 13% in Wales. CenTax's uplift is
+  lowest in London (+123%) and higher elsewhere (+137% to +163%); on the
+  candidate London's is the highest (+123%) and the other regions range from
+  +71% to +121%.
+- **CenTax's package estimates** (Tables 5 and 6 of the 2024 report, the
+  August 2025 technical note and "Taxes at the top", September 2026) add an
+  investment allowance, the removal of the death uplift and a charge on
+  departure, so they are listed as context, not compared.
+- **HMRC's ready reckoner (June 2025).** Five rows (higher rate +1, +5 and
+  +10 points; lower rate +1 and +5 points) are scored through the rate
+  explorer's code at the central and the official elasticity, comparing
+  HMRC's receipts in 2027-28 and 2028-29 with this repo's liabilities a year
+  earlier. For +10 points on the higher rate HMRC shows −£2,060m and
+  −£3,565m; at the official elasticity the incumbent gives −£2,104m and
+  −£2,182m and the candidate −£4,836m and −£4,918m, while at the central
+  elasticity both gain (+£1,214m and +£2,942m on 2026-27 liabilities).
+  Lower rate +10 points, the BADR rows and the exempt-amount row are not
+  scored (the block records why). HMRC deferred its 2026 edition on 6 July
+  2026 pending a review of key assumptions, so the rows are provisional.
+- **The official elasticity.** HMRC and the OBR use a retention-rate
+  elasticity of 3.6 for the main rates ([OBR, January 2025](https://obr.uk/docs/dlm_uploads/CGT-supplementary-release-Jan-2025.pdf),
+  para 1.9). Applied in that convention, equalisation changes 2026-27 CGT
+  revenue by −£5.7bn on the incumbent and −£13.1bn on the candidate,
+  against +£2.2bn and +£5.1bn at the central case.
+
+Left out by decision: the Office of Tax Simplification's 2020 static figure
+(2018-19 rules) and a validation run of the Autumn Budget 2024 rate rise.
+
 ## Method
 
 ### The policyengine.py pathway
@@ -210,15 +264,23 @@ rate (1 − t)**, range 0.5–2.0. This pipeline reports the marginal-tax-rate
 convention: converting (`e_mtr = e_retention × t / (1 − t)`) gives ≈ −0.67 to
 −0.82 at the reformed 40–45% top rates, and we use **−0.7** as the central
 case (also PolicyEngine's Autumn Budget 2024 value). Sensitivity runs cover
-0.0 / −0.35 / −0.7. Caveat: Advani's elasticity assumes accompanying base
-broadening we do not model, so behavioural loss may be understated for a
-rate-only reform.
+0.0 / −0.35 / −0.7 and the official HMRC/OBR assumption, a retention-rate
+elasticity of 3.6 (OBR, January 2025, para 1.9), keyed as −2.52 (3.6 times
+the central case) but applied in the retention convention it is stated in:
+the engine's MTR form scales realised gains by (t₁/t₀)^e, which at −2.52
+makes every rate rise lose revenue, while the retention form,
+((1 − t₁)/(1 − t₀))^3.6, reproduces the pattern of HMRC's ready reckoner
+(`reform.RETENTION_NATIVE`). Caveat: Advani's elasticity assumes accompanying
+base broadening we do not model, so behavioural loss may be understated for
+a rate-only reform.
 
 policyengine-uk now carries both conventions:
 `gov.simulation.capital_gains_responses.elasticity` is the retention-rate
 elasticity (positive) and, since 2.98.0, `...mtr_elasticity` the
 marginal-tax-rate elasticity (negative); they may not both be set. The
-pipeline sets `mtr_elasticity` and leaves `elasticity` at zero. Setting −0.7
+pipeline sets `mtr_elasticity` and leaves `elasticity` at zero, except for
+the official case, which sets `elasticity` to 3.6 and leaves
+`mtr_elasticity` at zero. Setting −0.7
 on the retention parameter, as this repo did before the engine's change,
 raises realisations instead of lowering them (static +£10.7bn, "−0.7"
 +£16.7bn on the incumbent); the pipeline's assertion that the static and
@@ -248,10 +310,8 @@ longer needed. The pipeline asserts that the static (e=0) and central
   empty `calibration` block (no local reweighting), baseline validation vs
   HMRC/Advani including the entrants and the schedule components, budget
   impact by year with the entrants' contribution, distributional impacts,
-  the elasticity sensitivity, and a comparison with CenTax (£14.0bn central
-  / £9.7bn worst-case), Advani & Summers 2020 static (£16.7bn), the HMRC
-  ready reckoner (−£2bn) and the OBR baseline (£21.8bn in 2025-26, EFO March
-  2026).
+  the elasticity sensitivity, and a `benchmarks` block (see
+  [Benchmarks](#benchmarks)).
 - `data/cgt_equalisation_results.json`: the dashboard's primary file, the
   default dataset's results (the candidate).
 - `data/dataset_comparison.json`: every dataset's validation, budget,
@@ -328,7 +388,7 @@ tracked as a repo issue.
 uk-cgt-reform-explore --basic 0.18 --higher 0.30 --additional 0.30              # candidate
 uk-cgt-reform-explore --dataset enhanced_frs_2024_25 --basic 0.18 --higher 0.30 --additional 0.30
 uk-cgt-reform-explore --basic 0.20 --higher 0.40 --additional 0.45 --json       # full result on stdout
-uk-cgt-reform-explore --options                                                 # bounds, presets, datasets
+uk-cgt-reform-explore --options                                                 # bounds, presets, ready-reckoner rows, datasets
 ```
 
 Rates are fractions in whole percentage points (0.30, not 0.305), ordered
@@ -369,7 +429,9 @@ to use another interpreter). On Vercel without a backend the tab reports that
 the backend is not configured. The controls read
 `dashboard/public/data/explore_options.json`, written by
 `uk-cgt-reform-explore --options`; regenerate it when the presets,
-bounds or elasticity options change.
+bounds, elasticity options or ready-reckoner rows change. The tab's "HMRC
+ready-reckoner row" menu loads those rows, and a run that matches one shows
+HMRC's figures beside it.
 
 ### Modal backend
 
@@ -477,12 +539,15 @@ Without it the wrapper records its bundled default dataset as
 runs: every dataset here is pinned explicitly by revision and digest.
 `pyproject.toml` bounds policyengine-uk below 2.100 because 2.100.x moves the
 projection fingerprint; raising the bound is a deliberate re-pin that
-regenerates every results file. A full
-run takes about ten minutes for both datasets
-(per-year dataset builds plus thirteen scored simulations each; re-runs
-reuse policyengine.py's output cache). Copy the four results files from
-`data/` into `dashboard/public/data/` for the dashboard, which bundles
-them at build time.
+regenerates every results file. Each
+dataset needs its per-year builds, nineteen stored simulations (baseline,
+central and static reform for every year, two more sensitivity cases, and
+the CenTax counterfactual pair) and twenty in-memory ready-reckoner runs; a
+run with the stored outputs in place takes about eight minutes for both
+datasets, most of it the ready-reckoner runs. Copy the four results files
+from `data/` into `dashboard/public/data/` for the dashboard, which bundles
+them at build time, and regenerate `explore_options.json` with
+`uk-cgt-reform-explore --options` when the explorer's options change.
 
 ```bash
 pytest        # pure-logic tests only, no simulation (pipeline and rate explorer)

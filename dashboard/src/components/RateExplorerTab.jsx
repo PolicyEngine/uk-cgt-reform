@@ -14,7 +14,13 @@ import {
   getValidation,
 } from "../lib/dataHelpers";
 import { useExploration } from "../lib/exploreApi";
-import { formatPct, formatSignedBn, formatSignedCurrency, formatSignedPct } from "../lib/formatters";
+import {
+  formatPct,
+  formatSignedBn,
+  formatSignedCurrency,
+  formatSignedMn,
+  formatSignedPct,
+} from "../lib/formatters";
 import BudgetChart from "./charts/BudgetChart";
 import GroupImpactChart from "./charts/GroupImpactChart";
 import { LabelledSelect, MetricCard } from "./controls";
@@ -49,6 +55,18 @@ const PRESETS = options.presets;
 const ELASTICITIES = options.elasticity_options;
 const DEFAULT_ELASTICITY = options.default_elasticity;
 const CURRENT_LAW = PRESETS.find((preset) => preset.id === "current_law").rates;
+// HMRC's ready-reckoner rows (June 2025): schedules a reader can load, with
+// HMRC's own post-behavioural receipts to set beside the run.
+const READY_RECKONER = options.ready_reckoner;
+
+// How a behavioural option is applied: the MTR convention, or (the official
+// HMRC/OBR case) the retention convention it is stated in.
+function elasticityLabel(option) {
+  if (option.applied_as === "retention") {
+    return `${option.label}, applied as stated (\u2248 MTR elasticity ${option.e_mtr})`;
+  }
+  return `${option.label}, MTR elasticity ${option.e_mtr}`;
+}
 
 const toPercent = (fraction) => Math.round(fraction * 10000) / 100;
 const toFraction = (percent) => Math.round(Number(percent) * 100) / 10000;
@@ -210,6 +228,53 @@ function SpecTable({ metadata }) {
   );
 }
 
+// HMRC's figures for the ready-reckoner row this run matches. HMRC reports
+// receipts, which arrive about a year after the liability, so each HMRC year
+// sits beside the run's liability a year earlier.
+function ReadyReckonerPanel({ row, result }) {
+  const liability = (year) =>
+    1000 * result.budget.find((budgetRow) => budgetRow.year === year).gov_balance_change_bn;
+  const [contextYear] = READY_RECKONER.hmrc_years;
+  return (
+    <div className="mt-6">
+      <h3 className="text-base font-semibold text-slate-800">
+        HMRC ready reckoner: {row.label}
+      </h3>
+      <table className="data-table mt-3">
+        <thead>
+          <tr>
+            <th>Comparison</th>
+            <th>HMRC receipts</th>
+            <th>This run, change in government balance</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr className="text-slate-500">
+            <td>HMRC {contextYear} (receipts in the reform&apos;s first year)</td>
+            <td>{formatSignedMn(row.hmrc_m[contextYear])}</td>
+            <td>—</td>
+          </tr>
+          {READY_RECKONER.lag.map((lag) => (
+            <tr key={lag.hmrc_year}>
+              <td>
+                HMRC {lag.hmrc_year} against this run&apos;s {lag.model_year} liabilities
+              </td>
+              <td className="font-semibold">{formatSignedMn(row.hmrc_m[lag.hmrc_year])}</td>
+              <td>{formatSignedMn(liability(lag.model_year))}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p className="mt-3 text-xs leading-5 text-slate-500">
+        HMRC&apos;s figures ({READY_RECKONER.source}) are receipts after behavioural responses,
+        including income tax and stamp duty land tax effects, on the OBR&apos;s March 2025 forecast;
+        HMRC has deferred its 2026 edition, so they are provisional. The Benchmarks tab scores every
+        row at the central and the official elasticity.
+      </p>
+    </div>
+  );
+}
+
 export default function RateExplorerTab({ data, datasetKey }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -226,6 +291,9 @@ export default function RateExplorerTab({ data, datasetKey }) {
   const preset = validation.rates
     ? (PRESETS.find((candidate) => sameRates(candidate.rates, validation.rates))?.id ?? "custom")
     : "custom";
+  const readyReckonerRow = validation.rates
+    ? (READY_RECKONER.rows.find((row) => sameRates(row.rates, validation.rates))?.id ?? "none")
+    : "none";
 
   const syncUrl = useCallback(
     (rates, e) => {
@@ -267,6 +335,12 @@ export default function RateExplorerTab({ data, datasetKey }) {
   const entrants = getEntrants(data);
   const entrantShare = entrants.count / getValidation(data).cgt_taxpayers;
   const elasticityOption = ELASTICITIES.find((option) => Math.abs(option.e_mtr - elasticity) < 1e-9);
+  const resultElasticity = result
+    ? ELASTICITIES.find((option) => Math.abs(option.e_mtr - result.metadata.elasticity) < 1e-9)
+    : null;
+  const matchedRow = result
+    ? READY_RECKONER.rows.find((row) => sameRates(row.rates, result.metadata.reform))
+    : null;
 
   const firstYear = result ? result.budget[0].year : null;
   const firstRow = result ? result.budget[0] : null;
@@ -320,10 +394,22 @@ export default function RateExplorerTab({ data, datasetKey }) {
             }}
           />
           <LabelledSelect
+            label="HMRC ready-reckoner row"
+            options={[
+              { value: "none", label: "None" },
+              ...READY_RECKONER.rows.map((row) => ({ value: row.id, label: row.label })),
+            ]}
+            value={readyReckonerRow}
+            onChange={(id) => {
+              const chosen = READY_RECKONER.rows.find((row) => row.id === id);
+              if (chosen) setPercents(percentsOf(chosen.rates));
+            }}
+          />
+          <LabelledSelect
             label="Behavioural response"
             options={ELASTICITIES.map((option) => ({
               value: String(option.e_mtr),
-              label: `${option.label}, MTR elasticity ${option.e_mtr}`,
+              label: elasticityLabel(option),
             }))}
             value={String(elasticity)}
             onChange={(value) => setElasticity(Number(value))}
@@ -354,7 +440,7 @@ export default function RateExplorerTab({ data, datasetKey }) {
           <section className="section-card">
             <SectionHeading
               title={`Headline results, ${firstYear}`}
-              description={`${formatPct(result.metadata.reform.basic_rate * 100, 0)} / ${formatPct(result.metadata.reform.higher_rate * 100, 0)} / ${formatPct(result.metadata.reform.additional_rate * 100, 0)} on ${result.metadata.dataset_short_label}, MTR elasticity ${result.metadata.elasticity}; distributional figures cover all households.`}
+              description={`${formatPct(result.metadata.reform.basic_rate * 100, 0)} / ${formatPct(result.metadata.reform.higher_rate * 100, 0)} / ${formatPct(result.metadata.reform.additional_rate * 100, 0)} on ${result.metadata.dataset_short_label}, ${resultElasticity ? elasticityLabel(resultElasticity) : `MTR elasticity ${result.metadata.elasticity}`}; distributional figures cover all households.`}
             />
             <div className="grid gap-4 md:grid-cols-3">
               <MetricCard
@@ -409,6 +495,7 @@ export default function RateExplorerTab({ data, datasetKey }) {
               The equalisation column is the committed result for {dataset.shortLabel} at an MTR
               elasticity of −0.7{elasticityOption && elasticityOption.e_mtr !== -0.7 ? "; this schedule ran with a different elasticity, so the two are not like for like" : ""}.
             </p>
+            {matchedRow ? <ReadyReckonerPanel row={matchedRow} result={result} /> : null}
           </section>
 
           <details className="section-card group">

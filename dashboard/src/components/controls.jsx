@@ -77,3 +77,17 @@ export function TipHeader({ label, tip }) {
     </th>
   );
 }
+
+// An external source, opened in a new tab.
+export function SourceLink({ href, children }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="font-normal text-[color:var(--pe-color-primary-600)] underline decoration-1 underline-offset-2 hover:opacity-80"
+    >
+      {children}
+    </a>
+  );
+}

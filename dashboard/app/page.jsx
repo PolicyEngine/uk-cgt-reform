@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import BaselineTab from "../src/components/BaselineTab";
+import BenchmarksTab from "../src/components/BenchmarksTab";
 import ComparisonTab from "../src/components/ComparisonTab";
 import MethodologyTab from "../src/components/MethodologyTab";
 import PolicyEngineHeader from "../src/components/PolicyEngineHeader";
@@ -28,6 +29,7 @@ const TAB_OPTIONS = [
   { id: "reform", label: "Reform impacts" },
   { id: "explorer", label: "Rate explorer" },
   { id: "baseline", label: "Baseline" },
+  { id: "benchmarks", label: "Benchmarks" },
   { id: "datasets", label: "Dataset comparison" },
   { id: "methodology", label: "Methodology" },
 ];
@@ -80,8 +82,8 @@ function DatasetSwitch({ options, value, onChange, info }) {
         ))}
       </div>
       <span className="text-slate-500">
-        {info.label}. The Reform impacts, Rate explorer, Baseline and Methodology tabs read from
-        this dataset; Dataset comparison shows both side by side.
+        {info.label}. The Reform impacts, Rate explorer, Baseline, Benchmarks and Methodology tabs
+        read from this dataset; Dataset comparison shows both side by side.
       </span>
     </div>
   );
@@ -95,6 +97,7 @@ function Dashboard() {
   const [datasetKey, setDatasetKey] = useState(() =>
     getInitialDataset(searchParams.get("dataset")),
   );
+  const [anchor, setAnchor] = useState(null);
   const data = RESULTS[datasetKey];
   const dataset = getDatasetInfo(data);
 
@@ -116,7 +119,14 @@ function Dashboard() {
 
   function handleTabChange(tab) {
     setActiveTab(tab);
+    setAnchor(null);
     replaceUrl(tab, datasetKey);
+  }
+
+  // Open a tab at one of its sections (e.g. Methodology's #elasticity-gap).
+  function handleNavigate(tab, sectionId) {
+    handleTabChange(tab);
+    setAnchor(sectionId);
   }
 
   function handleDatasetChange(key) {
@@ -173,6 +183,8 @@ function Dashboard() {
               Baseline
             </TabLink>{" "}
             validates the baseline against HMRC,{" "}
+            <TabLink onSelect={() => handleTabChange("benchmarks")}>Benchmarks</TabLink>{" "}
+            compares the results with other published estimates,{" "}
             <TabLink onSelect={() => handleTabChange("datasets")}>Dataset comparison</TabLink>{" "}
             puts the two datasets side by side, and{" "}
             <TabLink onSelect={() => handleTabChange("methodology")}>Methodology</TabLink>{" "}
@@ -204,8 +216,11 @@ function Dashboard() {
         {activeTab === "reform" && <ReformTab data={data} />}
         {activeTab === "explorer" && <RateExplorerTab data={data} datasetKey={datasetKey} />}
         {activeTab === "baseline" && <BaselineTab data={data} />}
-        {activeTab === "datasets" && <ComparisonTab comparison={comparison} />}
-        {activeTab === "methodology" && <MethodologyTab data={data} />}
+        {activeTab === "benchmarks" && <BenchmarksTab data={data} onNavigate={handleNavigate} />}
+        {activeTab === "datasets" && (
+          <ComparisonTab comparison={comparison} onNavigate={handleNavigate} />
+        )}
+        {activeTab === "methodology" && <MethodologyTab data={data} anchor={anchor} />}
 
         <footer className="mt-12 border-t border-slate-200 pt-8 text-center text-sm text-slate-500">
           <p>

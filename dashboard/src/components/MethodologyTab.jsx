@@ -1,7 +1,14 @@
 "use client";
 
 import { useEffect } from "react";
-import { getDatasetInfo, getElasticity, getMetadata } from "../lib/dataHelpers";
+import {
+  getBenchmarks,
+  getDatasetInfo,
+  getElasticity,
+  getMetadata,
+  getSensitivity,
+} from "../lib/dataHelpers";
+import { formatSignedBn } from "../lib/formatters";
 import SectionHeading from "./SectionHeading";
 
 function ExternalLink({ href, children }) {
@@ -17,21 +24,41 @@ function ExternalLink({ href, children }) {
   );
 }
 
-export default function MethodologyTab({ data }) {
-  // Analysis sections can link here with /?tab=methodology#<id>; the tab
-  // mounts after navigation, so the browser's native hash scroll has already
-  // missed and we replay it.
+// How realised gains and the revenue on them respond when one rate moves
+// from t0 to t1, in the engine's two conventions.
+function responseTo(t0, t1, { e_mtr: eMtr, e_retention: eRetention, applied_as: form }) {
+  const gains = form === "retention" ? ((1 - t1) / (1 - t0)) ** eRetention : (t1 / t0) ** eMtr;
+  return { gains: gains - 1, revenue: (gains * t1) / t0 - 1 };
+}
+
+function signed(value, digits) {
+  return `${value < 0 ? "\u2212" : ""}${Math.abs(value).toFixed(digits)}`;
+}
+
+function percent(change) {
+  return `${Math.abs(100 * change).toFixed(0)}%`;
+}
+
+export default function MethodologyTab({ data, anchor }) {
+  // Analysis sections can link here with /?tab=methodology#<id>, or open the
+  // tab at a section (``anchor``); the tab mounts after navigation, so the
+  // browser's native hash scroll has already missed and we replay it.
   useEffect(() => {
-    const hash = window.location.hash;
-    if (hash) {
-      document.getElementById(hash.slice(1))?.scrollIntoView();
+    const target = anchor ?? window.location.hash.slice(1);
+    if (target) {
+      document.getElementById(target)?.scrollIntoView();
     }
-  }, []);
+  }, [anchor]);
 
   const elasticity = getElasticity(data);
   const dataset = getDatasetInfo(data);
   const metadata = getMetadata(data);
   const isCandidate = dataset.role === "candidate";
+  const { central, official } = getBenchmarks(data).elasticities;
+  const revenueAt = (e) => getSensitivity(data).find((row) => row.e_mtr === e).revenue_2026_bn;
+  // The ready reckoner's largest row: the higher rate from 24% to 34%.
+  const atCentral = responseTo(0.24, 0.34, central);
+  const atOfficial = responseTo(0.24, 0.34, official);
 
   return (
     <div className="space-y-6">
@@ -140,7 +167,8 @@ export default function MethodologyTab({ data }) {
             marginal rates; the pipeline verifies the response is active before writing
             results. The elasticity is set on the engine&apos;s marginal-tax-rate parameter (
             <span className="font-mono text-xs">{metadata.elasticity_parameter}</span>); the
-            engine also offers a retention-rate parameter, which this analysis leaves at zero.
+            engine&apos;s retention-rate parameter is used only for the official HMRC/OBR case
+            (see below).
           </li>
         </ul>
       </section>
@@ -168,8 +196,58 @@ export default function MethodologyTab({ data }) {
           retention-rate elasticity of {elasticity.retention_rate_elasticity.toFixed(1)}{" "}
           converts to an MTR elasticity of about {elasticity.mtr_elasticity_approx.toFixed(1)},
           which is what the model applies. The reform tab&apos;s sensitivity table re-runs the
-          analysis under the static case and the lower end of CenTax&apos;s range.
+          analysis under the static case, the lower end of CenTax&apos;s range and the official
+          HMRC/OBR elasticity.
         </p>
+      </section>
+
+      <section className="section-card scroll-mt-24" id="elasticity-gap">
+        <SectionHeading
+          title="The official elasticity and CenTax's"
+          description="Why HMRC's ready reckoner shows rate rises losing revenue where this dashboard's central case raises it."
+        />
+        <ul className="mt-2 list-disc space-y-2 pl-5 text-sm leading-6 text-slate-600">
+          <li>
+            <strong>The official assumption.</strong> HMRC and the OBR use a retention-rate
+            elasticity of {official.e_retention} for the main CGT rates (
+            <ExternalLink href={`${official.url}#page=3`}>
+              OBR, January 2025, para 1.9
+            </ExternalLink>
+            ; HMRC&apos;s estimate from 1998 to 2018 is 4.0). At the reformed 40–45% rates that is
+            equivalent to an MTR elasticity of about {signed(official.e_mtr, 1)},{" "}
+            {(official.e_retention / central.e_retention).toFixed(1)} times the central case.
+          </li>
+          <li>
+            <strong>Why the two differ.</strong> CenTax&apos;s central{" "}
+            {central.e_retention.toFixed(1)} starts from US evidence (about 1.5 five years after a
+            change) and adjusts it down because its package also removes the death uplift and
+            charges gains on departure, closing two ways of deferring or avoiding the tax.
+            HMRC&apos;s figure is estimated from UK responses under the current base.
+          </li>
+          <li>
+            <strong>What it does to a rate rise.</strong> Take the ready reckoner&apos;s largest
+            row, the higher rate from 24% to 34%. At the central elasticity, realised gains on those
+            gains fall by {percent(atCentral.gains)} and the revenue they raise{" "}
+            {atCentral.revenue >= 0 ? "rises" : "falls"} by {percent(atCentral.revenue)}. At the
+            official elasticity, realised gains fall by {percent(atOfficial.gains)} and revenue{" "}
+            {atOfficial.revenue >= 0 ? "rises" : "falls"} by {percent(atOfficial.revenue)}, the
+            direction HMRC&apos;s row shows.
+          </li>
+          <li>
+            <strong>How the model applies it.</strong> The official case is applied as HMRC and
+            the OBR state it, in the retention form: realised gains scale by ((1 − t₁) / (1 −
+            t₀))<sup>{official.e_retention}</sup>. The engine&apos;s MTR form, (t₁ / t₀)
+            <sup>e</sup>, would make every rate rise lose revenue at e ={" "}
+            {signed(official.e_mtr, 2)}, including a one-point rise in the lower rate, which the
+            ready reckoner shows as roughly neutral.
+          </li>
+          <li>
+            <strong>On this dataset.</strong> Equalisation changes CGT revenue in 2026-27 by{" "}
+            {formatSignedBn(revenueAt(central.e_mtr), 1)} at the central elasticity and by{" "}
+            {formatSignedBn(revenueAt(official.e_mtr), 1)} at the official one. The Benchmarks tab
+            scores the ready reckoner&apos;s rows at both.
+          </li>
+        </ul>
       </section>
 
       <section className="section-card scroll-mt-24" id="explorer">

@@ -39,8 +39,11 @@ export function getSensitivity(data) {
   return data.sensitivity;
 }
 
-export function getComparison(data) {
-  return data.comparison;
+// External benchmarks beside this dataset's own scores (issue #7): the
+// static reform against JRF, the 2019/20-rules uplift against CenTax, and
+// HMRC's ready-reckoner rows.
+export function getBenchmarks(data) {
+  return data.benchmarks;
 }
 
 const BASELINE_CGT_RATES = { basic_rate: 0.18, higher_rate: 0.24, additional_rate: 0.24 };
