@@ -253,6 +253,54 @@ def income_change_groups(baseline, reformed) -> dict:
     return result
 
 
+UNASSIGNED_REGION = "Unassigned"
+
+
+def cgt_by_region(sim) -> dict[str, float]:
+    """Weighted CGT by the region of each person's household, £, keyed by
+    the display names in :data:`REGION_NAMES` in their order, then
+    :data:`UNASSIGNED_REGION` for households whose region is not one of
+    them."""
+    import pandas as pd
+
+    household = _household(sim)
+    region_of = pd.Series(
+        [REGION_NAMES.get(str(name), UNASSIGNED_REGION) for name in household["region"].values],
+        index=household["household_id"].values,
+    )
+    person = _person(sim)
+    labels = region_of.reindex(person["household_id"].values).fillna(UNASSIGNED_REGION).values
+    totals = person["capital_gains_tax"].groupby(labels).sum()
+    order = [*REGION_NAMES.values(), UNASSIGNED_REGION]
+    return {region: float(totals.get(region, 0.0)) for region in order}
+
+
+def cgt_uplift(baseline, reformed) -> dict:
+    """The change in CGT from ``baseline`` to ``reformed``, nationally and by
+    region, with each as a percentage of its baseline CGT."""
+    base, ref = cgt_by_region(baseline), cgt_by_region(reformed)
+
+    def entry(b: float, r: float) -> dict:
+        return {
+            "baseline_cgt_bn": b / 1e9,
+            "reform_cgt_bn": r / 1e9,
+            "change_bn": (r - b) / 1e9,
+            "uplift_pct": 100 * (r - b) / b if b else None,
+        }
+
+    return {
+        "national": entry(sum(base.values()), sum(ref.values())),
+        "regions": [
+            {"region": region, **entry(base[region], ref[region])}
+            for region in REGION_NAMES.values()
+        ],
+        "unassigned_cgt_bn": {
+            "baseline": base[UNASSIGNED_REGION] / 1e9,
+            "reform": ref[UNASSIGNED_REGION] / 1e9,
+        },
+    }
+
+
 def sensitivity(baseline_cgt: float, cases: dict[str, float], run_case) -> list[dict]:
     """Re-run the 2026 reform under each institution's elasticity assumption.
 

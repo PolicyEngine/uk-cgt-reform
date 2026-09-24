@@ -8,14 +8,19 @@ from uk_cgt_reform.reform import (
     BURNHAM_RATES,
     ELASTICITY,
     ELASTICITY_PARAMETER,
+    EXEMPT_AMOUNT_PARAMETER,
     EXPLORER_SCHEDULES,
     EXPLORER_SCOPE,
+    OFFICIAL_ELASTICITY,
+    OFFICIAL_RETENTION_ELASTICITY,
     PERIOD,
     RATE_BANDS,
     RETENTION_ELASTICITY_PARAMETER,
     SCHEDULES,
     burnham_reform,
+    centax_1920_reforms,
     cgt_rate_reform,
+    elasticity_assignment,
     rate_reform_schedules,
     reform_fingerprint,
     reform_schedules,
@@ -125,3 +130,38 @@ def test_explorer_reform_reaches_main_and_residential_only():
 def test_cgt_rate_reform_requires_every_band():
     with pytest.raises(ValueError, match="missing"):
         cgt_rate_reform({"basic_rate": 0.18, "higher_rate": 0.3})
+
+
+def test_official_elasticity_is_the_central_conversion_scaled():
+    # -0.7 is CenTax's retention 1.0 at t = 7/17; the official 3.6 scales it.
+    assert OFFICIAL_RETENTION_ELASTICITY == 3.6
+    assert OFFICIAL_ELASTICITY == pytest.approx(3.6 * ELASTICITY)
+    assert retention_to_mtr_elasticity(1.0, 7 / 17) == pytest.approx(ELASTICITY)
+    assert (
+        retention_to_mtr_elasticity(3.6, 0.45)
+        < OFFICIAL_ELASTICITY
+        < retention_to_mtr_elasticity(3.6, 0.40)
+    )
+
+
+def test_elasticity_assignment_routes_the_official_case_to_retention():
+    assert elasticity_assignment(ELASTICITY) == {ELASTICITY_PARAMETER: ELASTICITY}
+    assert elasticity_assignment(0.0) == {ELASTICITY_PARAMETER: 0.0}
+    assert elasticity_assignment(OFFICIAL_ELASTICITY) == {RETENTION_ELASTICITY_PARAMETER: 3.6}
+    official = burnham_reform(OFFICIAL_ELASTICITY)
+    assert official[RETENTION_ELASTICITY_PARAMETER] == {PERIOD: 3.6}
+    assert ELASTICITY_PARAMETER not in official
+
+
+def test_centax_counterfactual_pair_is_pinned():
+    baseline, reform = centax_1920_reforms()
+    for band, rate in zip(RATE_BANDS, (0.10, 0.20, 0.20), strict=True):
+        assert baseline[f"gov.hmrc.cgt.{band}"] == {PERIOD: rate}
+    for schedule in SCHEDULES:
+        for band, rate in zip(RATE_BANDS, (0.18, 0.28, 0.28), strict=True):
+            assert baseline[f"gov.hmrc.cgt.{schedule}.{band}"] == {PERIOD: rate}
+    assert baseline[EXEMPT_AMOUNT_PARAMETER] == {PERIOD: 12_000}
+    assert baseline[ELASTICITY_PARAMETER] == {PERIOD: 0.0}
+    assert reform == {**burnham_reform(0.0), EXEMPT_AMOUNT_PARAMETER: {PERIOD: 12_000}}
+    assert reform_fingerprint(baseline) == "710d8df0d472"
+    assert reform_fingerprint(reform) == "2367c58b5ba5"

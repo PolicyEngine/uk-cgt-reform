@@ -6,7 +6,7 @@ import json
 import pytest
 from test_schema import fake_results
 
-from uk_cgt_reform.comparison import SENSITIVITY_CASES
+from uk_cgt_reform.comparison import READY_RECKONER, SENSITIVITY_CASES
 from uk_cgt_reform.explore import (
     CONTEXT_KEYS,
     ELASTICITY_OPTIONS,
@@ -24,7 +24,10 @@ from uk_cgt_reform.impacts import fiscal_year_label
 from uk_cgt_reform.reform import (
     BURNHAM_RATES,
     ELASTICITY,
+    ELASTICITY_PARAMETER,
     EXPLORER_SCOPE,
+    OFFICIAL_ELASTICITY,
+    RETENTION_ELASTICITY_PARAMETER,
     YEARS,
     burnham_reform,
     reform_fingerprint,
@@ -119,7 +122,36 @@ def test_validate_request_rejects(payload, message):
 def test_rate_bounds_and_elasticity_options():
     assert RATE_BOUNDS == (0.0, 0.75)
     assert [o["e_mtr"] for o in ELASTICITY_OPTIONS] == list(SENSITIVITY_CASES.values())
-    assert {o["id"] for o in ELASTICITY_OPTIONS} == {"static", "centax_lower", "centax_central"}
+    assert [o["id"] for o in ELASTICITY_OPTIONS] == [
+        "static",
+        "centax_lower",
+        "centax_central",
+        "official",
+    ]
+    official = ELASTICITY_OPTIONS[-1]
+    assert official["applied_as"] == "retention"
+    assert official["applied_value"] == 3.6
+    assert all(o["applied_as"] == "mtr" for o in ELASTICITY_OPTIONS[:-1])
+
+
+def test_official_elasticity_applies_the_retention_parameter():
+    req = validate_request({"rates": FLAT_30, "elasticity": -2.52})
+    assert req.elasticity == OFFICIAL_ELASTICITY
+    reform = req.reform()
+    assert reform[RETENTION_ELASTICITY_PARAMETER] == {"2026-01-01": 3.6}
+    assert ELASTICITY_PARAMETER not in reform
+    central = validate_request({"rates": FLAT_30}).reform()
+    assert RETENTION_ELASTICITY_PARAMETER not in central
+    result = assemble_response(req, context(), year_rows())
+    assert result["metadata"]["elasticity_applied"] == {RETENTION_ELASTICITY_PARAMETER: 3.6}
+
+
+def test_ready_reckoner_rows_are_valid_requests_and_not_presets():
+    preset_rates = [p["rates"] for p in PRESETS]
+    for row in READY_RECKONER["rows"]:
+        req = validate_request({"rates": row["rates"], "elasticity": OFFICIAL_ELASTICITY})
+        assert req.rates == row["rates"]
+        assert row["rates"] not in preset_rates
 
 
 def test_presets_are_valid_requests():
@@ -143,6 +175,10 @@ def test_api_options_carry_what_a_client_needs():
     assert {d["key"] for d in options["datasets"]} == set(DATASETS)
     assert options["default_dataset_key"] == DEFAULT_DATASET_KEY
     assert [p["id"] for p in options["presets"]] == [p["id"] for p in PRESETS]
+    assert [r["id"] for r in options["ready_reckoner"]["rows"]] == [
+        r["id"] for r in READY_RECKONER["rows"]
+    ]
+    assert options["ready_reckoner"]["lag"] == READY_RECKONER["lag"]
 
 
 # --- the reform an explorer request builds -----------------------------------

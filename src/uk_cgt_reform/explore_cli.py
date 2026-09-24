@@ -42,7 +42,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--options",
         action="store_true",
-        help="Print the API options (bounds, presets, elasticities, datasets) as JSON and exit.",
+        help=(
+            "Print the API options (bounds, presets, elasticities, ready-reckoner rows, "
+            "datasets) as JSON and exit."
+        ),
     )
     parser.add_argument(
         "--dataset",
