@@ -28,7 +28,7 @@ function StaticEqualisation({ block, dataset }) {
         title="Equalisation before behavioural responses: JRF (2026)"
         description={`The Joseph Rowntree Foundation estimates that equalising CGT with income tax rates raises about £${jrf["2026-27"].value.toFixed(0)}bn in 2026-27 and £${jrf["2029-30"].value.toFixed(0)}bn in 2029-30 (2026/27 prices) before any behavioural response. It applies HMRC's CGT statistics by income band to the OBR's March 2026 CGT projection. Because that method scales the OBR's receipts, the last model column applies ${dataset.shortLabel}'s static uplift to the same OBR receipts, which separates the uplift from the dataset's own baseline level.`}
       />
-      <div className="mt-4 overflow-x-auto">
+      <div className="table-scroll mt-4 overflow-x-auto">
         <table className="data-table">
           <thead>
             <tr>
@@ -101,7 +101,7 @@ function CentaxRegions({ block, dataset }) {
           note={`+${formatBn(external.details.change_bn, 1)} on a ${formatBn(external.details.baseline_bn, 1)} baseline, 2019/20 data (${external.locator}).`}
         />
       </div>
-      <div className="mt-5 overflow-x-auto">
+      <div className="table-scroll mt-5 overflow-x-auto">
         <table className="data-table">
           <thead>
             <tr>
@@ -166,7 +166,7 @@ function CentaxPackage({ rows }) {
         title="CenTax's package estimates (a different scope)"
         description="CenTax's headline figures add an investment allowance, the removal of the death uplift and a charge on departure to equalisation, so they are not like-for-like with a rates-only reform. They are listed as context."
       />
-      <div className="mt-4 overflow-x-auto">
+      <div className="table-scroll mt-4 overflow-x-auto">
         <table className="data-table">
           <thead>
             <tr>
@@ -204,7 +204,7 @@ function ReadyReckoner({ block, dataset }) {
         title="Rate changes: HMRC ready reckoner (June 2025)"
         description={`HMRC's ready reckoner gives the Exchequer effect of small changes to CGT rates after behavioural responses. Its figures are receipts, which arrive about a year after the liability, so each row compares HMRC's receipts in ${first.hmrc_year} and ${second.hmrc_year} with ${dataset.shortLabel}'s liabilities in ${first.model_year} and ${second.model_year}. The model scores each row at this dashboard's central elasticity and at the official HMRC/OBR one.`}
       />
-      <div className="mt-4 overflow-x-auto">
+      <div className="table-scroll mt-4 overflow-x-auto">
         <table className="data-table">
           <thead>
             <tr>
