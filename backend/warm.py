@@ -2,7 +2,7 @@
 touches Hugging Face or builds a dataset.
 
     modal run backend/warm.py            # every registered dataset
-    modal run backend/warm.py --dataset microcosm_uk_2024_v20
+    modal run backend/warm.py --dataset microcosm_uk_2024_25_979
 
 For each dataset: verify the pinned source's sha256, materialise the
 per-year files with ``pe.uk.ensure_datasets`` (the wrapper's own code, as
@@ -54,10 +54,10 @@ def warm(dataset_keys: list[str]) -> dict:
     os.environ["HUGGING_FACE_TOKEN"] = token
     os.environ["HF_TOKEN"] = token
 
-    from uk_equalising_cgt.explore import engine_context, manifest_payload
-    from uk_equalising_cgt.pipeline import dataset_folder
-    from uk_equalising_cgt.reform import YEARS
-    from uk_equalising_cgt.simulations import DATASETS, ensure_uk_datasets, run_simulation
+    from uk_cgt_reform.explore import engine_context, manifest_payload
+    from uk_cgt_reform.pipeline import dataset_folder
+    from uk_cgt_reform.reform import YEARS
+    from uk_cgt_reform.simulations import DATASETS, ensure_uk_datasets, run_simulation
 
     context = engine_context()
     print(f"engine projection {context['projection_fingerprint']}")
@@ -84,7 +84,7 @@ def main(dataset: str = "all"):
     import sys
 
     sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
-    from uk_equalising_cgt.simulations import DATASETS
+    from uk_cgt_reform.simulations import DATASETS
 
     keys = list(DATASETS) if dataset == "all" else [dataset]
     unknown = [key for key in keys if key not in DATASETS]

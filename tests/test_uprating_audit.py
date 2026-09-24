@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from uk_equalising_cgt.uprating_audit import (
+from uk_cgt_reform.uprating_audit import (
     CPI_INDEX,
     OBR_CGT_RECEIPTS_BN,
     audit_uprating,
@@ -100,7 +100,7 @@ def test_fingerprint_moves_with_the_factors_and_the_version():
 
 
 def test_reviewed_vintage_names_the_release_and_checks_the_engine_against_it():
-    from uk_equalising_cgt.uprating_audit import REVIEWED_VINTAGES, reviewed_vintage
+    from uk_cgt_reform.uprating_audit import REVIEWED_VINTAGES, reviewed_vintage
 
     of_record = REVIEWED_VINTAGES[POP]["values_of_record"]
 

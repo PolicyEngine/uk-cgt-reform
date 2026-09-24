@@ -3,9 +3,9 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "uk-equalising-cgt"
+name = "uk-cgt-reform"
 version = "0.1.0"
-description = "Data pipeline modelling the equalisation of UK capital gains tax rates with income tax rates (the 'Burnham' reform)."
+description = "Data pipeline and live rate explorer modelling reforms to UK capital gains tax rates, led by their equalisation with income tax rates (the 'Burnham' reform)."
 readme = "README.md"
 license = "AGPL-3.0-or-later"
 requires-python = ">=3.13"
@@ -44,19 +44,19 @@ dev = [
 ]
 
 [project.scripts]
-uk-equalising-cgt-build = "uk_equalising_cgt.cli:main"
-uk-equalising-cgt-explore = "uk_equalising_cgt.explore_cli:main"
+uk-cgt-reform-build = "uk_cgt_reform.cli:main"
+uk-cgt-reform-explore = "uk_cgt_reform.explore_cli:main"
 
 [project.urls]
-Homepage = "https://github.com/PolicyEngine/uk-equalising-cgt"
-Repository = "https://github.com/PolicyEngine/uk-equalising-cgt"
+Homepage = "https://github.com/PolicyEngine/uk-cgt-reform"
+Repository = "https://github.com/PolicyEngine/uk-cgt-reform"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/uk_equalising_cgt"]
+packages = ["src/uk_cgt_reform"]
 
 [tool.hatch.build.targets.sdist]
 include = [
-  "src/uk_equalising_cgt/**/*.py",
+  "src/uk_cgt_reform/**/*.py",
   "tests/**/*.py",
   "README.md",
   "pyproject.toml",

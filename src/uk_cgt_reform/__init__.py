@@ -1,10 +1,12 @@
-"""Equalising capital gains tax with income tax (the "Burnham" reform).
+"""Reforms to UK capital gains tax rates.
 
-Models raising UK CGT rates to income tax rates (basic 18->20%, higher
-24->40%, additional 24->45%) from 2026-27, over fiscal years 2026-27 to
-2030-31, via the policyengine.py wrapper (Enhanced FRS 2024-25 as published by
-policyengine-uk-data, with no local reweighting) and an
-Advani/CenTax-aligned behavioural response.
+The pipeline scores equalising CGT rates with income tax rates (the
+"Burnham" reform: basic 18->20%, higher 24->40%, additional 24->45%) from
+2026-27, over fiscal years 2026-27 to 2030-31, via the policyengine.py
+wrapper on every registered dataset (``simulations.DATASETS``, each as
+published, with no local reweighting) and an Advani/CenTax-aligned
+behavioural response. The rate explorer (``explore``) scores any schedule of
+main rates through the same code.
 """
 
 from .reform import BURNHAM_RATES, ELASTICITY, YEARS, burnham_reform, retention_to_mtr_elasticity

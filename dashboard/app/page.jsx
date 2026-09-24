@@ -129,7 +129,7 @@ function Dashboard() {
       <PolicyEngineHeader />
       <header className="title-row">
         <div className="mx-auto flex max-w-[96rem] items-center justify-between px-6 py-4 md:px-8">
-          <h1>Capital gains tax analysis dashboard</h1>
+          <h1>Capital gains tax reform dashboard</h1>
         </div>
       </header>
 
@@ -140,9 +140,8 @@ function Dashboard() {
             <a href="https://policyengine.org" target="_blank" rel="noreferrer" className="underline">
               PolicyEngine
             </a>{" "}
-            UK&apos;s microsimulation model to estimate equalising capital
-            gains tax rates with income tax rates from 2026-27 (18%→20%,
-            24%→40%, 24%→45%), with behavioural elasticities from{" "}
+            UK&apos;s microsimulation model to estimate reforms to capital gains
+            tax rates from 2026-27, with behavioural elasticities from{" "}
             <a
               href="https://centax.org.uk/wp-content/uploads/2024/10/AdvaniLonsdaleSummers2024_CGTReform.pdf"
               target="_blank"
@@ -151,9 +150,8 @@ function Dashboard() {
             >
               Advani, Lonsdale &amp; Summers (CenTax, 2024)
             </a>
-            . It runs on two datasets: the incumbent Enhanced Family Resources
-            Survey and the candidate Microcosm UK build, which records what kind
-            of asset each gain came from. As{" "}
+            . Its headline reform equalises CGT rates with income tax rates
+            (18%→20%, 24%→40%, 24%→45%); as{" "}
             <a
               href="https://www.bloomberg.com/news/articles/2026-05-21/streeting-backs-hiking-uk-capital-gains-levy-to-match-income-tax"
               target="_blank"
@@ -162,10 +160,13 @@ function Dashboard() {
             >
               Bloomberg
             </a>{" "}
-            reports, leading Labour leadership contenders have backed this
-            reform, so the next government may well consider it.{" "}
+            reports, leading Labour leadership contenders have backed it, so
+            the next government may well consider it. The dashboard runs on two
+            datasets: the incumbent Enhanced Family Resources Survey and the
+            candidate Microcosm UK build, which records what kind of asset each
+            gain came from.{" "}
             <TabLink onSelect={() => handleTabChange("reform")}>Reform impacts</TabLink>{" "}
-            shows revenue and distributional effects,{" "}
+            shows the equalisation reform&apos;s revenue and distributional effects,{" "}
             <TabLink onSelect={() => handleTabChange("explorer")}>Rate explorer</TabLink>{" "}
             scores a schedule of CGT rates you choose,{" "}
             <TabLink onSelect={() => handleTabChange("baseline")}>
@@ -210,11 +211,11 @@ function Dashboard() {
           <p>
             Replication code:{" "}
             <a
-              href="https://github.com/PolicyEngine/uk-equalising-cgt"
+              href="https://github.com/PolicyEngine/uk-cgt-reform"
               target="_blank"
               rel="noreferrer"
             >
-              PolicyEngine/uk-equalising-cgt
+              PolicyEngine/uk-cgt-reform
             </a>
             {data?.metadata?.policyengine_version
               ? `, run on policyengine.py ${data.metadata.policyengine_version} with policyengine-uk ${data.metadata.policyengine_uk_version}`

@@ -1,8 +1,9 @@
-"""Command-line entry point for the CGT-equalisation pipeline.
+"""Command-line entry point for the results pipeline (the equalisation
+reform on every registered dataset).
 
 Exposes a :func:`main` callable that ``[project.scripts]`` registers as
-``uk-equalising-cgt-build`` and that ``__main__.py`` invokes for
-``python -m uk_equalising_cgt``.
+``uk-cgt-reform-build`` and that ``__main__.py`` invokes for
+``python -m uk_cgt_reform``.
 """
 
 from __future__ import annotations
@@ -16,7 +17,7 @@ from .simulations import DATASETS
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="uk-equalising-cgt-build",
+        prog="uk-cgt-reform-build",
         description=(
             "Generate dashboard-ready results for equalising CGT rates with "
             "income tax rates (the 'Burnham' reform), 2026-27 to 2030-31, on "

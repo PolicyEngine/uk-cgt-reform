@@ -181,7 +181,7 @@ export default function MethodologyTab({ data }) {
             pipeline&apos;s own code (the same pinned per-year datasets, cached baseline
             simulations, behavioural response and impact calculations) on a Modal backend, or
             locally through the{" "}
-            <span className="font-mono text-xs">uk-equalising-cgt-explore</span> command. Nothing
+            <span className="font-mono text-xs">uk-cgt-reform-explore</span> command. Nothing
             is precomputed or interpolated: an explorer run at 20% / 40% / 45% reproduces the
             Reform impacts tab.
           </li>

@@ -1,7 +1,7 @@
 const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
 // PolicyEngine site header, rendered by the dashboard itself. Multizone
-// rewrites proxy this app under policyengine.org/uk/equalising-cgt but do
+// rewrites proxy this app under policyengine.org/uk/cgt-reform but do
 // not inject the parent site shell, so — like the other published dashboards
 // (uk-cliff-watch etc.) — we render the header/nav here. Links point at the
 // UK site so the tool sits inside the PolicyEngine UK experience.

@@ -3,7 +3,7 @@ projection fingerprint and drops them when the projection has moved."""
 
 import json
 
-from uk_equalising_cgt.pipeline import _carried_baselines
+from uk_cgt_reform.pipeline import _carried_baselines
 
 
 def test_carried_baselines_require_the_same_fingerprint(tmp_path):

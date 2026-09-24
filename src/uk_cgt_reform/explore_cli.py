@@ -1,4 +1,4 @@
-"""Command-line runner for the rate explorer: ``uk-equalising-cgt-explore``.
+"""Command-line runner for the rate explorer: ``uk-cgt-reform-explore``.
 
 Scores one CGT rate schedule on one registered dataset for every modelled
 year, on this machine, through the same code the Modal workers run. Results
@@ -27,7 +27,7 @@ from .simulations import DATASETS, DEFAULT_DATASET_KEY
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="uk-equalising-cgt-explore",
+        prog="uk-cgt-reform-explore",
         description=(
             "Score a CGT rate schedule (main and residential property rates) on a "
             "registered dataset for 2026-27 to 2030-31, with the pipeline's behavioural "

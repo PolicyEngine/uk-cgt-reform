@@ -6,8 +6,8 @@ import json
 import pytest
 from test_schema import fake_results
 
-from uk_equalising_cgt.comparison import SENSITIVITY_CASES
-from uk_equalising_cgt.explore import (
+from uk_cgt_reform.comparison import SENSITIVITY_CASES
+from uk_cgt_reform.explore import (
     CONTEXT_KEYS,
     ELASTICITY_OPTIONS,
     PRESETS,
@@ -20,8 +20,8 @@ from uk_equalising_cgt.explore import (
     mark_cache_hit,
     validate_request,
 )
-from uk_equalising_cgt.impacts import fiscal_year_label
-from uk_equalising_cgt.reform import (
+from uk_cgt_reform.impacts import fiscal_year_label
+from uk_cgt_reform.reform import (
     BURNHAM_RATES,
     ELASTICITY,
     EXPLORER_SCOPE,
@@ -29,7 +29,7 @@ from uk_equalising_cgt.reform import (
     burnham_reform,
     reform_fingerprint,
 )
-from uk_equalising_cgt.simulations import CANDIDATE, DATASETS, DEFAULT_DATASET_KEY, INCUMBENT
+from uk_cgt_reform.simulations import CANDIDATE, DATASETS, DEFAULT_DATASET_KEY, INCUMBENT
 
 FLAT_30 = {"basic_rate": 0.18, "higher_rate": 0.30, "additional_rate": 0.30}
 
@@ -288,7 +288,7 @@ def test_mark_cache_hit_flags_a_copy():
 
 
 def test_manifest_round_trips_the_context_fields():
-    from uk_equalising_cgt.explore import (
+    from uk_cgt_reform.explore import (
         MANIFEST_FIELDS,
         code_fingerprint,
         context_from_manifest,
@@ -329,7 +329,7 @@ def test_manifest_round_trips_the_context_fields():
 
 
 def test_code_fingerprint_is_a_stable_short_hex_digest():
-    from uk_equalising_cgt.explore import CODE_FINGERPRINT_FILES, code_fingerprint
+    from uk_cgt_reform.explore import CODE_FINGERPRINT_FILES, code_fingerprint
 
     assert "impacts.py" in CODE_FINGERPRINT_FILES and "explore.py" in CODE_FINGERPRINT_FILES
     first = code_fingerprint()
@@ -338,7 +338,7 @@ def test_code_fingerprint_is_a_stable_short_hex_digest():
 
 
 def test_run_year_refuses_to_recompute_a_missing_baseline(tmp_path):
-    from uk_equalising_cgt.explore import run_year
+    from uk_cgt_reform.explore import run_year
 
     req = validate_request({"dataset": CANDIDATE.key, "rates": FLAT_30})
     with pytest.raises(FileNotFoundError, match="Baseline output"):

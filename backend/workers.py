@@ -39,9 +39,9 @@ app = modal.App(WORKERS_APP_NAME)
 )
 def run_year(dataset_key: str, year: int, rates: dict, elasticity: float) -> dict:
     """One (dataset, year): cached baseline versus an in-memory reform run."""
-    from uk_equalising_cgt.explore import engine_context, validate_request
-    from uk_equalising_cgt.explore import run_year as score_year
-    from uk_equalising_cgt.pipeline import dataset_folder
+    from uk_cgt_reform.explore import engine_context, validate_request
+    from uk_cgt_reform.explore import run_year as score_year
+    from uk_cgt_reform.pipeline import dataset_folder
 
     request = validate_request({"dataset": dataset_key, "rates": rates, "elasticity": elasticity})
     context = engine_context()
@@ -66,7 +66,7 @@ def run_year(dataset_key: str, year: int, rates: dict, elasticity: float) -> dic
 )
 def run_reform(payload: dict) -> dict:
     """Score a request for every year and cache the result."""
-    from uk_equalising_cgt.explore import (
+    from uk_cgt_reform.explore import (
         ResultStore,
         assemble_response,
         cache_key,
@@ -74,7 +74,7 @@ def run_reform(payload: dict) -> dict:
         mark_cache_hit,
         validate_request,
     )
-    from uk_equalising_cgt.reform import YEARS
+    from uk_cgt_reform.reform import YEARS
 
     request = validate_request(payload)
     manifest = read_manifest()

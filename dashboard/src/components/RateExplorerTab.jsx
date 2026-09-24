@@ -20,7 +20,7 @@ import GroupImpactChart from "./charts/GroupImpactChart";
 import { LabelledSelect, MetricCard } from "./controls";
 import SectionHeading from "./SectionHeading";
 
-// The request options come from the pipeline (uk-equalising-cgt-explore
+// The request options come from the pipeline (uk-cgt-reform-explore
 // --options), bundled at build time so the controls never wait on a network.
 const BANDS = [
   {

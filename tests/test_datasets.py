@@ -2,7 +2,7 @@
 
 import re
 
-from uk_equalising_cgt.simulations import (
+from uk_cgt_reform.simulations import (
     CANDIDATE,
     DATASETS,
     DEFAULT_DATASET_KEY,

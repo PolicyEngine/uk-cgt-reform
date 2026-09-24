@@ -1,13 +1,24 @@
-# Equalising capital gains tax with income tax (the "Burnham" reform)
+# UK capital gains tax reform
 
-Data pipeline estimating the budgetary and distributional impact of
-**equalising UK CGT rates with income tax rates** — the reform debated in the
-Labour leadership contest, associated with Andy Burnham and backed by allies
-including Louise Haigh and Wes Streeting — using the standard
-[policyengine.py](https://github.com/PolicyEngine/policyengine.py) stack
-(the `policyengine` package wrapping the PolicyEngine UK model).
+Data pipeline and dashboard estimating the budgetary and distributional
+impact of reforms to UK capital gains tax rates from 2026-27, using the
+standard [policyengine.py](https://github.com/PolicyEngine/policyengine.py)
+stack (the `policyengine` package wrapping the PolicyEngine UK model). They
+score two things:
 
-The pipeline runs the same reform on two registered datasets, each used
+- **Equalising CGT rates with income tax rates** (the "Burnham" reform), the
+  reform debated in the Labour leadership contest, associated with Andy
+  Burnham and backed by allies including Louise Haigh and Wes Streeting. The
+  pipeline scores it on every registered dataset and commits the results,
+  which the dashboard's Reform impacts tab shows.
+- **Any schedule of main CGT rates** a reader chooses, scored live by the
+  dashboard's Rate explorer tab through the same code, datasets, engine and
+  projection (see [Rate explorer](#rate-explorer)).
+
+The repository was called `uk-equalising-cgt` until the rate explorer took
+its scope beyond equalisation; GitHub redirects the old URL.
+
+The pipeline runs the equalisation reform on two registered datasets, each used
 exactly as published with no local reweighting, and writes the results side
 by side:
 
@@ -36,7 +47,7 @@ realise under the behavioural response, so they are roughly an order of
 magnitude larger than the net revenue raised. This is a mechanical property of
 modelling the response as a reduction in realised gains, not a bug.
 
-## Reform (from 2026-27)
+## The equalisation reform (from 2026-27)
 
 | Band | Baseline CGT rate | Reformed rate (= income tax) |
 |---|---|---|
@@ -257,7 +268,7 @@ engine's `data/uprating_indices.yaml`: `capital_gains`,
 per capita, `household_weight` follows ONS population growth. Nothing
 CGT-specific enters the projection.
 
-`uk_equalising_cgt.uprating_audit` records what is actually applied,
+`uk_cgt_reform.uprating_audit` records what is actually applied,
 reading the installed engine's index map and growth parameters:
 
 | | 2026 | 2027 | 2028 | 2029 | 2030 | source |
@@ -272,7 +283,7 @@ the parameter references, the OBR March 2026 CGT receipts path (unbridged:
 receipts are not gains and lag them), the entrant ceilings (the base-year
 exempt amount carried forward by the gains factor) and, per dataset, the
 per-year baseline gains, taxpayer counts, liability and entrants.
-`uk-equalising-cgt-build --audit-only` rewrites the factor table and carries
+`uk-cgt-reform-build --audit-only` rewrites the factor table and carries
 the measured baselines forward when the projection fingerprint is unchanged.
 
 The engine's population series names only "ONS Population Projections" with
@@ -312,10 +323,10 @@ tracked as a repo issue.
 ### Locally
 
 ```bash
-uk-equalising-cgt-explore --basic 0.18 --higher 0.30 --additional 0.30              # candidate
-uk-equalising-cgt-explore --dataset enhanced_frs_2024_25 --basic 0.18 --higher 0.30 --additional 0.30
-uk-equalising-cgt-explore --basic 0.20 --higher 0.40 --additional 0.45 --json       # full result on stdout
-uk-equalising-cgt-explore --options                                                 # bounds, presets, datasets
+uk-cgt-reform-explore --basic 0.18 --higher 0.30 --additional 0.30              # candidate
+uk-cgt-reform-explore --dataset enhanced_frs_2024_25 --basic 0.18 --higher 0.30 --additional 0.30
+uk-cgt-reform-explore --basic 0.20 --higher 0.40 --additional 0.45 --json       # full result on stdout
+uk-cgt-reform-explore --options                                                 # bounds, presets, datasets
 ```
 
 Rates are fractions in whole percentage points (0.30, not 0.305), ordered
@@ -355,21 +366,21 @@ the `POST` route runs the CLI above through the repo's `.venv` (set `PYTHON`
 to use another interpreter). On Vercel without a backend the tab reports that
 the backend is not configured. The controls read
 `dashboard/public/data/explore_options.json`, written by
-`uk-equalising-cgt-explore --options`; regenerate it when the presets,
+`uk-cgt-reform-explore --options`; regenerate it when the presets,
 bounds or elasticity options change.
 
 ### Modal backend
 
 `backend/` holds three Modal apps sharing one image
 (`backend/requirements.txt` pins the runtime; the pipeline package is added
-from `src/`), one Volume (`uk-equalising-cgt-data`, laid out like `data/`)
-and one Dict (`uk-equalising-cgt-results`):
+from `src/`), one Volume (`uk-cgt-reform-data`, laid out like `data/`)
+and one Dict (`uk-cgt-reform-results`):
 
 | File | App | Role |
 |---|---|---|
-| `backend/workers.py` | `uk-equalising-cgt-workers` | `run_year` scores one (dataset, year) per container (4 CPU, 16 GiB, scales to zero); `run_reform` fans the five years out in parallel, assembles the result and writes both cache layers |
-| `backend/warm.py` | `uk-equalising-cgt-warm` | one-off `modal run`: sha256-verified download, per-year datasets, baseline outputs, `manifest.json` (versions, projection fingerprint, exempt amounts, ceilings, baseline rates) |
-| `backend/modal_app.py` | `uk-equalising-cgt` | gateway: `GET /metadata`; `POST /submit` (a cached schedule is returned at once, otherwise a job is spawned); `GET /status/{job}`; proxy authentication required |
+| `backend/workers.py` | `uk-cgt-reform-workers` | `run_year` scores one (dataset, year) per container (4 CPU, 16 GiB, scales to zero); `run_reform` fans the five years out in parallel, assembles the result and writes both cache layers |
+| `backend/warm.py` | `uk-cgt-reform-warm` | one-off `modal run`: sha256-verified download, per-year datasets, baseline outputs, `manifest.json` (versions, projection fingerprint, exempt amounts, ceilings, baseline rates) |
+| `backend/modal_app.py` | `uk-cgt-reform` | gateway: `GET /metadata`; `POST /submit` (a cached schedule is returned at once, otherwise a job is spawned); `GET /status/{job}`; proxy authentication required |
 
 Abuse guards, because every visitor can start workers through the
 dashboard's route: custom rates are whole percentage points ordered basic ≤
@@ -377,15 +388,16 @@ higher ≤ additional (about 76,000 schedules per dataset and elasticity);
 the gateway joins a request to a job already computing the same schedule,
 answers 429 when `MAX_IN_FLIGHT` (3) uncached schedules are computing, and
 starts at most `DAILY_COMPUTE_BUDGET` (250) new schedules per UTC day (a
-count in the `uk-equalising-cgt-usage` Dict, about $25 of compute; cached
+count in the `uk-cgt-reform-usage` Dict, about $25 of compute; cached
 schedules are always served);
 the workers cap at 10 year-containers and 5 orchestrators; the Next route
 applies a best-effort per-address limit (20 submissions per 10 minutes per
 instance). Two guards live outside this repo: the Vercel Firewall rule "Rate explorer
-submissions" (project `uk-equalising-cgt`, custom rule: `POST
-/uk/equalising-cgt/api/explore`, at most 10 requests per 60 s per address,
-deny beyond that, which the edge answers with 403; published 2026-09-23 and
-verified with a burst of twelve requests), and a spend cap on the Modal
+submissions" (project `uk-cgt-reform`, custom rule: `POST
+/uk/cgt-reform/api/explore`, at most 10 requests per 60 s per address,
+deny beyond that, which the edge answers with 403; after any change to the
+rule or the path, a burst of twelve requests should see the last two
+refused), and a spend cap on the Modal
 workspace (Settings, Usage limits), which only a workspace admin can set;
 the daily budget above is the cap that needs no such access. Manage the rule with `bunx vercel firewall rules list --scope
 policy-engine` from `dashboard/`.
@@ -441,15 +453,15 @@ submitted again comes back from `/submit` as `status: "done"` without a job
 id, and still does after the Dict entry is deleted (the Volume copy). Before
 the tab goes public: a workspace admin has set the Modal spend cap (the
 Firewall rule and the daily budget are already in place). A failed job reports only its exception type; the detail
-is in the Modal logs for `uk-equalising-cgt-workers`.
+is in the Modal logs for `uk-cgt-reform-workers`.
 
 ## Run
 
 ```bash
 pip install -e ".[simulation,dev]"
-uk-equalising-cgt-build                       # every registered dataset
-uk-equalising-cgt-build --dataset microcosm_uk_2024_25_979   # one dataset
-uk-equalising-cgt-build --audit-only          # the projection audit alone
+uk-cgt-reform-build                       # every registered dataset
+uk-cgt-reform-build --dataset microcosm_uk_2024_25_979   # one dataset
+uk-cgt-reform-build --audit-only          # the projection audit alone
 ```
 
 Requires a Hugging Face token with access to PolicyEngine's private repos,

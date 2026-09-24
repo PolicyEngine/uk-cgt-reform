@@ -6,12 +6,12 @@
 
 It never runs the engine. Cached results come from the ``modal.Dict`` first
 and the Volume's ``explore_results/`` second (re-populating the Dict on a
-Volume hit); everything else is spawned on ``uk-equalising-cgt-workers``.
+Volume hit); everything else is spawned on ``uk-cgt-reform-workers``.
 Proxy authentication is required: the dashboard's Next route holds the
 token server-side (``CGT_EXPLORER_MODAL_KEY`` / ``CGT_EXPLORER_MODAL_SECRET``).
 
 Deploy: ``modal deploy backend/modal_app.py`` (after the workers and the warm
-run); the URL is ``https://<workspace>--uk-equalising-cgt-fastapi-app.modal.run``.
+run); the URL is ``https://<workspace>--uk-cgt-reform-fastapi-app.modal.run``.
 """
 
 import time
@@ -40,7 +40,7 @@ def build_web_app():
     from fastapi import FastAPI
     from fastapi.responses import JSONResponse
 
-    from uk_equalising_cgt.explore import (
+    from uk_cgt_reform.explore import (
         ExploreValidationError,
         ResultStore,
         api_options,
