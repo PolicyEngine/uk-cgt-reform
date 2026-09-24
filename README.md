@@ -16,7 +16,9 @@ score two things:
   projection (see [Rate explorer](#rate-explorer)).
 
 The repository was called `uk-equalising-cgt` until the rate explorer took
-its scope beyond equalisation; GitHub redirects the old URL.
+its scope beyond equalisation; GitHub redirects the old URL, and the
+dashboard redirects its former path `/uk/equalising-cgt` (and the bare
+deployment domain) to `/uk/cgt-reform`, query string included.
 
 The pipeline runs the equalisation reform on two registered datasets, each used
 exactly as published with no local reweighting, and writes the results side
