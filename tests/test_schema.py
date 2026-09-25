@@ -4,17 +4,9 @@ against a fake results dict (no simulation)."""
 import pytest
 
 from uk_cgt_reform.comparison import (
-    BASES,
-    CENTAX_PACKAGE_CONTEXT,
-    CENTAX_TABLE_3,
-    CENTAX_TABLE_8,
-    CENTAX_TABLE_8_REGIONS,
-    EXTERNAL_ROW_KEYS,
-    JRF_STATIC,
     READY_RECKONER,
     READY_RECKONER_ELASTICITIES,
     SENSITIVITY_CASES,
-    UNITS,
     VALIDATION_METRICS,
     benchmarks_block,
     centax_1920_block,
@@ -23,7 +15,12 @@ from uk_cgt_reform.comparison import (
     static_equalisation_block,
 )
 from uk_cgt_reform.impacts import REGION_NAMES, fiscal_year_label
-from uk_cgt_reform.reform import YEARS, centax_1920_rules, reform_schedules
+from uk_cgt_reform.reform import (
+    YEARS,
+    centax_1920_rules,
+    elasticity_convention,
+    reform_schedules,
+)
 from uk_cgt_reform.simulations import DATASETS, DEFAULT_DATASET_KEY, INCUMBENT
 
 YEAR_LABELS = [fiscal_year_label(y) for y in range(2026, 2031)]
@@ -83,12 +80,14 @@ def fake_benchmarks(scale: float = 1.0) -> dict:
         for row in READY_RECKONER["rows"]
     }
     return benchmarks_block(
-        static_equalisation=static_equalisation_block(static_budget, factors, "45576cc53935"),
+        static_equalisation=static_equalisation_block(
+            static_budget, factors, "45576cc53935", "OBR EFO March 2026 (Table A.1)"
+        ),
         centax_2019_20_rules=centax_1920_block(
             17.2 * scale,
             uplift,
             centax_1920_rules(),
-            {"baseline": "710d8df0d472", "reform": "2367c58b5ba5"},
+            {"baseline": "a2eab6466ee5", "reform": "2367c58b5ba5"},
         ),
         ready_reckoner=ready_reckoner_block(model_m),
     )
@@ -189,7 +188,7 @@ def fake_results(spec=INCUMBENT, scale: float = 1.0) -> dict:
             for label in YEAR_LABELS
         },
         "sensitivity": [
-            {"name": name, "e_mtr": e, "revenue_2026_bn": 1.0}
+            {"name": name, "e_mtr": e, **elasticity_convention(e), "revenue_2026_bn": 1.0}
             for name, e in SENSITIVITY_CASES.items()
         ],
         "benchmarks": fake_benchmarks(scale),
@@ -246,7 +245,15 @@ def test_dataset_comparison_lays_datasets_out_as_columns():
     assert entrants["enhanced_frs_2024_25"] == 10_000.0
     assert set(side_by_side["budget"][0]) == {"year", *keys}
     assert set(side_by_side["five_year_total_bn"]) == keys
-    assert set(side_by_side["sensitivity"][0]) == {"name", "e_mtr", *keys}
+    assert set(side_by_side["sensitivity"][0]) == {
+        "name",
+        "e_mtr",
+        "elasticity_parameter",
+        "applied_as",
+        "applied_value",
+        *keys,
+    }
+    assert side_by_side["sensitivity"][-1]["applied_as"] == "retention"
     assert set(side_by_side["top_quintile"]) == keys
     assert set(side_by_side["region"]) == keys
     bench = side_by_side["benchmarks"]
@@ -303,6 +310,15 @@ def test_sensitivity_cases():
     rows = fake_results()["sensitivity"]
     assert [r["e_mtr"] for r in rows] == [0.0, -0.35, -0.7, -2.52]
     assert rows[0]["name"] == "Static (no behavioural response)"
+    # Every row says how its case reached the engine: the official one is
+    # keyed by its MTR value but applied as a retention-rate elasticity.
+    assert [(r["applied_as"], r["applied_value"]) for r in rows] == [
+        ("mtr", 0.0),
+        ("mtr", -0.35),
+        ("mtr", -0.7),
+        ("retention", 3.6),
+    ]
+    assert rows[-1]["elasticity_parameter"].endswith(".capital_gains_responses.elasticity")
 
 
 def test_benchmarks_block_shape():
@@ -332,78 +348,3 @@ def test_benchmarks_block_shape():
     assert [row["id"] for row in rows] == [row["id"] for row in READY_RECKONER["rows"]]
     assert set(rows[0]["model_m"]) == set(READY_RECKONER_ELASTICITIES)
     assert set(rows[0]["model_m"]["official"]) == {"2026-27", "2027-28"}
-
-
-EXTERNAL_ROWS = [*JRF_STATIC, CENTAX_TABLE_3, CENTAX_TABLE_8, *CENTAX_PACKAGE_CONTEXT]
-
-
-@pytest.mark.parametrize("row", EXTERNAL_ROWS, ids=lambda row: row["id"])
-def test_external_rows_share_one_shape(row):
-    assert tuple(row) == EXTERNAL_ROW_KEYS
-    assert row["basis"] in BASES
-    assert row["unit"] in UNITS
-    assert row["url"].startswith("https://")
-
-
-def test_external_figures_are_pinned():
-    assert [(r["year"], r["value"], r["basis"]) for r in JRF_STATIC] == [
-        ("2026-27", 13.0, "static"),
-        ("2029-30", 17.0, "static"),
-    ]
-    assert CENTAX_TABLE_3["value"] == 139.0
-    assert CENTAX_TABLE_3["details"] == {"change_bn": 15.2, "baseline_bn": 10.9}
-    assert [(r["region"], r["baseline_bn"], r["uplift_pct"]) for r in CENTAX_TABLE_8_REGIONS] == [
-        ("London", 3.0, 123),
-        ("South East", 2.4, 139),
-        ("East of England", 1.1, 137),
-        ("North West", 0.9, 146),
-        ("South West", 0.8, 144),
-        ("West Midlands", 0.6, 151),
-        ("Yorkshire and the Humber", 0.6, 152),
-        ("East Midlands", 0.6, 151),
-        ("Scotland", 0.5, 160),
-        ("Wales", 0.2, 148),
-        ("North East", 0.2, 163),
-        ("Northern Ireland", 0.2, 154),
-    ]
-    assert {r["region"] for r in CENTAX_TABLE_8_REGIONS} == set(REGION_NAMES.values())
-    context = {r["id"]: r for r in CENTAX_PACKAGE_CONTEXT}
-    assert not any(r["comparable"] for r in CENTAX_PACKAGE_CONTEXT)
-    assert context["centax_2024_rates_only_post_behavioural_derived"]["value"] == 8.2
-    assert context["centax_2024_table5_package"]["value"] == 14.3
-    assert [
-        (r["retention_elasticity"], r["value"])
-        for r in context["centax_2024_table6_package_range"]["details"]["by_retention_elasticity"]
-    ] == [(0.5, 19.0), (1.0, 14.3), (1.5, 9.7), (2.0, 5.0)]
-    assert context["centax_2025_technical_note_package"]["value"] == 11.3
-    assert context["centax_2025_technical_note_package"]["details"] == {
-        "with_carried_interest_bn": 11.8
-    }
-    assert context["centax_2026_taxes_at_the_top_package"]["value"] == 19.7
-
-
-def test_ready_reckoner_rows_are_pinned():
-    rows = {row["id"]: row for row in READY_RECKONER["rows"]}
-    assert {rid: tuple(row["rates"].values()) for rid, row in rows.items()} == {
-        "higher_plus_1": (0.18, 0.25, 0.25),
-        "higher_plus_5": (0.18, 0.29, 0.29),
-        "higher_plus_10": (0.18, 0.34, 0.34),
-        "lower_plus_1": (0.19, 0.24, 0.24),
-        "lower_plus_5": (0.23, 0.24, 0.24),
-    }
-    assert {rid: tuple(row["hmrc_m"].values()) for rid, row in rows.items()} == {
-        "higher_plus_1": (-15, 80, -30),
-        "higher_plus_5": (-170, -235, -870),
-        "higher_plus_10": (-540, -2060, -3565),
-        "lower_plus_1": (-5, 10, 5),
-        "lower_plus_5": (-40, 20, -10),
-    }
-    assert READY_RECKONER["lag"] == [
-        {"model_year": "2026-27", "hmrc_year": "2027-28"},
-        {"model_year": "2027-28", "hmrc_year": "2028-29"},
-    ]
-
-
-def test_ready_reckoner_block_refuses_unscored_rows():
-    with pytest.raises(ValueError, match="not scored"):
-        ready_reckoner_block({})

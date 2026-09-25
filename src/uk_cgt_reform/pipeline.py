@@ -379,9 +379,12 @@ def run_dataset(
     }
 
     # ── Step 7: benchmarks against other institutions' estimates ─────────
-    factors = price_factors(audit["sensitivity_not_applied"]["cpi"]["by_year"], YEARS[0], YEARS)
+    cpi = audit["sensitivity_not_applied"]["cpi"]
+    factors = price_factors(cpi["by_year"], YEARS[0], YEARS)
     benchmarks = benchmarks_block(
-        static_equalisation=static_equalisation_block(static_budget, factors, static_digest),
+        static_equalisation=static_equalisation_block(
+            static_budget, factors, static_digest, cpi["reference"][0]["title"]
+        ),
         centax_2019_20_rules=centax_1920,
         ready_reckoner=ready_reckoner,
     )

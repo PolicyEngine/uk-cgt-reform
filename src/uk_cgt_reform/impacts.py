@@ -24,6 +24,8 @@ from __future__ import annotations
 
 import numpy as np
 
+from .reform import elasticity_convention
+
 AEA = 3_000  # annual exempt amount, unchanged by the reform
 
 # The engine's Region enum names (policyengine_uk Region), as the ``region``
@@ -305,7 +307,9 @@ def sensitivity(baseline_cgt: float, cases: dict[str, float], run_case) -> list[
     """Re-run the 2026 reform under each institution's elasticity assumption.
 
     ``run_case(elasticity)`` must return the completed reform simulation
-    for 2026 with that elasticity.
+    for 2026 with that elasticity. Each case is keyed by its MTR value
+    (``e_mtr``); the row also says which engine parameter carried it and in
+    which convention (``reform.elasticity_convention``).
     """
     rows = []
     for name, e in cases.items():
@@ -314,6 +318,7 @@ def sensitivity(baseline_cgt: float, cases: dict[str, float], run_case) -> list[
             {
                 "name": name,
                 "e_mtr": e,
+                **elasticity_convention(e),
                 "revenue_2026_bn": (cgt_revenue(sim) - baseline_cgt) / 1e9,
             }
         )

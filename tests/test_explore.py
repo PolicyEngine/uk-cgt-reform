@@ -144,6 +144,14 @@ def test_official_elasticity_applies_the_retention_parameter():
     assert RETENTION_ELASTICITY_PARAMETER not in central
     result = assemble_response(req, context(), year_rows())
     assert result["metadata"]["elasticity_applied"] == {RETENTION_ELASTICITY_PARAMETER: 3.6}
+    # The parameter the response names follows the case that ran.
+    assert result["metadata"]["elasticity_parameter"] == RETENTION_ELASTICITY_PARAMETER
+    central_result = assemble_response(validate_request({"rates": FLAT_30}), context(), year_rows())
+    assert central_result["metadata"]["elasticity_parameter"] == ELASTICITY_PARAMETER
+    options = {o["id"]: o for o in api_options()["elasticity_options"]}
+    assert options["official"]["elasticity_parameter"] == RETENTION_ELASTICITY_PARAMETER
+    assert options["centax_central"]["elasticity_parameter"] == ELASTICITY_PARAMETER
+    assert api_options()["elasticity_parameter"] == ELASTICITY_PARAMETER  # the default's
 
 
 def test_ready_reckoner_rows_are_valid_requests_and_not_presets():

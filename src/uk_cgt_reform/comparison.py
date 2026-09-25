@@ -140,7 +140,8 @@ CENTAX_RATES_ONLY_SCOPE = (
 )
 CENTAX_1920_RULES_NOTE = (
     "2019/20 rules and data: main rates 10/20, residential and carried interest "
-    "18/28, exempt amount £12,000; resident individuals; CGT and income tax counted together"
+    "18/28, BADR 10%, exempt amount £12,000; resident individuals; CGT and income tax "
+    "counted together"
 )
 CENTAX_PACKAGE_SCOPE = (
     "Package: equalisation plus a rate-of-return investment allowance, removal of the "
@@ -413,7 +414,10 @@ def price_factors(cpi_by_year: dict[str, dict], base_year: int, years: list[int]
 
 
 def static_equalisation_block(
-    static_budget: list[dict], factors: dict[str, float], reform_fingerprint: str
+    static_budget: list[dict],
+    factors: dict[str, float],
+    reform_fingerprint: str,
+    price_index_source: str,
 ) -> dict:
     """The static equalisation reform by year beside JRF's static estimate.
 
@@ -444,6 +448,7 @@ def static_equalisation_block(
         "reform_fingerprint": reform_fingerprint,
         "price_basis": "2026-27 prices",
         "price_index": CPI_INDEX,
+        "price_index_source": price_index_source,
         "obr_receipts_source": OBR_CGT_RECEIPTS_SOURCE,
         "by_year": rows,
         "external": [dict(row) for row in JRF_STATIC],
@@ -628,6 +633,9 @@ def dataset_comparison(results: dict[str, dict]) -> dict:
             {
                 "name": row["name"],
                 "e_mtr": row["e_mtr"],
+                "elasticity_parameter": row["elasticity_parameter"],
+                "applied_as": row["applied_as"],
+                "applied_value": row["applied_value"],
                 **{key: results[key]["sensitivity"][i]["revenue_2026_bn"] for key in keys},
             }
             for i, row in enumerate(first["sensitivity"])

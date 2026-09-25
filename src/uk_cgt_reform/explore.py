@@ -45,15 +45,14 @@ from .impacts import budget_impact, fiscal_year_label, income_change_groups
 from .reform import (
     BURNHAM_RATES,
     ELASTICITY,
-    ELASTICITY_PARAMETER,
     EXPLORER_SCOPE,
     OFFICIAL_ELASTICITY,
-    OFFICIAL_RETENTION_ELASTICITY,
     PERIOD,
     RATE_BANDS,
     YEARS,
     cgt_rate_reform,
     elasticity_assignment,
+    elasticity_convention,
     rate_reform_schedules,
     reform_fingerprint,
 )
@@ -82,35 +81,14 @@ RATE_STEP = 0.01
 #: ``applied_as`` says which engine convention carries each: the official
 #: HMRC/OBR case is applied as a retention-rate elasticity of 3.6
 #: (``reform.RETENTION_NATIVE``).
-ELASTICITY_OPTIONS = (
-    {
-        "id": "static",
-        "label": "Static (no behavioural response)",
-        "e_mtr": 0.0,
-        "applied_as": "mtr",
-        "applied_value": 0.0,
-    },
-    {
-        "id": "centax_lower",
-        "label": "CenTax lower (retention elasticity 0.5)",
-        "e_mtr": -0.35,
-        "applied_as": "mtr",
-        "applied_value": -0.35,
-    },
-    {
-        "id": "centax_central",
-        "label": "CenTax central (retention elasticity 1.0)",
-        "e_mtr": -0.7,
-        "applied_as": "mtr",
-        "applied_value": -0.7,
-    },
-    {
-        "id": "official",
-        "label": "HMRC/OBR official (retention elasticity 3.6)",
-        "e_mtr": OFFICIAL_ELASTICITY,
-        "applied_as": "retention",
-        "applied_value": OFFICIAL_RETENTION_ELASTICITY,
-    },
+ELASTICITY_OPTIONS = tuple(
+    {"id": option_id, "label": label, "e_mtr": e_mtr, **elasticity_convention(e_mtr)}
+    for option_id, label, e_mtr in (
+        ("static", "Static (no behavioural response)", 0.0),
+        ("centax_lower", "CenTax lower (retention elasticity 0.5)", -0.35),
+        ("centax_central", "CenTax central (retention elasticity 1.0)", -0.7),
+        ("official", "HMRC/OBR official (retention elasticity 3.6)", OFFICIAL_ELASTICITY),
+    )
 )
 DEFAULT_ELASTICITY = ELASTICITY
 assert {o["e_mtr"] for o in ELASTICITY_OPTIONS} == set(SENSITIVITY_CASES.values())
@@ -289,7 +267,8 @@ def api_options() -> dict:
         "rate_step": RATE_STEP,
         "elasticity_options": [dict(o) for o in ELASTICITY_OPTIONS],
         "default_elasticity": DEFAULT_ELASTICITY,
-        "elasticity_parameter": ELASTICITY_PARAMETER,
+        # The default option's parameter; each option names its own.
+        "elasticity_parameter": elasticity_convention(DEFAULT_ELASTICITY)["elasticity_parameter"],
         "presets": [{**p, "rates": dict(p["rates"])} for p in PRESETS],
         "ready_reckoner": json.loads(json.dumps(READY_RECKONER)),
         "scope": EXPLORER_SCOPE,
@@ -534,7 +513,7 @@ def assemble_response(
             **dataset_metadata(req.spec),
             "reform_period_start": PERIOD,
             "elasticity": req.elasticity,
-            "elasticity_parameter": ELASTICITY_PARAMETER,
+            "elasticity_parameter": elasticity_convention(req.elasticity)["elasticity_parameter"],
             "elasticity_applied": elasticity_assignment(req.elasticity),
             "reform": dict(req.rates),
             "reform_scope": EXPLORER_SCOPE,

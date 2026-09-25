@@ -118,6 +118,12 @@ EXEMPT_AMOUNT_PARAMETER = "gov.hmrc.cgt.annual_exempt_amount"
 CENTAX_1920_MAIN_RATES = {"basic_rate": 0.10, "higher_rate": 0.20, "additional_rate": 0.20}
 CENTAX_1920_SCHEDULE_RATES = {"basic_rate": 0.18, "higher_rate": 0.28, "additional_rate": 0.28}
 CENTAX_1920_EXEMPT_AMOUNT = 12_000
+# Business Asset Disposal Relief (then Entrepreneurs' Relief) charged 10% in
+# 2019/20; CenTax's baseline applies the £1m lifetime limit of March 2020.
+# Investors' Relief has no engine parameter. Neither registered dataset
+# records BADR or Investors' Relief gains, so both settings are inert here.
+CENTAX_1920_BADR_RATE = 0.10
+CENTAX_1920_BADR_LIFETIME_LIMIT = 1_000_000
 
 
 def elasticity_assignment(elasticity: float) -> dict[str, float]:
@@ -128,6 +134,18 @@ def elasticity_assignment(elasticity: float) -> dict[str, float]:
         if math.isclose(elasticity, key, abs_tol=1e-9):
             return {RETENTION_ELASTICITY_PARAMETER: retention}
     return {ELASTICITY_PARAMETER: elasticity}
+
+
+def elasticity_convention(elasticity: float) -> dict:
+    """How a behavioural case keyed by its MTR value is applied: the engine
+    parameter it sets, the convention (``mtr`` or ``retention``) and the value
+    the engine receives. Every output that reports a case carries these."""
+    [(parameter, value)] = elasticity_assignment(elasticity).items()
+    return {
+        "elasticity_parameter": parameter,
+        "applied_as": "retention" if parameter == RETENTION_ELASTICITY_PARAMETER else "mtr",
+        "applied_value": value,
+    }
 
 
 def cgt_rate_reform(
@@ -175,16 +193,18 @@ def burnham_reform(elasticity: float = ELASTICITY) -> dict:
 
 def centax_1920_reforms() -> tuple[dict, dict]:
     """The static counterfactual pair for the CenTax rates-only benchmark:
-    2019/20 rules (main 10/20, residential and carried interest 18/28, a
-    £12,000 exempt amount) and the same rules with every schedule at income
-    tax rates and the BADR lifetime limit at zero. Both at e = 0, so each is
-    exact against the current-law baseline and their difference is the
-    uplift from equalising at 2019/20 rules."""
+    2019/20 rules (main 10/20, residential and carried interest 18/28, BADR
+    at 10% with a £1m lifetime limit, a £12,000 exempt amount) and the same
+    rules with every schedule at income tax rates and the BADR lifetime limit
+    at zero. Both at e = 0, so each is exact against the current-law baseline
+    and their difference is the uplift from equalising at 2019/20 rules."""
     exempt = {EXEMPT_AMOUNT_PARAMETER: {PERIOD: CENTAX_1920_EXEMPT_AMOUNT}}
     baseline = cgt_rate_reform(CENTAX_1920_MAIN_RATES, 0.0, schedules=())
     for schedule in SCHEDULES:
         for band in RATE_BANDS:
             baseline[f"gov.hmrc.cgt.{schedule}.{band}"] = {PERIOD: CENTAX_1920_SCHEDULE_RATES[band]}
+    baseline["gov.hmrc.cgt.badr.rate"] = {PERIOD: CENTAX_1920_BADR_RATE}
+    baseline["gov.hmrc.cgt.badr.lifetime_limit"] = {PERIOD: CENTAX_1920_BADR_LIFETIME_LIMIT}
     return {**baseline, **exempt}, {**burnham_reform(0.0), **exempt}
 
 
@@ -194,6 +214,10 @@ def centax_1920_rules() -> dict:
         "baseline": {
             "main": dict(CENTAX_1920_MAIN_RATES),
             **{schedule: dict(CENTAX_1920_SCHEDULE_RATES) for schedule in SCHEDULES},
+            "badr": {
+                "rate": CENTAX_1920_BADR_RATE,
+                "lifetime_limit": CENTAX_1920_BADR_LIFETIME_LIMIT,
+            },
             "annual_exempt_amount": CENTAX_1920_EXEMPT_AMOUNT,
         },
         "reform": {
@@ -203,6 +227,11 @@ def centax_1920_rules() -> dict:
             "annual_exempt_amount": CENTAX_1920_EXEMPT_AMOUNT,
         },
         "elasticity": 0.0,
+        "not_modelled": (
+            "Investors' Relief, which CenTax's Table 3 also abolishes, has no engine "
+            "parameter. Neither registered dataset records BADR or Investors' Relief "
+            "gains, so the BADR settings and the missing Investors' Relief are inert here."
+        ),
     }
 
 

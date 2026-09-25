@@ -180,8 +180,11 @@ external figure with its source, locator, scope, year and basis.
 - **CenTax (2024), rates only at 2019/20 rules.** CenTax's static uplift from
   equalising alone is +139% on 2019/20 data (Table 3). Applying the same
   rules to this repo's 2026-27 data (main rates 10/20, residential and
-  carried interest 18/28, an exempt amount of £12,000; `reform.centax_1920_reforms`)
-  and equalising gives +122% on the incumbent and +113% on the candidate.
+  carried interest 18/28, BADR at 10% with a £1m lifetime limit, an exempt
+  amount of £12,000; `reform.centax_1920_reforms`) and equalising gives +122%
+  on the incumbent and +113% on the candidate. Investors' Relief, which
+  CenTax's Table 3 also abolishes, has no engine parameter; neither dataset
+  records BADR or Investors' Relief gains, so both are inert here.
   By region (Table 8), the candidate's shares of baseline CGT track
   CenTax's (London 27.5% against 27.0%, South East 20.1% against 21.6%);
   the incumbent puts 12% in London and 13% in Wales. CenTax's uplift is
@@ -270,7 +273,9 @@ the central case) but applied in the retention convention it is stated in:
 the engine's MTR form scales realised gains by (t₁/t₀)^e, which at −2.52
 makes every rate rise lose revenue, while the retention form,
 ((1 − t₁)/(1 − t₀))^3.6, reproduces the pattern of HMRC's ready reckoner
-(`reform.RETENTION_NATIVE`). Caveat: Advani's elasticity assumes accompanying
+(`reform.RETENTION_NATIVE`). Every sensitivity row, explorer option and
+explorer response records the engine parameter it set, the convention
+(`applied_as`) and the value applied (`reform.elasticity_convention`). Caveat: Advani's elasticity assumes accompanying
 base broadening we do not model, so behavioural loss may be understated for
 a rate-only reform.
 

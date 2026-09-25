@@ -163,5 +163,7 @@ def test_centax_counterfactual_pair_is_pinned():
     assert baseline[EXEMPT_AMOUNT_PARAMETER] == {PERIOD: 12_000}
     assert baseline[ELASTICITY_PARAMETER] == {PERIOD: 0.0}
     assert reform == {**burnham_reform(0.0), EXEMPT_AMOUNT_PARAMETER: {PERIOD: 12_000}}
-    assert reform_fingerprint(baseline) == "710d8df0d472"
+    assert baseline["gov.hmrc.cgt.badr.rate"] == {PERIOD: 0.10}
+    assert baseline["gov.hmrc.cgt.badr.lifetime_limit"] == {PERIOD: 1_000_000}
+    assert reform_fingerprint(baseline) == "a2eab6466ee5"
     assert reform_fingerprint(reform) == "2367c58b5ba5"
