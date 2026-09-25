@@ -1,8 +1,16 @@
 "use client";
 
-import { formatPct, formatSignedBn, formatSignedCurrency, formatSignedPct } from "../lib/formatters";
+import {
+  formatElasticity,
+  formatPct,
+  formatPublished,
+  formatSignedBn,
+  formatSignedCurrency,
+  formatSignedPct,
+} from "../lib/formatters";
 import {
   BASELINE_SCHEDULE_RATES,
+  getBenchmarks,
   getBudget,
   getDatasetInfo,
   getEntrants,
@@ -21,26 +29,30 @@ import { MetricCard, TipHeader } from "./controls";
 import SectionHeading from "./SectionHeading";
 
 // Where each sensitivity scenario's elasticity comes from. Keys match the
-// scenario names emitted by the pipeline's SENSITIVITY_CASES.
+// scenario names emitted by the pipeline's SENSITIVITY_CASES; the official
+// case's source comes from the results file's benchmarks block.
+const CENTAX_SOURCE = {
+  label: "Advani, Lonsdale & Summers (2024), CenTax",
+  url: "https://centax.org.uk/wp-content/uploads/2024/10/AdvaniLonsdaleSummers2024_CGTReform.pdf#page=38",
+};
 const ELASTICITY_SOURCES = {
-  "Static (Advani & Summers 2020 style)": {
-    label: "Advani & Summers, equalise rates (static)",
-    // Text fragment lands on the "Capital Gains Tax: equalise rates" row.
-    url: "https://arunadvani.com/taxreform.html#:~:text=Capital%20Gains%20Tax%3A%20equalise%20rates",
-  },
-  "CenTax lower (retention e=0.5)": {
-    label: "Advani, Lonsdale & Summers (2024), CenTax",
-    url: "https://centax.org.uk/wp-content/uploads/2024/10/AdvaniLonsdaleSummers2024_CGTReform.pdf#page=38",
-  },
-  "CenTax central (retention e=1.0)": {
-    label: "Advani, Lonsdale & Summers (2024), CenTax",
-    url: "https://centax.org.uk/wp-content/uploads/2024/10/AdvaniLonsdaleSummers2024_CGTReform.pdf#page=38",
-  },
+  "Static (no behavioural response)": { label: "None: taxpayers do not respond", url: null },
+  "CenTax lower (retention e=0.5)": CENTAX_SOURCE,
+  "CenTax central (retention e=1.0)": CENTAX_SOURCE,
 };
 
-function SourceLink({ name }) {
-  const source = ELASTICITY_SOURCES[name];
+function officialSource(official) {
+  return {
+    label: `OBR (${formatPublished(official.published.slice(0, 7))}), ${official.locator.toLowerCase()}`,
+    url: `${official.url}#page=3`,
+  };
+}
+
+function SourceLink({ row, official }) {
+  const source =
+    row.applied_as === "retention" ? officialSource(official) : ELASTICITY_SOURCES[row.name];
   if (!source) return <td>—</td>;
+  if (!source.url) return <td className="font-normal text-slate-500">{source.label}</td>;
   return (
     <td>
       <a
@@ -61,6 +73,7 @@ export default function ReformTab({ data }) {
   const fiveYearTotal = getFiveYearTotal(data);
   const headlineGroups = getIncomeChangeGroups(data, firstYear);
   const sensitivity = getSensitivity(data);
+  const official = getBenchmarks(data).elasticities.official;
   const reform = getReform(data);
   const schedules = getReformSchedules(data);
   const validation = getValidation(data);
@@ -261,7 +274,10 @@ export default function ReformTab({ data }) {
             reformed 40–45% rates. That conversion is exact only for a marginal
             rate change, so applying −0.7 across the full 24%→40% jump is
             somewhat more responsive than CenTax&apos;s own convention implies
-            (roughly −0.5 here). CenTax&apos;s range is anchored on{" "}
+            (roughly −0.5 here). The last row is the official HMRC/OBR
+            assumption, a retention-rate elasticity of {official.e_retention},
+            applied in that convention; the Methodology tab explains why it turns
+            the reform&apos;s yield so far down. CenTax&apos;s range is anchored on{" "}
             <a
               href="https://www.aeaweb.org/articles?id=10.1257/aeri.20200535"
               target="_blank"
@@ -286,12 +302,12 @@ export default function ReformTab({ data }) {
             <tr>
               <th>Scenario</th>
               <TipHeader
-                label="MTR elasticity"
-                tip="Percentage change in realised gains for a one per cent change in the marginal tax rate. Converted from retention-rate elasticities via e_mtr = −e_retention × t/(1−t)."
+                label="Elasticity, as applied"
+                tip="The elasticity of realised gains the engine applies. For the static and CenTax cases it is with respect to the marginal tax rate (MTR), converted from a retention-rate elasticity via e_mtr = −e_retention × t/(1−t). The official HMRC/OBR case is applied with respect to the retention rate (1 − t), as the OBR states it; its MTR equivalent is shown for comparison."
               />
               <TipHeader
-                label={`Revenue, ${firstYear}`}
-                tip="Net change in the government balance in the first year of the reform under this elasticity."
+                label={`CGT revenue, ${firstYear}`}
+                tip="Change in capital gains tax revenue in the first year of the reform under this elasticity."
               />
               <th>Source</th>
             </tr>
@@ -303,9 +319,9 @@ export default function ReformTab({ data }) {
                 className={row.e_mtr === -0.7 ? "font-semibold" : ""}
               >
                 <td>{row.name}</td>
-                <td>{row.e_mtr.toFixed(2)}</td>
+                <td>{formatElasticity(row)}</td>
                 <td>{formatSignedBn(row.revenue_2026_bn)}</td>
-                <SourceLink name={row.name} />
+                <SourceLink row={row} official={official} />
               </tr>
             ))}
           </tbody>

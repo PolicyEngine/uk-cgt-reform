@@ -14,17 +14,34 @@
     {
       "id": "static",
       "label": "Static (no behavioural response)",
-      "e_mtr": 0.0
+      "e_mtr": 0.0,
+      "elasticity_parameter": "gov.simulation.capital_gains_responses.mtr_elasticity",
+      "applied_as": "mtr",
+      "applied_value": 0.0
     },
     {
       "id": "centax_lower",
       "label": "CenTax lower (retention elasticity 0.5)",
-      "e_mtr": -0.35
+      "e_mtr": -0.35,
+      "elasticity_parameter": "gov.simulation.capital_gains_responses.mtr_elasticity",
+      "applied_as": "mtr",
+      "applied_value": -0.35
     },
     {
       "id": "centax_central",
       "label": "CenTax central (retention elasticity 1.0)",
-      "e_mtr": -0.7
+      "e_mtr": -0.7,
+      "elasticity_parameter": "gov.simulation.capital_gains_responses.mtr_elasticity",
+      "applied_as": "mtr",
+      "applied_value": -0.7
+    },
+    {
+      "id": "official",
+      "label": "HMRC/OBR official (retention elasticity 3.6)",
+      "e_mtr": -2.52,
+      "elasticity_parameter": "gov.simulation.capital_gains_responses.elasticity",
+      "applied_as": "retention",
+      "applied_value": 3.6
     }
   ],
   "default_elasticity": -0.7,
@@ -67,6 +84,124 @@
       }
     }
   ],
+  "ready_reckoner": {
+    "source": "HMRC, Direct effects of illustrative tax changes (ready reckoner), June 2025",
+    "published": "2025-06-24",
+    "url": "https://assets.publishing.service.gov.uk/media/68552862b46781eacfd71d71/June_2025_TRR_ODS__1_.ods",
+    "locator": "Capital gains tax rows; notes 13 and 14",
+    "basis": "post_behavioural",
+    "unit": "gbp_m",
+    "measure": "Exchequer receipts in \u00a3m (positive = yield), including income tax and SDLT effects, for a change from April 2026 on the OBR's March 2025 forecast",
+    "note": "The higher-rate rows move the higher and additional rates together, for main and residential gains (note 13); rows are non-linear and must not be scaled (note 14). HMRC deferred the 2026 edition on 6 July 2026 pending a review of key assumptions, so these rows are provisional.",
+    "hmrc_years": [
+      "2026-27",
+      "2027-28",
+      "2028-29"
+    ],
+    "lag": [
+      {
+        "model_year": "2026-27",
+        "hmrc_year": "2027-28"
+      },
+      {
+        "model_year": "2027-28",
+        "hmrc_year": "2028-29"
+      }
+    ],
+    "rows": [
+      {
+        "id": "higher_plus_1",
+        "label": "Higher rate +1pp (18% / 25% / 25%)",
+        "rates": {
+          "basic_rate": 0.18,
+          "higher_rate": 0.25,
+          "additional_rate": 0.25
+        },
+        "hmrc_m": {
+          "2026-27": -15,
+          "2027-28": 80,
+          "2028-29": -30
+        }
+      },
+      {
+        "id": "higher_plus_5",
+        "label": "Higher rate +5pp (18% / 29% / 29%)",
+        "rates": {
+          "basic_rate": 0.18,
+          "higher_rate": 0.29,
+          "additional_rate": 0.29
+        },
+        "hmrc_m": {
+          "2026-27": -170,
+          "2027-28": -235,
+          "2028-29": -870
+        }
+      },
+      {
+        "id": "higher_plus_10",
+        "label": "Higher rate +10pp (18% / 34% / 34%)",
+        "rates": {
+          "basic_rate": 0.18,
+          "higher_rate": 0.34,
+          "additional_rate": 0.34
+        },
+        "hmrc_m": {
+          "2026-27": -540,
+          "2027-28": -2060,
+          "2028-29": -3565
+        }
+      },
+      {
+        "id": "lower_plus_1",
+        "label": "Lower rate +1pp (19% / 24% / 24%)",
+        "rates": {
+          "basic_rate": 0.19,
+          "higher_rate": 0.24,
+          "additional_rate": 0.24
+        },
+        "hmrc_m": {
+          "2026-27": -5,
+          "2027-28": 10,
+          "2028-29": 5
+        }
+      },
+      {
+        "id": "lower_plus_5",
+        "label": "Lower rate +5pp (23% / 24% / 24%)",
+        "rates": {
+          "basic_rate": 0.23,
+          "higher_rate": 0.24,
+          "additional_rate": 0.24
+        },
+        "hmrc_m": {
+          "2026-27": -40,
+          "2027-28": 20,
+          "2028-29": -10
+        }
+      }
+    ],
+    "excluded": [
+      {
+        "hmrc_label": "Lower rate +10pp (28% / 24% / 24%)",
+        "hmrc_m": {
+          "2026-27": -130,
+          "2027-28": -55,
+          "2028-29": -135
+        },
+        "reason": "A lower rate above the higher rate breaks the explorer's ordering rule."
+      },
+      {
+        "hmrc_label": "BADR rate +1pp and +5pp",
+        "hmrc_m": null,
+        "reason": "Neither registered dataset records BADR gains."
+      },
+      {
+        "hmrc_label": "Annual exempt amount +\u00a3500",
+        "hmrc_m": null,
+        "reason": "The explorer changes rates only."
+      }
+    ]
+  },
   "scope": "main_and_residential",
   "years": [
     2026,

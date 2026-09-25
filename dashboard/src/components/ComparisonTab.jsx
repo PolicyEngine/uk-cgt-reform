@@ -16,6 +16,7 @@ import {
   formatBn,
   formatCount,
   formatCurrency,
+  formatElasticity,
   formatPct,
   formatSignedBn,
   formatSignedCurrency,
@@ -57,14 +58,16 @@ const FILLS = { incumbent: colors.gray[400], candidate: colors.primary[600] };
 
 // Published counterparts of the headline measures. Outturns describe the tax
 // year stated (HMRC Capital Gains Tax statistics, 2026 release); the OBR
-// receipts are the only projected figures; the yield estimates describe
-// similar, not identical, reforms.
+// receipts are the only projected figures. The yield benchmarks (JRF,
+// CenTax) come from dataset_comparison.json's `benchmarks` block, which the
+// pipeline builds from comparison.py; the Benchmarks tab has the detail.
 const HMRC_TABLE_1 =
   "https://assets.publishing.service.gov.uk/media/6a7b23f1bbafcd1db3b6e420/Table_1_2026_Taxpayer_numbers_gains_and_tax_liabilities.ods";
 const OBR_EFO = "https://obr.uk/economic-and-fiscal-outlooks/";
-const CENTAX_2024 =
-  "https://centax.org.uk/wp-content/uploads/2024/10/AdvaniLonsdaleSummers2024_CGTReform.pdf";
-const ADVANI_SUMMERS = "https://arunadvani.com/taxreform.html";
+
+function formatUplift(value) {
+  return `${value < 0 ? "\u2212" : "+"}${Math.abs(value).toFixed(0)}%`;
+}
 
 function BenchmarkLink({ href, children }) {
   return (
@@ -143,7 +146,7 @@ function DatasetCard({ dataset }) {
   );
 }
 
-export default function ComparisonTab({ comparison }) {
+export default function ComparisonTab({ comparison, onNavigate }) {
   const keys = orderedKeys(comparison);
   const datasets = comparison.datasets;
   const label = (key) => datasets[key].dataset_short_label;
@@ -158,6 +161,9 @@ export default function ComparisonTab({ comparison }) {
   const entrantCgt = validationRow("entrants_by_uprating.cgt_bn");
   const staticRow = comparison.sensitivity.find((row) => row.e_mtr === 0);
   const firstBudget = comparison.budget[0];
+  const benchmarks = comparison.benchmarks;
+  const jrf = benchmarks.external.jrf.find((row) => row.year === firstYear);
+  const centax = benchmarks.external.centax_table_3;
 
   const chartData = comparison.budget.map((row) => ({
     year: row.year,
@@ -175,9 +181,14 @@ export default function ComparisonTab({ comparison }) {
       values: keys.map((key) => formatSignedBn(firstBudget[key].gov_balance_change_bn, 1)),
       benchmark: (
         <>
-          <BenchmarkLink href={CENTAX_2024}>CenTax (2024)</BenchmarkLink>: £14.0bn central,
-          £9.7bn worst case, both with base broadening; HMRC ready reckoner: −£2bn by
-          year 3 for +10pp on the higher rates alone
+          No published estimate of equalisation alone after behavioural responses; see{" "}
+          <button
+            type="button"
+            onClick={() => onNavigate("benchmarks")}
+            className="underline decoration-1 underline-offset-2 hover:opacity-80"
+          >
+            Benchmarks
+          </button>
         </>
       ),
     },
@@ -187,12 +198,22 @@ export default function ComparisonTab({ comparison }) {
       benchmark: null,
     },
     {
-      label: `Static yield, ${firstYear} (e = 0)`,
+      label: `Static CGT yield, ${firstYear} (e = 0)`,
       values: keys.map((key) => formatSignedBn(staticRow[key], 1)),
       benchmark: (
         <>
-          <BenchmarkLink href={ADVANI_SUMMERS}>Advani &amp; Summers (2020)</BenchmarkLink>, static,
-          GDP-uprated: £16.7bn
+          <BenchmarkLink href={jrf.url}>JRF (2026)</BenchmarkLink>: about £{jrf.value.toFixed(0)}bn,
+          static, equalisation alone
+        </>
+      ),
+    },
+    {
+      label: "Uplift from equalising at 2019/20 rules (static)",
+      values: keys.map((key) => formatUplift(benchmarks.centax_2019_20_rules[key])),
+      benchmark: (
+        <>
+          <BenchmarkLink href={centax.url}>CenTax (2024)</BenchmarkLink>, {centax.locator}:{" "}
+          {formatUplift(centax.value)} on 2019/20 data
         </>
       ),
     },
@@ -447,13 +468,13 @@ export default function ComparisonTab({ comparison }) {
       <section className="section-card">
         <SectionHeading
           title={`Sensitivity to the behavioural elasticity, ${firstYear}`}
-          description="Net change in the government balance in the first year under each elasticity, by dataset."
+          description={`Change in CGT revenue in the first year under each elasticity, by dataset. The official HMRC/OBR case is applied as a retention-rate elasticity of ${comparison.sensitivity.find((row) => row.applied_as === "retention").applied_value}.`}
         />
         <table className="data-table">
           <thead>
             <tr>
               <th>Scenario</th>
-              <th>MTR elasticity</th>
+              <th>Elasticity, as applied</th>
               {keys.map((key) => (
                 <th key={key}>{label(key)}</th>
               ))}
@@ -463,7 +484,7 @@ export default function ComparisonTab({ comparison }) {
             {comparison.sensitivity.map((row) => (
               <tr key={row.name} className={row.e_mtr === -0.7 ? "font-semibold" : ""}>
                 <td>{row.name}</td>
-                <td>{row.e_mtr.toFixed(2)}</td>
+                <td>{formatElasticity(row)}</td>
                 {keys.map((key) => (
                   <td key={key}>{formatSignedBn(row[key])}</td>
                 ))}

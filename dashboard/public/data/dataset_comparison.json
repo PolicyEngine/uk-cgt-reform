@@ -1,5 +1,5 @@
 {
-  "generated": "2026-09-23",
+  "generated": "2026-09-25",
   "first_year": "2026-27",
   "years": [
     "2026-27",
@@ -22,7 +22,7 @@
       "dataset_notes": "Carries capital_gains only: no asset-type breakdown, so the engine charges every gain on the main CGT schedule.",
       "policyengine_version": "4.22.3",
       "policyengine_uk_version": "2.99.1",
-      "generated": "2026-09-23"
+      "generated": "2026-09-25"
     },
     "microcosm_uk_2024_25_979": {
       "dataset": "hf://policyengine/populace-uk-private/staged/uk-frs-calibration-attempt-20260923T134002Z-c1be1c9f/microcosm_uk_2024_25.h5@f6df65b1e98675ad305bcacf7ede3e0d34b57063",
@@ -36,7 +36,7 @@
       "dataset_notes": "Carries capital_gains and capital_gains_residential_property (the residential schedule); no BADR or carried-interest columns. Sub-exempt gainers hold gains strictly inside (0, GBP 3,000) rather than at the cap, and the build's projection fence bounds the stock of them that uprating carries over the frozen exempt amount by 2030 (68.5k against HMRC's 73k in the GBP 3,000 to 5,999 band).",
       "policyengine_version": "4.22.3",
       "policyengine_uk_version": "2.99.1",
-      "generated": "2026-09-23"
+      "generated": "2026-09-25"
     }
   },
   "validation": [
@@ -268,22 +268,40 @@
   },
   "sensitivity": [
     {
-      "name": "Static (Advani & Summers 2020 style)",
+      "name": "Static (no behavioural response)",
       "e_mtr": 0.0,
+      "elasticity_parameter": "gov.simulation.capital_gains_responses.mtr_elasticity",
+      "applied_as": "mtr",
+      "applied_value": 0.0,
       "enhanced_frs_2024_25": 10.671796020233026,
       "microcosm_uk_2024_25_979": 24.720886159871625
     },
     {
       "name": "CenTax lower (retention e=0.5)",
       "e_mtr": -0.35,
+      "elasticity_parameter": "gov.simulation.capital_gains_responses.mtr_elasticity",
+      "applied_as": "mtr",
+      "applied_value": -0.35,
       "enhanced_frs_2024_25": 5.946626057094931,
       "microcosm_uk_2024_25_979": 13.819269408332593
     },
     {
       "name": "CenTax central (retention e=1.0)",
       "e_mtr": -0.7,
+      "elasticity_parameter": "gov.simulation.capital_gains_responses.mtr_elasticity",
+      "applied_as": "mtr",
+      "applied_value": -0.7,
       "enhanced_frs_2024_25": 2.1541394767543562,
       "microcosm_uk_2024_25_979": 5.073126444644558
+    },
+    {
+      "name": "HMRC/OBR official (retention e=3.6)",
+      "e_mtr": -2.52,
+      "elasticity_parameter": "gov.simulation.capital_gains_responses.elasticity",
+      "applied_as": "retention",
+      "applied_value": 3.6,
+      "enhanced_frs_2024_25": -5.659652749683614,
+      "microcosm_uk_2024_25_979": -13.0934054412243
     }
   ],
   "top_quintile": {
@@ -459,5 +477,153 @@
         "relative_change_pct": -1.6516873459453596
       }
     ]
+  },
+  "benchmarks": {
+    "static_equalisation": [
+      {
+        "year": "2026-27",
+        "jrf_bn": 13.0,
+        "enhanced_frs_2024_25": {
+          "static_cgt_change_bn": 10.671796020233026,
+          "static_uplift_pct": 80.83890621610144,
+          "static_cgt_change_real_bn": 10.671796020233026,
+          "uplift_on_obr_receipts_real_bn": 16.8144924929491
+        },
+        "microcosm_uk_2024_25_979": {
+          "static_cgt_change_bn": 24.720886159871625,
+          "static_uplift_pct": 82.39316833607823,
+          "static_cgt_change_real_bn": 24.720886159871625,
+          "uplift_on_obr_receipts_real_bn": 17.137779013904275
+        }
+      },
+      {
+        "year": "2027-28",
+        "jrf_bn": null,
+        "enhanced_frs_2024_25": {
+          "static_cgt_change_bn": 11.084743429238312,
+          "static_uplift_pct": 80.92808059498817,
+          "static_cgt_change_real_bn": 10.86739551886109,
+          "uplift_on_obr_receipts_real_bn": 20.232020148747043
+        },
+        "microcosm_uk_2024_25_979": {
+          "static_cgt_change_bn": 25.67443900855545,
+          "static_uplift_pct": 82.5188406644034,
+          "static_cgt_change_real_bn": 25.171018635838674,
+          "uplift_on_obr_receipts_real_bn": 20.62971016610085
+        }
+      },
+      {
+        "year": "2028-29",
+        "jrf_bn": null,
+        "enhanced_frs_2024_25": {
+          "static_cgt_change_bn": 11.500675546209328,
+          "static_uplift_pct": 81.01043240875987,
+          "static_cgt_change_real_bn": 11.054090298163521,
+          "uplift_on_obr_receipts_real_bn": 22.502897891322185
+        },
+        "microcosm_uk_2024_25_979": {
+          "static_cgt_change_bn": 26.634462079243534,
+          "static_uplift_pct": 82.63520946716704,
+          "static_cgt_change_real_bn": 25.600213455635846,
+          "uplift_on_obr_receipts_real_bn": 22.954224851990848
+        }
+      },
+      {
+        "year": "2029-30",
+        "jrf_bn": 17.0,
+        "enhanced_frs_2024_25": {
+          "static_cgt_change_bn": 11.91911024585901,
+          "static_uplift_pct": 81.08762752289034,
+          "static_cgt_change_real_bn": 11.23164379260146,
+          "uplift_on_obr_receipts_real_bn": 24.451418390480388
+        },
+        "microcosm_uk_2024_25_979": {
+          "static_cgt_change_bn": 27.601027796776897,
+          "static_uplift_pct": 82.74672823157559,
+          "static_cgt_change_real_bn": 26.009064949356677,
+          "uplift_on_obr_receipts_real_bn": 24.95170883945861
+        }
+      },
+      {
+        "year": "2030-31",
+        "jrf_bn": null,
+        "enhanced_frs_2024_25": {
+          "static_cgt_change_bn": 12.378858854589316,
+          "static_uplift_pct": 81.17200165357781,
+          "static_cgt_change_real_bn": 11.436152132240155,
+          "uplift_on_obr_receipts_real_bn": 26.171643474727002
+        },
+        "microcosm_uk_2024_25_979": {
+          "static_cgt_change_bn": 28.662047847367354,
+          "static_uplift_pct": 82.86598192010544,
+          "static_cgt_change_real_bn": 26.47930180434343,
+          "uplift_on_obr_receipts_real_bn": 26.717820071159746
+        }
+      }
+    ],
+    "centax_2019_20_rules": {
+      "centax_uplift_pct": 139.0,
+      "enhanced_frs_2024_25": 122.16733881504007,
+      "microcosm_uk_2024_25_979": 113.18598734743829
+    },
+    "external": {
+      "jrf": [
+        {
+          "id": "jrf_2026_static_2026_27",
+          "source": "Joseph Rowntree Foundation, Rebuilding living standards and economic security (Belfield, Tims, Hamdan, Ladouch and Percival)",
+          "published": "2026-06-29",
+          "url": "https://www.jrf.org.uk/income-savings-and-debt/rebuilding-living-standards-and-economic-security",
+          "locator": "Methodology, tax modelling",
+          "scope": "Equalising CGT rates with income tax rates (20/40/45, gains stacked on income) for every kind of gain, with no other change",
+          "comparable": true,
+          "year": "2026-27",
+          "basis": "static",
+          "price_basis": "2026/27 prices",
+          "value": 13.0,
+          "unit": "gbp_bn",
+          "details": {
+            "method": "HMRC CGT statistics by income band applied to the OBR March 2026 CGT projection, adjusted for carried interest and BADR; grouped data, no behavioural response"
+          },
+          "note": "About \u00a313bn."
+        },
+        {
+          "id": "jrf_2026_static_2029_30",
+          "source": "Joseph Rowntree Foundation, Rebuilding living standards and economic security (Belfield, Tims, Hamdan, Ladouch and Percival)",
+          "published": "2026-06-29",
+          "url": "https://www.jrf.org.uk/income-savings-and-debt/rebuilding-living-standards-and-economic-security",
+          "locator": "Methodology, tax modelling",
+          "scope": "Equalising CGT rates with income tax rates (20/40/45, gains stacked on income) for every kind of gain, with no other change",
+          "comparable": true,
+          "year": "2029-30",
+          "basis": "static",
+          "price_basis": "2026/27 prices",
+          "value": 17.0,
+          "unit": "gbp_bn",
+          "details": {
+            "method": "HMRC CGT statistics by income band applied to the OBR March 2026 CGT projection, adjusted for carried interest and BADR; grouped data, no behavioural response"
+          },
+          "note": "About \u00a317bn."
+        }
+      ],
+      "centax_table_3": {
+        "id": "centax_2024_table3_rates_only_static",
+        "source": "CenTax, Reforming Capital Gains Tax: revenue and distributional effects (Advani, Lonsdale and Summers)",
+        "published": "2024-10",
+        "url": "https://centax.org.uk/wp-content/uploads/2024/10/AdvaniLonsdaleSummers2024_CGTReform.pdf#page=29",
+        "locator": "Table 3, p.28",
+        "scope": "Equalisation with income tax rates (20/40/45, gains stacked on income), one rate for all assets: BADR, Investors' Relief and the separate residential and carried-interest rates abolished; principal private residence relief kept",
+        "comparable": true,
+        "year": "2019-20",
+        "basis": "static",
+        "price_basis": "nominal, 2019/20",
+        "value": 139.0,
+        "unit": "pct",
+        "details": {
+          "change_bn": 15.2,
+          "baseline_bn": 10.9
+        },
+        "note": "2019/20 rules and data: main rates 10/20, residential and carried interest 18/28, BADR 10%, exempt amount \u00a312,000; resident individuals; CGT and income tax counted together"
+      }
+    }
   }
 }

@@ -25,6 +25,13 @@ async function parse(response) {
           : "Too many submissions from this address; wait a minute and try again.",
       );
     }
+    // A backend deployed before a new behavioural option refuses it by name;
+    // say so plainly instead of showing the validator's list of values.
+    if (response.status === 400 && body.detail?.startsWith("elasticity must be one of")) {
+      throw new Error(
+        "The explorer's backend does not offer this behavioural response yet: it arrives with the backend update that accompanies this dashboard. Choose another response for now.",
+      );
+    }
     throw new Error(body.detail || `HTTP ${response.status}`);
   }
   return body;

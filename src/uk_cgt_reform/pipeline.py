@@ -16,6 +16,11 @@ and imputation belong upstream in the dataset producer, not in an analysis
 repo. What differs between the datasets is disclosed in the validation
 block (taxpayer counts, gains totals, the schedule components and the
 entrants by uprating) rather than adjusted away.
+
+Each dataset's results also carry a ``benchmarks`` block (issue #7): the
+static reform by year beside JRF's estimate, a static re-score at CenTax's
+2019/20 rules beside its Tables 3 and 8, and HMRC's ready-reckoner rows
+scored at the central and the official elasticity (``comparison.py``).
 """
 
 from __future__ import annotations
@@ -25,10 +30,21 @@ import importlib.metadata
 import json
 from pathlib import Path
 
-from .comparison import SENSITIVITY_CASES, comparison_rows, dataset_comparison
+from .comparison import (
+    READY_RECKONER,
+    READY_RECKONER_ELASTICITIES,
+    SENSITIVITY_CASES,
+    benchmarks_block,
+    centax_1920_block,
+    dataset_comparison,
+    price_factors,
+    ready_reckoner_block,
+    static_equalisation_block,
+)
 from .impacts import (
     budget_impact,
     cgt_revenue,
+    cgt_uplift,
     fiscal_year_label,
     income_change_groups,
     sensitivity,
@@ -41,6 +57,8 @@ from .reform import (
     PERIOD,
     YEARS,
     burnham_reform,
+    centax_1920_reforms,
+    centax_1920_rules,
     reform_fingerprint,
     reform_schedules,
 )
@@ -82,6 +100,58 @@ def dataset_folder(spec: DatasetSpec, fingerprint: str, root: Path = DATASET_FOL
     explorer (locally and on Modal) resolves the same folder, so both share
     the baselines."""
     return root / simulation_stem(spec, fingerprint)
+
+
+def burnham_case(elasticity: float) -> str:
+    """The case name in a Burnham simulation id: ``burnham_e07`` for the
+    central case (the name the cached outputs carry), otherwise the
+    elasticity's magnitude to two decimals without the point."""
+    if elasticity == ELASTICITY:
+        return "burnham_e07"
+    return f"burnham_e{abs(elasticity):.2f}".replace(".", "")
+
+
+def burnham_sim_id(sim_stem: str, elasticity: float, digest: str, year: int) -> str:
+    """A Burnham simulation id: the dataset stem, the case, the reform's own
+    fingerprint (which tells cases of equal magnitude apart) and the year."""
+    return f"{sim_stem}_{burnham_case(elasticity)}_{digest}_{year}"
+
+
+def counterfactual_sim_id(sim_stem: str, role: str, digest: str, year: int) -> str:
+    """A simulation id for one side (``baseline`` or ``reform``) of the
+    CenTax 2019/20-rules counterfactual."""
+    return f"{sim_stem}_centax1920_{role}_{digest}_{year}"
+
+
+def score_ready_reckoner(spec: DatasetSpec, folder: Path, fingerprint: str) -> dict:
+    """Score HMRC's ready-reckoner rows on one dataset through the rate
+    explorer's code path (the explorer's scope, the cached baselines, the
+    reform in memory), at each elasticity in ``READY_RECKONER_ELASTICITIES``
+    and in each model year the lag names. Returns ``{row id: {elasticity id:
+    {model year: change in government balance, £m}}}``."""
+    from .explore import engine_context, run_year, validate_request
+
+    context = engine_context()
+    if context["projection_fingerprint"] != fingerprint:
+        raise RuntimeError(
+            f"Explorer projection {context['projection_fingerprint']} differs from the "
+            f"pipeline's {fingerprint}; refusing to mix them."
+        )
+    scores = {}
+    for row in READY_RECKONER["rows"]:
+        scores[row["id"]] = {}
+        for elasticity_id, elasticity in READY_RECKONER_ELASTICITIES.items():
+            request = validate_request(
+                {"dataset": spec.key, "rates": row["rates"], "elasticity": elasticity}
+            )
+            scores[row["id"]][elasticity_id] = {}
+            for lag in READY_RECKONER["lag"]:
+                year = int(lag["model_year"][:4])
+                budget = run_year(request, year, folder, context)["budget"]
+                scores[row["id"]][elasticity_id][lag["model_year"]] = (
+                    1000 * budget["gov_balance_change_bn"]
+                )
+    return scores
 
 
 def shared_base_year(specs: list[DatasetSpec]) -> int:
@@ -202,8 +272,23 @@ def run_dataset(
         reform_sims[year] = run_simulation(
             datasets[year],
             policy=reform_policy,
-            sim_id=f"{sim_stem}_burnham_e07_{central_digest}_{year}",
+            sim_id=burnham_sim_id(sim_stem, ELASTICITY, central_digest, year),
         )
+
+    # ── Step 2b: the static reform in every year, for the static benchmarks
+    # (the 2026 run is also the sensitivity table's static case) ──────────
+    print(f"Step 2b {tag}: Static reform (e=0), every year...")
+    static_reform = burnham_reform(0.0)
+    static_digest = reform_fingerprint(static_reform)
+    static_policy = make_policy(static_reform, burnham_case(0.0))
+    static_sims = {
+        year: run_simulation(
+            datasets[year],
+            policy=static_policy,
+            sim_id=burnham_sim_id(sim_stem, 0.0, static_digest, year),
+        )
+        for year in YEARS
+    }
 
     # ── Step 3: elasticity sensitivity (2026), which doubles as the check
     # that the behavioural response fires through policyengine.py ─────────
@@ -213,12 +298,13 @@ def run_dataset(
     def run_case(e: float):
         if e == ELASTICITY:
             return reform_sims[2026]
-        case = f"burnham_e{abs(e):.2f}".replace(".", "")
+        if e == 0.0:
+            return static_sims[2026]
         reform = burnham_reform(e)
         return run_simulation(
             datasets[2026],
-            policy=make_policy(reform, case),
-            sim_id=f"{sim_stem}_{case}_{reform_fingerprint(reform)}_2026",
+            policy=make_policy(reform, burnham_case(e)),
+            sim_id=burnham_sim_id(sim_stem, e, reform_fingerprint(reform), 2026),
         )
 
     sens = sensitivity(base_cgt_2026, SENSITIVITY_CASES, run_case)
@@ -231,6 +317,36 @@ def run_dataset(
         f"static (e=0) yield {static_2026:.2f}bn vs central (e={ELASTICITY}) "
         f"{central_2026:.2f}bn. Refusing to write results."
     )
+
+    # ── Step 3b: CenTax's rates-only reform at its 2019/20 rules, static ──
+    print(f"Step 3b {tag}: Equalisation at CenTax's 2019/20 rules (2026, static)...")
+    cf_sims, cf_digests = {}, {}
+    for role, reform in zip(("baseline", "reform"), centax_1920_reforms(), strict=True):
+        cf_digests[role] = reform_fingerprint(reform)
+        cf_sims[role] = run_simulation(
+            datasets[2026],
+            policy=make_policy(reform, f"centax1920_{role}"),
+            sim_id=counterfactual_sim_id(sim_stem, role, cf_digests[role], 2026),
+        )
+    uplift = cgt_uplift(cf_sims["baseline"], cf_sims["reform"])
+    current_law_cgt_bn = base_cgt_2026 / 1e9
+    national = uplift["national"]
+    assert national["baseline_cgt_bn"] < current_law_cgt_bn, (
+        f"2019/20 rules raised more CGT ({national['baseline_cgt_bn']:.2f}bn) than current "
+        f"law ({current_law_cgt_bn:.2f}bn) on {spec.key}; the counterfactual did not apply."
+    )
+    assert national["uplift_pct"] > 0, f"Equalising at 2019/20 rules raised nothing on {spec.key}."
+    print(
+        f"    £{national['baseline_cgt_bn']:.1f}bn -> £{national['reform_cgt_bn']:.1f}bn "
+        f"({national['uplift_pct']:+.0f}%; CenTax +139%)"
+    )
+    centax_1920 = centax_1920_block(current_law_cgt_bn, uplift, centax_1920_rules(), cf_digests)
+
+    # ── Step 3c: HMRC's ready-reckoner rows through the explorer's path ───
+    print(f"Step 3c {tag}: Ready-reckoner rows (2026-27 and 2027-28 liabilities)...")
+    ready_reckoner = ready_reckoner_block(score_ready_reckoner(spec, folder, fingerprint))
+    for row in ready_reckoner["rows"]:
+        print(f"    {row['label']}: {row['model_m']}")
 
     # ── Step 4: baseline validation (native microdf, published weights) ──
     print(f"Step 4 {tag}: Validating the published baseline against HMRC/Advani...")
@@ -253,6 +369,7 @@ def run_dataset(
         )
     five_year_total = sum(r["gov_balance_change_bn"] for r in budget)
     print(f"    Five-year total budgetary impact: £{five_year_total:.1f}bn")
+    static_budget = budget_impact(baseline_sims, static_sims, YEARS, aea, ceilings)
 
     # ── Step 6: distributional impacts (income quantiles, household type,
     # region), all years ──────────────────────────────────────────────────
@@ -261,11 +378,15 @@ def run_dataset(
         fiscal_year_label(y): income_change_groups(baseline_sims[y], reform_sims[y]) for y in YEARS
     }
 
-    # ── Step 7: comparison with other institutions ────────────────────────
-    comparison = comparison_rows(
-        revenue_2026_bn=budget[0]["gov_balance_change_bn"],
-        five_year_avg_bn=five_year_total / len(YEARS),
-        static_2026_bn=static_2026,
+    # ── Step 7: benchmarks against other institutions' estimates ─────────
+    cpi = audit["sensitivity_not_applied"]["cpi"]
+    factors = price_factors(cpi["by_year"], YEARS[0], YEARS)
+    benchmarks = benchmarks_block(
+        static_equalisation=static_equalisation_block(
+            static_budget, factors, static_digest, cpi["reference"][0]["title"]
+        ),
+        centax_2019_20_rules=centax_1920,
+        ready_reckoner=ready_reckoner,
     )
 
     output = {
@@ -323,7 +444,7 @@ def run_dataset(
         "budget": budget,
         "income_change_groups": groups,
         "sensitivity": sens,
-        "comparison": comparison,
+        "benchmarks": benchmarks,
     }
     return output, baseline_sims
 

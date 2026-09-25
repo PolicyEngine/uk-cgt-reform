@@ -228,6 +228,13 @@
     white-space: normal;
   }
 
+  /* A horizontally scrolling table wrapper clips anything above the header,
+     so inside one the bubble opens below the icon, over the table's rows. */
+  .table-scroll .info-tip-bubble {
+    top: calc(100% + 8px);
+    bottom: auto;
+  }
+
   .info-tip:hover .info-tip-bubble,
   .info-tip:focus .info-tip-bubble {
     display: block;
