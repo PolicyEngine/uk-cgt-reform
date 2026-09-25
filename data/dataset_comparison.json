@@ -1,5 +1,5 @@
 {
-  "generated": "2026-09-24",
+  "generated": "2026-09-25",
   "first_year": "2026-27",
   "years": [
     "2026-27",
@@ -22,7 +22,7 @@
       "dataset_notes": "Carries capital_gains only: no asset-type breakdown, so the engine charges every gain on the main CGT schedule.",
       "policyengine_version": "4.22.3",
       "policyengine_uk_version": "2.99.1",
-      "generated": "2026-09-24"
+      "generated": "2026-09-25"
     },
     "microcosm_uk_2024_25_979": {
       "dataset": "hf://policyengine/populace-uk-private/staged/uk-frs-calibration-attempt-20260923T134002Z-c1be1c9f/microcosm_uk_2024_25.h5@f6df65b1e98675ad305bcacf7ede3e0d34b57063",
@@ -36,7 +36,7 @@
       "dataset_notes": "Carries capital_gains and capital_gains_residential_property (the residential schedule); no BADR or carried-interest columns. Sub-exempt gainers hold gains strictly inside (0, GBP 3,000) rather than at the cap, and the build's projection fence bounds the stock of them that uprating carries over the frozen exempt amount by 2030 (68.5k against HMRC's 73k in the GBP 3,000 to 5,999 band).",
       "policyengine_version": "4.22.3",
       "policyengine_uk_version": "2.99.1",
-      "generated": "2026-09-24"
+      "generated": "2026-09-25"
     }
   },
   "validation": [
@@ -270,24 +270,36 @@
     {
       "name": "Static (no behavioural response)",
       "e_mtr": 0.0,
+      "elasticity_parameter": "gov.simulation.capital_gains_responses.mtr_elasticity",
+      "applied_as": "mtr",
+      "applied_value": 0.0,
       "enhanced_frs_2024_25": 10.671796020233026,
       "microcosm_uk_2024_25_979": 24.720886159871625
     },
     {
       "name": "CenTax lower (retention e=0.5)",
       "e_mtr": -0.35,
+      "elasticity_parameter": "gov.simulation.capital_gains_responses.mtr_elasticity",
+      "applied_as": "mtr",
+      "applied_value": -0.35,
       "enhanced_frs_2024_25": 5.946626057094931,
       "microcosm_uk_2024_25_979": 13.819269408332593
     },
     {
       "name": "CenTax central (retention e=1.0)",
       "e_mtr": -0.7,
+      "elasticity_parameter": "gov.simulation.capital_gains_responses.mtr_elasticity",
+      "applied_as": "mtr",
+      "applied_value": -0.7,
       "enhanced_frs_2024_25": 2.1541394767543562,
       "microcosm_uk_2024_25_979": 5.073126444644558
     },
     {
       "name": "HMRC/OBR official (retention e=3.6)",
       "e_mtr": -2.52,
+      "elasticity_parameter": "gov.simulation.capital_gains_responses.elasticity",
+      "applied_as": "retention",
+      "applied_value": 3.6,
       "enhanced_frs_2024_25": -5.659652749683614,
       "microcosm_uk_2024_25_979": -13.0934054412243
     }
@@ -610,7 +622,7 @@
           "change_bn": 15.2,
           "baseline_bn": 10.9
         },
-        "note": "2019/20 rules and data: main rates 10/20, residential and carried interest 18/28, exempt amount \u00a312,000; resident individuals; CGT and income tax counted together"
+        "note": "2019/20 rules and data: main rates 10/20, residential and carried interest 18/28, BADR 10%, exempt amount \u00a312,000; resident individuals; CGT and income tax counted together"
       }
     }
   }

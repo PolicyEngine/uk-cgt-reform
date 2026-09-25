@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "generated": "2026-09-24",
+    "generated": "2026-09-25",
     "policyengine_version": "4.22.3",
     "policyengine_uk_version": "2.99.1",
     "dataset": "hf://policyengine/populace-uk-private/staged/uk-frs-calibration-attempt-20260923T134002Z-c1be1c9f/microcosm_uk_2024_25.h5@f6df65b1e98675ad305bcacf7ede3e0d34b57063",
@@ -855,21 +855,33 @@
     {
       "name": "Static (no behavioural response)",
       "e_mtr": 0.0,
+      "elasticity_parameter": "gov.simulation.capital_gains_responses.mtr_elasticity",
+      "applied_as": "mtr",
+      "applied_value": 0.0,
       "revenue_2026_bn": 24.720886159871625
     },
     {
       "name": "CenTax lower (retention e=0.5)",
       "e_mtr": -0.35,
+      "elasticity_parameter": "gov.simulation.capital_gains_responses.mtr_elasticity",
+      "applied_as": "mtr",
+      "applied_value": -0.35,
       "revenue_2026_bn": 13.819269408332593
     },
     {
       "name": "CenTax central (retention e=1.0)",
       "e_mtr": -0.7,
+      "elasticity_parameter": "gov.simulation.capital_gains_responses.mtr_elasticity",
+      "applied_as": "mtr",
+      "applied_value": -0.7,
       "revenue_2026_bn": 5.073126444644558
     },
     {
       "name": "HMRC/OBR official (retention e=3.6)",
       "e_mtr": -2.52,
+      "elasticity_parameter": "gov.simulation.capital_gains_responses.elasticity",
+      "applied_as": "retention",
+      "applied_value": 3.6,
       "revenue_2026_bn": -13.0934054412243
     }
   ],
@@ -899,6 +911,7 @@
       "reform_fingerprint": "45576cc53935",
       "price_basis": "2026-27 prices",
       "price_index": "gov.economic_assumptions.yoy_growth.obr.consumer_price_index",
+      "price_index_source": "OBR EFO March 2026 (Table A.1)",
       "obr_receipts_source": "OBR Economic and fiscal outlook, March 2026, Table 3.7",
       "by_year": [
         {
@@ -1015,6 +1028,10 @@
             "higher_rate": 0.28,
             "additional_rate": 0.28
           },
+          "badr": {
+            "rate": 0.1,
+            "lifetime_limit": 1000000
+          },
           "annual_exempt_amount": 12000
         },
         "reform": {
@@ -1036,10 +1053,11 @@
           "badr_lifetime_limit": 0,
           "annual_exempt_amount": 12000
         },
-        "elasticity": 0.0
+        "elasticity": 0.0,
+        "not_modelled": "Investors' Relief, which CenTax's Table 3 also abolishes, has no engine parameter. Neither registered dataset records BADR or Investors' Relief gains, so the BADR settings and the missing Investors' Relief are inert here."
       },
       "reform_fingerprints": {
-        "baseline": "710d8df0d472",
+        "baseline": "a2eab6466ee5",
         "reform": "2367c58b5ba5"
       },
       "national": {
@@ -1204,7 +1222,7 @@
           "change_bn": 15.2,
           "baseline_bn": 10.9
         },
-        "note": "2019/20 rules and data: main rates 10/20, residential and carried interest 18/28, exempt amount \u00a312,000; resident individuals; CGT and income tax counted together"
+        "note": "2019/20 rules and data: main rates 10/20, residential and carried interest 18/28, BADR 10%, exempt amount \u00a312,000; resident individuals; CGT and income tax counted together"
       },
       "external_regions": {
         "id": "centax_2024_table8_regions_static",
@@ -1219,7 +1237,7 @@
         "price_basis": "nominal, 2019/20",
         "value": null,
         "unit": "pct",
-        "note": "2019/20 rules and data: main rates 10/20, residential and carried interest 18/28, exempt amount \u00a312,000; resident individuals; CGT and income tax counted together. Regions are taxpayers' regions of residence; the rows sum to \u00a311.1bn against the national \u00a310.9bn (rounding)."
+        "note": "2019/20 rules and data: main rates 10/20, residential and carried interest 18/28, BADR 10%, exempt amount \u00a312,000; resident individuals; CGT and income tax counted together. Regions are taxpayers' regions of residence; the rows sum to \u00a311.1bn against the national \u00a310.9bn (rounding)."
       }
     },
     "centax_package_context": [

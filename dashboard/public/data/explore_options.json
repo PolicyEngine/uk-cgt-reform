@@ -15,6 +15,7 @@
       "id": "static",
       "label": "Static (no behavioural response)",
       "e_mtr": 0.0,
+      "elasticity_parameter": "gov.simulation.capital_gains_responses.mtr_elasticity",
       "applied_as": "mtr",
       "applied_value": 0.0
     },
@@ -22,6 +23,7 @@
       "id": "centax_lower",
       "label": "CenTax lower (retention elasticity 0.5)",
       "e_mtr": -0.35,
+      "elasticity_parameter": "gov.simulation.capital_gains_responses.mtr_elasticity",
       "applied_as": "mtr",
       "applied_value": -0.35
     },
@@ -29,6 +31,7 @@
       "id": "centax_central",
       "label": "CenTax central (retention elasticity 1.0)",
       "e_mtr": -0.7,
+      "elasticity_parameter": "gov.simulation.capital_gains_responses.mtr_elasticity",
       "applied_as": "mtr",
       "applied_value": -0.7
     },
@@ -36,6 +39,7 @@
       "id": "official",
       "label": "HMRC/OBR official (retention elasticity 3.6)",
       "e_mtr": -2.52,
+      "elasticity_parameter": "gov.simulation.capital_gains_responses.elasticity",
       "applied_as": "retention",
       "applied_value": 3.6
     }
