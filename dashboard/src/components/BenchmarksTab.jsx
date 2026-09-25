@@ -1,7 +1,13 @@
 "use client";
 
 import { getBenchmarks, getDatasetInfo, getSensitivity } from "../lib/dataHelpers";
-import { formatBn, formatPct, formatSignedBn, formatSignedMn } from "../lib/formatters";
+import {
+  formatBn,
+  formatPct,
+  formatPublished,
+  formatSignedBn,
+  formatSignedMn,
+} from "../lib/formatters";
 import { MetricCard, SourceLink, TipHeader } from "./controls";
 import SectionHeading from "./SectionHeading";
 
@@ -14,6 +20,12 @@ function formatUplift(value) {
   const sign = value < 0 ? "−" : "+";
   return `${sign}${Math.abs(value).toFixed(0)}%`;
 }
+
+const percent = (rate) => `${Math.round(rate * 100)}%`;
+const signed = (value, digits) =>
+  `${value < 0 ? "\u2212" : ""}${Math.abs(value).toFixed(digits)}`;
+// "Exchequer receipts in £m ..." reads as the rest of a sentence.
+const lowerFirst = (text) => `${text[0].toLowerCase()}${text.slice(1)}`;
 
 function Dash() {
   return <span className="text-slate-400">—</span>;
@@ -71,10 +83,11 @@ function StaticEqualisation({ block, dataset }) {
         </table>
       </div>
       <p className="mt-3 text-xs leading-5 text-slate-500">
-        Source: <SourceLink href={source.url}>{source.source}</SourceLink>, 29 June 2026,{" "}
-        {source.locator.toLowerCase()}. JRF uses grouped statistics rather than microdata and does
-        not state its deflator; this table deflates with the OBR's CPI path from the March 2026 EFO.
-        Model figures are liabilities in the year; the OBR figures are cash receipts.
+        Source: <SourceLink href={source.url}>{source.source}</SourceLink>,{" "}
+        {formatPublished(source.published)}, {source.locator.toLowerCase()}. JRF uses grouped
+        statistics rather than microdata and does not state its deflator; this table deflates with
+        the CPI path in {block.price_index_source}. Model figures are liabilities in the year; the
+        OBR figures are cash receipts.
       </p>
     </section>
   );
@@ -83,11 +96,12 @@ function StaticEqualisation({ block, dataset }) {
 function CentaxRegions({ block, dataset }) {
   const national = block.national;
   const external = block.external;
+  const rules = block.rules.baseline;
   return (
     <section className="section-card">
       <SectionHeading
         title="Equalisation at 2019/20 rules: CenTax (2024)"
-        description={`CenTax's rates-only estimate starts from 2019/20 rules: main rates of 10% and 20%, 18% and 28% for residential property and carried interest, and a £12,000 exempt amount. To compare like with like, this dashboard applies those rules to ${dataset.shortLabel}'s 2026-27 data, with no behavioural response, and equalises from there.`}
+        description={`CenTax's rates-only estimate starts from 2019/20 rules: main rates of ${percent(rules.main.basic_rate)} and ${percent(rules.main.higher_rate)}, ${percent(rules.residential_property.basic_rate)} and ${percent(rules.residential_property.higher_rate)} for residential property and carried interest, ${percent(rules.badr.rate)} under Business Asset Disposal Relief, and a £${rules.annual_exempt_amount.toLocaleString("en-GB")} exempt amount. To compare like with like, this dashboard applies those rules to ${dataset.shortLabel}'s 2026-27 data, with no behavioural response, and equalises from there.`}
       />
       <div className="mt-4 grid gap-4 md:grid-cols-2">
         <MetricCard
@@ -133,7 +147,7 @@ function CentaxRegions({ block, dataset }) {
           only (it puts the omitted trusts and non-residents at about 5% of revenue) and counts CGT
           and income tax together. Its regions are taxpayers&apos; regions of residence; these are
           households&apos; regions. A dataset that records no residential property gains charges
-          every gain at the main rates in both runs.
+          every gain at the main rates in both runs. {block.rules.not_modelled}
         </p>
         <p className="mt-2">
           Sources: <SourceLink href={external.url}>{external.source}</SourceLink>,{" "}
@@ -195,8 +209,10 @@ function CentaxPackage({ rows }) {
   );
 }
 
-function ReadyReckoner({ block, dataset }) {
+function ReadyReckoner({ block, dataset, elasticities }) {
   const [first, second] = block.lag;
+  const centralLabel = `Central (MTR ${signed(elasticities.central.e_mtr, 1)})`;
+  const officialLabel = `Official (retention ${elasticities.official.e_retention})`;
   const model = (row, elasticityId, year) => row.model_m[elasticityId][year];
   return (
     <section className="section-card">
@@ -219,11 +235,11 @@ function ReadyReckoner({ block, dataset }) {
             </tr>
             <tr>
               <th>HMRC</th>
-              <th>Central (e = −0.7)</th>
-              <th>Official (retention 3.6)</th>
+              <th>{centralLabel}</th>
+              <th>{officialLabel}</th>
               <th>HMRC</th>
-              <th>Central (e = −0.7)</th>
-              <th>Official (retention 3.6)</th>
+              <th>{centralLabel}</th>
+              <th>{officialLabel}</th>
             </tr>
           </thead>
           <tbody>
@@ -244,9 +260,9 @@ function ReadyReckoner({ block, dataset }) {
       </div>
       <p className="mt-3 text-xs leading-5 text-slate-500">
         Source: <SourceLink href={block.url}>{block.source}</SourceLink>, {block.locator}. {block.note}{" "}
-        HMRC&apos;s figures include income tax and stamp duty land tax effects and are built on the
-        OBR&apos;s March 2025 forecast; the model figures are the change in government balance on
-        its own data, in the Rate explorer&apos;s scope (main and residential rates). Not scored:{" "}
+        HMRC&apos;s figures are {lowerFirst(block.measure)}; the model figures are the change in
+        government balance on its own data, in the Rate explorer&apos;s scope (main and residential
+        rates). Not scored:{" "}
         {block.excluded
           .map((row) => {
             const reason = row.reason.replace(/\.$/, "");
@@ -280,7 +296,11 @@ export default function BenchmarksTab({ data, onNavigate }) {
       <StaticEqualisation block={benchmarks.static_equalisation} dataset={dataset} />
       <CentaxRegions block={benchmarks.centax_2019_20_rules} dataset={dataset} />
       <CentaxPackage rows={benchmarks.centax_package_context} />
-      <ReadyReckoner block={benchmarks.ready_reckoner} dataset={dataset} />
+      <ReadyReckoner
+        block={benchmarks.ready_reckoner}
+        dataset={dataset}
+        elasticities={benchmarks.elasticities}
+      />
       <section className="note-card rounded-lg p-4 text-sm leading-6 text-slate-600">
         <p className="note-eyebrow">Why the elasticity matters</p>
         <p>

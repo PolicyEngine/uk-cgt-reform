@@ -16,6 +16,7 @@ import {
   formatBn,
   formatCount,
   formatCurrency,
+  formatElasticity,
   formatPct,
   formatSignedBn,
   formatSignedCurrency,
@@ -467,13 +468,13 @@ export default function ComparisonTab({ comparison, onNavigate }) {
       <section className="section-card">
         <SectionHeading
           title={`Sensitivity to the behavioural elasticity, ${firstYear}`}
-          description="Change in CGT revenue in the first year under each elasticity, by dataset. The official HMRC/OBR case is applied as a retention-rate elasticity of 3.6."
+          description={`Change in CGT revenue in the first year under each elasticity, by dataset. The official HMRC/OBR case is applied as a retention-rate elasticity of ${comparison.sensitivity.find((row) => row.applied_as === "retention").applied_value}.`}
         />
         <table className="data-table">
           <thead>
             <tr>
               <th>Scenario</th>
-              <th>MTR elasticity</th>
+              <th>Elasticity, as applied</th>
               {keys.map((key) => (
                 <th key={key}>{label(key)}</th>
               ))}
@@ -483,7 +484,7 @@ export default function ComparisonTab({ comparison, onNavigate }) {
             {comparison.sensitivity.map((row) => (
               <tr key={row.name} className={row.e_mtr === -0.7 ? "font-semibold" : ""}>
                 <td>{row.name}</td>
-                <td>{row.e_mtr.toFixed(2)}</td>
+                <td>{formatElasticity(row)}</td>
                 {keys.map((key) => (
                   <td key={key}>{formatSignedBn(row[key])}</td>
                 ))}

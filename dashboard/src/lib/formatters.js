@@ -67,3 +67,31 @@ export function formatCount(value) {
   // Survey-weighted counts are fractional; never show decimals of a person.
   return Math.round(num).toLocaleString("en-GB");
 }
+
+// How a behavioural case reached the engine: an MTR elasticity, or (the
+// official HMRC/OBR case) a retention-rate elasticity, keyed by its MTR value.
+export function formatElasticity({ applied_as: appliedAs, applied_value: appliedValue, e_mtr: eMtr }) {
+  const mtr = `${getSignedPrefix(eMtr)}${Math.abs(Number(eMtr)).toFixed(2)}`;
+  return appliedAs === "retention" ? `retention ${appliedValue} (≈ MTR ${mtr})` : `MTR ${mtr}`;
+}
+
+const MONTHS = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
+// A source's publication date ("2026-06-29" or "2024-10") as prose.
+export function formatPublished(isoDate) {
+  const [year, month, day] = isoDate.split("-").map(Number);
+  return day ? `${day} ${MONTHS[month - 1]} ${year}` : `${MONTHS[month - 1]} ${year}`;
+}

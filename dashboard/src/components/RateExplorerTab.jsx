@@ -266,9 +266,9 @@ function ReadyReckonerPanel({ row, result }) {
         </tbody>
       </table>
       <p className="mt-3 text-xs leading-5 text-slate-500">
-        HMRC&apos;s figures ({READY_RECKONER.source}) are receipts after behavioural responses,
-        including income tax and stamp duty land tax effects, on the OBR&apos;s March 2025 forecast;
-        HMRC has deferred its 2026 edition, so they are provisional. The Benchmarks tab scores every
+        HMRC&apos;s figures ({READY_RECKONER.source}) are {READY_RECKONER.measure[0].toLowerCase()}
+        {READY_RECKONER.measure.slice(1)}, after behavioural responses; HMRC has deferred its 2026
+        edition, so they are provisional. The Benchmarks tab scores every
         row at the central and the official elasticity.
       </p>
     </div>

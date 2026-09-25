@@ -8,7 +8,7 @@ import {
   getMetadata,
   getSensitivity,
 } from "../lib/dataHelpers";
-import { formatSignedBn } from "../lib/formatters";
+import { formatPublished, formatSignedBn } from "../lib/formatters";
 import SectionHeading from "./SectionHeading";
 
 function ExternalLink({ href, children }) {
@@ -211,7 +211,8 @@ export default function MethodologyTab({ data, anchor }) {
             <strong>The official assumption.</strong> HMRC and the OBR use a retention-rate
             elasticity of {official.e_retention} for the main CGT rates (
             <ExternalLink href={`${official.url}#page=3`}>
-              OBR, January 2025, para 1.9
+              OBR, {formatPublished(official.published.slice(0, 7))},{" "}
+              {official.locator.toLowerCase()}
             </ExternalLink>
             ; HMRC&apos;s estimate from 1998 to 2018 is 4.0). At the reformed 40–45% rates that is
             equivalent to an MTR elasticity of about {signed(official.e_mtr, 1)},{" "}
@@ -225,13 +226,15 @@ export default function MethodologyTab({ data, anchor }) {
             HMRC&apos;s figure is estimated from UK responses under the current base.
           </li>
           <li>
-            <strong>What it does to a rate rise.</strong> Take the ready reckoner&apos;s largest
-            row, the higher rate from 24% to 34%. At the central elasticity, realised gains on those
-            gains fall by {percent(atCentral.gains)} and the revenue they raise{" "}
-            {atCentral.revenue >= 0 ? "rises" : "falls"} by {percent(atCentral.revenue)}. At the
-            official elasticity, realised gains fall by {percent(atOfficial.gains)} and revenue{" "}
-            {atOfficial.revenue >= 0 ? "rises" : "falls"} by {percent(atOfficial.revenue)}, the
-            direction HMRC&apos;s row shows.
+            <strong>What it does to a rate rise.</strong> Take a taxpayer whose marginal rate on
+            gains rises from 24% to 34%, as in the ready reckoner&apos;s largest row. At the central
+            elasticity, their realised gains fall by {percent(atCentral.gains)} and the revenue
+            those gains raise {atCentral.revenue >= 0 ? "rises" : "falls"} by{" "}
+            {percent(atCentral.revenue)}. At the official elasticity, realised gains fall by{" "}
+            {percent(atOfficial.gains)} and revenue {atOfficial.revenue >= 0 ? "rises" : "falls"} by{" "}
+            {percent(atOfficial.revenue)}, the direction HMRC&apos;s row shows. The engine applies
+            the same formula to each person&apos;s own simulated marginal rate on gains, so the
+            aggregate effect depends on where each dataset&apos;s gains sit.
           </li>
           <li>
             <strong>How the model applies it.</strong> The official case is applied as HMRC and
