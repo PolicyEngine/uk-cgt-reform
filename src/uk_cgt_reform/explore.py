@@ -81,8 +81,8 @@ RATE_BOUNDS = (0.0, 0.75)
 RATE_DECIMALS = 4
 #: Custom rates are whole percentage points: each rate must be a multiple of
 #: this fraction. With the ordering rule (basic <= higher <= additional) this
-#: bounds the number of distinct schedules a visitor can ask the backend to
-#: compute to about 76,000 per dataset and elasticity.
+#: bounds the number of distinct rate schedules a visitor can ask the backend to
+#: compute to about 76,000 per dataset, elasticity and treatment of the relief.
 RATE_STEP = 0.01
 
 #: The behavioural assumptions a request may pick from: the pipeline's

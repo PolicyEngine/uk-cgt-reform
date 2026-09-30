@@ -236,6 +236,7 @@
         "baseline_cgt_revenue_bn": 13.201311744254435,
         "residential_property_gains_bn": 0.0,
         "badr_gains_bn": 0.0,
+        "badr_claimants": 0.0,
         "carried_interest_gains_bn": 0.0,
         "entrants_by_uprating": {
           "exempt_amount_gbp": 3000.0,
@@ -261,6 +262,7 @@
         "baseline_cgt_revenue_bn": 13.697029940340366,
         "residential_property_gains_bn": 0.0,
         "badr_gains_bn": 0.0,
+        "badr_claimants": 0.0,
         "carried_interest_gains_bn": 0.0,
         "entrants_by_uprating": {
           "exempt_amount_gbp": 3000.0,
@@ -286,6 +288,7 @@
         "baseline_cgt_revenue_bn": 14.196536426542675,
         "residential_property_gains_bn": 0.0,
         "badr_gains_bn": 0.0,
+        "badr_claimants": 0.0,
         "carried_interest_gains_bn": 0.0,
         "entrants_by_uprating": {
           "exempt_amount_gbp": 3000.0,
@@ -311,6 +314,7 @@
         "baseline_cgt_revenue_bn": 14.699049176761703,
         "residential_property_gains_bn": 0.0,
         "badr_gains_bn": 0.0,
+        "badr_claimants": 0.0,
         "carried_interest_gains_bn": 0.0,
         "entrants_by_uprating": {
           "exempt_amount_gbp": 3000.0,
@@ -336,6 +340,7 @@
         "baseline_cgt_revenue_bn": 15.250158431991427,
         "residential_property_gains_bn": 0.0,
         "badr_gains_bn": 0.0,
+        "badr_claimants": 0.0,
         "carried_interest_gains_bn": 0.0,
         "entrants_by_uprating": {
           "exempt_amount_gbp": 3000.0,
@@ -363,6 +368,7 @@
         "baseline_cgt_revenue_bn": 30.00356298842178,
         "residential_property_gains_bn": 13.351530739855976,
         "badr_gains_bn": 0.0,
+        "badr_claimants": 0.0,
         "carried_interest_gains_bn": 0.0,
         "entrants_by_uprating": {
           "exempt_amount_gbp": 3000.0,
@@ -388,6 +394,7 @@
         "baseline_cgt_revenue_bn": 31.113426705752023,
         "residential_property_gains_bn": 13.833781801819988,
         "badr_gains_bn": 0.0,
+        "badr_claimants": 0.0,
         "carried_interest_gains_bn": 0.0,
         "entrants_by_uprating": {
           "exempt_amount_gbp": 3000.0,
@@ -413,6 +420,7 @@
         "baseline_cgt_revenue_bn": 32.231372378654214,
         "residential_property_gains_bn": 14.319679240112606,
         "badr_gains_bn": 0.0,
+        "badr_claimants": 0.0,
         "carried_interest_gains_bn": 0.0,
         "entrants_by_uprating": {
           "exempt_amount_gbp": 3000.0,
@@ -438,6 +446,7 @@
         "baseline_cgt_revenue_bn": 33.35603520121359,
         "residential_property_gains_bn": 14.808413484089405,
         "badr_gains_bn": 0.0,
+        "badr_claimants": 0.0,
         "carried_interest_gains_bn": 0.0,
         "entrants_by_uprating": {
           "exempt_amount_gbp": 3000.0,
@@ -463,6 +472,7 @@
         "baseline_cgt_revenue_bn": 34.58843687509989,
         "residential_property_gains_bn": 15.343615201872925,
         "badr_gains_bn": 0.0,
+        "badr_claimants": 0.0,
         "carried_interest_gains_bn": 0.0,
         "entrants_by_uprating": {
           "exempt_amount_gbp": 3000.0,

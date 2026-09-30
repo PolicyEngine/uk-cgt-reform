@@ -96,17 +96,19 @@ projection (fingerprint `1b0cd0dff144`) and reform on each dataset.
 | Taxable gains excluding entrants | £57.8bn | £127.8bn | HMRC Table 1: £66.6bn (2023-24), £119.3bn (2024-25) |
 | Baseline CGT liability | £13.2bn | £30.0bn | HMRC Table 1: £12.1bn (2023-24), £22.5bn (2024-25); OBR receipts £20.8bn (2026-27), £25.5bn (2027-28) |
 | Residential property gains on their own schedule | none recorded | £13.4bn | HMRC Table 8a (2024-25): £12.9bn including trusts, about £12.2bn for individuals; 205k taxpayers |
+| Gains qualifying for Business Asset Disposal Relief | none recorded | none recorded | HMRC Table 4 (individuals, BADR and Investors' Relief): 42k people and £11.0bn (2023-24), 61k and £18.4bn (2024-25) |
 | Share of gains from gains of £1m or more | 67% | 67% | HMRC Table 2: 61% (2023-24), 65% (2024-25) |
 | Taxpayers with gains over £500k | 17.9k | 35.5k | HMRC Table 2: 19k (2023-24), 33k (2024-25) |
 | Largest single gain | £12.2m | £185m | none: HMRC's top band is £5m and over (2k taxpayers, £23.6bn in 2023-24; 3k, £48.5bn in 2024-25) |
 | Static yield (e = 0) | +£10.7bn | +£24.7bn | JRF (2026): about £13bn, static, equalisation alone (see [Benchmarks](#benchmarks)) |
 | Uplift from equalising at 2019/20 rules (static) | +122% | +113% | CenTax (2024), Table 3: +139% on 2019/20 data |
-| Yield, CenTax lower (e = −0.35) | +£5.9bn | +£13.8bn | none |
-| **Yield, central (e = −0.7)** | **+£2.2bn** | **+£5.1bn** | none for equalisation alone; CenTax's £14.3bn (2025-26) and £11.3bn (2026-27) add an investment allowance and base broadening |
+| Yield, CenTax lower (retention 0.5) | +£7.1bn | +£16.5bn | none |
+| **Yield, CenTax central (retention 1.0)** | **+£4.1bn** | **+£9.5bn** | none for equalisation alone; CenTax's £14.3bn (2025-26), £11.3bn (2026-27) and £19.7bn (2029-30) add an investment allowance and base broadening |
+| Yield, CenTax upper (retention 2.0) | −£0.6bn | −£1.5bn | none |
 | Yield, official HMRC/OBR elasticity (retention 3.6) | −£5.7bn | −£13.1bn | none |
-| Five-year total, 2026-27 to 2030-31 | +£11.7bn | +£27.7bn | none |
-| Top income quintile, net income change | −2.8% (−£3,328/household) | −6.0% (−£8,269/household) | none |
-| Lowest income quintile, net income change | −0.04% (−£7) | −0.01% (−£2) | none |
+| Five-year total, 2026-27 to 2030-31 | +£22.2bn | +£51.6bn | none |
+| Top income quintile, net income change | −2.5% (−£2,947/household) | −5.4% (−£7,335/household) | none |
+| Lowest income quintile, net income change | −0.02% (−£3) | −0.004% (−£1) | none |
 
 Benchmarks are outturns for the tax year stated (HMRC Capital Gains Tax
 statistics, 2026 release, Tables 1, 2 and 8) or other institutions'
@@ -193,8 +195,9 @@ external figure with its source, locator, scope, year and basis.
   carried interest 18/28, BADR at 10% with a £1m lifetime limit, an exempt
   amount of £12,000; `reform.centax_1920_reforms`) and equalising gives +122%
   on the incumbent and +113% on the candidate. Investors' Relief, which
-  CenTax's Table 3 also abolishes, has no engine parameter; neither dataset
-  records BADR or Investors' Relief gains, so both are inert here.
+  CenTax's Table 3 also abolishes, shares the engine's BADR input and is
+  withdrawn with it; neither current dataset records BADR or Investors'
+  Relief gains, so both are inert on them.
   By region (Table 8), the candidate's shares of baseline CGT track
   CenTax's (London 27.5% against 27.0%, South East 20.1% against 21.6%);
   the incumbent puts 12% in London and 13% in Wales. CenTax's uplift is
@@ -212,7 +215,7 @@ external figure with its source, locator, scope, year and basis.
   earlier. For +10 points on the higher rate HMRC shows −£2,060m and
   −£3,565m; at the official elasticity the incumbent gives −£2,104m and
   −£2,182m and the candidate −£4,836m and −£4,918m, while at the central
-  elasticity both gain (+£1,214m and +£2,942m on 2026-27 liabilities).
+  elasticity both gain (+£2,766m and +£6,535m on 2026-27 liabilities).
   Lower rate +10 points, the BADR rows and the exempt-amount row are not
   scored (the block records why). HMRC deferred its 2026 edition on 6 July
   2026 pending a review of key assumptions, so the rows are provisional.
@@ -220,7 +223,7 @@ external figure with its source, locator, scope, year and basis.
   elasticity of 3.6 for the main rates ([OBR, January 2025](https://obr.uk/docs/dlm_uploads/CGT-supplementary-release-Jan-2025.pdf),
   para 1.9). Applied in that convention, equalisation changes 2026-27 CGT
   revenue by −£5.7bn on the incumbent and −£13.1bn on the candidate,
-  against +£2.2bn and +£5.1bn at the central case.
+  against +£4.1bn and +£9.5bn at the central case.
 
 Left out by decision: the Office of Tax Simplification's 2020 static figure
 (2018-19 rules) and a validation run of the Autumn Budget 2024 rate rise.
@@ -327,9 +330,12 @@ longer needed. The pipeline asserts that the static (e=0) and central
   producer and observation vintage, the reform including its schedule
   settings, the projection fingerprint, the entrant ceilings), an explicitly
   empty `calibration` block (no local reweighting), baseline validation vs
-  HMRC/Advani including the entrants and the schedule components, budget
+  HMRC/Advani including the entrants, the schedule components and the BADR
+  claimants, budget
   impact by year with the entrants' contribution, distributional impacts,
-  the elasticity sensitivity, and a `benchmarks` block (see
+  the elasticity sensitivity, the 2026-27 yield split by schedule
+  (`schedule_split`: main rates, residential property, the relief withdrawn;
+  static and central), and a `benchmarks` block (see
   [Benchmarks](#benchmarks)).
 - `data/cgt_equalisation_results.json`: the dashboard's primary file, the
   default dataset's results (the candidate).
