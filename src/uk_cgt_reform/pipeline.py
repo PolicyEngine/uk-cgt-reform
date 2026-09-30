@@ -4,8 +4,9 @@ Everything runs on the standard policyengine.py stack: per-year datasets
 from ``pe.uk.ensure_datasets``, one ``policyengine.Simulation`` per
 (dataset, scenario, year), with distributional outputs grouped by weighted
 income quantile, household type and region. The pipeline asserts that the
-behavioural CGT elasticity actually fires (the static e=0 and central
-e=-0.7 reform runs must differ materially) before writing any results.
+behavioural CGT elasticity actually fires (the static e=0 and the central
+retention-rate e=1.0 reform runs must differ materially) before writing any
+results.
 
 The same reform runs on every registered dataset (``simulations.DATASETS``:
 the incumbent Enhanced FRS 2024-25 and the staged Microcosm UK national-line
@@ -103,12 +104,10 @@ def dataset_folder(spec: DatasetSpec, fingerprint: str, root: Path = DATASET_FOL
 
 
 def equalisation_case(elasticity: float) -> str:
-    """The case name in an equalisation simulation id: ``equalise_e07`` for the
-    central case (the name the cached outputs carry), otherwise the
-    elasticity's magnitude to two decimals without the point."""
-    if elasticity == ELASTICITY:
-        return "equalise_e07"
-    return f"equalise_e{abs(elasticity):.2f}".replace(".", "")
+    """The case name in an equalisation simulation id: the retention-rate
+    elasticity in hundredths, ``equalise_r100`` for the central case and
+    ``equalise_r000`` for the static one."""
+    return f"equalise_r{round(100 * elasticity):03d}"
 
 
 def equalisation_sim_id(sim_stem: str, elasticity: float, digest: str, year: int) -> str:
@@ -261,7 +260,7 @@ def run_dataset(
     print(f"Step 2 {tag}: Running baseline and reformed simulations...")
     central_reform = equalisation_reform(ELASTICITY)
     central_digest = reform_fingerprint(central_reform)
-    reform_policy = make_policy(central_reform, "equalise_e07")
+    reform_policy = make_policy(central_reform, equalisation_case(ELASTICITY))
     baseline_sims, reform_sims = {}, {}
     for year in YEARS:
         print(f"    {fiscal_year_label(year)}...")
@@ -309,9 +308,9 @@ def run_dataset(
 
     sens = sensitivity(base_cgt_2026, SENSITIVITY_CASES, run_case)
     for row in sens:
-        print(f"    {row['name']} (e={row['e_mtr']}): {row['revenue_2026_bn']:+.1f}bn")
-    static_2026 = next(r["revenue_2026_bn"] for r in sens if r["e_mtr"] == 0.0)
-    central_2026 = next(r["revenue_2026_bn"] for r in sens if r["e_mtr"] == ELASTICITY)
+        print(f"    {row['name']}: {row['revenue_2026_bn']:+.1f}bn")
+    static_2026 = next(r["revenue_2026_bn"] for r in sens if r["e_retention"] == 0.0)
+    central_2026 = next(r["revenue_2026_bn"] for r in sens if r["e_retention"] == ELASTICITY)
     assert static_2026 - central_2026 > 1.0, (
         f"Behavioural CGT elasticity did not fire through policyengine.py on {spec.key}: "
         f"static (e=0) yield {static_2026:.2f}bn vs central (e={ELASTICITY}) "

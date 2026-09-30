@@ -43,6 +43,7 @@ from pathlib import Path
 from .comparison import READY_RECKONER, SENSITIVITY_CASES
 from .impacts import budget_impact, fiscal_year_label, income_change_groups
 from .reform import (
+    CENTAX_LOWER_ELASTICITY,
     ELASTICITY,
     EXPLORER_SCOPE,
     INCOME_TAX_RATES,
@@ -77,21 +78,25 @@ RATE_DECIMALS = 4
 RATE_STEP = 0.01
 
 #: The behavioural assumptions a request may pick from: the pipeline's
-#: sensitivity cases, keyed for the API by their marginal-tax-rate value.
-#: ``applied_as`` says which engine convention carries each: the official
-#: HMRC/OBR case is applied as a retention-rate elasticity of 3.6
-#: (``reform.RETENTION_NATIVE``).
+#: sensitivity cases, each a retention-rate elasticity the engine applies as
+#: stated (``reform.elasticity_convention``).
 ELASTICITY_OPTIONS = tuple(
-    {"id": option_id, "label": label, "e_mtr": e_mtr, **elasticity_convention(e_mtr)}
-    for option_id, label, e_mtr in (
-        ("static", "Static (no behavioural response)", 0.0),
-        ("centax_lower", "CenTax lower (retention elasticity 0.5)", -0.35),
-        ("centax_central", "CenTax central (retention elasticity 1.0)", -0.7),
-        ("official", "HMRC/OBR official (retention elasticity 3.6)", OFFICIAL_ELASTICITY),
+    {"id": option_id, "label": label, "e_retention": e, **elasticity_convention(e)}
+    for option_id, (label, e) in zip(
+        ("static", "centax_lower", "centax_central", "centax_upper", "official"),
+        SENSITIVITY_CASES.items(),
+        strict=True,
     )
 )
 DEFAULT_ELASTICITY = ELASTICITY
-assert {o["e_mtr"] for o in ELASTICITY_OPTIONS} == set(SENSITIVITY_CASES.values())
+#: Requests from before the retention form keyed each case by a
+#: marginal-tax-rate value; shared links still carry them, so they map to
+#: the case they named.
+LEGACY_MTR_ELASTICITIES = {
+    -0.35: CENTAX_LOWER_ELASTICITY,
+    -0.7: ELASTICITY,
+    -2.52: OFFICIAL_ELASTICITY,
+}
 
 #: Schedules a reader can start from. Rates are fractions.
 PRESETS = (
@@ -209,11 +214,16 @@ def _as_rate(value, band: str) -> float:
 def _as_elasticity(value) -> float:
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise ExploreValidationError("elasticity must be a number.")
+    for legacy, retention in LEGACY_MTR_ELASTICITIES.items():
+        if math.isclose(legacy, float(value), abs_tol=1e-9):
+            value = retention
     for option in ELASTICITY_OPTIONS:
-        if math.isclose(option["e_mtr"], float(value), abs_tol=1e-9):
-            return option["e_mtr"]
-    allowed = ", ".join(str(o["e_mtr"]) for o in ELASTICITY_OPTIONS)
-    raise ExploreValidationError(f"elasticity must be one of {allowed}; got {value}.")
+        if math.isclose(option["e_retention"], float(value), abs_tol=1e-9):
+            return option["e_retention"]
+    allowed = ", ".join(str(o["e_retention"]) for o in ELASTICITY_OPTIONS)
+    raise ExploreValidationError(
+        f"elasticity must be one of {allowed} (a retention-rate elasticity); got {value}."
+    )
 
 
 def validate_request(payload) -> ExploreRequest:

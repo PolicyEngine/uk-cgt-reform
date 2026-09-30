@@ -121,8 +121,8 @@ def fake_results(spec=INCUMBENT, scale: float = 1.0) -> dict:
             "default_dataset_key": DEFAULT_DATASET_KEY,
             "calibrated": False,
             "reform_period_start": "2026-01-01",
-            "elasticity": -0.7,
-            "elasticity_parameter": "gov.simulation.capital_gains_responses.mtr_elasticity",
+            "elasticity": 1.0,
+            "elasticity_parameter": "gov.simulation.capital_gains_responses.elasticity",
             "reform": {"basic_rate": 0.20, "higher_rate": 0.40, "additional_rate": 0.45},
             "reform_schedules": reform_schedules(),
             "reform_fingerprint": "def456",
@@ -188,7 +188,7 @@ def fake_results(spec=INCUMBENT, scale: float = 1.0) -> dict:
             for label in YEAR_LABELS
         },
         "sensitivity": [
-            {"name": name, "e_mtr": e, **elasticity_convention(e), "revenue_2026_bn": 1.0}
+            {"name": name, "e_retention": e, **elasticity_convention(e), "revenue_2026_bn": 1.0}
             for name, e in SENSITIVITY_CASES.items()
         ],
         "benchmarks": fake_benchmarks(scale),
@@ -202,7 +202,7 @@ def test_top_level_keys():
 def test_metadata_and_years():
     md = fake_results()["metadata"]
     assert md["years"] == [2026, 2027, 2028, 2029, 2030]
-    assert md["elasticity"] == -0.7
+    assert md["elasticity"] == 1.0
     assert set(md["reform"]) == {"basic_rate", "higher_rate", "additional_rate"}
     assert set(md["reform_schedules"]) == {
         "residential_property",
@@ -247,7 +247,7 @@ def test_dataset_comparison_lays_datasets_out_as_columns():
     assert set(side_by_side["five_year_total_bn"]) == keys
     assert set(side_by_side["sensitivity"][0]) == {
         "name",
-        "e_mtr",
+        "e_retention",
         "elasticity_parameter",
         "applied_as",
         "applied_value",
@@ -308,17 +308,20 @@ def test_calibration_block_is_explicitly_empty():
 
 def test_sensitivity_cases():
     rows = fake_results()["sensitivity"]
-    assert [r["e_mtr"] for r in rows] == [0.0, -0.35, -0.7, -2.52]
+    assert [r["e_retention"] for r in rows] == [0.0, 0.5, 1.0, 2.0, 3.6]
     assert rows[0]["name"] == "Static (no behavioural response)"
-    # Every row says how its case reached the engine: the official one is
-    # keyed by its MTR value but applied as a retention-rate elasticity.
+    # Every row says how its case reached the engine: a retention-rate
+    # elasticity, applied as stated.
     assert [(r["applied_as"], r["applied_value"]) for r in rows] == [
-        ("mtr", 0.0),
-        ("mtr", -0.35),
-        ("mtr", -0.7),
+        ("retention", 0.0),
+        ("retention", 0.5),
+        ("retention", 1.0),
+        ("retention", 2.0),
         ("retention", 3.6),
     ]
-    assert rows[-1]["elasticity_parameter"].endswith(".capital_gains_responses.elasticity")
+    assert all(
+        r["elasticity_parameter"].endswith(".capital_gains_responses.elasticity") for r in rows
+    )
 
 
 def test_benchmarks_block_shape():
@@ -332,6 +335,9 @@ def test_benchmarks_block_shape():
     }
     assert bench["elasticities"]["official"]["applied_as"] == "retention"
     assert bench["elasticities"]["official"]["e_retention"] == 3.6
+    assert bench["elasticities"]["central"]["applied_as"] == "retention"
+    assert bench["elasticities"]["central"]["e_retention"] == 1.0
+    assert bench["elasticities"]["centax_range"] == {"lower": 0.5, "upper": 2.0}
     static = bench["static_equalisation"]
     assert [row["year"] for row in static["by_year"]] == YEAR_LABELS
     first = static["by_year"][0]

@@ -307,9 +307,9 @@ def sensitivity(baseline_cgt: float, cases: dict[str, float], run_case) -> list[
     """Re-run the 2026 reform under each institution's elasticity assumption.
 
     ``run_case(elasticity)`` must return the completed reform simulation
-    for 2026 with that elasticity. Each case is keyed by its MTR value
-    (``e_mtr``); the row also says which engine parameter carried it and in
-    which convention (``reform.elasticity_convention``).
+    for 2026 with that elasticity. Each case is a retention-rate elasticity
+    (``e_retention``); the row also says which engine parameter carried it
+    and in which convention (``reform.elasticity_convention``).
     """
     rows = []
     for name, e in cases.items():
@@ -317,7 +317,7 @@ def sensitivity(baseline_cgt: float, cases: dict[str, float], run_case) -> list[
         rows.append(
             {
                 "name": name,
-                "e_mtr": e,
+                "e_retention": e,
                 **elasticity_convention(e),
                 "revenue_2026_bn": (cgt_revenue(sim) - baseline_cgt) / 1e9,
             }

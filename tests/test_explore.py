@@ -26,8 +26,8 @@ from uk_cgt_reform.reform import (
     ELASTICITY_PARAMETER,
     EXPLORER_SCOPE,
     INCOME_TAX_RATES,
+    MTR_ELASTICITY_PARAMETER,
     OFFICIAL_ELASTICITY,
-    RETENTION_ELASTICITY_PARAMETER,
     YEARS,
     equalisation_reform,
     reform_fingerprint,
@@ -75,12 +75,12 @@ def year_rows(scale=1.0):
 
 
 def test_validate_request_normalises_a_good_request():
-    req = validate_request({"dataset": CANDIDATE.key, "rates": FLAT_30, "elasticity": -0.7})
+    req = validate_request({"dataset": CANDIDATE.key, "rates": FLAT_30, "elasticity": 1.0})
     assert req.dataset_key == CANDIDATE.key
     assert req.rates == FLAT_30
-    assert req.elasticity == -0.7
+    assert req.elasticity == 1.0
     assert req.spec is CANDIDATE
-    assert req.to_payload() == {"dataset": CANDIDATE.key, "rates": FLAT_30, "elasticity": -0.7}
+    assert req.to_payload() == {"dataset": CANDIDATE.key, "rates": FLAT_30, "elasticity": 1.0}
 
 
 def test_validate_request_defaults_dataset_and_elasticity():
@@ -110,6 +110,7 @@ def test_validate_request_rounds_rates():
         ({"rates": {**FLAT_30, "basic_rate": "18"}}, "must be a number"),
         ({"rates": {**FLAT_30, "basic_rate": True}}, "must be a number"),
         ({"rates": FLAT_30, "elasticity": -0.5}, "elasticity must be one of"),
+        ({"rates": FLAT_30, "elasticity": 1.4}, "elasticity must be one of"),
         ({"rates": "18/30/30"}, "rates must be an object"),
         ("not a dict", "JSON object"),
     ],
@@ -121,37 +122,43 @@ def test_validate_request_rejects(payload, message):
 
 def test_rate_bounds_and_elasticity_options():
     assert RATE_BOUNDS == (0.0, 0.75)
-    assert [o["e_mtr"] for o in ELASTICITY_OPTIONS] == list(SENSITIVITY_CASES.values())
+    assert [o["e_retention"] for o in ELASTICITY_OPTIONS] == list(SENSITIVITY_CASES.values())
+    assert [o["e_retention"] for o in ELASTICITY_OPTIONS] == [0.0, 0.5, 1.0, 2.0, 3.6]
     assert [o["id"] for o in ELASTICITY_OPTIONS] == [
         "static",
         "centax_lower",
         "centax_central",
+        "centax_upper",
         "official",
     ]
-    official = ELASTICITY_OPTIONS[-1]
-    assert official["applied_as"] == "retention"
-    assert official["applied_value"] == 3.6
-    assert all(o["applied_as"] == "mtr" for o in ELASTICITY_OPTIONS[:-1])
+    # Every case is applied as stated, on the engine's retention parameter.
+    assert all(o["applied_as"] == "retention" for o in ELASTICITY_OPTIONS)
+    assert all(o["elasticity_parameter"] == ELASTICITY_PARAMETER for o in ELASTICITY_OPTIONS)
+    assert [o["applied_value"] for o in ELASTICITY_OPTIONS] == [0.0, 0.5, 1.0, 2.0, 3.6]
 
 
-def test_official_elasticity_applies_the_retention_parameter():
-    req = validate_request({"rates": FLAT_30, "elasticity": -2.52})
-    assert req.elasticity == OFFICIAL_ELASTICITY
+def test_every_case_applies_the_retention_parameter():
+    req = validate_request({"rates": FLAT_30, "elasticity": OFFICIAL_ELASTICITY})
+    assert req.elasticity == 3.6
     reform = req.reform()
-    assert reform[RETENTION_ELASTICITY_PARAMETER] == {"2026-01-01": 3.6}
-    assert ELASTICITY_PARAMETER not in reform
+    assert reform[ELASTICITY_PARAMETER] == {"2026-01-01": 3.6}
+    assert MTR_ELASTICITY_PARAMETER not in reform
     central = validate_request({"rates": FLAT_30}).reform()
-    assert RETENTION_ELASTICITY_PARAMETER not in central
+    assert central[ELASTICITY_PARAMETER] == {"2026-01-01": ELASTICITY}
+    assert MTR_ELASTICITY_PARAMETER not in central
     result = assemble_response(req, context(), year_rows())
-    assert result["metadata"]["elasticity_applied"] == {RETENTION_ELASTICITY_PARAMETER: 3.6}
-    # The parameter the response names follows the case that ran.
-    assert result["metadata"]["elasticity_parameter"] == RETENTION_ELASTICITY_PARAMETER
-    central_result = assemble_response(validate_request({"rates": FLAT_30}), context(), year_rows())
-    assert central_result["metadata"]["elasticity_parameter"] == ELASTICITY_PARAMETER
+    assert result["metadata"]["elasticity_applied"] == {ELASTICITY_PARAMETER: 3.6}
+    assert result["metadata"]["elasticity_parameter"] == ELASTICITY_PARAMETER
     options = {o["id"]: o for o in api_options()["elasticity_options"]}
-    assert options["official"]["elasticity_parameter"] == RETENTION_ELASTICITY_PARAMETER
-    assert options["centax_central"]["elasticity_parameter"] == ELASTICITY_PARAMETER
-    assert api_options()["elasticity_parameter"] == ELASTICITY_PARAMETER  # the default's
+    assert options["official"]["elasticity_parameter"] == ELASTICITY_PARAMETER
+    assert api_options()["elasticity_parameter"] == ELASTICITY_PARAMETER
+    assert api_options()["default_elasticity"] == ELASTICITY
+
+
+def test_links_from_before_the_retention_form_map_to_the_case_they_named():
+    # Shared links carried each case's old marginal-tax-rate key.
+    for legacy, retention in ((-0.35, 0.5), (-0.7, 1.0), (-2.52, 3.6), (0.0, 0.0)):
+        assert validate_request({"rates": FLAT_30, "elasticity": legacy}).elasticity == retention
 
 
 def test_ready_reckoner_rows_are_valid_requests_and_not_presets():
@@ -240,7 +247,7 @@ def test_cache_key_tracks_every_input_and_nothing_else():
     assert cache_key(other_dataset, context()) != key
     # Changes that must hit: the same request again, and context fields the
     # key does not track.
-    again = validate_request({"dataset": CANDIDATE.key, "rates": dict(FLAT_30), "elasticity": -0.7})
+    again = validate_request({"dataset": CANDIDATE.key, "rates": dict(FLAT_30), "elasticity": 1.0})
     assert cache_key(again, context(base_year=2023)) == key
 
 
@@ -296,7 +303,7 @@ def test_assemble_response_has_the_pipeline_shapes():
     assert md["wrapper_certification"]["compatibility_basis"] == (
         "unverified_data_release_manifest_unavailable"
     )
-    assert md["elasticity"] == -0.7
+    assert md["elasticity"] == 1.0
     assert md["years"] == list(YEARS)
     assert list(md["exempt_amount_gbp"]) == labels
     assert md["projection"] == {"fingerprint": "1b0cd0dff144", "base_year": 2024}

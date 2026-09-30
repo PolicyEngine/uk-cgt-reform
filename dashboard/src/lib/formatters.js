@@ -68,11 +68,10 @@ export function formatCount(value) {
   return Math.round(num).toLocaleString("en-GB");
 }
 
-// How a behavioural case reached the engine: an MTR elasticity, or (the
-// official HMRC/OBR case) a retention-rate elasticity, keyed by its MTR value.
-export function formatElasticity({ applied_as: appliedAs, applied_value: appliedValue, e_mtr: eMtr }) {
-  const mtr = `${getSignedPrefix(eMtr)}${Math.abs(Number(eMtr)).toFixed(2)}`;
-  return appliedAs === "retention" ? `retention ${appliedValue} (≈ MTR ${mtr})` : `MTR ${mtr}`;
+// How a behavioural case reached the engine: every case is an elasticity of
+// realised gains with respect to the retention rate (1 − t), applied as stated.
+export function formatElasticity({ applied_value: appliedValue }) {
+  return `retention ${Number(appliedValue).toFixed(1)}`;
 }
 
 const MONTHS = [

@@ -26,7 +26,7 @@ from uk_cgt_reform.impacts import (
     cgt_uplift,
     sensitivity,
 )
-from uk_cgt_reform.reform import ELASTICITY_PARAMETER, RETENTION_ELASTICITY_PARAMETER
+from uk_cgt_reform.reform import ELASTICITY_PARAMETER
 
 
 def fake_sim(cgt: list[float]) -> SimpleNamespace:
@@ -93,17 +93,16 @@ def test_sensitivity_rows_record_how_each_case_was_applied():
     assert [set(row) for row in rows] == [
         {
             "name",
-            "e_mtr",
+            "e_retention",
             "elasticity_parameter",
             "applied_as",
             "applied_value",
             "revenue_2026_bn",
         }
     ] * len(SENSITIVITY_CASES)
-    assert [row["elasticity_parameter"] for row in rows] == [ELASTICITY_PARAMETER] * 3 + [
-        RETENTION_ELASTICITY_PARAMETER
-    ]
-    assert rows[-1]["applied_value"] == 3.6
+    assert [row["elasticity_parameter"] for row in rows] == [ELASTICITY_PARAMETER] * len(rows)
+    assert {row["applied_as"] for row in rows} == {"retention"}
+    assert [row["applied_value"] for row in rows] == [0.0, 0.5, 1.0, 2.0, 3.6]
 
 
 # --- the external figures, pinned to their sources ----------------------------

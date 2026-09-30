@@ -42,22 +42,21 @@ def test_datasets_never_share_a_folder_and_simulation_ids_carry_the_key():
 
 def test_equalisation_ids_match_the_cached_outputs():
     # The names the committed results' cached .h5 files carry: a change here
-    # would silently re-run every scenario.
+    # would silently re-run every scenario. The case is the retention-rate
+    # elasticity in hundredths.
     stem = "STEM"
-    assert (
-        equalisation_sim_id(stem, -0.7, "d33c3951fbea", 2026)
-        == "STEM_equalise_e07_d33c3951fbea_2026"
+    assert equalisation_sim_id(stem, 1.0, "3747239bfd6d", 2026) == (
+        "STEM_equalise_r100_3747239bfd6d_2026"
     )
-    assert (
-        equalisation_sim_id(stem, 0.0, "45576cc53935", 2030)
-        == "STEM_equalise_e000_45576cc53935_2030"
+    assert equalisation_sim_id(stem, 0.0, "4279d953e1f2", 2030) == (
+        "STEM_equalise_r000_4279d953e1f2_2030"
     )
-    assert equalisation_sim_id(stem, -0.35, "885c3d31e932", 2026) == (
-        "STEM_equalise_e035_885c3d31e932_2026"
+    assert equalisation_sim_id(stem, 0.5, "caed5a84baa3", 2026) == (
+        "STEM_equalise_r050_caed5a84baa3_2026"
     )
     official = reform_fingerprint(equalisation_reform(OFFICIAL_ELASTICITY))
     assert equalisation_sim_id(stem, OFFICIAL_ELASTICITY, official, 2026) == (
-        f"STEM_equalise_e252_{official}_2026"
+        f"STEM_equalise_r360_{official}_2026"
     )
 
 

@@ -58,7 +58,7 @@ function cliArgs(body) {
   }
   const dataset = body.dataset ?? "";
   if (dataset && !DATASET_KEY.test(dataset)) return { error: "Unknown dataset." };
-  const elasticity = body.elasticity ?? -0.7;
+  const elasticity = body.elasticity ?? 1.0;
   if (typeof elasticity !== "number" || !Number.isFinite(elasticity)) {
     return { error: "elasticity must be a number." };
   }

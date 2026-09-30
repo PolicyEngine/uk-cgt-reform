@@ -26,63 +26,60 @@ the engine's changelog gives for "tax every gain at income tax rates". On
 a dataset without those columns the extra parameters are inert, so the
 incumbent's results are unchanged by them.
 
-Behavioural response — aligned with Arun Advani (CenTax). policyengine-uk
-now carries two conventions: ``gov.simulation.capital_gains_responses.
-elasticity`` is the elasticity of realisations with respect to the RETENTION
-RATE (1 - t, positive, CenTax's own convention) and ``...mtr_elasticity`` the
-elasticity with respect to the MARGINAL TAX RATE itself (negative); the two
-may not both be set. This pipeline keeps the MTR convention it has always
-reported (default 0 = static) and sets ``mtr_elasticity``.
-Advani, Lonsdale & Summers (CenTax, Oct 2024, *Reforming Capital Gains Tax*)
-use a central medium-term elasticity of 1.0 with respect to the retention
-rate (1 - t), sensitivity range 0.5-2.0, anchored on Agersnap & Zidar (2021)
-and Lavecchia & Tazhitdinova (2024). Converting conventions
-(``e_mtr = e_retention * t / (1 - t)``), Advani's central 1.0 at the reformed
-40-45% top rates is an MTR elasticity of ~= -0.67 to -0.82. We use -0.7 as
-the central case — also the value PolicyEngine used in its Autumn Budget 2024
-CGT analysis.
+Behavioural response, in CenTax's convention. Advani, Lonsdale and Summers
+(CenTax, October 2024, *Reforming Capital Gains Tax*) estimate how realised
+gains respond to the retention rate, the share 1 - t of a marginal pound of
+gain the taxpayer keeps: a central medium-term elasticity of 1.0, with a
+range of 0.5 to 2.0, anchored on Agersnap and Zidar (2021) and Lavecchia and
+Tazhitdinova (2024). The HMRC/OBR assumption is stated in the same
+convention: 3.6 for the main rates and 1.4 for BADR (OBR, January 2025, para
+1.9). policyengine-uk's ``gov.simulation.capital_gains_responses.elasticity``
+applies an elasticity in exactly that form: realised gains scale by
+((1 - t1) / (1 - t0)) ** e, with t each person's marginal rate on gains
+before and after the reform. Every case here sets that parameter and leaves
+the engine's marginal-tax-rate parameter (``...mtr_elasticity``) at zero.
 
-Caveats: Advani's elasticity assumes accompanying base broadening
-(death-uplift removal, exit charges) which we do not model, so behavioural
-loss may be UNDERSTATED for a rate-only reform; and it is a medium-term
-elasticity abstracting from short-run forestalling.
+The pipeline once converted CenTax's 1.0 into a marginal-tax-rate elasticity
+of -0.7 at the reformed 40-45% rates. The conversion holds only for small
+changes: across the reform's jumps -0.7 behaves like a retention elasticity
+of about 1.4 (24% to 45%), 1.5 (24% to 40%) and 3.0 (18% to 20%), so it
+understated the yield CenTax's own assumption implies.
+
+Caveats: CenTax's elasticity belongs to a package that also removes the
+uplift at death and charges gains on departure, closing two ways of
+deferring or avoiding the tax, which this repo does not model. CenTax
+expect a larger response to a rate rise on the current base, and advise
+against equalising rates without the base reforms (*Taxes at the top*,
+September 2026, p.17); the upper end of the range and the official case
+show how much of the yield rests on the assumption. The elasticity is
+medium-term and abstracts from short-run forestalling.
 """
 
 from __future__ import annotations
 
 import hashlib
 import json
-import math
 
 YEARS = [2026, 2027, 2028, 2029, 2030]  # fiscal years 2026-27 .. 2030-31
 # policyengine.py reform dicts take a single effective date per value and
 # apply it open-endedly (equivalent to the old "2026-01-01.2035-12-31"
 # range over the 2026-2030 window simulated here).
 PERIOD = "2026-01-01"
-# w.r.t. MTR, converted from CenTax's central retention elasticity of 1.0 at the
-# reformed 40-45% rates. That conversion is exact only marginally: applied across
-# the whole 24%->40% jump it is more responsive than CenTax's own convention
-# (which implies ~-0.5 for a change this size). Matches PolicyEngine's own
-# Autumn Budget 2024 CGT house assumption.
-ELASTICITY = -0.7
-# The engine parameter that carries it: the marginal-tax-rate convention.
-# ``gov.simulation.capital_gains_responses.elasticity`` is the retention-rate
-# convention (positive) and must stay at its default of zero.
-ELASTICITY_PARAMETER = "gov.simulation.capital_gains_responses.mtr_elasticity"
-RETENTION_ELASTICITY_PARAMETER = "gov.simulation.capital_gains_responses.elasticity"
-
-# The official HMRC/OBR assumption for the main CGT rates: a retention-rate
-# elasticity of 3.6 (OBR, "Costing of changes to the main, BADR and IR rates
-# of CGT", January 2025, para 1.9). Its MTR-convention key is 3.6 times the
-# central case, the same conversion that takes CenTax's 1.0 to -0.7.
-OFFICIAL_RETENTION_ELASTICITY = 3.6
-OFFICIAL_ELASTICITY = -2.52
-# Cases the engine applies in the retention-rate convention, keyed by their
-# MTR-convention value. The engine's MTR form scales realised gains by
-# (t1 / t0) ** e, so at -2.52 every rate rise would lose revenue, the lower
-# rate included; the retention form, ((1 - t1) / (1 - t0)) ** 3.6, is the
-# convention the OBR states the assumption in.
-RETENTION_NATIVE = {OFFICIAL_ELASTICITY: OFFICIAL_RETENTION_ELASTICITY}
+# Elasticities of realised gains with respect to the retention rate (1 - t),
+# the convention CenTax and the OBR state them in. CenTax's central case and
+# its range (Advani, Lonsdale and Summers 2024, Table 6):
+ELASTICITY = 1.0
+CENTAX_LOWER_ELASTICITY = 0.5
+CENTAX_UPPER_ELASTICITY = 2.0
+# The official HMRC/OBR assumption for the main CGT rates (OBR, "Costing of
+# changes to the main, BADR and IR rates of CGT", January 2025, para 1.9).
+OFFICIAL_ELASTICITY = 3.6
+# The engine parameter that carries every case: the retention-rate form,
+# realised gains scaled by ((1 - t1) / (1 - t0)) ** e. The engine's
+# marginal-tax-rate parameter stays at its default of zero; the two may not
+# both be set.
+ELASTICITY_PARAMETER = "gov.simulation.capital_gains_responses.elasticity"
+MTR_ELASTICITY_PARAMETER = "gov.simulation.capital_gains_responses.mtr_elasticity"
 
 # Reformed CGT rates, equal to the income tax rates for each band.
 INCOME_TAX_RATES = {
@@ -130,22 +127,18 @@ CENTAX_1920_BADR_LIFETIME_LIMIT = 1_000_000
 
 def elasticity_assignment(elasticity: float) -> dict[str, float]:
     """The engine parameter (and value) that carries a behavioural case: the
-    MTR convention, or the retention convention for :data:`RETENTION_NATIVE`
-    cases. The two may not both be nonzero."""
-    for key, retention in RETENTION_NATIVE.items():
-        if math.isclose(elasticity, key, abs_tol=1e-9):
-            return {RETENTION_ELASTICITY_PARAMETER: retention}
+    retention-rate elasticity, applied as stated."""
     return {ELASTICITY_PARAMETER: elasticity}
 
 
 def elasticity_convention(elasticity: float) -> dict:
-    """How a behavioural case keyed by its MTR value is applied: the engine
-    parameter it sets, the convention (``mtr`` or ``retention``) and the value
-    the engine receives. Every output that reports a case carries these."""
+    """How a behavioural case is applied: the engine parameter it sets, the
+    convention and the value the engine receives. Every output that reports
+    a case carries these."""
     [(parameter, value)] = elasticity_assignment(elasticity).items()
     return {
         "elasticity_parameter": parameter,
-        "applied_as": "retention" if parameter == RETENTION_ELASTICITY_PARAMETER else "mtr",
+        "applied_as": "retention",
         "applied_value": value,
     }
 
@@ -258,14 +251,11 @@ def rate_reform_schedules(rates: dict, schedules: tuple[str, ...] = EXPLORER_SCH
     return {schedule: {band: rates[band] for band in RATE_BANDS} for schedule in schedules}
 
 
-def retention_to_mtr_elasticity(e_retention: float, tax_rate: float) -> float:
-    """Convert a retention-rate elasticity (Advani/CenTax convention) to
-    PolicyEngine's marginal-tax-rate convention.
-
-    ``e_mtr = -e_retention * t / (1 - t)``: a positive elasticity of gains
-    with respect to the retention rate (1 - t) is a NEGATIVE elasticity with
-    respect to the tax rate t itself.
-    """
-    if not 0.0 <= tax_rate < 1.0:
-        raise ValueError(f"tax rate {tax_rate} outside [0, 1)")
-    return -e_retention * tax_rate / (1.0 - tax_rate)
+def retention_response(e_retention: float, t0: float, t1: float) -> float:
+    """The factor by which realised gains scale when a marginal rate on gains
+    moves from ``t0`` to ``t1``, at a retention-rate elasticity: the form
+    the engine applies, ((1 - t1) / (1 - t0)) ** e."""
+    for rate in (t0, t1):
+        if not 0.0 <= rate < 1.0:
+            raise ValueError(f"tax rate {rate} outside [0, 1)")
+    return ((1.0 - t1) / (1.0 - t0)) ** e_retention

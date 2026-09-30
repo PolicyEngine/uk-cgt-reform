@@ -22,8 +22,6 @@ function formatUplift(value) {
 }
 
 const percent = (rate) => `${Math.round(rate * 100)}%`;
-const signed = (value, digits) =>
-  `${value < 0 ? "\u2212" : ""}${Math.abs(value).toFixed(digits)}`;
 // "Exchequer receipts in £m ..." reads as the rest of a sentence.
 const lowerFirst = (text) => `${text[0].toLowerCase()}${text.slice(1)}`;
 
@@ -211,7 +209,7 @@ function CentaxPackage({ rows }) {
 
 function ReadyReckoner({ block, dataset, elasticities }) {
   const [first, second] = block.lag;
-  const centralLabel = `Central (MTR ${signed(elasticities.central.e_mtr, 1)})`;
+  const centralLabel = `Central (retention ${elasticities.central.e_retention.toFixed(1)})`;
   const officialLabel = `Official (retention ${elasticities.official.e_retention})`;
   const model = (row, elasticityId, year) => row.model_m[elasticityId][year];
   return (
@@ -279,10 +277,10 @@ export default function BenchmarksTab({ data, onNavigate }) {
   const benchmarks = getBenchmarks(data);
   const dataset = getDatasetInfo(data);
   const official = getSensitivity(data).find(
-    (row) => row.e_mtr === benchmarks.elasticities.official.e_mtr,
+    (row) => row.e_retention === benchmarks.elasticities.official.e_retention,
   );
   const central = getSensitivity(data).find(
-    (row) => row.e_mtr === benchmarks.elasticities.central.e_mtr,
+    (row) => row.e_retention === benchmarks.elasticities.central.e_retention,
   );
   return (
     <div className="space-y-6">

@@ -24,22 +24,23 @@ from __future__ import annotations
 
 from .impacts import REGION_NAMES
 from .reform import (
+    CENTAX_LOWER_ELASTICITY,
+    CENTAX_UPPER_ELASTICITY,
     ELASTICITY,
     OFFICIAL_ELASTICITY,
-    OFFICIAL_RETENTION_ELASTICITY,
     RATE_BANDS,
 )
 from .uprating_audit import CPI_INDEX, OBR_CGT_RECEIPTS_BN, OBR_CGT_RECEIPTS_SOURCE
 
-# Sensitivity cases, in the marginal-tax-rate convention: each shop's
-# retention elasticity converted at the reformed 40-45% top rates
-# (e_mtr = -e_retention * t / (1 - t), at t = 7/17). The official case is
-# applied in the retention convention (``reform.RETENTION_NATIVE``).
+# Sensitivity cases: retention-rate elasticities, applied as stated
+# (``reform.elasticity_assignment``). CenTax's central case and range, and
+# the official HMRC/OBR assumption for the main rates.
 SENSITIVITY_CASES = {
     "Static (no behavioural response)": 0.0,
-    "CenTax lower (retention e=0.5)": -0.35,
-    "CenTax central (retention e=1.0)": -0.7,
-    "HMRC/OBR official (retention e=3.6)": OFFICIAL_ELASTICITY,
+    "CenTax lower (retention elasticity 0.5)": CENTAX_LOWER_ELASTICITY,
+    "CenTax central (retention elasticity 1.0)": ELASTICITY,
+    "CenTax upper (retention elasticity 2.0)": CENTAX_UPPER_ELASTICITY,
+    "HMRC/OBR official (retention elasticity 3.6)": OFFICIAL_ELASTICITY,
 }
 
 #: Every external figure carries exactly these keys.
@@ -306,7 +307,7 @@ OFFICIAL_ELASTICITY_SOURCE = {
     "published": "2025-01-22",
     "url": "https://obr.uk/docs/dlm_uploads/CGT-supplementary-release-Jan-2025.pdf",
     "locator": "Para 1.9 and Table 1.1",
-    "retention_elasticity": OFFICIAL_RETENTION_ELASTICITY,
+    "retention_elasticity": OFFICIAL_ELASTICITY,
     "note": (
         "Retention-rate elasticity 3.6 for the main rates (HMRC's 1998-2018 estimate is 4.0) "
         "and 1.4 for BADR."
@@ -505,23 +506,28 @@ def ready_reckoner_block(model_m: dict[str, dict[str, dict[str, float]]]) -> dic
 
 
 def elasticities_block() -> dict:
-    """The central and the official behavioural assumptions, with how the
-    engine applies each."""
+    """The central and the official behavioural assumptions, CenTax's range,
+    and how the engine applies each: every case is a retention-rate
+    elasticity, realised gains scaled by ((1 - t1) / (1 - t0)) ** e."""
     return {
         "central": {
             "id": "centax_central",
-            "e_mtr": ELASTICITY,
-            "e_retention": 1.0,
-            "applied_as": "mtr",
+            "e_retention": ELASTICITY,
+            "applied_as": "retention",
+            "source": CENTAX_2024_SOURCE,
+            "url": f"{CENTAX_2024_URL}#page=38",
+        },
+        "centax_range": {
+            "lower": CENTAX_LOWER_ELASTICITY,
+            "upper": CENTAX_UPPER_ELASTICITY,
         },
         "official": {
             "id": "official",
-            "e_mtr": OFFICIAL_ELASTICITY,
-            "e_retention": OFFICIAL_RETENTION_ELASTICITY,
+            "e_retention": OFFICIAL_ELASTICITY,
             "applied_as": "retention",
             **OFFICIAL_ELASTICITY_SOURCE,
         },
-        "conversion": "e_mtr = -e_retention × t / (1 − t) at t = 7/17 (the reformed 40–45% rates)",
+        "form": "realised gains × ((1 − t₁) / (1 − t₀))^e, t the marginal rate on gains",
     }
 
 
@@ -632,7 +638,7 @@ def dataset_comparison(results: dict[str, dict]) -> dict:
         "sensitivity": [
             {
                 "name": row["name"],
-                "e_mtr": row["e_mtr"],
+                "e_retention": row["e_retention"],
                 "elasticity_parameter": row["elasticity_parameter"],
                 "applied_as": row["applied_as"],
                 "applied_value": row["applied_value"],

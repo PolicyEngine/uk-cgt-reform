@@ -263,44 +263,48 @@ variable removed and restores it straight after (downloads read it at call
 time); the basis is recorded in the explorer's `metadata.wrapper_certification`
 and in the Modal Volume's `manifest.json`.
 
-### Behavioural response (aligned with Arun Advani / CenTax)
+### Behavioural response (CenTax's elasticities, in CenTax's form)
 
-Advani, Lonsdale & Summers (CenTax, Oct 2024, *Reforming Capital Gains Tax*)
-use a central medium-term elasticity of **1.0 with respect to the retention
-rate (1 − t)**, range 0.5–2.0. This pipeline reports the marginal-tax-rate
-convention: converting (`e_mtr = e_retention × t / (1 − t)`) gives ≈ −0.67 to
-−0.82 at the reformed 40–45% top rates, and we use **−0.7** as the central
-case (also PolicyEngine's Autumn Budget 2024 value). Sensitivity runs cover
-0.0 / −0.35 / −0.7 and the official HMRC/OBR assumption, a retention-rate
-elasticity of 3.6 (OBR, January 2025, para 1.9), keyed as −2.52 (3.6 times
-the central case) but applied in the retention convention it is stated in:
-the engine's MTR form scales realised gains by (t₁/t₀)^e, which at −2.52
-makes every rate rise lose revenue, while the retention form,
-((1 − t₁)/(1 − t₀))^3.6, reproduces the pattern of HMRC's ready reckoner
-(`reform.RETENTION_NATIVE`). Every sensitivity row, explorer option and
-explorer response records the engine parameter it set, the convention
-(`applied_as`) and the value applied (`reform.elasticity_convention`). Caveat: Advani's elasticity assumes accompanying
-base broadening we do not model, so behavioural loss may be understated for
-a rate-only reform.
+Advani, Lonsdale & Summers (CenTax, October 2024, *Reforming Capital Gains
+Tax*) estimate how realised gains respond to the **retention rate** (1 − t),
+the share of a marginal pound of gain the taxpayer keeps: a central
+medium-term elasticity of **1.0**, range 0.5–2.0, anchored on Agersnap &
+Zidar (2021) and Lavecchia & Tazhitdinova (2024). The official HMRC/OBR
+assumption is stated in the same convention: 3.6 for the main rates and 1.4
+for BADR (OBR, January 2025, para 1.9). policyengine-uk's
+`gov.simulation.capital_gains_responses.elasticity` applies an elasticity in
+exactly that form, scaling each person's realised gains by
+((1 − t₁)/(1 − t₀))^e, with t the person's marginal rate on gains (shared
+across the main, residential and BADR schedules in proportion to the gains on
+each). Every case sets that parameter and leaves `...mtr_elasticity` at zero;
+the sensitivity runs cover 0 (static), CenTax's 0.5, 1.0 and 2.0, and the
+official 3.6. Every sensitivity row, explorer option and explorer response
+records the engine parameter it set, the convention (`applied_as`) and the
+value applied (`reform.elasticity_convention`).
 
-policyengine-uk now carries both conventions:
-`gov.simulation.capital_gains_responses.elasticity` is the retention-rate
-elasticity (positive) and, since 2.98.0, `...mtr_elasticity` the
-marginal-tax-rate elasticity (negative); they may not both be set. The
-pipeline sets `mtr_elasticity` and leaves `elasticity` at zero, except for
-the official case, which sets `elasticity` to 3.6 and leaves
-`mtr_elasticity` at zero. Setting −0.7
-on the retention parameter, as this repo did before the engine's change,
-raises realisations instead of lowering them (static +£10.7bn, "−0.7"
-+£16.7bn on the incumbent); the pipeline's assertion that the static and
-central runs differ in the right direction is what caught it.
+Until this change the pipeline converted CenTax's 1.0 into a
+marginal-tax-rate elasticity of −0.7 (`e_mtr = −e_retention × t/(1 − t)` at
+the reformed 40–45% rates) and applied it in the engine's MTR form,
+(t₁/t₀)^e. The conversion holds only for small changes. Across this reform's
+jumps −0.7 behaves like a retention elasticity of about 1.4 (24% to 45%), 1.5
+(24% to 40%) and 3.0 (18% to 20%): for one taxpayer's gains moving from 24% to
+45% it raised the tax on them by 21% where CenTax's convention gives 36%. The
+central yield was correspondingly understated.
+
+Caveat: CenTax's elasticity belongs to a package that also removes the uplift
+at death and charges gains on departure, closing two ways of deferring or
+avoiding the tax, which this repo does not model. CenTax expect a larger
+response to a rate rise on the current base and advise against equalising
+rates without the base reforms (*Taxes at the top*, September 2026, p.17);
+the upper end of the range and the official case show how much of the yield
+rests on the assumption.
 
 ### Reforms via `Policy.simulation_modifier` (load-bearing)
 
 policyengine.py applies a plain-dict reform as post-construction parameter
 updates on an unreformed `policyengine_uk.Microsimulation` and never
 registers the baseline branch, so the CGT behavioural elasticity is
-**silently zero** through that path (verified: e=0 and e=−0.7 produce
+**silently zero** through that path (verified: e=0 and a nonzero elasticity produce
 identical revenue). The pipeline instead builds each reform as a
 policyengine.py `Policy` whose first-class `simulation_modifier` hook
 registers the baseline branch (`sim.branches["baseline"] = sim.baseline`,
@@ -308,7 +312,7 @@ whose clone keeps its own unreformed parameter tree) before applying the
 same parameter updates. Each Simulation covers a single year, so the old
 multi-year "restore the neutralised response variable" workaround is no
 longer needed. The pipeline asserts that the static (e=0) and central
-(e=−0.7) runs differ before writing any results.
+(retention e=1.0) runs differ before writing any results.
 
 ### Outputs
 

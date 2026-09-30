@@ -72,16 +72,6 @@ export function getReformSchedules(data) {
   return data.metadata.reform_schedules;
 }
 
-export function getElasticity(data) {
-  // The pipeline emits the MTR elasticity as a plain number; derive the
-  // retention-rate convention (CenTax central 1.0 <-> MTR -0.7 at 40-45% rates).
-  const e = data.metadata.elasticity;
-  if (typeof e === "number") {
-    return { retention_rate_elasticity: 1.0, mtr_elasticity_approx: e };
-  }
-  return e;
-}
-
 export function getFirstYear(data) {
   // metadata.years may hold calendar ints (2026) while income_change_groups is keyed
   // by fiscal labels ("2026-27") — normalise to the fiscal label.

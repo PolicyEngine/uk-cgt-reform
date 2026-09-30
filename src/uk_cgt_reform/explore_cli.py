@@ -58,8 +58,8 @@ def build_parser() -> argparse.ArgumentParser:
         type=float,
         default=DEFAULT_ELASTICITY,
         help=(
-            "MTR elasticity of realised gains; one of "
-            + ", ".join(str(o["e_mtr"]) for o in ELASTICITY_OPTIONS)
+            "Elasticity of realised gains with respect to the retention rate (1 - t); one of "
+            + ", ".join(str(o["e_retention"]) for o in ELASTICITY_OPTIONS)
             + f" (default {DEFAULT_ELASTICITY})."
         ),
     )

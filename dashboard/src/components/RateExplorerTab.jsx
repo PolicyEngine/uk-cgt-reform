@@ -59,14 +59,20 @@ const CURRENT_LAW = PRESETS.find((preset) => preset.id === "current_law").rates;
 // HMRC's own post-behavioural receipts to set beside the run.
 const READY_RECKONER = options.ready_reckoner;
 
-// How a behavioural option is applied: the MTR convention, or (the official
-// HMRC/OBR case) the retention convention it is stated in.
+// Every behavioural option is an elasticity of realised gains with respect to
+// the retention rate (1 − t), applied as stated; its label names the source.
 function elasticityLabel(option) {
-  if (option.applied_as === "retention") {
-    return `${option.label}, applied as stated (\u2248 MTR elasticity ${option.e_mtr})`;
-  }
-  return `${option.label}, MTR elasticity ${option.e_mtr}`;
+  return option.label;
 }
+
+// Links shared before the retention form keyed each case by a marginal-tax-rate
+// value; they map to the case they named, as the backend does.
+const LEGACY_MTR_ELASTICITIES = new Map([
+  [-0.35, 0.5],
+  [-0.7, 1.0],
+  [-2.52, 3.6],
+]);
+const sameElasticity = (a, b) => Math.abs(a - b) < 1e-9;
 
 const toPercent = (fraction) => Math.round(fraction * 10000) / 100;
 const toFraction = (percent) => Math.round(Number(percent) * 100) / 10000;
@@ -108,8 +114,10 @@ function readUrlState(searchParams) {
   const percents = Object.fromEntries(BANDS.map((band, i) => [band.key, values[i]]));
   // An absent or empty `e` means the default; Number(null) would be 0, the static case.
   const rawE = searchParams.get("e");
-  const e = rawE === null || rawE.trim() === "" ? NaN : Number(rawE);
-  const elasticity = ELASTICITIES.some((option) => Math.abs(option.e_mtr - e) < 1e-9)
+  const parsed = rawE === null || rawE.trim() === "" ? NaN : Number(rawE);
+  const legacy = [...LEGACY_MTR_ELASTICITIES].find(([mtr]) => sameElasticity(mtr, parsed));
+  const e = legacy ? legacy[1] : parsed;
+  const elasticity = ELASTICITIES.some((option) => sameElasticity(option.e_retention, e))
     ? e
     : DEFAULT_ELASTICITY;
   return { percents, elasticity };
@@ -334,9 +342,9 @@ export default function RateExplorerTab({ data, datasetKey }) {
   };
   const entrants = getEntrants(data);
   const entrantShare = entrants.count / getValidation(data).cgt_taxpayers;
-  const elasticityOption = ELASTICITIES.find((option) => Math.abs(option.e_mtr - elasticity) < 1e-9);
+  const elasticityOption = ELASTICITIES.find((option) => sameElasticity(option.e_retention, elasticity));
   const resultElasticity = result
-    ? ELASTICITIES.find((option) => Math.abs(option.e_mtr - result.metadata.elasticity) < 1e-9)
+    ? ELASTICITIES.find((option) => sameElasticity(option.e_retention, result.metadata.elasticity))
     : null;
   const matchedRow = result
     ? READY_RECKONER.rows.find((row) => sameRates(row.rates, result.metadata.reform))
@@ -408,7 +416,7 @@ export default function RateExplorerTab({ data, datasetKey }) {
           <LabelledSelect
             label="Behavioural response"
             options={ELASTICITIES.map((option) => ({
-              value: String(option.e_mtr),
+              value: String(option.e_retention),
               label: elasticityLabel(option),
             }))}
             value={String(elasticity)}
@@ -440,7 +448,7 @@ export default function RateExplorerTab({ data, datasetKey }) {
           <section className="section-card">
             <SectionHeading
               title={`Headline results, ${firstYear}`}
-              description={`${formatPct(result.metadata.reform.basic_rate * 100, 0)} / ${formatPct(result.metadata.reform.higher_rate * 100, 0)} / ${formatPct(result.metadata.reform.additional_rate * 100, 0)} on ${result.metadata.dataset_short_label}, ${resultElasticity ? elasticityLabel(resultElasticity) : `MTR elasticity ${result.metadata.elasticity}`}; distributional figures cover all households.`}
+              description={`${formatPct(result.metadata.reform.basic_rate * 100, 0)} / ${formatPct(result.metadata.reform.higher_rate * 100, 0)} / ${formatPct(result.metadata.reform.additional_rate * 100, 0)} on ${result.metadata.dataset_short_label}, ${resultElasticity ? elasticityLabel(resultElasticity) : `retention elasticity ${result.metadata.elasticity}`}; distributional figures cover all households.`}
             />
             <div className="grid gap-4 md:grid-cols-3">
               <MetricCard
@@ -492,8 +500,12 @@ export default function RateExplorerTab({ data, datasetKey }) {
               </tbody>
             </table>
             <p className="mt-3 text-xs leading-5 text-slate-500">
-              The equalisation column is the committed result for {dataset.shortLabel} at an MTR
-              elasticity of −0.7{elasticityOption && elasticityOption.e_mtr !== -0.7 ? "; this schedule ran with a different elasticity, so the two are not like for like" : ""}.
+              The equalisation column is the committed result for {dataset.shortLabel} at
+              CenTax&apos;s central elasticity (retention {DEFAULT_ELASTICITY.toFixed(1)})
+              {elasticityOption && !sameElasticity(elasticityOption.e_retention, DEFAULT_ELASTICITY)
+                ? "; this schedule ran with a different elasticity, so the two are not like for like"
+                : ""}
+              .
             </p>
             {matchedRow ? <ReadyReckonerPanel row={matchedRow} result={result} /> : null}
           </section>

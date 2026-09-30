@@ -28,18 +28,14 @@ import GroupImpactChart from "./charts/GroupImpactChart";
 import { MetricCard, TipHeader } from "./controls";
 import SectionHeading from "./SectionHeading";
 
-// Where each sensitivity scenario's elasticity comes from. Keys match the
-// scenario names emitted by the pipeline's SENSITIVITY_CASES; the official
-// case's source comes from the results file's benchmarks block.
+// Where each sensitivity scenario's elasticity comes from: the static case
+// has none, the official HMRC/OBR case's source is in the results file's
+// benchmarks block, and the rest are CenTax's central case and range.
 const CENTAX_SOURCE = {
   label: "Advani, Lonsdale & Summers (2024), CenTax",
   url: "https://centax.org.uk/wp-content/uploads/2024/10/AdvaniLonsdaleSummers2024_CGTReform.pdf#page=38",
 };
-const ELASTICITY_SOURCES = {
-  "Static (no behavioural response)": { label: "None: taxpayers do not respond", url: null },
-  "CenTax lower (retention e=0.5)": CENTAX_SOURCE,
-  "CenTax central (retention e=1.0)": CENTAX_SOURCE,
-};
+const STATIC_SOURCE = { label: "None: taxpayers do not respond", url: null };
 
 function officialSource(official) {
   return {
@@ -49,9 +45,9 @@ function officialSource(official) {
 }
 
 function SourceLink({ row, official }) {
-  const source =
-    row.applied_as === "retention" ? officialSource(official) : ELASTICITY_SOURCES[row.name];
-  if (!source) return <td>—</td>;
+  let source = CENTAX_SOURCE;
+  if (row.e_retention === 0) source = STATIC_SOURCE;
+  else if (row.e_retention === official.e_retention) source = officialSource(official);
   if (!source.url) return <td className="font-normal text-slate-500">{source.label}</td>;
   return (
     <td>
@@ -73,7 +69,7 @@ export default function ReformTab({ data }) {
   const fiveYearTotal = getFiveYearTotal(data);
   const headlineGroups = getIncomeChangeGroups(data, firstYear);
   const sensitivity = getSensitivity(data);
-  const official = getBenchmarks(data).elasticities.official;
+  const { central, official, centax_range: centaxRange } = getBenchmarks(data).elasticities;
   const reform = getReform(data);
   const schedules = getReformSchedules(data);
   const validation = getValidation(data);
@@ -111,9 +107,12 @@ export default function ReformTab({ data }) {
                 rel="noopener noreferrer"
                 className="underline decoration-1 underline-offset-2 hover:opacity-80"
               >
-                Advani/CenTax&apos;s central retention-rate elasticity of 1.0
+                CenTax&apos;s central elasticity of 1.0
               </a>{" "}
-              (≈ MTR elasticity of −0.7).
+              with respect to the share of each gain they keep, applied in that
+              form. CenTax&apos;s elasticity comes from a package that also reforms
+              the tax base; for a rate rise alone CenTax expect a larger response,
+              which the sensitivity table below explores.
             </>
           }
         />
@@ -138,7 +137,7 @@ export default function ReformTab({ data }) {
           <MetricCard
             label="Top quintile net income change"
             value={formatSignedPct(topQuintile.relative_change_pct)}
-            note={`Average of ${formatSignedCurrency(topQuintile.avg_change_gbp)} per household in the highest-income 20%, which holds most realised gains. Includes the gains taxpayers stop realising under the −0.7 elasticity, not just tax paid.`}
+            note={`Average of ${formatSignedCurrency(topQuintile.avg_change_gbp)} per household in the highest-income 20%, which holds most realised gains. Includes the gains taxpayers stop realising under the central elasticity, not just tax paid.`}
           />
         </div>
       </section>
@@ -268,16 +267,29 @@ export default function ReformTab({ data }) {
           <p className="mb-4 text-sm leading-6 text-slate-600">
             The revenue estimate hinges on how strongly taxpayers reduce
             realisations when rates rise. Each row re-runs the reform with a
-            different marginal-tax-rate elasticity of realised gains. The bold
-            row is this dashboard&apos;s central assumption, converted from
-            CenTax&apos;s central retention-rate elasticity of 1.0 at the
-            reformed 40–45% rates. That conversion is exact only for a marginal
-            rate change, so applying −0.7 across the full 24%→40% jump is
-            somewhat more responsive than CenTax&apos;s own convention implies
-            (roughly −0.5 here). The last row is the official HMRC/OBR
-            assumption, a retention-rate elasticity of {official.e_retention},
-            applied in that convention; the Methodology tab explains why it turns
-            the reform&apos;s yield so far down. CenTax&apos;s range is anchored on{" "}
+            different elasticity of realised gains with respect to the retention
+            rate, the share (1 − t) of each marginal pound of gain a taxpayer
+            keeps: the model scales each person&apos;s realised gains by
+            ((1 − t₁) / (1 − t₀))<sup>e</sup>, the form CenTax and the OBR state
+            their elasticities in. The bold row is this dashboard&apos;s central
+            assumption, CenTax&apos;s central {central.e_retention.toFixed(1)}; the
+            rows either side are CenTax&apos;s range,{" "}
+            {centaxRange.lower.toFixed(1)} to {centaxRange.upper.toFixed(1)}.
+            CenTax estimate their elasticity for a package that also removes the
+            uplift at death and charges gains on departure, and{" "}
+            <a
+              href="https://www.nuffieldfoundation.org/wp-content/uploads/2023/03/Taxes-at-the-top-Understanding-what-high-earners-pay-and-options-for-reform.pdf#page=20"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline decoration-1 underline-offset-2 hover:opacity-80"
+            >
+              advise against equalising rates without those reforms
+            </a>
+            , expecting a larger response to rates alone: the upper rows show how
+            much of the yield rests on that. The last row is the official HMRC/OBR
+            assumption, {official.e_retention}; the Methodology tab explains why it
+            turns the reform&apos;s yield so far down. CenTax&apos;s range is
+            anchored on{" "}
             <a
               href="https://www.aeaweb.org/articles?id=10.1257/aeri.20200535"
               target="_blank"
@@ -303,7 +315,7 @@ export default function ReformTab({ data }) {
               <th>Scenario</th>
               <TipHeader
                 label="Elasticity, as applied"
-                tip="The elasticity of realised gains the engine applies. For the static and CenTax cases it is with respect to the marginal tax rate (MTR), converted from a retention-rate elasticity via e_mtr = −e_retention × t/(1−t). The official HMRC/OBR case is applied with respect to the retention rate (1 − t), as the OBR states it; its MTR equivalent is shown for comparison."
+                tip="The elasticity of realised gains with respect to the retention rate (1 − t) that the engine applies, as each source states it: realised gains scale by ((1 − t₁) / (1 − t₀)) to the power e, with t the marginal rate on gains."
               />
               <TipHeader
                 label={`CGT revenue, ${firstYear}`}
@@ -316,7 +328,7 @@ export default function ReformTab({ data }) {
             {sensitivity.map((row) => (
               <tr
                 key={row.name}
-                className={row.e_mtr === -0.7 ? "font-semibold" : ""}
+                className={row.e_retention === central.e_retention ? "font-semibold" : ""}
               >
                 <td>{row.name}</td>
                 <td>{formatElasticity(row)}</td>

@@ -159,7 +159,7 @@ export default function ComparisonTab({ comparison, onNavigate }) {
   const entrants = validationRow("entrants_by_uprating.count");
   const entrantGains = validationRow("entrants_by_uprating.gains_bn");
   const entrantCgt = validationRow("entrants_by_uprating.cgt_bn");
-  const staticRow = comparison.sensitivity.find((row) => row.e_mtr === 0);
+  const staticRow = comparison.sensitivity.find((row) => row.e_retention === 0);
   const firstBudget = comparison.budget[0];
   const benchmarks = comparison.benchmarks;
   const jrf = benchmarks.external.jrf.find((row) => row.year === firstYear);
@@ -177,7 +177,7 @@ export default function ComparisonTab({ comparison, onNavigate }) {
 
   const headline = [
     {
-      label: `Revenue raised, ${firstYear} (e = −0.7)`,
+      label: `Revenue raised, ${firstYear} (central elasticity)`,
       values: keys.map((key) => formatSignedBn(firstBudget[key].gov_balance_change_bn, 1)),
       benchmark: (
         <>
@@ -468,7 +468,7 @@ export default function ComparisonTab({ comparison, onNavigate }) {
       <section className="section-card">
         <SectionHeading
           title={`Sensitivity to the behavioural elasticity, ${firstYear}`}
-          description={`Change in CGT revenue in the first year under each elasticity, by dataset. The official HMRC/OBR case is applied as a retention-rate elasticity of ${comparison.sensitivity.find((row) => row.applied_as === "retention").applied_value}.`}
+          description={`Change in CGT revenue in the first year under each elasticity of realised gains with respect to the retention rate, by dataset: no response, CenTax's range and central case, and the official HMRC/OBR ${comparison.sensitivity.at(-1).e_retention}.`}
         />
         <table className="data-table">
           <thead>
@@ -482,7 +482,7 @@ export default function ComparisonTab({ comparison, onNavigate }) {
           </thead>
           <tbody>
             {comparison.sensitivity.map((row) => (
-              <tr key={row.name} className={row.e_mtr === -0.7 ? "font-semibold" : ""}>
+              <tr key={row.name} className={row.e_retention === 1 ? "font-semibold" : ""}>
                 <td>{row.name}</td>
                 <td>{formatElasticity(row)}</td>
                 {keys.map((key) => (
@@ -497,7 +497,7 @@ export default function ComparisonTab({ comparison, onNavigate }) {
       <section className="section-card">
         <SectionHeading
           title={`Who bears the cost, ${firstYear}`}
-          description="Average change in household net income by household type and by region, by dataset. Losses include the gains taxpayers stop realising under the −0.7 elasticity, not just tax paid."
+          description="Average change in household net income by household type and by region, by dataset. Losses include the gains taxpayers stop realising under the central elasticity, not just tax paid."
         />
         <div className="grid gap-6 lg:grid-cols-2">
           <table className="data-table">
