@@ -162,7 +162,11 @@ export default function ReformTab({ data }) {
         <div className="mt-4 space-y-3">
           <p className="text-sm leading-6 text-slate-600">
             Effective from the 2026-27 fiscal year and held in place through 2030-31. All results on
-            this page compare this reform against current policy on the same baseline.
+            this page compare this reform against current policy on the same baseline. The reformed
+            rates are the income tax rates on earnings; from April 2027 savings and property income
+            face 22%, 42% and 47% (the property rates in England, Wales and Northern Ireland), and
+            Scottish taxpayers&apos; earnings face Scotland&apos;s own bands, which the reform does not
+            follow.
           </p>
           <table className="data-table">
             <thead>

@@ -64,6 +64,11 @@ modelling the response as a reduction in realised gains, not a bug.
 Annual exempt amount unchanged at £3,000. Fiscal years 2026-27 through
 2030-31.
 
+The reformed rates are the income tax rates on earnings, 20/40/45%, held
+through 2030-31. From April 2027 savings and property income face 22/42/47%
+(the property rates in England, Wales and Northern Ireland), and Scottish
+taxpayers' earnings face Scotland's own bands; the reform follows neither.
+
 policyengine-uk 2.99.0 charges residential property gains, carried interest
 and gains qualifying for Business Asset Disposal Relief on their own
 schedules when a dataset records them, and a reform that touches only the
