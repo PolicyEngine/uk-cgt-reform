@@ -11,6 +11,7 @@ from uk_cgt_reform.pipeline import (
     dataset_folder,
     equalisation_sim_id,
     simulation_stem,
+    step_sim_id,
 )
 from uk_cgt_reform.reform import OFFICIAL_ELASTICITY, equalisation_reform, reform_fingerprint
 from uk_cgt_reform.simulations import CANDIDATE, INCUMBENT
@@ -63,4 +64,13 @@ def test_equalisation_ids_match_the_cached_outputs():
 def test_counterfactual_ids_name_their_side():
     assert counterfactual_sim_id("STEM", "baseline", "710d8df0d472", 2026) == (
         "STEM_centax1920_baseline_710d8df0d472_2026"
+    )
+
+
+def test_schedule_step_ids_name_the_step_and_the_case():
+    assert step_sim_id("STEM", "main_rates", 1.0, "b6104c1f31ec", 2026) == (
+        "STEM_step_main_rates_r100_b6104c1f31ec_2026"
+    )
+    assert step_sim_id("STEM", "residential", 0.0, "a35352e11262", 2026) == (
+        "STEM_step_residential_r000_a35352e11262_2026"
     )

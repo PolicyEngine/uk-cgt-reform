@@ -1,6 +1,8 @@
 "use client";
 
 import {
+  formatBn,
+  formatCount,
   formatElasticity,
   formatPct,
   formatPublished,
@@ -10,6 +12,7 @@ import {
 } from "../lib/formatters";
 import {
   BASELINE_SCHEDULE_RATES,
+  describeBadr,
   getBenchmarks,
   getBudget,
   getDatasetInfo,
@@ -19,6 +22,7 @@ import {
   getIncomeChangeGroups,
   getIncomeChangeGroupsByYear,
   getReformSchedules,
+  getScheduleSplit,
   getSensitivity,
   getReform,
   getValidation,
@@ -81,6 +85,9 @@ export default function ReformTab({ data }) {
     firstYearRow.cgt_change_from_entrants_bn / firstYearRow.gov_balance_change_bn;
   const recorded = (gains) => (gains > 0 ? "" : ` ${dataset.shortLabel} records no such gains, so this line is inert here.`);
   const topQuintile = headlineGroups.quintile[headlineGroups.quintile.length - 1];
+  const split = getScheduleSplit(data);
+  // Equalisation with the relief kept: the step before it is withdrawn.
+  const keptRelief = split.steps.find((row) => row.step === "residential");
 
   return (
     <div className="space-y-6">
@@ -99,7 +106,10 @@ export default function ReformTab({ data }) {
               {formatPct(reform.higher_rate.reform * 100, 0)}, and the
               additional rate from{" "}
               {formatPct(reform.additional_rate.baseline * 100, 0)} to{" "}
-              {formatPct(reform.additional_rate.reform * 100, 0)}. Taxpayers
+              {formatPct(reform.additional_rate.reform * 100, 0)}. It also
+              withdraws Business Asset Disposal Relief, so gains that qualify for
+              it take the new rates too, as in CenTax&apos;s rates-only estimate;
+              the table below splits the yield by schedule. Taxpayers
               respond by realising fewer gains, modelled with{" "}
               <a
                 href="https://centax.org.uk/wp-content/uploads/2024/10/AdvaniLonsdaleSummers2024_CGTReform.pdf#page=38"
@@ -199,24 +209,23 @@ export default function ReformTab({ data }) {
                 </td>
               </tr>
               <tr>
-                <td>Carried interest CGT rate</td>
-                <td>{formatPct(BASELINE_SCHEDULE_RATES.carried_interest.higher_rate * 100, 0)} flat</td>
-                <td className="font-semibold">
-                  {formatPct(schedules.carried_interest.basic_rate * 100, 0)} /{" "}
-                  {formatPct(schedules.carried_interest.higher_rate * 100, 0)} /{" "}
-                  {formatPct(schedules.carried_interest.additional_rate * 100, 0)}
-                </td>
+                <td>Business Asset Disposal Relief</td>
+                <td>{describeBadr(BASELINE_SCHEDULE_RATES.badr)}</td>
+                <td className="font-semibold">{describeBadr(schedules.badr)}</td>
                 <td>
-                  Carried interest takes the income tax rates too.{recorded(validation.carried_interest_gains_bn)}
+                  {schedules.badr.withdrawn
+                    ? "Gains that qualify for the relief (Investors' Relief included) fall onto the main schedule at the reformed rates."
+                    : "Gains that qualify for the relief keep their own rate."}
+                  {recorded(validation.badr_gains_bn)}
                 </td>
               </tr>
               <tr>
-                <td>Business Asset Disposal Relief lifetime limit</td>
-                <td>£{BASELINE_SCHEDULE_RATES.badr_lifetime_limit.toLocaleString("en-GB")}</td>
-                <td className="font-semibold">£{schedules.badr_lifetime_limit.toLocaleString("en-GB")}</td>
+                <td>Carried interest</td>
+                <td>Taxed as income since April 2026</td>
+                <td>Unchanged</td>
                 <td>
-                  The relief is withdrawn: qualifying gains fall onto the main schedule at the
-                  reformed rates.{recorded(validation.badr_gains_bn)}
+                  Carried interest moved from capital gains tax into the income tax framework on 6
+                  April 2026, so equalising CGT with income tax leaves it where it is.
                 </td>
               </tr>
               <tr>
@@ -229,6 +238,64 @@ export default function ReformTab({ data }) {
           </table>
         </div>
       </details>
+
+      <section className="section-card">
+        <SectionHeading
+          title={`Where the yield comes from, ${split.year}`}
+          description="The reform built up one schedule at a time: the main rates first, then residential property gains, then withdrawing Business Asset Disposal Relief. Each row is what that change adds once the rows above it are in place, with no behavioural response and at the central elasticity."
+        />
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>Step</th>
+              <th>Change in CGT, static</th>
+              <th>Change in CGT, central elasticity</th>
+            </tr>
+          </thead>
+          <tbody>
+            {split.steps.map((row) => (
+              <tr key={row.step}>
+                <td>{row.label}</td>
+                <td>{formatSignedBn(row.static_increment_bn, 1)}</td>
+                <td>{formatSignedBn(row.central_increment_bn, 1)}</td>
+              </tr>
+            ))}
+            <tr className="font-semibold">
+              <td>The reform</td>
+              <td>{formatSignedBn(split.steps.at(-1).static_cgt_change_bn, 1)}</td>
+              <td>{formatSignedBn(split.steps.at(-1).central_cgt_change_bn, 1)}</td>
+            </tr>
+          </tbody>
+        </table>
+        <p className="mt-4 text-sm leading-6 text-slate-600">
+          {validation.badr_gains_bn > 0 ? (
+            <>
+              On {dataset.shortLabel}, {formatCount(validation.badr_claimants)} people hold{" "}
+              {formatBn(validation.badr_gains_bn)} of gains that qualify for the relief in{" "}
+              {split.year}; HMRC counted 61,000 claimants and £18.4bn of qualifying gains in
+              2024-25 (Capital Gains Tax statistics, Table 4).{" "}
+            </>
+          ) : (
+            <>
+              {dataset.shortLabel} records no gains that qualify for the relief, so withdrawing it
+              changes nothing here.{" "}
+            </>
+          )}
+          Equalising the rates while keeping the relief at current law raises{" "}
+          {formatSignedBn(keptRelief.static_cgt_change_bn, 1)} before behaviour and{" "}
+          {formatSignedBn(keptRelief.central_cgt_change_bn, 1)} at the central elasticity: the
+          reading closest to the exemption for genuine entrepreneurs in{" "}
+          <a
+            href="https://taxjustice.uk/blog/what-would-bunham-mean-for-britain/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline decoration-1 underline-offset-2 hover:opacity-80"
+          >
+            Wes Streeting&apos;s proposal
+          </a>
+          . The Rate explorer scores any rate for the relief, or withdraws it, for every year.
+        </p>
+      </section>
 
       <section className="section-card">
         <SectionHeading

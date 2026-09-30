@@ -48,6 +48,7 @@ from .impacts import (
     cgt_uplift,
     fiscal_year_label,
     income_change_groups,
+    schedule_split,
     sensitivity,
     validation_stats,
 )
@@ -62,6 +63,7 @@ from .reform import (
     equalisation_reform,
     reform_fingerprint,
     reform_schedules,
+    schedule_step_reforms,
 )
 from .simulations import (
     DATASETS,
@@ -114,6 +116,12 @@ def equalisation_sim_id(sim_stem: str, elasticity: float, digest: str, year: int
     """An equalisation simulation id: the dataset stem, the case, the reform's own
     fingerprint (which tells cases of equal magnitude apart) and the year."""
     return f"{sim_stem}_{equalisation_case(elasticity)}_{digest}_{year}"
+
+
+def step_sim_id(sim_stem: str, step: str, elasticity: float, digest: str, year: int) -> str:
+    """A simulation id for one step of the schedule-by-schedule split of the
+    equalisation reform (``reform.SCHEDULE_STEPS``)."""
+    return f"{sim_stem}_step_{step}_r{round(100 * elasticity):03d}_{digest}_{year}"
 
 
 def counterfactual_sim_id(sim_stem: str, role: str, digest: str, year: int) -> str:
@@ -317,6 +325,45 @@ def run_dataset(
         f"{central_2026:.2f}bn. Refusing to write results."
     )
 
+    # ── Step 3d: the yield built up schedule by schedule (2026), static and
+    # central: main rates, then residential property, then the relief
+    # withdrawn; the step before the last is equalisation keeping the relief
+    print(f"Step 3d {tag}: The yield by schedule (2026, static and central)...")
+    split_cases = {"static": 0.0, "central": ELASTICITY}
+    full_runs = {"static": static_sims[2026], "central": reform_sims[2026]}
+    revenues, split_digests = {}, {}
+    for case, e in split_cases.items():
+        revenues[case], split_digests[case] = {}, {}
+        steps = schedule_step_reforms(e)
+        assert steps[-1][2] == equalisation_reform(e), "the last step must be the reform"
+        for step, _label, reform in steps:
+            digest = reform_fingerprint(reform)
+            split_digests[case][step] = digest
+            if step == steps[-1][0]:
+                sim = full_runs[case]
+            else:
+                sim = run_simulation(
+                    datasets[2026],
+                    policy=make_policy(reform, f"step_{step}"),
+                    sim_id=step_sim_id(sim_stem, step, e, digest, 2026),
+                )
+            revenues[case][step] = cgt_revenue(sim)
+    split = {
+        "year": fiscal_year_label(2026),
+        "elasticities": split_cases,
+        "reform_fingerprints": split_digests,
+        "steps": schedule_split(
+            base_cgt_2026,
+            [(step, label) for step, label, _ in schedule_step_reforms(0.0)],
+            revenues,
+        ),
+    }
+    for row in split["steps"]:
+        print(
+            f"    {row['label']}: static {row['static_increment_bn']:+.2f}bn, "
+            f"central {row['central_increment_bn']:+.2f}bn"
+        )
+
     # ── Step 3b: CenTax's rates-only reform at its 2019/20 rules, static ──
     print(f"Step 3b {tag}: Equalisation at CenTax's 2019/20 rules (2026, static)...")
     cf_sims, cf_digests = {}, {}
@@ -443,6 +490,7 @@ def run_dataset(
         "budget": budget,
         "income_change_groups": groups,
         "sensitivity": sens,
+        "schedule_split": split,
         "benchmarks": benchmarks,
     }
     return output, baseline_sims

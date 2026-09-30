@@ -18,6 +18,10 @@ const T1_2023 = "HMRC CGT statistics 2026 release, Table 1 (2023-24, revised)";
 const T1_2024 = "HMRC CGT statistics 2026 release, Table 1 (2024-25, provisional)";
 const T2_2023 = "HMRC CGT statistics 2026 release, Table 2.2a (2023-24, revised)";
 const T2_2024 = "HMRC CGT statistics 2026 release, Table 2.1a (2024-25, provisional)";
+const TABLE_4 =
+  "https://assets.publishing.service.gov.uk/media/6a7b242a347b198efd290ed7/Table_4_2026_Business_asset_disposal_and_investors_reliefs.ods";
+const T4_2023 = "HMRC CGT statistics 2026 release, Table 4 (2023-24, individuals)";
+const T4_2024 = "HMRC CGT statistics 2026 release, Table 4 (2024-25, provisional, individuals)";
 
 const BENCHMARKS = {
   totalGains: {
@@ -54,6 +58,17 @@ const BENCHMARKS = {
   gainsOver5m: {
     y2023: { value: "£23.6bn", source: T2_2023, url: TABLE_2 },
     y2024: { value: "£48.5bn", source: T2_2024, url: TABLE_2 },
+  },
+  // HMRC Table 4 counts claimants of Business Asset Disposal Relief and
+  // Investors' Relief together, individuals only (the engine's
+  // capital_gains_badr input merges the two reliefs the same way).
+  badrClaimants: {
+    y2023: { value: "42k", source: T4_2023, url: TABLE_4 },
+    y2024: { value: "61k", source: T4_2024, url: TABLE_4 },
+  },
+  badrGains: {
+    y2023: { value: "£11.0bn", source: T4_2023, url: TABLE_4 },
+    y2024: { value: "£18.4bn", source: T4_2024, url: TABLE_4 },
   },
 };
 
@@ -98,7 +113,6 @@ export default function BaselineTab({ data }) {
   const schedules = [
     ["Residential property", validation.residential_property_gains_bn],
     ["Business Asset Disposal Relief", validation.badr_gains_bn],
-    ["Carried interest", validation.carried_interest_gains_bn],
   ];
 
   return (
@@ -184,6 +198,16 @@ export default function BaselineTab({ data }) {
               model={formatBn(validation.gains_over_5m_bn)}
               benchmark={BENCHMARKS.gainsOver5m}
             />
+            <BenchmarkRow
+              label="People with gains qualifying for BADR"
+              model={formatCount(validation.badr_claimants)}
+              benchmark={BENCHMARKS.badrClaimants}
+            />
+            <BenchmarkRow
+              label="Gains qualifying for BADR"
+              model={formatBn(validation.badr_gains_bn)}
+              benchmark={BENCHMARKS.badrGains}
+            />
           </tbody>
         </table>
       </section>
@@ -247,7 +271,7 @@ export default function BaselineTab({ data }) {
       <section className="section-card">
         <SectionHeading
           title="Schedule components"
-          description={`policyengine-uk charges residential property, carried interest and Business Asset Disposal Relief gains on their own schedules when a dataset records them; the reform equalises every schedule. Gains recorded on each schedule in ${firstYear}, before any behavioural response.`}
+          description={`policyengine-uk charges residential property and Business Asset Disposal Relief gains on their own schedules when a dataset records them; the reform takes residential gains to the income tax rates and withdraws the relief. Carried interest has been taxed as income since April 2026 and is not part of this analysis. Gains recorded on each schedule in ${firstYear}, before any behavioural response.`}
         />
         <table className="data-table">
           <thead>

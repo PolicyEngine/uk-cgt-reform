@@ -62,15 +62,39 @@
         "basic_rate": 0.18,
         "higher_rate": 0.24,
         "additional_rate": 0.24
+      },
+      "badr": {
+        "withdrawn": false,
+        "rate": 0.18,
+        "lifetime_limit": 1000000
       }
     },
     {
       "id": "income_tax",
-      "label": "Equalise with income tax (20% / 40% / 45%)",
+      "label": "Equalise with income tax (20% / 40% / 45%), relief withdrawn",
       "rates": {
         "basic_rate": 0.2,
         "higher_rate": 0.4,
         "additional_rate": 0.45
+      },
+      "badr": {
+        "withdrawn": true,
+        "rate": null,
+        "lifetime_limit": null
+      }
+    },
+    {
+      "id": "income_tax_keep_badr",
+      "label": "Equalise with income tax (20% / 40% / 45%), relief kept at 18%",
+      "rates": {
+        "basic_rate": 0.2,
+        "higher_rate": 0.4,
+        "additional_rate": 0.45
+      },
+      "badr": {
+        "withdrawn": false,
+        "rate": 0.18,
+        "lifetime_limit": 1000000
       }
     },
     {
@@ -80,6 +104,11 @@
         "basic_rate": 0.18,
         "higher_rate": 0.3,
         "additional_rate": 0.3
+      },
+      "badr": {
+        "withdrawn": false,
+        "rate": 0.18,
+        "lifetime_limit": 1000000
       }
     },
     {
@@ -89,9 +118,28 @@
         "basic_rate": 0.18,
         "higher_rate": 0.35,
         "additional_rate": 0.35
+      },
+      "badr": {
+        "withdrawn": false,
+        "rate": 0.18,
+        "lifetime_limit": 1000000
       }
     }
   ],
+  "badr": {
+    "current_law": {
+      "withdrawn": false,
+      "rate": 0.18,
+      "lifetime_limit": 1000000
+    },
+    "lifetime_limits": [
+      500000,
+      1000000,
+      10000000
+    ],
+    "rate_parameter": "gov.hmrc.cgt.badr.rate",
+    "lifetime_limit_parameter": "gov.hmrc.cgt.badr.lifetime_limit"
+  },
   "ready_reckoner": {
     "source": "HMRC, Direct effects of illustrative tax changes (ready reckoner), June 2025",
     "published": "2025-06-24",
@@ -201,7 +249,7 @@
       {
         "hmrc_label": "BADR rate +1pp and +5pp",
         "hmrc_m": null,
-        "reason": "Neither registered dataset records BADR gains."
+        "reason": "The rows' values are not yet transcribed from HMRC's file; the explorer's BADR lever can express them (19% and 23%)."
       },
       {
         "hmrc_label": "Annual exempt amount +\u00a3500",
@@ -210,7 +258,7 @@
       }
     ]
   },
-  "scope": "main_and_residential",
+  "scope": "main_residential_and_badr",
   "years": [
     2026,
     2027,

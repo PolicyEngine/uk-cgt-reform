@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import options from "../../public/data/explore_options.json";
 import {
   BASELINE_SCHEDULE_RATES,
+  badrLimitLabel,
+  describeBadr,
   getBudget,
   getDatasetInfo,
   getEntrants,
@@ -23,7 +25,7 @@ import {
 } from "../lib/formatters";
 import BudgetChart from "./charts/BudgetChart";
 import GroupImpactChart from "./charts/GroupImpactChart";
-import { LabelledSelect, MetricCard } from "./controls";
+import { LabelledSelect, MetricCard, Toggle } from "./controls";
 import SectionHeading from "./SectionHeading";
 
 // The request options come from the pipeline (uk-cgt-reform-explore
@@ -108,6 +110,37 @@ function validatePercents(percents) {
   return { rates: Object.fromEntries(BANDS.map((band) => [band.key, toFraction(numbers[band.key])])) };
 }
 
+// Business Asset Disposal Relief: kept at a rate and lifetime limit, or
+// withdrawn. The form holds the rate as a percentage string, like the bands.
+const BADR_CURRENT_LAW = options.badr.current_law;
+const BADR_LIMITS = options.badr.lifetime_limits;
+const badrFormOf = (badr) =>
+  badr.withdrawn
+    ? { mode: "withdraw", rate: String(toPercent(BADR_CURRENT_LAW.rate)), limit: BADR_CURRENT_LAW.lifetime_limit }
+    : { mode: "keep", rate: String(toPercent(badr.rate)), limit: badr.lifetime_limit };
+const sameBadr = (a, b) =>
+  a.withdrawn === b.withdrawn &&
+  (a.withdrawn || (Math.abs(a.rate - b.rate) < 1e-9 && a.lifetime_limit === b.lifetime_limit));
+
+
+function validateBadr(form, rates) {
+  if (form.mode === "withdraw") return { badr: { withdrawn: true, rate: null, lifetime_limit: null } };
+  const value = Number(form.rate);
+  if (form.rate === "" || !Number.isFinite(value) || value < 0) {
+    return { error: "Enter a rate for Business Asset Disposal Relief, or withdraw the relief." };
+  }
+  if (Math.abs(value / STEP_PCT - Math.round(value / STEP_PCT)) > 1e-6) {
+    return { error: `The relief's rate is a whole percentage point; ${value}% is not.` };
+  }
+  if (rates && value / 100 > rates.additional_rate + 1e-9) {
+    return {
+      error:
+        "The relief's rate may not exceed the additional rate: the relief would then raise the tax on qualifying gains.",
+    };
+  }
+  return { badr: { withdrawn: false, rate: toFraction(value), lifetime_limit: Number(form.limit) } };
+}
+
 function readUrlState(searchParams) {
   const values = BANDS.map((band) => searchParams.get(band.param));
   if (values.some((value) => value === null || value === "")) return null;
@@ -120,7 +153,14 @@ function readUrlState(searchParams) {
   const elasticity = ELASTICITIES.some((option) => sameElasticity(option.e_retention, e))
     ? e
     : DEFAULT_ELASTICITY;
-  return { percents, elasticity };
+  // The relief: `bw=1` withdraws it; `br` (percent) and `bl` (£) keep it at
+  // other than current law; neither means current law.
+  const badrForm = badrFormOf(BADR_CURRENT_LAW);
+  if (searchParams.get("bw") === "1") badrForm.mode = "withdraw";
+  if (searchParams.get("br")) badrForm.rate = searchParams.get("br");
+  const limit = Number(searchParams.get("bl"));
+  if (BADR_LIMITS.includes(limit)) badrForm.limit = limit;
+  return { percents, elasticity, badrForm };
 }
 
 function RateInput({ band, value, onChange }) {
@@ -210,20 +250,26 @@ function SpecTable({ metadata }) {
           </td>
           <td>
             Gains on UK residential property, charged on their own schedule, take the same rates;
-            the law aligned the two schedules from April 2025.
+            the two schedules have charged the same rates since 30 October 2024.
           </td>
         </tr>
         <tr>
-          <td>Carried interest CGT rate</td>
-          <td>{pct(BASELINE_SCHEDULE_RATES.carried_interest.higher_rate)} flat</td>
-          <td>{pct(BASELINE_SCHEDULE_RATES.carried_interest.higher_rate)} flat</td>
-          <td>Unchanged. Neither dataset records carried interest, so any treatment is inert here.</td>
+          <td>Business Asset Disposal Relief</td>
+          <td>{describeBadr(metadata.baseline_badr ?? BASELINE_SCHEDULE_RATES.badr)}</td>
+          <td className={metadata.reform_badr && !sameBadr(metadata.reform_badr, BADR_CURRENT_LAW) ? "font-semibold" : ""}>
+            {describeBadr(metadata.reform_badr ?? BASELINE_SCHEDULE_RATES.badr)}
+          </td>
+          <td>
+            {metadata.reform_badr?.withdrawn
+              ? "Gains that qualify for the relief (Investors' Relief included) take the main rates above."
+              : "Gains that qualify for the relief are charged at its rate, up to the lifetime limit."}
+          </td>
         </tr>
         <tr>
-          <td>Business Asset Disposal Relief</td>
-          <td>£{BASELINE_SCHEDULE_RATES.badr_lifetime_limit.toLocaleString("en-GB")} lifetime limit</td>
-          <td>£{BASELINE_SCHEDULE_RATES.badr_lifetime_limit.toLocaleString("en-GB")} lifetime limit</td>
-          <td>Unchanged. Neither dataset records relief gains, so any treatment is inert here.</td>
+          <td>Carried interest</td>
+          <td>Taxed as income since April 2026</td>
+          <td>Unchanged</td>
+          <td>Carried interest moved into the income tax framework on 6 April 2026.</td>
         </tr>
         <tr>
           <td>Annual exempt amount</td>
@@ -289,25 +335,43 @@ export default function RateExplorerTab({ data, datasetKey }) {
   // Read once: a shared link arrives with a full schedule in the URL.
   const initial = useMemo(() => readUrlState(searchParams), []); // eslint-disable-line react-hooks/exhaustive-deps
   const [percents, setPercents] = useState(() => initial?.percents ?? percentsOf(CURRENT_LAW));
+  const [badrForm, setBadrForm] = useState(() => initial?.badrForm ?? badrFormOf(BADR_CURRENT_LAW));
   const [elasticity, setElasticity] = useState(() => initial?.elasticity ?? DEFAULT_ELASTICITY);
   const { run, reset, status, result, error, elapsedSeconds } = useExploration();
   const autoRan = useRef(false);
   const lastDataset = useRef(datasetKey);
 
   const dataset = getDatasetInfo(data);
-  const validation = validatePercents(percents);
+  const rateCheck = validatePercents(percents);
+  const badrCheck = validateBadr(badrForm, rateCheck.rates);
+  const validation = {
+    rates: rateCheck.rates && badrCheck.badr ? rateCheck.rates : null,
+    badr: badrCheck.badr ?? null,
+    error: rateCheck.error ?? badrCheck.error,
+  };
   const preset = validation.rates
-    ? (PRESETS.find((candidate) => sameRates(candidate.rates, validation.rates))?.id ?? "custom")
+    ? (PRESETS.find(
+        (candidate) =>
+          sameRates(candidate.rates, validation.rates) && sameBadr(candidate.badr, validation.badr),
+      )?.id ?? "custom")
     : "custom";
-  const readyReckonerRow = validation.rates
-    ? (READY_RECKONER.rows.find((row) => sameRates(row.rates, validation.rates))?.id ?? "none")
-    : "none";
+  // HMRC's rows move rates only: they match with the relief at current law.
+  const readyReckonerRow =
+    validation.rates && sameBadr(validation.badr, BADR_CURRENT_LAW)
+      ? (READY_RECKONER.rows.find((row) => sameRates(row.rates, validation.rates))?.id ?? "none")
+      : "none";
 
   const syncUrl = useCallback(
-    (rates, e) => {
+    (rates, badr, e) => {
       const params = new URLSearchParams(searchParams.toString());
       params.set("tab", "explorer");
       BANDS.forEach((band) => params.set(band.param, String(toPercent(rates[band.key]))));
+      ["bw", "br", "bl"].forEach((key) => params.delete(key));
+      if (badr.withdrawn) params.set("bw", "1");
+      else if (!sameBadr(badr, BADR_CURRENT_LAW)) {
+        params.set("br", String(toPercent(badr.rate)));
+        params.set("bl", String(badr.lifetime_limit));
+      }
       params.set("e", String(e));
       router.replace(`/?${params.toString()}`, { scroll: false });
     },
@@ -316,9 +380,12 @@ export default function RateExplorerTab({ data, datasetKey }) {
 
   const submit = useCallback(() => {
     if (!validation.rates) return;
-    syncUrl(validation.rates, elasticity);
-    run({ dataset: datasetKey, rates: validation.rates, elasticity });
-  }, [validation.rates, elasticity, datasetKey, run, syncUrl]);
+    syncUrl(validation.rates, validation.badr, elasticity);
+    const badr = validation.badr.withdrawn
+      ? { withdrawn: true }
+      : { rate: validation.badr.rate, lifetime_limit: validation.badr.lifetime_limit };
+    run({ dataset: datasetKey, rates: validation.rates, badr, elasticity });
+  }, [validation.rates, validation.badr, elasticity, datasetKey, run, syncUrl]);
 
   useEffect(() => {
     if (autoRan.current) return;
@@ -347,7 +414,8 @@ export default function RateExplorerTab({ data, datasetKey }) {
     ? ELASTICITIES.find((option) => sameElasticity(option.e_retention, result.metadata.elasticity))
     : null;
   const matchedRow = result
-    ? READY_RECKONER.rows.find((row) => sameRates(row.rates, result.metadata.reform))
+    ? sameBadr(result.metadata.reform_badr ?? BADR_CURRENT_LAW, BADR_CURRENT_LAW) &&
+      READY_RECKONER.rows.find((row) => sameRates(row.rates, result.metadata.reform))
     : null;
 
   const firstYear = result ? result.budget[0].year : null;
@@ -365,8 +433,9 @@ export default function RateExplorerTab({ data, datasetKey }) {
               Set a rate for each band and run it: the same pipeline as the Reform impacts tab
               scores the schedule on {dataset.shortLabel} for 2026-27 to 2030-31, with the same
               behavioural response. The chosen rates apply to the main schedule and to residential
-              property gains; carried interest and Business Asset Disposal Relief stay at current
-              law (see the Methodology tab). Every completed run is cached, so a schedule anyone
+              property gains. Business Asset Disposal Relief can be kept, at a rate and lifetime limit
+              you choose, or withdrawn; carried interest has been taxed as income since April 2026
+              and is left alone. Every completed run is cached, so a schedule anyone
               has run before is served at once.
             </>
           }
@@ -376,7 +445,7 @@ export default function RateExplorerTab({ data, datasetKey }) {
       <section className="section-card">
         <SectionHeading
           title="Rate schedule"
-          description="Rates in percent. Current law charges 18% within the basic rate band and 24% above it; equalising with income tax means 20% / 40% / 45%."
+          description="Rates in percent. Current law charges 18% within the basic rate band and 24% above it; equalising with income tax means 20% / 40% / 45%, and the equalisation on the Reform impacts tab also withdraws Business Asset Disposal Relief."
         />
         <div className="grid gap-4 md:grid-cols-3">
           {BANDS.map((band) => (
@@ -388,6 +457,57 @@ export default function RateExplorerTab({ data, datasetKey }) {
             />
           ))}
         </div>
+        <fieldset className="mt-5 rounded-lg border border-slate-200 px-4 py-3">
+          <legend className="px-1 text-sm font-semibold text-slate-700">
+            Business Asset Disposal Relief
+          </legend>
+          <div className="flex flex-wrap items-center gap-4">
+            <Toggle
+              options={[
+                { value: "keep", label: "Keep the relief" },
+                { value: "withdraw", label: "Withdraw it" },
+              ]}
+              value={badrForm.mode}
+              onChange={(mode) => setBadrForm((current) => ({ ...current, mode }))}
+            />
+            {badrForm.mode === "keep" ? (
+              <>
+                <label className="inline-flex items-center gap-2 text-sm text-slate-600">
+                  Rate
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    max={PCT_MAX}
+                    step={STEP_PCT}
+                    value={badrForm.rate}
+                    onChange={(event) =>
+                      setBadrForm((current) => ({ ...current, rate: event.target.value }))
+                    }
+                    className="w-20 rounded-md border border-slate-300 bg-white px-2 py-1 text-base font-semibold text-slate-800"
+                  />
+                  %
+                </label>
+                <LabelledSelect
+                  label="Lifetime limit"
+                  options={BADR_LIMITS.map((limit) => ({
+                    value: String(limit),
+                    label: badrLimitLabel(limit),
+                  }))}
+                  value={String(badrForm.limit)}
+                  onChange={(value) =>
+                    setBadrForm((current) => ({ ...current, limit: Number(value) }))
+                  }
+                />
+              </>
+            ) : null}
+          </div>
+          <p className="mt-2 text-xs leading-5 text-slate-500">
+            Gains on qualifying business disposals, Investors&apos; Relief included. Current law
+            charges {describeBadr(BADR_CURRENT_LAW)}; withdrawn, those gains take the main rates
+            above. The relief&apos;s rate may not exceed the additional rate.
+          </p>
+        </fieldset>
         <div className="mt-5 flex flex-wrap items-center gap-4">
           <LabelledSelect
             label="Preset"
@@ -398,7 +518,9 @@ export default function RateExplorerTab({ data, datasetKey }) {
             value={preset}
             onChange={(id) => {
               const chosen = PRESETS.find((candidate) => candidate.id === id);
-              if (chosen) setPercents(percentsOf(chosen.rates));
+              if (!chosen) return;
+              setPercents(percentsOf(chosen.rates));
+              setBadrForm(badrFormOf(chosen.badr ?? BADR_CURRENT_LAW));
             }}
           />
           <LabelledSelect
@@ -410,7 +532,9 @@ export default function RateExplorerTab({ data, datasetKey }) {
             value={readyReckonerRow}
             onChange={(id) => {
               const chosen = READY_RECKONER.rows.find((row) => row.id === id);
-              if (chosen) setPercents(percentsOf(chosen.rates));
+              if (!chosen) return;
+              setPercents(percentsOf(chosen.rates));
+              setBadrForm(badrFormOf(chosen.badr ?? BADR_CURRENT_LAW));
             }}
           />
           <LabelledSelect
@@ -448,7 +572,7 @@ export default function RateExplorerTab({ data, datasetKey }) {
           <section className="section-card">
             <SectionHeading
               title={`Headline results, ${firstYear}`}
-              description={`${formatPct(result.metadata.reform.basic_rate * 100, 0)} / ${formatPct(result.metadata.reform.higher_rate * 100, 0)} / ${formatPct(result.metadata.reform.additional_rate * 100, 0)} on ${result.metadata.dataset_short_label}, ${resultElasticity ? elasticityLabel(resultElasticity) : `retention elasticity ${result.metadata.elasticity}`}; distributional figures cover all households.`}
+              description={`${formatPct(result.metadata.reform.basic_rate * 100, 0)} / ${formatPct(result.metadata.reform.higher_rate * 100, 0)} / ${formatPct(result.metadata.reform.additional_rate * 100, 0)}, Business Asset Disposal Relief ${describeBadr(result.metadata.reform_badr ?? BADR_CURRENT_LAW).toLowerCase()}, on ${result.metadata.dataset_short_label}, ${resultElasticity ? elasticityLabel(resultElasticity) : `retention elasticity ${result.metadata.elasticity}`}; distributional figures cover all households.`}
             />
             <div className="grid gap-4 md:grid-cols-3">
               <MetricCard
@@ -500,7 +624,8 @@ export default function RateExplorerTab({ data, datasetKey }) {
               </tbody>
             </table>
             <p className="mt-3 text-xs leading-5 text-slate-500">
-              The equalisation column is the committed result for {dataset.shortLabel} at
+              The equalisation column is the committed result for {dataset.shortLabel}: 20% / 40% /
+              45% with Business Asset Disposal Relief withdrawn, at
               CenTax&apos;s central elasticity (retention {DEFAULT_ELASTICITY.toFixed(1)})
               {elasticityOption && !sameElasticity(elasticityOption.e_retention, DEFAULT_ELASTICITY)
                 ? "; this schedule ran with a different elasticity, so the two are not like for like"

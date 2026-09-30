@@ -29,7 +29,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="uk-cgt-reform-explore",
         description=(
-            "Score a CGT rate schedule (main and residential property rates) on a "
+            "Score a CGT rate schedule (main and residential property rates, and "
+            "Business Asset Disposal Relief) on a "
             "registered dataset for 2026-27 to 2030-31, with the pipeline's behavioural "
             "response. Rates are fractions: 0.3 for 30%."
         ),
@@ -38,6 +39,23 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--higher", type=float, help="Higher rate, e.g. 0.30")
     parser.add_argument(
         "--additional", type=float, help="Additional rate (at least the higher rate)"
+    )
+    parser.add_argument(
+        "--withdraw-badr",
+        action="store_true",
+        help="Withdraw Business Asset Disposal Relief: qualifying gains take the main rates.",
+    )
+    parser.add_argument(
+        "--badr-rate",
+        type=float,
+        default=None,
+        help="Keep the relief at this rate (a fraction; default: current law, 0.18).",
+    )
+    parser.add_argument(
+        "--badr-limit",
+        type=int,
+        default=None,
+        help="Keep the relief up to this lifetime limit (default: current law, 1000000).",
     )
     parser.add_argument(
         "--options",
@@ -86,7 +104,8 @@ def print_headline(result: dict) -> None:
     print(
         f"{md['dataset_short_label']}: basic {rates['basic_rate']:.0%}, higher "
         f"{rates['higher_rate']:.0%}, additional {rates['additional_rate']:.0%}; "
-        f"elasticity {md['elasticity']}" + (" (served from cache)" if cache.get("hit") else "")
+        f"BADR {md['reform_badr']}; elasticity {md['elasticity']}"
+        + (" (served from cache)" if cache.get("hit") else "")
     )
     for row in result["budget"]:
         print(
@@ -115,6 +134,16 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if None in (args.basic, args.higher, args.additional):
         parser.error("--basic, --higher and --additional are required (fractions, e.g. 0.3)")
+    if args.withdraw_badr and (args.badr_rate is not None or args.badr_limit is not None):
+        parser.error("--withdraw-badr cannot be combined with --badr-rate or --badr-limit")
+    if args.withdraw_badr:
+        badr = {"withdrawn": True}
+    else:
+        badr = {
+            key: value
+            for key, value in (("rate", args.badr_rate), ("lifetime_limit", args.badr_limit))
+            if value is not None
+        }
     payload = {
         "dataset": args.dataset,
         "rates": {
@@ -122,6 +151,7 @@ def main(argv: list[str] | None = None) -> int:
             "higher_rate": args.higher,
             "additional_rate": args.additional,
         },
+        "badr": badr,
         "elasticity": args.elasticity,
     }
     try:

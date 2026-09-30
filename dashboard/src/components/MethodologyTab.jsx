@@ -140,11 +140,13 @@ export default function MethodologyTab({ data, anchor }) {
           </li>
           <li>
             <strong>Schedules.</strong> policyengine-uk {metadata.policyengine_uk_version}{" "}
-            charges residential property, carried interest and Business Asset Disposal Relief
-            gains on their own schedules when a dataset records them. Equalising CGT with income
-            tax means every gain, so the reform sets those schedules to the same income tax
-            rates and withdraws the BADR lifetime limit; on a dataset without those columns the
-            extra parameters are inert.
+            charges residential property and Business Asset Disposal Relief gains on their own
+            schedules when a dataset records them. The reform takes residential property gains
+            to the same income tax rates and withdraws the relief, so qualifying gains (Investors&apos;
+            Relief included, which the engine&apos;s input merges with it) take the reformed main
+            rates, as in CenTax&apos;s rates-only estimate. Carried interest has been taxed as
+            income since 6 April 2026 and is left where it is. On a dataset without those columns
+            the extra parameters are inert.
           </li>
           <li>
             <strong>Simulation.</strong> The reform runs through{" "}
@@ -253,21 +255,21 @@ export default function MethodologyTab({ data, anchor }) {
         <ul className="mt-2 list-disc space-y-2 pl-5 text-sm leading-6 text-slate-600">
           <li>
             <strong>Same pipeline, run live.</strong> The Rate explorer tab scores a schedule of
-            main CGT rates you choose on the selected dataset for every modelled year. It runs the
-            pipeline&apos;s own code (the same pinned per-year datasets, cached baseline
-            simulations, behavioural response and impact calculations) on a Modal backend, or
-            locally through the{" "}
+            CGT rates and a treatment of Business Asset Disposal Relief you choose on the selected
+            dataset for every modelled year. It runs the pipeline&apos;s own code (the same pinned
+            per-year datasets, cached baseline simulations, behavioural response and impact
+            calculations) on a Modal backend, or locally through the{" "}
             <span className="font-mono text-xs">uk-cgt-reform-explore</span> command. Nothing
-            is precomputed or interpolated: an explorer run at 20% / 40% / 45% reproduces the
-            Reform impacts tab.
+            is precomputed or interpolated: an explorer run at 20% / 40% / 45% with the relief
+            withdrawn builds the Reform impacts tab&apos;s own reform and reproduces its figures.
           </li>
           <li>
             <strong>Scope.</strong> The chosen rates reach the main schedule and the residential
-            property schedule, which the law aligned with the main rates from April 2025. Carried
-            interest and Business Asset Disposal Relief stay at current law: neither registered
-            dataset records such gains, so their treatment is inert here. The equalisation reform
-            on the Reform impacts tab also sets those schedules; the difference is invisible on
-            these datasets.
+            property schedule, which have charged the same rates since 30 October 2024. Business
+            Asset Disposal Relief can be kept, at a whole-point rate no higher than the additional
+            rate and a lifetime limit of £500k, £1m (current law) or £10m (the limit until March
+            2020), or withdrawn. Carried interest has been taxed as income since April 2026 and
+            stays outside the explorer.
           </li>
           <li>
             <strong>Cache.</strong> Every completed run is stored under a key made of the dataset

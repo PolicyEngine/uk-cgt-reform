@@ -122,6 +122,11 @@ def validation_stats(baseline, exempt_amount: float = AEA, ceiling: float | None
             person["capital_gains_residential_property"].sum() / 1e9
         ),
         "badr_gains_bn": float(person["capital_gains_badr"].sum() / 1e9),
+        # People with gains qualifying for the relief (HMRC Table 4 counts
+        # claimants of BADR and Investors' Relief together).
+        "badr_claimants": float(
+            person["capital_gains_badr"][person["capital_gains_badr"] > 0].count()
+        ),
         "carried_interest_gains_bn": float(person["capital_gains_carried_interest"].sum() / 1e9),
     }
     if ceiling is not None:
@@ -322,4 +327,28 @@ def sensitivity(baseline_cgt: float, cases: dict[str, float], run_case) -> list[
                 "revenue_2026_bn": (cgt_revenue(sim) - baseline_cgt) / 1e9,
             }
         )
+    return rows
+
+
+def schedule_split(
+    baseline_cgt: float, steps: list[tuple[str, str]], revenues: dict[str, dict[str, float]]
+) -> list[dict]:
+    """The equalisation reform's yield built up schedule by schedule.
+
+    ``steps`` are ``(step id, label)`` in the order the schedules are moved;
+    ``revenues`` maps each case (``static``, ``central``) to its weighted CGT
+    revenue after each step, £. Each row carries, per case, the change in CGT
+    from current law after the step and the step's own increment, £bn. The
+    increments depend on the order: the relief's row is what withdrawing it
+    adds once the main and residential rates are already at income tax rates.
+    """
+    rows = []
+    previous = {case: baseline_cgt for case in revenues}
+    for step, label in steps:
+        row = {"step": step, "label": label}
+        for case, by_step in revenues.items():
+            row[f"{case}_cgt_change_bn"] = (by_step[step] - baseline_cgt) / 1e9
+            row[f"{case}_increment_bn"] = (by_step[step] - previous[case]) / 1e9
+            previous[case] = by_step[step]
+        rows.append(row)
     return rows

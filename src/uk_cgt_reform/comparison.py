@@ -390,7 +390,10 @@ READY_RECKONER = {
         {
             "hmrc_label": "BADR rate +1pp and +5pp",
             "hmrc_m": None,
-            "reason": "Neither registered dataset records BADR gains.",
+            "reason": (
+                "The rows' values are not yet transcribed from HMRC's file; the explorer's "
+                "BADR lever can express them (19% and 23%)."
+            ),
         },
         {
             "hmrc_label": "Annual exempt amount +£500",
@@ -499,7 +502,8 @@ def ready_reckoner_block(model_m: dict[str, dict[str, dict[str, float]]]) -> dic
         "elasticity_ids": list(READY_RECKONER_ELASTICITIES),
         "model_measure": (
             "Change in government balance, £m, on this repo's liabilities in the model "
-            "year (the explorer's scope: main and residential rates)"
+            "year (main and residential rates moved; Business Asset Disposal Relief at "
+            "current law)"
         ),
         "rows": [{**row, "model_m": model_m[row["id"]]} for row in READY_RECKONER["rows"]],
     }
@@ -569,6 +573,7 @@ VALIDATION_METRICS = [
     ("entrants_by_uprating.cgt_bn", "of which paid by entrants, £bn"),
     ("residential_property_gains_bn", "Residential property gains (own schedule), £bn"),
     ("badr_gains_bn", "BADR gains (own schedule), £bn"),
+    ("badr_claimants", "People with gains qualifying for BADR"),
     ("carried_interest_gains_bn", "Carried interest gains (own schedule), £bn"),
 ]
 
@@ -653,6 +658,7 @@ def dataset_comparison(results: dict[str, dict]) -> dict:
             key: results[key]["income_change_groups"][first_year]["household_type"] for key in keys
         },
         "region": {key: results[key]["income_change_groups"][first_year]["region"] for key in keys},
+        "schedule_split": {key: results[key]["schedule_split"] for key in keys},
         "benchmarks": _benchmarks_side_by_side(results, keys),
     }
 

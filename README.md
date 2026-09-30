@@ -67,14 +67,20 @@ Annual exempt amount unchanged at £3,000. Fiscal years 2026-27 through
 policyengine-uk 2.99.0 charges residential property gains, carried interest
 and gains qualifying for Business Asset Disposal Relief on their own
 schedules when a dataset records them, and a reform that touches only the
-three main rates no longer reaches them. Equalising CGT with income tax means
-every gain, whatever the asset, so the reform also sets the residential
-property and carried interest schedules to 20/40/45% and withdraws the BADR
-lifetime limit (relief gains fall to the main schedule), the recipe the
-engine's changelog gives for taxing every gain at income tax rates. Neither
-dataset records BADR or carried interest gains and the incumbent records no
-residential property gains, so on the incumbent these parameters are inert
-and its results are unchanged by them.
+three main rates no longer reaches them. The reform also takes residential
+property gains to 20/40/45% and withdraws Business Asset Disposal Relief
+(the engine's lifetime limit goes to zero, so qualifying gains, Investors'
+Relief included, fall to the main schedule), as CenTax's rates-only estimate
+does. Carried interest has been taxed as income since 6 April 2026 (the
+engine keeps a 32% CGT stand-in), so equalising CGT with income tax leaves
+it alone. On a dataset without these columns the parameters are inert.
+
+The results split the reform's 2026-27 yield by schedule
+(`schedule_split`, static and central): the main rates first, then the
+residential property schedule (which is equalisation with the relief kept,
+the reading closest to Wes Streeting's proposed exemption for genuine
+entrepreneurs), then the relief withdrawn. The Rate explorer scores any rate
+and lifetime limit for the relief, or withdraws it, for every year.
 
 ## Results side by side (2026-27 unless stated)
 
@@ -378,29 +384,31 @@ engine's uprating cannot reuse cached simulation outputs.
 
 ## Rate explorer
 
-The dashboard's **Rate explorer** tab scores any schedule of main CGT rates
+The dashboard's **Rate explorer** tab scores any schedule of CGT rates
 (basic / higher / additional, applied to the main schedule and to the
-residential property schedule) on the selected dataset for 2026-27 to
+residential property schedule) with Business Asset Disposal Relief kept, at a
+whole-point rate no higher than the additional rate and a lifetime limit of
+£500k, £1m or £10m, or withdrawn, on the selected dataset for 2026-27 to
 2030-31, through the pipeline's own code path: the pinned per-year
 datasets, the cached baseline simulations, the `Policy.simulation_modifier`
 reform with the behavioural response, and `impacts.budget_impact` /
 `impacts.income_change_groups`. Nothing is precomputed or interpolated: an
-explorer run at 20/40/45 reproduces the committed results (worst relative
-difference 0.0 on this Mac, 5e-7 between Modal and this Mac), and 18/24/24 gives zero change.
+explorer run at 20/40/45 with the relief withdrawn builds the equalisation
+reform's own dict (same fingerprint) and reproduces the committed results,
+and 18/24/24 with the relief at current law gives zero change.
 
-Scope: carried interest and Business Asset Disposal Relief stay at current
-law. Neither registered dataset records those gains, so the choice is inert
-on results; it only means the explorer's reform dict differs from the
-equalisation dict in inert parameters (`reform.EXPLORER_SCOPE`,
-`reform.cgt_rate_reform`). Widening the scope once a dataset carries them is
-tracked as a repo issue.
+Scope (`reform.EXPLORER_SCOPE`, `reform.cgt_rate_reform`, `reform.BadrPolicy`):
+main and residential rates and the relief. Carried interest has been taxed as
+income since April 2026 and stays outside. HMRC's ready-reckoner rows move
+rates only, so they run with the relief at current law.
 
 ### Locally
 
 ```bash
 uk-cgt-reform-explore --basic 0.18 --higher 0.30 --additional 0.30              # candidate
 uk-cgt-reform-explore --dataset enhanced_frs_2024_25 --basic 0.18 --higher 0.30 --additional 0.30
-uk-cgt-reform-explore --basic 0.20 --higher 0.40 --additional 0.45 --json       # full result on stdout
+uk-cgt-reform-explore --basic 0.20 --higher 0.40 --additional 0.45 --withdraw-badr --json   # the equalisation reform, full result on stdout
+uk-cgt-reform-explore --basic 0.20 --higher 0.40 --additional 0.45 --badr-rate 0.24   # the relief kept at 24%
 uk-cgt-reform-explore --options                                                 # bounds, presets, ready-reckoner rows, datasets
 ```
 

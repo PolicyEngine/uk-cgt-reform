@@ -14,7 +14,7 @@ from uk_cgt_reform.comparison import (
     ready_reckoner_block,
     static_equalisation_block,
 )
-from uk_cgt_reform.impacts import REGION_NAMES, fiscal_year_label
+from uk_cgt_reform.impacts import REGION_NAMES, fiscal_year_label, schedule_split
 from uk_cgt_reform.reform import (
     YEARS,
     centax_1920_rules,
@@ -33,6 +33,7 @@ TOP_LEVEL_KEYS = {
     "income_change_groups",
     "sensitivity",
     "benchmarks",
+    "schedule_split",
 }
 
 
@@ -91,6 +92,36 @@ def fake_benchmarks(scale: float = 1.0) -> dict:
         ),
         ready_reckoner=ready_reckoner_block(model_m),
     )
+
+
+def fake_schedule_split(scale: float = 1.0) -> dict:
+    """The ``schedule_split`` block, built through the real builder."""
+    steps = [
+        ("main_rates", "Main rates at 20% / 40% / 45%"),
+        ("residential", "Residential property gains at the same rates"),
+        ("badr_withdrawn", "Business Asset Disposal Relief withdrawn"),
+    ]
+    base = 17.2e9 * scale
+    revenues = {
+        "static": {
+            "main_rates": base + 9e9,
+            "residential": base + 11e9,
+            "badr_withdrawn": base + 14e9,
+        },
+        "central": {
+            "main_rates": base + 3e9,
+            "residential": base + 3.5e9,
+            "badr_withdrawn": base + 4e9,
+        },
+    }
+    return {
+        "year": "2026-27",
+        "elasticities": {"static": 0.0, "central": 1.0},
+        "reform_fingerprints": {
+            case: {step: "0" * 12 for step, _ in steps} for case in ("static", "central")
+        },
+        "steps": schedule_split(base, steps, revenues),
+    }
 
 
 def fake_results(spec=INCUMBENT, scale: float = 1.0) -> dict:
@@ -152,6 +183,7 @@ def fake_results(spec=INCUMBENT, scale: float = 1.0) -> dict:
             "baseline_cgt_revenue_bn": 17.2 * scale,
             "residential_property_gains_bn": 0.0,
             "badr_gains_bn": 0.0,
+            "badr_claimants": 0.0,
             "carried_interest_gains_bn": 0.0,
             "entrants_by_uprating": entrants,
             "cgt_taxpayers_excluding_entrants": 390_000.0 * scale,
@@ -192,6 +224,7 @@ def fake_results(spec=INCUMBENT, scale: float = 1.0) -> dict:
             for name, e in SENSITIVITY_CASES.items()
         ],
         "benchmarks": fake_benchmarks(scale),
+        "schedule_split": fake_schedule_split(scale),
     }
 
 
@@ -204,11 +237,10 @@ def test_metadata_and_years():
     assert md["years"] == [2026, 2027, 2028, 2029, 2030]
     assert md["elasticity"] == 1.0
     assert set(md["reform"]) == {"basic_rate", "higher_rate", "additional_rate"}
-    assert set(md["reform_schedules"]) == {
-        "residential_property",
-        "carried_interest",
-        "badr_lifetime_limit",
-    }
+    # Carried interest has been taxed as income since April 2026: the reform
+    # moves the residential schedule and withdraws the relief.
+    assert set(md["reform_schedules"]) == {"residential_property", "badr"}
+    assert md["reform_schedules"]["badr"]["withdrawn"] is True
     assert md["dataset_key"] in {d["key"] for d in md["datasets"]}
     assert md["default_dataset_key"] in DATASETS
 
@@ -256,6 +288,7 @@ def test_dataset_comparison_lays_datasets_out_as_columns():
     assert side_by_side["sensitivity"][-1]["applied_as"] == "retention"
     assert set(side_by_side["top_quintile"]) == keys
     assert set(side_by_side["region"]) == keys
+    assert set(side_by_side["schedule_split"]) == keys
     bench = side_by_side["benchmarks"]
     assert [row["year"] for row in bench["static_equalisation"]] == YEAR_LABELS
     assert bench["static_equalisation"][0]["jrf_bn"] == 13.0
@@ -354,3 +387,18 @@ def test_benchmarks_block_shape():
     assert [row["id"] for row in rows] == [row["id"] for row in READY_RECKONER["rows"]]
     assert set(rows[0]["model_m"]) == set(READY_RECKONER_ELASTICITIES)
     assert set(rows[0]["model_m"]["official"]) == {"2026-27", "2027-28"}
+
+
+def test_schedule_split_builds_the_yield_up_step_by_step():
+    split = fake_results()["schedule_split"]
+    assert split["year"] == "2026-27"
+    assert split["elasticities"] == {"static": 0.0, "central": 1.0}
+    steps = split["steps"]
+    assert [row["step"] for row in steps] == ["main_rates", "residential", "badr_withdrawn"]
+    # Cumulative changes from current law, and each step's own increment.
+    assert [row["static_cgt_change_bn"] for row in steps] == pytest.approx([9.0, 11.0, 14.0])
+    assert [row["static_increment_bn"] for row in steps] == pytest.approx([9.0, 2.0, 3.0])
+    assert [row["central_increment_bn"] for row in steps] == pytest.approx([3.0, 0.5, 0.5])
+    assert sum(row["central_increment_bn"] for row in steps) == pytest.approx(
+        steps[-1]["central_cgt_change_bn"]
+    )

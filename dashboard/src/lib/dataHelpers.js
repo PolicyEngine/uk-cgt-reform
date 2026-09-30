@@ -60,13 +60,31 @@ export function getReform(data) {
   );
 }
 
-// The schedules policyengine-uk 2.99.0 charges separately, with their
-// current-law rates for the reform's first year (2026-27).
+// The schedules policyengine-uk 2.99.0 charges separately that the reform
+// reaches, with their current law for the reform's first year (2026-27):
+// Business Asset Disposal Relief charges 18% up to a £1m lifetime limit.
+// Carried interest has been taxed as income since April 2026.
 export const BASELINE_SCHEDULE_RATES = {
   residential_property: { basic_rate: 0.18, higher_rate: 0.24, additional_rate: 0.24 },
-  carried_interest: { basic_rate: 0.32, higher_rate: 0.32, additional_rate: 0.32 },
-  badr_lifetime_limit: 1_000_000,
+  badr: { withdrawn: false, rate: 0.18, lifetime_limit: 1_000_000 },
 };
+
+// "£1m", "£500k": a lifetime limit for the relief.
+export function badrLimitLabel(limit) {
+  return limit >= 1_000_000
+    ? `£${limit / 1_000_000}m`
+    : `£${(limit / 1_000).toLocaleString("en-GB")}k`;
+}
+
+// "18% up to a £1m lifetime limit", "Withdrawn": a treatment of the relief.
+export function describeBadr(badr) {
+  if (badr.withdrawn) return "Withdrawn";
+  return `${Math.round(badr.rate * 100)}% up to a ${badrLimitLabel(badr.lifetime_limit)} lifetime limit`;
+}
+
+export function getScheduleSplit(data) {
+  return data.schedule_split;
+}
 
 export function getReformSchedules(data) {
   return data.metadata.reform_schedules;
