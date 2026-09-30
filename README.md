@@ -241,17 +241,20 @@ external figure with its source, locator, scope, year and basis.
   review of key assumptions, so the rows are provisional.
 - **The one-point rows and the largest gains.** policyengine-uk 2.100.0
   measures each person's marginal CGT rate from a £1,000 rise in gains, in
-  single precision. Above about £100m of gains the rounding moves the
-  measured rate by up to 1.6 points (at £200k of earnings: exactly 24% up to
-  £100m of gains, 24.8% from £185m to £300m, 23.2% from £561m), so the
-  response of those persons to a one-point change is noise. On the candidate
-  one person (a £561m gain, weight 18.9) carries £2.5bn of baseline CGT, and
-  for higher rate +1 point at the official elasticity their measured
-  response is three times the true one in 2026-27 and zero in 2027-28: the
-  row reads −£533m and −£173m, where the true response for that person gives
-  about −£294m and −£301m. The same error moves the equalisation estimates by
-  about £0.1bn at most and leaves the static case untouched; the fix belongs
-  in the engine's `marginal_tax_rate_on_capital_gains`.
+  single precision, and the error grows with the gain: about 0.2 points at
+  £20m of gains and about 3 points at £500m (for one adult on £200k of
+  earnings the current-law rate reads exactly 24% at £100m of gains, 24.8% at
+  £185m and £300m, and 23.2% from £561m). For those persons the response to
+  a one-point change is mostly noise. On the candidate one person (a £561m
+  gain, weight 18.9) carries £2.5bn of baseline CGT. For higher rate +1 point
+  at the official elasticity their measured response is three times the true
+  one in 2026-27 and zero in 2027-28, so the row reads −£533m and −£173m where
+  the true response for that person gives about −£294m and −£301m. On the
+  equalisation reform the same person's measured rate rises by about 24
+  points instead of 21, which lowers the 2026-27 estimate by £0.13bn at
+  retention 0.5, £0.21bn at 1.0 (2% of the central +£10.3bn), £0.30bn at 2.0
+  and £0.30bn at 3.6; the static case is untouched. The fix belongs in the
+  engine's `marginal_tax_rate_on_capital_gains`.
 - **The official elasticity.** HMRC and the OBR use a retention-rate
   elasticity of 3.6 for the main rates ([OBR, January 2025](https://obr.uk/docs/dlm_uploads/CGT-supplementary-release-Jan-2025.pdf),
   para 1.9). Applied in that convention, equalisation changes 2026-27 CGT

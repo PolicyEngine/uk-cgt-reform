@@ -30,8 +30,9 @@ const percent = (rate) => `${Math.round(rate * 100)}%`;
 // "Exchequer receipts in £m ..." reads as the rest of a sentence.
 const lowerFirst = (text) => `${text[0].toLowerCase()}${text.slice(1)}`;
 // policyengine-uk 2.100.0 measures the marginal CGT rate from a £1,000 rise in
-// gains in single precision; above about £100m of gains the measured rate is
-// off by up to 1.6 points, which is noise in the response to a one-point change.
+// gains in single precision; the error grows with the gain (about 0.2 points at
+// £20m, about 3 points at £500m), so above about £100m it swamps the response
+// to a one-point change.
 const MTR_PRECISION_FLOOR_M = 100;
 
 function Dash() {
@@ -282,10 +283,11 @@ function ReadyReckoner({ block, dataset, elasticities, largestGainM }) {
         <p className="mt-2 text-xs leading-5 text-slate-500">
           The one-point rows are sensitive to the largest gains, which on {dataset.shortLabel} reach
           £{Math.round(largestGainM)}m. policyengine-uk measures each person&apos;s marginal CGT rate from
-          a £1,000 rise in gains, and above about £{MTR_PRECISION_FLOOR_M}m single-precision rounding
-          moves the measured rate by up to 1.6 points, so those persons&apos; response to a one-point
-          change is noise. It barely moves the equalisation estimates but can move a one-point row by
-          a few hundred million pounds at the official elasticity.
+          a £1,000 rise in gains, in single precision, and the error grows with the gain: about 0.2
+          points at £20m and about 3 points at £500m. For those persons the response to a one-point
+          change is mostly noise, which can move a one-point row by a few hundred million pounds at
+          the official elasticity. The same error moves the equalisation estimates by much less than
+          the spread across elasticities.
         </p>
       ) : null}
     </section>
