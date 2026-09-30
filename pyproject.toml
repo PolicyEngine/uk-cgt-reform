@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "uk-cgt-reform"
 version = "0.1.0"
-description = "Data pipeline and live rate explorer modelling reforms to UK capital gains tax rates, led by their equalisation with income tax rates (the 'Burnham' reform)."
+description = "Data pipeline and live rate explorer modelling reforms to UK capital gains tax rates, led by their equalisation with income tax rates."
 readme = "README.md"
 license = "AGPL-3.0-or-later"
 requires-python = ">=3.13"

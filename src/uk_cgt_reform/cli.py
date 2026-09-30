@@ -20,7 +20,7 @@ def build_parser() -> argparse.ArgumentParser:
         prog="uk-cgt-reform-build",
         description=(
             "Generate dashboard-ready results for equalising CGT rates with "
-            "income tax rates (the 'Burnham' reform), 2026-27 to 2030-31, on "
+            "income tax rates, 2026-27 to 2030-31, on "
             "every registered dataset."
         ),
     )

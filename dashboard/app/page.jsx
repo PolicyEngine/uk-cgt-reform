@@ -161,7 +161,8 @@ function Dashboard() {
               Advani, Lonsdale &amp; Summers (CenTax, 2024)
             </a>
             . Its headline reform equalises CGT rates with income tax rates
-            (18%→20%, 24%→40%, 24%→45%); as{" "}
+            (18%→20%, 24%→40%, 24%→45%) and withdraws Business Asset Disposal
+            Relief. Wes Streeting proposed equalising the rates in May 2026, as{" "}
             <a
               href="https://www.bloomberg.com/news/articles/2026-05-21/streeting-backs-hiking-uk-capital-gains-levy-to-match-income-tax"
               target="_blank"
@@ -170,8 +171,8 @@ function Dashboard() {
             >
               Bloomberg
             </a>{" "}
-            reports, leading Labour leadership contenders have backed it, so
-            the next government may well consider it. The dashboard runs on two
+            reported; CenTax costs the change within a wider package that also
+            reforms the CGT base, which this dashboard does not model. The dashboard runs on two
             datasets: the incumbent Enhanced Family Resources Survey and the
             candidate Microcosm UK build, which records what kind of asset each
             gain came from.{" "}

@@ -6,11 +6,15 @@ standard [policyengine.py](https://github.com/PolicyEngine/policyengine.py)
 stack (the `policyengine` package wrapping the PolicyEngine UK model). They
 score two things:
 
-- **Equalising CGT rates with income tax rates** (the "Burnham" reform), the
-  reform debated in the Labour leadership contest, associated with Andy
-  Burnham and backed by allies including Louise Haigh and Wes Streeting. The
-  pipeline scores it on every registered dataset and commits the results,
-  which the dashboard's Reform impacts tab shows.
+- **Equalising CGT rates with income tax rates.** Wes Streeting proposed the
+  rate change in May 2026
+  ([Bloomberg](https://www.bloomberg.com/news/articles/2026-05-21/streeting-backs-hiking-uk-capital-gains-levy-to-match-income-tax)),
+  alongside closing loopholes and an exemption for "genuine entrepreneurs"
+  ([Tax Justice UK](https://taxjustice.uk/blog/what-would-bunham-mean-for-britain/));
+  CenTax costs it within a wider package that also reforms the CGT base (see
+  [Benchmarks](#benchmarks)). This repo models the rate change. The pipeline
+  scores it on every registered dataset and commits the results, which the
+  dashboard's Reform impacts tab shows.
 - **Any schedule of main CGT rates** a reader chooses, scored live by the
   dashboard's Rate explorer tab through the same code, datasets, engine and
   projection (see [Rate explorer](#rate-explorer)).
@@ -383,7 +387,7 @@ difference 0.0 on this Mac, 5e-7 between Modal and this Mac), and 18/24/24 gives
 Scope: carried interest and Business Asset Disposal Relief stay at current
 law. Neither registered dataset records those gains, so the choice is inert
 on results; it only means the explorer's reform dict differs from the
-Burnham dict in inert parameters (`reform.EXPLORER_SCOPE`,
+equalisation dict in inert parameters (`reform.EXPLORER_SCOPE`,
 `reform.cgt_rate_reform`). Widening the scope once a dataset carries them is
 tracked as a repo issue.
 

@@ -1,7 +1,7 @@
 """Reforms to UK capital gains tax rates.
 
-The pipeline scores equalising CGT rates with income tax rates (the
-"Burnham" reform: basic 18->20%, higher 24->40%, additional 24->45%) from
+The pipeline scores equalising CGT rates with income tax rates (basic
+18->20%, higher 24->40%, additional 24->45%) from
 2026-27, over fiscal years 2026-27 to 2030-31, via the policyengine.py
 wrapper on every registered dataset (``simulations.DATASETS``, each as
 published, with no local reweighting) and an Advani/CenTax-aligned
@@ -9,13 +9,19 @@ behavioural response. The rate explorer (``explore``) scores any schedule of
 main rates through the same code.
 """
 
-from .reform import BURNHAM_RATES, ELASTICITY, YEARS, burnham_reform, retention_to_mtr_elasticity
+from .reform import (
+    ELASTICITY,
+    INCOME_TAX_RATES,
+    YEARS,
+    equalisation_reform,
+    retention_to_mtr_elasticity,
+)
 
 __all__ = [
-    "BURNHAM_RATES",
+    "INCOME_TAX_RATES",
     "ELASTICITY",
     "YEARS",
-    "burnham_reform",
+    "equalisation_reform",
     "retention_to_mtr_elasticity",
     "run",
 ]

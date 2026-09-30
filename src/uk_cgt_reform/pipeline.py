@@ -1,4 +1,4 @@
-"""Main pipeline: build the dashboard JSON for the Burnham CGT reform.
+"""Main pipeline: build the dashboard JSON for equalising CGT with income tax.
 
 Everything runs on the standard policyengine.py stack: per-year datasets
 from ``pe.uk.ensure_datasets``, one ``policyengine.Simulation`` per
@@ -51,14 +51,14 @@ from .impacts import (
     validation_stats,
 )
 from .reform import (
-    BURNHAM_RATES,
     ELASTICITY,
     ELASTICITY_PARAMETER,
+    INCOME_TAX_RATES,
     PERIOD,
     YEARS,
-    burnham_reform,
     centax_1920_reforms,
     centax_1920_rules,
+    equalisation_reform,
     reform_fingerprint,
     reform_schedules,
 )
@@ -102,19 +102,19 @@ def dataset_folder(spec: DatasetSpec, fingerprint: str, root: Path = DATASET_FOL
     return root / simulation_stem(spec, fingerprint)
 
 
-def burnham_case(elasticity: float) -> str:
-    """The case name in a Burnham simulation id: ``burnham_e07`` for the
+def equalisation_case(elasticity: float) -> str:
+    """The case name in an equalisation simulation id: ``equalise_e07`` for the
     central case (the name the cached outputs carry), otherwise the
     elasticity's magnitude to two decimals without the point."""
     if elasticity == ELASTICITY:
-        return "burnham_e07"
-    return f"burnham_e{abs(elasticity):.2f}".replace(".", "")
+        return "equalise_e07"
+    return f"equalise_e{abs(elasticity):.2f}".replace(".", "")
 
 
-def burnham_sim_id(sim_stem: str, elasticity: float, digest: str, year: int) -> str:
-    """A Burnham simulation id: the dataset stem, the case, the reform's own
+def equalisation_sim_id(sim_stem: str, elasticity: float, digest: str, year: int) -> str:
+    """An equalisation simulation id: the dataset stem, the case, the reform's own
     fingerprint (which tells cases of equal magnitude apart) and the year."""
-    return f"{sim_stem}_{burnham_case(elasticity)}_{digest}_{year}"
+    return f"{sim_stem}_{equalisation_case(elasticity)}_{digest}_{year}"
 
 
 def counterfactual_sim_id(sim_stem: str, role: str, digest: str, year: int) -> str:
@@ -259,9 +259,9 @@ def run_dataset(
 
     # ── Step 2: baseline and reformed simulations, one per year ───────────
     print(f"Step 2 {tag}: Running baseline and reformed simulations...")
-    central_reform = burnham_reform(ELASTICITY)
+    central_reform = equalisation_reform(ELASTICITY)
     central_digest = reform_fingerprint(central_reform)
-    reform_policy = make_policy(central_reform, "burnham_e07")
+    reform_policy = make_policy(central_reform, "equalise_e07")
     baseline_sims, reform_sims = {}, {}
     for year in YEARS:
         print(f"    {fiscal_year_label(year)}...")
@@ -272,20 +272,20 @@ def run_dataset(
         reform_sims[year] = run_simulation(
             datasets[year],
             policy=reform_policy,
-            sim_id=burnham_sim_id(sim_stem, ELASTICITY, central_digest, year),
+            sim_id=equalisation_sim_id(sim_stem, ELASTICITY, central_digest, year),
         )
 
     # ── Step 2b: the static reform in every year, for the static benchmarks
     # (the 2026 run is also the sensitivity table's static case) ──────────
     print(f"Step 2b {tag}: Static reform (e=0), every year...")
-    static_reform = burnham_reform(0.0)
+    static_reform = equalisation_reform(0.0)
     static_digest = reform_fingerprint(static_reform)
-    static_policy = make_policy(static_reform, burnham_case(0.0))
+    static_policy = make_policy(static_reform, equalisation_case(0.0))
     static_sims = {
         year: run_simulation(
             datasets[year],
             policy=static_policy,
-            sim_id=burnham_sim_id(sim_stem, 0.0, static_digest, year),
+            sim_id=equalisation_sim_id(sim_stem, 0.0, static_digest, year),
         )
         for year in YEARS
     }
@@ -300,11 +300,11 @@ def run_dataset(
             return reform_sims[2026]
         if e == 0.0:
             return static_sims[2026]
-        reform = burnham_reform(e)
+        reform = equalisation_reform(e)
         return run_simulation(
             datasets[2026],
-            policy=make_policy(reform, burnham_case(e)),
-            sim_id=burnham_sim_id(sim_stem, e, reform_fingerprint(reform), 2026),
+            policy=make_policy(reform, equalisation_case(e)),
+            sim_id=equalisation_sim_id(sim_stem, e, reform_fingerprint(reform), 2026),
         )
 
     sens = sensitivity(base_cgt_2026, SENSITIVITY_CASES, run_case)
@@ -409,7 +409,7 @@ def run_dataset(
             "reform_period_start": PERIOD,
             "elasticity": ELASTICITY,
             "elasticity_parameter": ELASTICITY_PARAMETER,
-            "reform": dict(BURNHAM_RATES),
+            "reform": dict(INCOME_TAX_RATES),
             "reform_schedules": reform_schedules(),
             "reform_fingerprint": central_digest,
             "years": list(YEARS),

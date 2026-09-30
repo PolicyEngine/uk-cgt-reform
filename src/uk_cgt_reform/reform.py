@@ -1,8 +1,10 @@
 """Reform specification and elasticity-convention helpers.
 
-The "Burnham" reform — debated in the Labour leadership contest, associated
-with Andy Burnham and backed by allies including Louise Haigh and Wes
-Streeting — equalises CGT rates with income tax rates from 2026-27:
+The equalisation reform charges capital gains at income tax rates from
+2026-27. Wes Streeting proposed the rate change in May 2026, alongside
+closing loopholes and an exemption for genuine entrepreneurs; CenTax
+(Advani, Lonsdale and Summers 2024) costs it inside a wider package that
+also reforms the CGT base. This module models the rate change:
 
 | Band       | Baseline CGT rate | Reformed rate (= income tax) |
 |------------|-------------------|------------------------------|
@@ -83,7 +85,7 @@ OFFICIAL_ELASTICITY = -2.52
 RETENTION_NATIVE = {OFFICIAL_ELASTICITY: OFFICIAL_RETENTION_ELASTICITY}
 
 # Reformed CGT rates, equal to the income tax rates for each band.
-BURNHAM_RATES = {
+INCOME_TAX_RATES = {
     "basic_rate": 0.20,  # from 18%
     "higher_rate": 0.40,  # from 24%
     "additional_rate": 0.45,  # from 24%
@@ -178,13 +180,13 @@ def cgt_rate_reform(
     return reform
 
 
-def burnham_reform(elasticity: float = ELASTICITY) -> dict:
-    """The Burnham reform as a PolicyEngine parametric reform dict: every
+def equalisation_reform(elasticity: float = ELASTICITY) -> dict:
+    """The equalisation reform as a PolicyEngine parametric reform dict: every
     schedule takes the income tax rates and the BADR lifetime limit goes to
     zero. The dict is the one the cached simulation ids were minted from, so
     its fingerprint is pinned in the tests."""
     return cgt_rate_reform(
-        BURNHAM_RATES,
+        INCOME_TAX_RATES,
         elasticity,
         schedules=SCHEDULES,
         badr_lifetime_limit=BADR_LIFETIME_LIMIT,
@@ -205,7 +207,7 @@ def centax_1920_reforms() -> tuple[dict, dict]:
             baseline[f"gov.hmrc.cgt.{schedule}.{band}"] = {PERIOD: CENTAX_1920_SCHEDULE_RATES[band]}
     baseline["gov.hmrc.cgt.badr.rate"] = {PERIOD: CENTAX_1920_BADR_RATE}
     baseline["gov.hmrc.cgt.badr.lifetime_limit"] = {PERIOD: CENTAX_1920_BADR_LIFETIME_LIMIT}
-    return {**baseline, **exempt}, {**burnham_reform(0.0), **exempt}
+    return {**baseline, **exempt}, {**equalisation_reform(0.0), **exempt}
 
 
 def centax_1920_rules() -> dict:
@@ -221,8 +223,8 @@ def centax_1920_rules() -> dict:
             "annual_exempt_amount": CENTAX_1920_EXEMPT_AMOUNT,
         },
         "reform": {
-            "main": dict(BURNHAM_RATES),
-            **{schedule: dict(BURNHAM_RATES) for schedule in SCHEDULES},
+            "main": dict(INCOME_TAX_RATES),
+            **{schedule: dict(INCOME_TAX_RATES) for schedule in SCHEDULES},
             "badr_lifetime_limit": BADR_LIFETIME_LIMIT,
             "annual_exempt_amount": CENTAX_1920_EXEMPT_AMOUNT,
         },
@@ -243,9 +245,9 @@ def reform_fingerprint(reform: dict) -> str:
 
 
 def reform_schedules() -> dict:
-    """The schedule part of the Burnham reform, for the results metadata."""
+    """The schedule part of the equalisation reform, for the results metadata."""
     return {
-        **{schedule: dict(BURNHAM_RATES) for schedule in SCHEDULES},
+        **{schedule: dict(INCOME_TAX_RATES) for schedule in SCHEDULES},
         "badr_lifetime_limit": BADR_LIFETIME_LIMIT,
     }
 

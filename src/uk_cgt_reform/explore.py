@@ -5,7 +5,7 @@ the committed results files. The explorer scores any schedule of main rates
 a reader chooses, on the same pinned per-year datasets, the same engine and
 projection, the same cached baseline simulations and the same impact code
 (``impacts``). An explorer run of 20/40/45 therefore reproduces the tab's
-figures: its scope (``reform.EXPLORER_SCOPE``) differs from the Burnham
+figures: its scope (``reform.EXPLORER_SCOPE``) differs from the equalisation
 reform only in parameters that are inert on both registered datasets.
 
 Two runners share every function here. ``run_locally`` backs the
@@ -43,9 +43,9 @@ from pathlib import Path
 from .comparison import READY_RECKONER, SENSITIVITY_CASES
 from .impacts import budget_impact, fiscal_year_label, income_change_groups
 from .reform import (
-    BURNHAM_RATES,
     ELASTICITY,
     EXPLORER_SCOPE,
+    INCOME_TAX_RATES,
     OFFICIAL_ELASTICITY,
     PERIOD,
     RATE_BANDS,
@@ -103,7 +103,7 @@ PRESETS = (
     {
         "id": "income_tax",
         "label": "Equalise with income tax (20% / 40% / 45%)",
-        "rates": dict(BURNHAM_RATES),
+        "rates": dict(INCOME_TAX_RATES),
     },
     {
         "id": "flat_30",

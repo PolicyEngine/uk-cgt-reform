@@ -7,12 +7,12 @@ from dataclasses import replace
 
 from uk_cgt_reform.pipeline import (
     DATASET_FOLDER,
-    burnham_sim_id,
     counterfactual_sim_id,
     dataset_folder,
+    equalisation_sim_id,
     simulation_stem,
 )
-from uk_cgt_reform.reform import OFFICIAL_ELASTICITY, burnham_reform, reform_fingerprint
+from uk_cgt_reform.reform import OFFICIAL_ELASTICITY, equalisation_reform, reform_fingerprint
 from uk_cgt_reform.simulations import CANDIDATE, INCUMBENT
 
 FINGERPRINT = "1b0cd0dff144"
@@ -40,18 +40,24 @@ def test_datasets_never_share_a_folder_and_simulation_ids_carry_the_key():
     assert dataset_folder(CANDIDATE, FINGERPRINT).name == stem
 
 
-def test_burnham_ids_match_the_cached_outputs():
+def test_equalisation_ids_match_the_cached_outputs():
     # The names the committed results' cached .h5 files carry: a change here
     # would silently re-run every scenario.
     stem = "STEM"
-    assert burnham_sim_id(stem, -0.7, "d33c3951fbea", 2026) == "STEM_burnham_e07_d33c3951fbea_2026"
-    assert burnham_sim_id(stem, 0.0, "45576cc53935", 2030) == "STEM_burnham_e000_45576cc53935_2030"
-    assert burnham_sim_id(stem, -0.35, "885c3d31e932", 2026) == (
-        "STEM_burnham_e035_885c3d31e932_2026"
+    assert (
+        equalisation_sim_id(stem, -0.7, "d33c3951fbea", 2026)
+        == "STEM_equalise_e07_d33c3951fbea_2026"
     )
-    official = reform_fingerprint(burnham_reform(OFFICIAL_ELASTICITY))
-    assert burnham_sim_id(stem, OFFICIAL_ELASTICITY, official, 2026) == (
-        f"STEM_burnham_e252_{official}_2026"
+    assert (
+        equalisation_sim_id(stem, 0.0, "45576cc53935", 2030)
+        == "STEM_equalise_e000_45576cc53935_2030"
+    )
+    assert equalisation_sim_id(stem, -0.35, "885c3d31e932", 2026) == (
+        "STEM_equalise_e035_885c3d31e932_2026"
+    )
+    official = reform_fingerprint(equalisation_reform(OFFICIAL_ELASTICITY))
+    assert equalisation_sim_id(stem, OFFICIAL_ELASTICITY, official, 2026) == (
+        f"STEM_equalise_e252_{official}_2026"
     )
 
 

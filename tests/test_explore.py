@@ -22,14 +22,14 @@ from uk_cgt_reform.explore import (
 )
 from uk_cgt_reform.impacts import fiscal_year_label
 from uk_cgt_reform.reform import (
-    BURNHAM_RATES,
     ELASTICITY,
     ELASTICITY_PARAMETER,
     EXPLORER_SCOPE,
+    INCOME_TAX_RATES,
     OFFICIAL_ELASTICITY,
     RETENTION_ELASTICITY_PARAMETER,
     YEARS,
-    burnham_reform,
+    equalisation_reform,
     reform_fingerprint,
 )
 from uk_cgt_reform.simulations import CANDIDATE, DATASETS, DEFAULT_DATASET_KEY, INCUMBENT
@@ -167,7 +167,7 @@ def test_presets_are_valid_requests():
         req = validate_request({"rates": preset["rates"]})
         assert req.rates == preset["rates"]
     by_id = {p["id"]: p for p in PRESETS}
-    assert by_id["income_tax"]["rates"] == BURNHAM_RATES
+    assert by_id["income_tax"]["rates"] == INCOME_TAX_RATES
     assert by_id["current_law"]["rates"] == {
         "basic_rate": 0.18,
         "higher_rate": 0.24,
@@ -192,26 +192,26 @@ def test_api_options_carry_what_a_client_needs():
 # --- the reform an explorer request builds -----------------------------------
 
 
-def test_explorer_reform_at_income_tax_rates_matches_burnham_on_the_rates():
-    req = validate_request({"rates": BURNHAM_RATES})
+def test_explorer_reform_at_income_tax_rates_matches_equalisation_on_the_rates():
+    req = validate_request({"rates": INCOME_TAX_RATES})
     reform = req.reform()
-    burnham = burnham_reform()
+    equalisation = equalisation_reform()
     for key in (
         "gov.hmrc.cgt.basic_rate",
         "gov.hmrc.cgt.higher_rate",
         "gov.hmrc.cgt.additional_rate",
         "gov.hmrc.cgt.residential_property.higher_rate",
     ):
-        assert reform[key] == burnham[key]
+        assert reform[key] == equalisation[key]
     # Scope differs only in the carried interest schedule and the BADR
     # limit, both inert on the registered datasets.
-    assert set(burnham) - set(reform) == {
+    assert set(equalisation) - set(reform) == {
         "gov.hmrc.cgt.carried_interest.basic_rate",
         "gov.hmrc.cgt.carried_interest.higher_rate",
         "gov.hmrc.cgt.carried_interest.additional_rate",
         "gov.hmrc.cgt.badr.lifetime_limit",
     }
-    assert req.fingerprint != reform_fingerprint(burnham)
+    assert req.fingerprint != reform_fingerprint(equalisation)
 
 
 # --- cache key ----------------------------------------------------------------

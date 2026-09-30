@@ -5,22 +5,22 @@ import numpy as np
 import pytest
 
 from uk_cgt_reform.reform import (
-    BURNHAM_RATES,
     ELASTICITY,
     ELASTICITY_PARAMETER,
     EXEMPT_AMOUNT_PARAMETER,
     EXPLORER_SCHEDULES,
     EXPLORER_SCOPE,
+    INCOME_TAX_RATES,
     OFFICIAL_ELASTICITY,
     OFFICIAL_RETENTION_ELASTICITY,
     PERIOD,
     RATE_BANDS,
     RETENTION_ELASTICITY_PARAMETER,
     SCHEDULES,
-    burnham_reform,
     centax_1920_reforms,
     cgt_rate_reform,
     elasticity_assignment,
+    equalisation_reform,
     rate_reform_schedules,
     reform_fingerprint,
     reform_schedules,
@@ -28,12 +28,12 @@ from uk_cgt_reform.reform import (
 )
 
 
-def test_burnham_rates_equal_income_tax_rates():
-    assert BURNHAM_RATES == {"basic_rate": 0.20, "higher_rate": 0.40, "additional_rate": 0.45}
+def test_equalisation_rates_equal_income_tax_rates():
+    assert INCOME_TAX_RATES == {"basic_rate": 0.20, "higher_rate": 0.40, "additional_rate": 0.45}
 
 
 def test_reform_dict_shape():
-    reform = burnham_reform()
+    reform = equalisation_reform()
     assert reform["gov.hmrc.cgt.basic_rate"] == {PERIOD: 0.20}
     assert reform["gov.hmrc.cgt.higher_rate"] == {PERIOD: 0.40}
     assert reform["gov.hmrc.cgt.additional_rate"] == {PERIOD: 0.45}
@@ -45,31 +45,31 @@ def test_reform_dict_shape():
 
 
 def test_reform_fingerprint_tracks_the_definition():
-    central = reform_fingerprint(burnham_reform())
+    central = reform_fingerprint(equalisation_reform())
     assert len(central) == 12
     # The definition the committed results were produced with; a change to
     # the rates, schedules or elasticity parameter moves it and must land
     # with regenerated results.
     assert central == "d33c3951fbea"
-    assert central == reform_fingerprint(burnham_reform(ELASTICITY))
-    assert central != reform_fingerprint(burnham_reform(0.0))
+    assert central == reform_fingerprint(equalisation_reform(ELASTICITY))
+    assert central != reform_fingerprint(equalisation_reform(0.0))
 
 
 def test_reform_reaches_every_schedule():
     # policyengine-uk 2.99.0 charges residential property, carried interest
     # and BADR gains on their own schedules; equalisation must set them too.
-    reform = burnham_reform()
+    reform = equalisation_reform()
     for schedule in SCHEDULES:
-        for band, rate in BURNHAM_RATES.items():
+        for band, rate in INCOME_TAX_RATES.items():
             assert reform[f"gov.hmrc.cgt.{schedule}.{band}"] == {PERIOD: rate}
     assert reform["gov.hmrc.cgt.badr.lifetime_limit"] == {PERIOD: 0}
     assert set(SCHEDULES) == {"residential_property", "carried_interest"}
-    assert reform_schedules()["residential_property"] == BURNHAM_RATES
+    assert reform_schedules()["residential_property"] == INCOME_TAX_RATES
     assert reform_schedules()["badr_lifetime_limit"] == 0
 
 
 def test_elasticity_override():
-    reform = burnham_reform(elasticity=-1.4)
+    reform = equalisation_reform(elasticity=-1.4)
     assert reform[ELASTICITY_PARAMETER] == {PERIOD: -1.4}
 
 
@@ -97,18 +97,18 @@ def test_retention_to_mtr_rejects_invalid_rates():
         retention_to_mtr_elasticity(1.0, -0.1)
 
 
-def test_burnham_fingerprints_are_pinned_to_the_cached_simulation_ids():
-    # data/policyengine_datasets/<dataset>/*_burnham_e07_d33c3951fbea_<year>.h5
+def test_equalisation_fingerprints_are_pinned_to_the_cached_simulation_ids():
+    # data/policyengine_datasets/<dataset>/*_equalise_e07_d33c3951fbea_<year>.h5
     # and the e=0 / e=-0.35 sensitivity outputs carry these digests; a change
     # here would silently orphan every cached output.
-    assert reform_fingerprint(burnham_reform()) == "d33c3951fbea"
-    assert reform_fingerprint(burnham_reform(0.0)) == "45576cc53935"
-    assert reform_fingerprint(burnham_reform(-0.35)) == "885c3d31e932"
+    assert reform_fingerprint(equalisation_reform()) == "d33c3951fbea"
+    assert reform_fingerprint(equalisation_reform(0.0)) == "45576cc53935"
+    assert reform_fingerprint(equalisation_reform(-0.35)) == "885c3d31e932"
 
 
-def test_burnham_reform_is_the_generic_builder_with_every_schedule():
-    assert burnham_reform(-0.35) == cgt_rate_reform(
-        BURNHAM_RATES, -0.35, schedules=SCHEDULES, badr_lifetime_limit=0
+def test_equalisation_reform_is_the_generic_builder_with_every_schedule():
+    assert equalisation_reform(-0.35) == cgt_rate_reform(
+        INCOME_TAX_RATES, -0.35, schedules=SCHEDULES, badr_lifetime_limit=0
     )
 
 
@@ -148,7 +148,7 @@ def test_elasticity_assignment_routes_the_official_case_to_retention():
     assert elasticity_assignment(ELASTICITY) == {ELASTICITY_PARAMETER: ELASTICITY}
     assert elasticity_assignment(0.0) == {ELASTICITY_PARAMETER: 0.0}
     assert elasticity_assignment(OFFICIAL_ELASTICITY) == {RETENTION_ELASTICITY_PARAMETER: 3.6}
-    official = burnham_reform(OFFICIAL_ELASTICITY)
+    official = equalisation_reform(OFFICIAL_ELASTICITY)
     assert official[RETENTION_ELASTICITY_PARAMETER] == {PERIOD: 3.6}
     assert ELASTICITY_PARAMETER not in official
 
@@ -162,7 +162,7 @@ def test_centax_counterfactual_pair_is_pinned():
             assert baseline[f"gov.hmrc.cgt.{schedule}.{band}"] == {PERIOD: rate}
     assert baseline[EXEMPT_AMOUNT_PARAMETER] == {PERIOD: 12_000}
     assert baseline[ELASTICITY_PARAMETER] == {PERIOD: 0.0}
-    assert reform == {**burnham_reform(0.0), EXEMPT_AMOUNT_PARAMETER: {PERIOD: 12_000}}
+    assert reform == {**equalisation_reform(0.0), EXEMPT_AMOUNT_PARAMETER: {PERIOD: 12_000}}
     assert baseline["gov.hmrc.cgt.badr.rate"] == {PERIOD: 0.10}
     assert baseline["gov.hmrc.cgt.badr.lifetime_limit"] == {PERIOD: 1_000_000}
     assert reform_fingerprint(baseline) == "a2eab6466ee5"
