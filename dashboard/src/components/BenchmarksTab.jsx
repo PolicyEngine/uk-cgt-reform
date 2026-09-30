@@ -1,6 +1,11 @@
 "use client";
 
-import { getBenchmarks, getDatasetInfo, getSensitivity } from "../lib/dataHelpers";
+import {
+  getBenchmarks,
+  getDatasetInfo,
+  getSensitivity,
+  getValidation,
+} from "../lib/dataHelpers";
 import {
   formatBn,
   formatPct,
@@ -24,6 +29,10 @@ function formatUplift(value) {
 const percent = (rate) => `${Math.round(rate * 100)}%`;
 // "Exchequer receipts in £m ..." reads as the rest of a sentence.
 const lowerFirst = (text) => `${text[0].toLowerCase()}${text.slice(1)}`;
+// policyengine-uk 2.100.0 measures the marginal CGT rate from a £1,000 rise in
+// gains in single precision; above about £100m of gains the measured rate is
+// off by up to 1.6 points, which is noise in the response to a one-point change.
+const MTR_PRECISION_FLOOR_M = 100;
 
 function Dash() {
   return <span className="text-slate-400">—</span>;
@@ -207,10 +216,10 @@ function CentaxPackage({ rows }) {
   );
 }
 
-function ReadyReckoner({ block, dataset, elasticities }) {
+function ReadyReckoner({ block, dataset, elasticities, largestGainM }) {
   const [first, second] = block.lag;
   const centralLabel = `Central (retention ${elasticities.central.e_retention.toFixed(1)})`;
-  const officialLabel = `Official (retention ${elasticities.official.e_retention})`;
+  const officialLabel = `Official (retention ${elasticities.official.e_retention}; 1.4 for BADR rows)`;
   const model = (row, elasticityId, year) => row.model_m[elasticityId][year];
   return (
     <section className="section-card">
@@ -260,7 +269,7 @@ function ReadyReckoner({ block, dataset, elasticities }) {
         Source: <SourceLink href={block.url}>{block.source}</SourceLink>, {block.locator}. {block.note}{" "}
         HMRC&apos;s figures are {lowerFirst(block.measure)}; the model figures are the change in
         government balance on its own data, in the Rate explorer&apos;s scope (main and residential
-        rates). Not scored:{" "}
+        rates and the relief). Not scored:{" "}
         {block.excluded
           .map((row) => {
             const reason = row.reason.replace(/\.$/, "");
@@ -269,6 +278,16 @@ function ReadyReckoner({ block, dataset, elasticities }) {
           .join("; ")}
         .
       </p>
+      {largestGainM > MTR_PRECISION_FLOOR_M ? (
+        <p className="mt-2 text-xs leading-5 text-slate-500">
+          The one-point rows are sensitive to the largest gains, which on {dataset.shortLabel} reach
+          £{Math.round(largestGainM)}m. policyengine-uk measures each person&apos;s marginal CGT rate from
+          a £1,000 rise in gains, and above about £{MTR_PRECISION_FLOOR_M}m single-precision rounding
+          moves the measured rate by up to 1.6 points, so those persons&apos; response to a one-point
+          change is noise. It barely moves the equalisation estimates but can move a one-point row by
+          a few hundred million pounds at the official elasticity.
+        </p>
+      ) : null}
     </section>
   );
 }
@@ -276,6 +295,7 @@ function ReadyReckoner({ block, dataset, elasticities }) {
 export default function BenchmarksTab({ data, onNavigate }) {
   const benchmarks = getBenchmarks(data);
   const dataset = getDatasetInfo(data);
+  const { largest_gain_m: largestGainM } = getValidation(data);
   const official = getSensitivity(data).find(
     (row) => row.e_retention === benchmarks.elasticities.official.e_retention,
   );
@@ -298,6 +318,7 @@ export default function BenchmarksTab({ data, onNavigate }) {
         block={benchmarks.ready_reckoner}
         dataset={dataset}
         elasticities={benchmarks.elasticities}
+        largestGainM={largestGainM}
       />
       <section className="note-card rounded-lg p-4 text-sm leading-6 text-slate-600">
         <p className="note-eyebrow">Why the elasticity matters</p>

@@ -10,7 +10,7 @@ results.
 
 The same reform runs on every registered dataset (``simulations.DATASETS``:
 the incumbent Enhanced FRS 2024-25 and the staged Microcosm UK national-line
-candidate built on microcosm#979) on the same engine and the same projection, and the per-dataset
+candidate built from microcosm main c5a1cba8) on the same engine and the same projection, and the per-dataset
 results are written side by side. Simulations run directly on each file
 as published, with no local reweighting and no edited inputs: calibration
 and imputation belong upstream in the dataset producer, not in an analysis
@@ -134,8 +134,13 @@ def score_ready_reckoner(spec: DatasetSpec, folder: Path, fingerprint: str) -> d
     """Score HMRC's ready-reckoner rows on one dataset through the rate
     explorer's code path (the explorer's scope, the cached baselines, the
     reform in memory), at each elasticity in ``READY_RECKONER_ELASTICITIES``
-    and in each model year the lag names. Returns ``{row id: {elasticity id:
-    {model year: change in government balance, £m}}}``."""
+    and in each model year the lag names. Each row carries its rates, its
+    treatment of Business Asset Disposal Relief and its own official
+    elasticity (1.4 for the BADR rows), which replaces the explorer's official
+    case for that row. Returns ``{row id: {elasticity id: {model year: change
+    in government balance, £m}}}``."""
+    from dataclasses import replace
+
     from .explore import engine_context, run_year, validate_request
 
     context = engine_context()
@@ -149,8 +154,15 @@ def score_ready_reckoner(spec: DatasetSpec, folder: Path, fingerprint: str) -> d
         scores[row["id"]] = {}
         for elasticity_id, elasticity in READY_RECKONER_ELASTICITIES.items():
             request = validate_request(
-                {"dataset": spec.key, "rates": row["rates"], "elasticity": elasticity}
+                {
+                    "dataset": spec.key,
+                    "rates": row["rates"],
+                    "badr": row["badr"],
+                    "elasticity": elasticity,
+                }
             )
+            if elasticity_id == "official":
+                request = replace(request, elasticity=row["official_elasticity"])
             scores[row["id"]][elasticity_id] = {}
             for lag in READY_RECKONER["lag"]:
                 year = int(lag["model_year"][:4])

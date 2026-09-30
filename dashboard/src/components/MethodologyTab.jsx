@@ -85,12 +85,15 @@ export default function MethodologyTab({ data, anchor }) {
               <li>
                 <strong>Gains imputation.</strong> {dataset.observation}. Amounts are redrawn
                 from HMRC&apos;s Table 3 (size of gain by taxable income) so the top bands that
-                carry most of the tax are represented, and each liable gainer is assigned a
-                main asset type from HMRC Tables 7 and 8, with residential property gains
-                written to their own column.
+                carry most of the tax are represented, and the weights reproduce Table 3&apos;s
+                gains by taxable income band, which sets the income tax band each gain falls in.
+                Each liable gainer is assigned a main asset type from HMRC Tables 7 and 8, with
+                residential property gains written to their own column, and gains qualifying for
+                Business Asset Disposal Relief are imputed and weighted to HMRC Table 4&apos;s
+                bands, so the relief is charged on its own schedule.
               </li>
               <li>
-                <strong>Gainers beyond HMRC&apos;s count.</strong> {dataset.notes} At the base
+                <strong>Gainers below the exempt amount.</strong> {dataset.notes} At the base
                 year they owe nothing; once the engine uprates gains past the frozen exempt
                 amount they become taxpayers. The Baseline tab reports them as entrants by
                 uprating and shows every figure with and without them.
@@ -99,8 +102,8 @@ export default function MethodologyTab({ data, anchor }) {
                 <strong>Why this dataset is the default, and when it moves.</strong> The
                 candidate is the dataset this comparison exists to evaluate and the only one
                 carrying the schedules the reform charges. It is a staged candidate built from
-                microcosm pull request #979, not a certified release: it is re-pinned when that
-                pull request lands on main and again when a certified national release exists.
+                microcosm main, not a certified release: it is re-pinned when a certified
+                national release exists.
               </li>
             </>
           ) : (

@@ -76,6 +76,9 @@ CENTAX_UPPER_ELASTICITY = 2.0
 # The official HMRC/OBR assumption for the main CGT rates (OBR, "Costing of
 # changes to the main, BADR and IR rates of CGT", January 2025, para 1.9).
 OFFICIAL_ELASTICITY = 3.6
+# The official assumption for Business Asset Disposal Relief (same source),
+# applied to HMRC's ready-reckoner rows that move the relief's rate.
+OFFICIAL_BADR_ELASTICITY = 1.4
 # The engine parameter that carries every case: the retention-rate form,
 # realised gains scaled by ((1 - t1) / (1 - t0)) ** e. The engine's
 # marginal-tax-rate parameter stays at its default of zero; the two may not

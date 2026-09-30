@@ -21,7 +21,7 @@ from uk_cgt_reform.reform import (
     elasticity_convention,
     reform_schedules,
 )
-from uk_cgt_reform.simulations import DATASETS, DEFAULT_DATASET_KEY, INCUMBENT
+from uk_cgt_reform.simulations import CANDIDATE, DATASETS, DEFAULT_DATASET_KEY, INCUMBENT
 
 YEAR_LABELS = [fiscal_year_label(y) for y in range(2026, 2031)]
 
@@ -270,7 +270,7 @@ def test_dataset_comparison_lays_datasets_out_as_columns():
         name for name, _ in VALIDATION_METRICS
     ]
     taxpayers = next(r for r in side_by_side["validation"] if r["metric"] == "cgt_taxpayers")
-    assert taxpayers["microcosm_uk_2024_25_979"] == 2 * taxpayers["enhanced_frs_2024_25"]
+    assert taxpayers[CANDIDATE.key] == 2 * taxpayers[INCUMBENT.key]
     entrants = next(
         r for r in side_by_side["validation"] if r["metric"] == "entrants_by_uprating.count"
     )

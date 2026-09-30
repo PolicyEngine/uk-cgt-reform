@@ -24,11 +24,14 @@ from __future__ import annotations
 
 from .impacts import REGION_NAMES
 from .reform import (
+    BADR_CURRENT_LAW,
     CENTAX_LOWER_ELASTICITY,
     CENTAX_UPPER_ELASTICITY,
     ELASTICITY,
+    OFFICIAL_BADR_ELASTICITY,
     OFFICIAL_ELASTICITY,
     RATE_BANDS,
+    BadrPolicy,
 )
 from .uprating_audit import CPI_INDEX, OBR_CGT_RECEIPTS_BN, OBR_CGT_RECEIPTS_SOURCE
 
@@ -314,12 +317,28 @@ OFFICIAL_ELASTICITY_SOURCE = {
     ),
 }
 
-# The elasticity cases the ready-reckoner rows are scored at.
+# The elasticity cases the ready-reckoner rows are scored at. "official" is
+# each row's own official assumption (``official_elasticity``): 3.6 for the
+# main-rate rows and 1.4 for the BADR rows (OBR, January 2025, para 1.9).
 READY_RECKONER_ELASTICITIES = {"centax_central": ELASTICITY, "official": OFFICIAL_ELASTICITY}
 
 
 def _rates(basic: float, higher: float, additional: float) -> dict:
     return dict(zip(RATE_BANDS, (basic, higher, additional), strict=True))
+
+
+_CURRENT_RATES = _rates(0.18, 0.24, 0.24)
+
+
+def _row(row_id, label, rates, hmrc_m, *, badr=BADR_CURRENT_LAW, official=OFFICIAL_ELASTICITY):
+    return {
+        "id": row_id,
+        "label": label,
+        "rates": rates,
+        "badr": badr.to_dict(),
+        "official_elasticity": official,
+        "hmrc_m": hmrc_m,
+    }
 
 
 READY_RECKONER = {
@@ -329,6 +348,7 @@ READY_RECKONER = {
         "https://assets.publishing.service.gov.uk/media/68552862b46781eacfd71d71/"
         "June_2025_TRR_ODS__1_.ods"
     ),
+    "sha256": "1201953391d6201d1df8df4d60288c9094b43e0679ebf285e82ad3c912d476c1",
     "locator": "Capital gains tax rows; notes 13 and 14",
     "basis": "post_behavioural",
     "unit": "gbp_m",
@@ -339,8 +359,9 @@ READY_RECKONER = {
     "note": (
         "The higher-rate rows move the higher and additional rates together, for main "
         "and residential gains (note 13); rows are non-linear and must not be scaled "
-        "(note 14). HMRC deferred the 2026 edition on 6 July 2026 pending a review of "
-        "key assumptions, so these rows are provisional."
+        "(note 14). The BADR rows raise the relief's rate from its 18% in 2026-27. HMRC "
+        "deferred the 2026 edition on 6 July 2026 pending a review of key assumptions, "
+        "so these rows are provisional."
     ),
     "hmrc_years": ["2026-27", "2027-28", "2028-29"],
     # Receipts lag liabilities by about a year: this repo's liabilities in
@@ -350,36 +371,52 @@ READY_RECKONER = {
         {"model_year": "2027-28", "hmrc_year": "2028-29"},
     ],
     "rows": [
-        {
-            "id": "higher_plus_1",
-            "label": "Higher rate +1pp (18% / 25% / 25%)",
-            "rates": _rates(0.18, 0.25, 0.25),
-            "hmrc_m": {"2026-27": -15, "2027-28": 80, "2028-29": -30},
-        },
-        {
-            "id": "higher_plus_5",
-            "label": "Higher rate +5pp (18% / 29% / 29%)",
-            "rates": _rates(0.18, 0.29, 0.29),
-            "hmrc_m": {"2026-27": -170, "2027-28": -235, "2028-29": -870},
-        },
-        {
-            "id": "higher_plus_10",
-            "label": "Higher rate +10pp (18% / 34% / 34%)",
-            "rates": _rates(0.18, 0.34, 0.34),
-            "hmrc_m": {"2026-27": -540, "2027-28": -2060, "2028-29": -3565},
-        },
-        {
-            "id": "lower_plus_1",
-            "label": "Lower rate +1pp (19% / 24% / 24%)",
-            "rates": _rates(0.19, 0.24, 0.24),
-            "hmrc_m": {"2026-27": -5, "2027-28": 10, "2028-29": 5},
-        },
-        {
-            "id": "lower_plus_5",
-            "label": "Lower rate +5pp (23% / 24% / 24%)",
-            "rates": _rates(0.23, 0.24, 0.24),
-            "hmrc_m": {"2026-27": -40, "2027-28": 20, "2028-29": -10},
-        },
+        _row(
+            "higher_plus_1",
+            "Higher rate +1pp (18% / 25% / 25%)",
+            _rates(0.18, 0.25, 0.25),
+            {"2026-27": -15, "2027-28": 80, "2028-29": -30},
+        ),
+        _row(
+            "higher_plus_5",
+            "Higher rate +5pp (18% / 29% / 29%)",
+            _rates(0.18, 0.29, 0.29),
+            {"2026-27": -170, "2027-28": -235, "2028-29": -870},
+        ),
+        _row(
+            "higher_plus_10",
+            "Higher rate +10pp (18% / 34% / 34%)",
+            _rates(0.18, 0.34, 0.34),
+            {"2026-27": -540, "2027-28": -2060, "2028-29": -3565},
+        ),
+        _row(
+            "lower_plus_1",
+            "Lower rate +1pp (19% / 24% / 24%)",
+            _rates(0.19, 0.24, 0.24),
+            {"2026-27": -5, "2027-28": 10, "2028-29": 5},
+        ),
+        _row(
+            "lower_plus_5",
+            "Lower rate +5pp (23% / 24% / 24%)",
+            _rates(0.23, 0.24, 0.24),
+            {"2026-27": -40, "2027-28": 20, "2028-29": -10},
+        ),
+        _row(
+            "badr_plus_1",
+            "Business Asset Disposal Relief rate +1pp (19%)",
+            _CURRENT_RATES,
+            {"2026-27": 10, "2027-28": 135, "2028-29": 180},
+            badr=BadrPolicy(rate=0.19),
+            official=OFFICIAL_BADR_ELASTICITY,
+        ),
+        _row(
+            "badr_plus_5",
+            "Business Asset Disposal Relief rate +5pp (23%)",
+            _CURRENT_RATES,
+            {"2026-27": 40, "2027-28": 635, "2028-29": 840},
+            badr=BadrPolicy(rate=0.23),
+            official=OFFICIAL_BADR_ELASTICITY,
+        ),
     ],
     "excluded": [
         {
@@ -388,17 +425,9 @@ READY_RECKONER = {
             "reason": "A lower rate above the higher rate breaks the explorer's ordering rule.",
         },
         {
-            "hmrc_label": "BADR rate +1pp and +5pp",
-            "hmrc_m": None,
-            "reason": (
-                "The rows' values are not yet transcribed from HMRC's file; the explorer's "
-                "BADR lever can express them (19% and 23%)."
-            ),
-        },
-        {
-            "hmrc_label": "Annual exempt amount +£500",
-            "hmrc_m": None,
-            "reason": "The explorer changes rates only.",
+            "hmrc_label": "Annual exempt amount +£500 (individuals; £250 for trusts)",
+            "hmrc_m": {"2026-27": 0, "2027-28": -35, "2028-29": -30},
+            "reason": "The explorer changes rates and the relief, not the exempt amount.",
         },
     ],
 }
@@ -502,8 +531,9 @@ def ready_reckoner_block(model_m: dict[str, dict[str, dict[str, float]]]) -> dic
         "elasticity_ids": list(READY_RECKONER_ELASTICITIES),
         "model_measure": (
             "Change in government balance, £m, on this repo's liabilities in the model "
-            "year (main and residential rates moved; Business Asset Disposal Relief at "
-            "current law)"
+            "year, with each row's rates and relief (the main and residential rates move "
+            "together; the BADR rows move the relief's rate) and the official case at the "
+            "row's own elasticity (3.6 for the main rates, 1.4 for BADR)"
         ),
         "rows": [{**row, "model_m": model_m[row["id"]]} for row in READY_RECKONER["rows"]],
     }

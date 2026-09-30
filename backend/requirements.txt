@@ -3,7 +3,7 @@
 # engine, the wrapper and this file together, then re-run backend/warm.py so
 # the Volume's per-year datasets and baselines match the new projection.
 policyengine==4.22.3
-policyengine-uk==2.99.1
+policyengine-uk==2.100.0
 policyengine-core==3.32.6
 microdf-python==1.3.10
 numpy==2.5.3

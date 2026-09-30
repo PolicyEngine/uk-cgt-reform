@@ -356,10 +356,15 @@ export default function RateExplorerTab({ data, datasetKey }) {
       )?.id ?? "custom")
     : "custom";
   // HMRC's rows move rates only: they match with the relief at current law.
-  const readyReckonerRow =
-    validation.rates && sameBadr(validation.badr, BADR_CURRENT_LAW)
-      ? (READY_RECKONER.rows.find((row) => sameRates(row.rates, validation.rates))?.id ?? "none")
-      : "none";
+  // HMRC's rows each carry rates and a treatment of the relief (its BADR rows
+  // move the relief's rate; the rest leave it at current law).
+  const rowFor = (rates, badr) =>
+    READY_RECKONER.rows.find(
+      (row) => sameRates(row.rates, rates) && sameBadr(row.badr ?? BADR_CURRENT_LAW, badr),
+    );
+  const readyReckonerRow = validation.rates
+    ? (rowFor(validation.rates, validation.badr)?.id ?? "none")
+    : "none";
 
   const syncUrl = useCallback(
     (rates, badr, e) => {
@@ -414,8 +419,7 @@ export default function RateExplorerTab({ data, datasetKey }) {
     ? ELASTICITIES.find((option) => sameElasticity(option.e_retention, result.metadata.elasticity))
     : null;
   const matchedRow = result
-    ? sameBadr(result.metadata.reform_badr ?? BADR_CURRENT_LAW, BADR_CURRENT_LAW) &&
-      READY_RECKONER.rows.find((row) => sameRates(row.rates, result.metadata.reform))
+    ? rowFor(result.metadata.reform, result.metadata.reform_badr ?? BADR_CURRENT_LAW)
     : null;
 
   const firstYear = result ? result.budget[0].year : null;

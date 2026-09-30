@@ -180,13 +180,23 @@ def test_links_from_before_the_retention_form_map_to_the_case_they_named():
 
 
 def test_ready_reckoner_rows_are_valid_requests_and_not_presets():
-    preset_rates = [p["rates"] for p in PRESETS]
+    presets = [(p["rates"], p["badr"]) for p in PRESETS]
     for row in READY_RECKONER["rows"]:
-        req = validate_request({"rates": row["rates"], "elasticity": OFFICIAL_ELASTICITY})
+        req = validate_request(
+            {"rates": row["rates"], "badr": row["badr"], "elasticity": OFFICIAL_ELASTICITY}
+        )
         assert req.rates == row["rates"]
-        # HMRC's rows move rates only: the relief stays at current law.
-        assert req.badr == BADR_CURRENT_LAW
-        assert row["rates"] not in preset_rates
+        assert req.badr.to_dict() == row["badr"]
+        assert (row["rates"], row["badr"]) not in presets
+    # HMRC's main-rate rows keep the relief at current law; its BADR rows move
+    # the relief's rate and nothing else.
+    badr_rows = [row for row in READY_RECKONER["rows"] if row["id"].startswith("badr_")]
+    assert [row["badr"]["rate"] for row in badr_rows] == [0.19, 0.23]
+    assert all(
+        row["badr"] == BADR_CURRENT_LAW.to_dict()
+        for row in READY_RECKONER["rows"]
+        if not row["id"].startswith("badr_")
+    )
 
 
 def test_presets_are_valid_requests():

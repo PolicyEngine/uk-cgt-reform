@@ -21,8 +21,8 @@ policyengine.py wrapper), never by constructing
 
 Two datasets are registered (:data:`DATASETS`): the incumbent Enhanced FRS
 2024-25 as published by policyengine-uk-data, and the staged Microcosm UK
-2024-25 national-line candidate built on main plus microcosm#979, which
-carries the capital gains asset-type breakdown that policyengine-uk 2.99.0
+2024-25 national-line candidate built from microcosm main c5a1cba8, which
+carries the capital gains asset-type and relief breakdown that policyengine-uk 2.99.0
 charges on separate schedules. Both are single engine-year files
 (``time_period`` 2024) that the engine copies forward and uprates; see
 ``uprating_audit``.
@@ -178,40 +178,42 @@ INCUMBENT = DatasetSpec(
 )
 
 CANDIDATE = DatasetSpec(
-    key="microcosm_uk_2024_25_979",
-    label="Microcosm UK 2024-25, national line on microcosm#979 (staged candidate)",
-    short_label="Microcosm UK #979",
+    key="microcosm_uk_2024_25_c5a1cba8",
+    label="Microcosm UK 2024-25, national line from microcosm main c5a1cba8 (staged candidate)",
+    short_label="Microcosm UK 2024-25",
     role="candidate",
     uri=(
         "hf://policyengine/populace-uk-private/staged/"
-        "uk-frs-calibration-attempt-20260923T134002Z-c1be1c9f/"
-        "microcosm_uk_2024_25.h5@f6df65b1e98675ad305bcacf7ede3e0d34b57063"
+        "uk-frs-calibration-attempt-20260930T155755Z-f8182725/"
+        "microcosm_uk_2024_25.h5@1b295f3750241f5f5f1bf92cdbe1d5b6a19a8922"
     ),
-    sha256="c5f107ab6eaf74d05c1e17ecd65a4f6876666c4554bd004f76102099aa6de821",
+    sha256="c64f916dc82353a028c9f7a18cf1299f1b77faf66684e7d1427e81db1fd144f3",
     base_year=2024,
     producer=(
-        "microcosm build uk-frs-calibration-attempt-20260923T134002Z-c1be1c9f "
-        "(tools/build_uk_rowwise_candidate.py --release-role national on code "
-        "e01c6846, main 0f00021c plus PolicyEngine/microcosm#979), staged 2026-09-23 "
-        "in the Hugging Face dataset repo policyengine/populace-uk-private (commit "
-        "f6df65b1); a staging candidate whose seven calibration-seam gates passed, "
-        "not a certified release"
+        "microcosm build uk-frs-calibration-attempt-20260930T155755Z-f8182725 "
+        "(tools/build_uk_rowwise_candidate.py --release-role national on microcosm main "
+        "c5a1cba8, the PolicyEngine/microcosm#1045 merge, with policyengine-uk 2.100.0), "
+        "staged 2026-09-30 in the Hugging Face dataset repo "
+        "policyengine/populace-uk-private (commit 1b295f37); all seven calibration-seam "
+        "gates passed and the evaluation against the incumbent passed; a staging "
+        "candidate, not a certified release"
     ),
     observation=(
         "FRS 2024-25 spine; capital gains amounts redrawn from HMRC Table 3 (size of gain "
-        "by taxable income, 2024-25) with asset types from HMRC Tables 7 and 8, the "
-        "sub-exempt remainder drawn from the Advani-Summers within-band distribution "
-        "restricted to (0, exempt amount] and the clone incidence anchored to the "
-        "redrawn liable mass (microcosm#970); household weights calibrated to HMRC CGT "
-        "totals, age, region and size bands for 2024-25"
+        "by taxable income, 2024-25) with asset types from HMRC Tables 7 and 8, gains "
+        "qualifying for Business Asset Disposal Relief and Investors' Relief imputed from "
+        "HMRC Table 4, and gain carriers conditioned on wealth through a mass-conserving "
+        "support split (microcosm#1045); the sub-exempt remainder drawn from the "
+        "Advani-Summers within-band distribution (microcosm#970); household weights "
+        "calibrated to 1,090 targets for 2024-25, among them HMRC's CGT totals, size bands, "
+        "age, region, gains by taxable income band (Table 3) and the BADR bands (Table 4)"
     ),
     notes=(
-        "Carries capital_gains and capital_gains_residential_property (the residential "
-        "schedule); no BADR or carried-interest columns. Sub-exempt gainers hold gains "
-        "strictly inside (0, GBP 3,000) rather than at the cap, and the build's "
-        "projection fence bounds the stock of them that uprating carries over the "
-        "frozen exempt amount by 2030 (68.5k against HMRC's 73k in the GBP 3,000 to "
-        "5,999 band)."
+        "Carries capital_gains, capital_gains_residential_property (the residential "
+        "schedule) and capital_gains_badr (gains qualifying for Business Asset Disposal "
+        "Relief or Investors' Relief); no carried-interest column. The build's projection "
+        "fence bounds the gainers that uprating carries over the frozen exempt amount by "
+        "2030 at 6.7k, against HMRC's 73k in the GBP 3,000 to 5,999 band."
     ),
 )
 
@@ -219,12 +221,10 @@ DATASETS: dict[str, DatasetSpec] = {spec.key: spec for spec in (INCUMBENT, CANDI
 
 #: The dataset whose results the dashboard shows first. The candidate is the
 #: default because it is the dataset this comparison exists to evaluate and
-#: the only one carrying the asset-type schedules the reform charges; the
-#: 21 September 2026 hesitation (the sub-exempt entrants artefact) was removed
-#: upstream by microcosm#970. The candidate is re-pinned when
-#: PolicyEngine/microcosm#979 lands on main, replacing this PR-head build with
-#: one from main, and again when a certified national release exists; the
-#: production default is confirmed when the branch merges.
+#: the only one carrying the schedules the reform charges (residential
+#: property and Business Asset Disposal Relief). It is the national line built
+#: from microcosm main c5a1cba8 (it replaced the microcosm#979 PR-head build on
+#: 2026-09-30) and is re-pinned again when a certified national release exists.
 DEFAULT_DATASET_KEY = CANDIDATE.key
 
 #: Kept for callers that still import the single-dataset constants.

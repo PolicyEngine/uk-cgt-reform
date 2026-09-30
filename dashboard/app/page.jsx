@@ -12,7 +12,7 @@ import ReformTab from "../src/components/ReformTab";
 import { getDatasetInfo, getDatasetOptions } from "../src/lib/dataHelpers";
 import comparison from "../public/data/dataset_comparison.json";
 import resultsIncumbent from "../public/data/cgt_equalisation_results_enhanced_frs_2024_25.json";
-import resultsCandidate from "../public/data/cgt_equalisation_results_microcosm_uk_2024_25_979.json";
+import resultsCandidate from "../public/data/cgt_equalisation_results_microcosm_uk_2024_25_c5a1cba8.json";
 
 // Bundled at build time: a runtime fetch() 404s when the app is served
 // behind proxies/rewrites that don't forward public assets. One results
@@ -175,7 +175,8 @@ function Dashboard() {
             reforms the CGT base, which this dashboard does not model. The dashboard runs on two
             datasets: the incumbent Enhanced Family Resources Survey and the
             candidate Microcosm UK build, which records what kind of asset each
-            gain came from.{" "}
+            gain came from and which gains qualify for Business Asset Disposal
+            Relief.{" "}
             <TabLink onSelect={() => handleTabChange("reform")}>Reform impacts</TabLink>{" "}
             shows the equalisation reform&apos;s revenue and distributional effects,{" "}
             <TabLink onSelect={() => handleTabChange("explorer")}>Rate explorer</TabLink>{" "}

@@ -31,21 +31,22 @@ by side:
 | Key | Role | Dataset | Pinned input |
 |---|---|---|---|
 | `enhanced_frs_2024_25` | incumbent | Enhanced FRS 2024-25, [policyengine-uk-data](https://github.com/PolicyEngine/policyengine-uk-data) 1.57.3 | `hf://policyengine/policyengine-uk-data/enhanced_frs_2024_25.h5@1.57.3`, sha256 `ef34c1ae…` |
-| `microcosm_uk_2024_25_979` | candidate | Microcosm UK 2024-25, the national line built by [microcosm](https://github.com/PolicyEngine/microcosm)'s consolidated build path on main plus [microcosm#979](https://github.com/PolicyEngine/microcosm/pull/979) (`staged/uk-frs-calibration-attempt-20260923T134002Z-c1be1c9f`, a staging candidate whose seven calibration-seam gates passed, not a certified release; it supersedes the v20 spine assessment, whose sub-exempt gainers sat at exactly £3,000) | `hf://policyengine/populace-uk-private/staged/uk-frs-calibration-attempt-20260923T134002Z-c1be1c9f/microcosm_uk_2024_25.h5@f6df65b1…`, sha256 `c5f107ab…` |
+| `microcosm_uk_2024_25_c5a1cba8` | candidate | Microcosm UK 2024-25, the national line built by [microcosm](https://github.com/PolicyEngine/microcosm)'s consolidated build path from main at c5a1cba8, the merge of [microcosm#1045](https://github.com/PolicyEngine/microcosm/pull/1045) (`staged/uk-frs-calibration-attempt-20260930T155755Z-f8182725`, built with policyengine-uk 2.100.0; a staging candidate whose seven calibration-seam gates and evaluation against the incumbent passed, not a certified release; it supersedes the microcosm#979 PR-head build) | `hf://policyengine/populace-uk-private/staged/uk-frs-calibration-attempt-20260930T155755Z-f8182725/microcosm_uk_2024_25.h5@1b295f37…`, sha256 `c64f916d…` |
 
 The candidate carries the capital gains asset-type breakdown
-(`capital_gains_residential_property`) that policyengine-uk 2.99.0 charges on
-its own schedule. The dashboard shows the candidate first and lets the reader
-switch to the incumbent; its Dataset comparison tab lays both out together.
-The candidate is the default because it is the dataset this comparison exists
-to evaluate and the only one carrying the schedules the reform charges; the
-21 September hesitation (the sub-exempt entrants artefact) was removed
-upstream by [microcosm#970](https://github.com/PolicyEngine/microcosm/issues/970).
-The candidate is re-pinned when
-[microcosm#979](https://github.com/PolicyEngine/microcosm/pull/979) lands on
-main, replacing this PR-head build with one from main, and again when a
-certified national release exists; the production default is confirmed when
-this branch merges.
+(`capital_gains_residential_property`) and the gains qualifying for Business
+Asset Disposal Relief or Investors' Relief (`capital_gains_badr`), which
+policyengine-uk charges on their own schedules. Its capital gains come from
+the build of [microcosm#1045](https://github.com/PolicyEngine/microcosm/pull/1045):
+amounts redrawn from HMRC Table 3 with weights that reproduce Table 3's gains
+by taxable income band, the relief imputed from HMRC Table 4, and gain
+carriers conditioned on wealth. The dashboard shows the candidate first and
+lets the reader switch to the incumbent; its Dataset comparison tab lays both
+out together. The candidate is the default because it is the dataset this
+comparison exists to evaluate and the only one carrying the schedules the
+reform charges. It replaced the microcosm#979 PR-head build on 30 September
+2026 and is re-pinned again when a certified national release exists; the
+production default is confirmed when this branch merges.
 
 **Note on decile impacts vs revenue:** household net-income losses in the decile
 tables include both the extra tax paid and the gains taxpayers choose not to
@@ -89,31 +90,33 @@ and lifetime limit for the relief, or withdraws it, for every year.
 
 ## Results side by side (2026-27 unless stated)
 
-Same engine (policyengine-uk 2.99.1), wrapper (policyengine.py 4.22.3),
-projection (fingerprint `1b0cd0dff144`) and reform on each dataset.
+Same engine (policyengine-uk 2.100.0), wrapper (policyengine.py 4.22.3),
+projection (fingerprint `7c469f5300b6`) and reform on each dataset.
 
-| | Enhanced FRS 2024-25 (incumbent) | Microcosm UK #979 (candidate) | External benchmark |
+| | Enhanced FRS 2024-25 (incumbent) | Microcosm UK 2024-25 (candidate) | External benchmark |
 |---|---:|---:|---|
-| CGT taxpayers (gains above the exempt amount) | 597k | 578k | HMRC Table 1: 382k (2023-24), 551k (2024-25, provisional) |
-| of which entrants by uprating (see below) | 12k | 22.6k | none: HMRC counts only taxpayers with a liability |
+| CGT taxpayers (gains above the exempt amount) | 597k | 559k | HMRC Table 1: 382k (2023-24), 551k (2024-25, provisional) |
+| of which entrants by uprating (see below) | 11.6k | 2.8k | none: HMRC counts only taxpayers with a liability |
 | CGT taxpayers excluding entrants | 586k | 556k | HMRC Table 1: 382k (2023-24), 551k (2024-25) |
-| Taxable gains | £57.9bn | £127.9bn | HMRC Table 1: £66.6bn (2023-24), £119.3bn (2024-25) |
-| Taxable gains excluding entrants | £57.8bn | £127.8bn | HMRC Table 1: £66.6bn (2023-24), £119.3bn (2024-25) |
-| Baseline CGT liability | £13.2bn | £30.0bn | HMRC Table 1: £12.1bn (2023-24), £22.5bn (2024-25); OBR receipts £20.8bn (2026-27), £25.5bn (2027-28) |
-| Residential property gains on their own schedule | none recorded | £13.4bn | HMRC Table 8a (2024-25): £12.9bn including trusts, about £12.2bn for individuals; 205k taxpayers |
-| Gains qualifying for Business Asset Disposal Relief | none recorded | none recorded | HMRC Table 4 (individuals, BADR and Investors' Relief): 42k people and £11.0bn (2023-24), 61k and £18.4bn (2024-25) |
-| Share of gains from gains of £1m or more | 67% | 67% | HMRC Table 2: 61% (2023-24), 65% (2024-25) |
-| Taxpayers with gains over £500k | 17.9k | 35.5k | HMRC Table 2: 19k (2023-24), 33k (2024-25) |
-| Largest single gain | £12.2m | £185m | none: HMRC's top band is £5m and over (2k taxpayers, £23.6bn in 2023-24; 3k, £48.5bn in 2024-25) |
-| Static yield (e = 0) | +£10.7bn | +£24.7bn | JRF (2026): about £13bn, static, equalisation alone (see [Benchmarks](#benchmarks)) |
-| Uplift from equalising at 2019/20 rules (static) | +122% | +113% | CenTax (2024), Table 3: +139% on 2019/20 data |
-| Yield, CenTax lower (retention 0.5) | +£7.1bn | +£16.5bn | none |
-| **Yield, CenTax central (retention 1.0)** | **+£4.1bn** | **+£9.5bn** | none for equalisation alone; CenTax's £14.3bn (2025-26), £11.3bn (2026-27) and £19.7bn (2029-30) add an investment allowance and base broadening |
-| Yield, CenTax upper (retention 2.0) | −£0.6bn | −£1.5bn | none |
-| Yield, official HMRC/OBR elasticity (retention 3.6) | −£5.7bn | −£13.1bn | none |
-| Five-year total, 2026-27 to 2030-31 | +£22.2bn | +£51.6bn | none |
-| Top income quintile, net income change | −2.5% (−£2,947/household) | −5.4% (−£7,335/household) | none |
-| Lowest income quintile, net income change | −0.02% (−£3) | −0.004% (−£1) | none |
+| Taxable gains | £57.9bn | £129.4bn | HMRC Table 1: £66.6bn (2023-24), £119.3bn (2024-25) |
+| Taxable gains excluding entrants | £57.8bn | £129.4bn | HMRC Table 1: £66.6bn (2023-24), £119.3bn (2024-25) |
+| Baseline CGT liability | £13.2bn | £29.2bn | HMRC Table 1: £12.1bn (2023-24), £22.5bn (2024-25); OBR receipts £20.8bn (2026-27), £25.5bn (2027-28) |
+| Residential property gains on their own schedule | none recorded | £13.3bn | HMRC Table 8a (2024-25): £12.9bn including trusts, about £12.2bn for individuals; 205k taxpayers |
+| Gains qualifying for Business Asset Disposal Relief (and Investors' Relief) | none recorded | £20.3bn, 62k people | HMRC Table 4 (individuals, BADR and Investors' Relief): 42k people and £11.0bn (2023-24), 61k and £18.4bn (2024-25) |
+| Share of gains from gains of £1m or more | 67% | 66% | HMRC Table 2: 61% (2023-24), 65% (2024-25) |
+| Taxpayers with gains over £500k | 17.9k | 35.8k | HMRC Table 2: 19k (2023-24), 33k (2024-25) |
+| Largest single gain | £12.2m | £561m | none: HMRC's top band is £5m and over (2k taxpayers, £23.6bn in 2023-24; 3k, £48.5bn in 2024-25) |
+| Static yield (e = 0) | +£10.7bn | +£26.2bn | JRF (2026): about £13bn, static, equalisation alone (see [Benchmarks](#benchmarks)) |
+| of which the relief withdrawn (static) | none | +£5.0bn | none |
+| Uplift from equalising at 2019/20 rules (static) | +122% | +130% | CenTax (2024), Table 3: +139% on 2019/20 data |
+| Yield, CenTax lower (retention 0.5) | +£7.1bn | +£17.6bn | none |
+| **Yield, CenTax central (retention 1.0)** | **+£4.1bn** | **+£10.3bn** | none for equalisation alone; CenTax's £14.3bn (2025-26), £11.3bn (2026-27) and £19.7bn (2029-30) add an investment allowance and base broadening |
+| of which the relief withdrawn (central) | none | +£2.8bn | none |
+| Yield, CenTax upper (retention 2.0) | −£0.6bn | −£1.1bn | none |
+| Yield, official HMRC/OBR elasticity (retention 3.6) | −£5.7bn | −£12.9bn | none |
+| Five-year total, 2026-27 to 2030-31 | +£22.2bn | +£56.5bn | none |
+| Top income quintile, net income change | −2.5% (−£2,947/household) | −5.3% (−£7,751/household) | none |
+| Lowest income quintile, net income change | −0.02% (−£3) | −0.07% (−£14) | none |
 
 Benchmarks are outturns for the tax year stated (HMRC Capital Gains Tax
 statistics, 2026 release, Tables 1, 2 and 8) or other institutions'
@@ -124,8 +127,11 @@ balance. HMRC's 2026 release revised 2023-24 to 382,000 taxpayers and £66.6bn
 of gains; the incumbent's calibration targets came from the 2025 release
 (378,000 and £65.9bn). Uprating each dataset's own HMRC vintage to 2026 by
 the engine's 1.074 factor gives £71.5bn on the 2023-24 basis and £128.1bn on
-the 2024-25 basis: the candidate excluding entrants lands on its figure
-(£127.8bn), the incumbent falls 19% short of its (£57.9bn).
+the 2024-25 basis: the candidate excluding entrants lands 1% above its figure
+(£129.4bn), the incumbent falls 19% short of its (£57.8bn). The candidate's
+relief-qualifying gains (£20.3bn, 61.7k people) sit about 2% above HMRC's
+2024-25 Table 4 figure uprated the same way (£19.8bn), and its claimant count
+on the 61k HMRC reports.
 
 Baseline CGT liability by year, against the OBR's March 2026 receipts path
 (receipts lag the liability by about a year, so the 2027-28 receipts figure
@@ -134,7 +140,7 @@ is the closest published counterpart of the 2026-27 liability):
 | | 2026-27 | 2027-28 | 2028-29 | 2029-30 | 2030-31 |
 |---|---:|---:|---:|---:|---:|
 | Incumbent baseline CGT liability | £13.2bn | £13.7bn | £14.2bn | £14.7bn | £15.2bn |
-| Candidate baseline CGT liability | £30.0bn | £31.1bn | £32.2bn | £33.4bn | £34.6bn |
+| Candidate baseline CGT liability | £29.2bn | £30.3bn | £31.4bn | £32.6bn | £33.8bn |
 | OBR CGT receipts (EFO March 2026, Table 3.7) | £20.8bn | £25.5bn | £28.9bn | £32.0bn | £34.9bn |
 
 Two things separate the datasets before the reform is applied:
@@ -143,10 +149,11 @@ Two things separate the datasets before the reform is applied:
    while the engine uprates gains with GDP per capita (×1.074 by 2026), so a
    person whose base-year gains sit just below £3,000 crosses the exempt
    amount in the projection and counts as a CGT taxpayer with a few hundred
-   pounds of taxable gain. On the current candidate that group is 22.6k
-   people holding £0.07bn of gains and paying £0.001bn of CGT, and the
-   candidate's own build fences it: microcosm#979's `uk_cgt_projection_entrants`
-   gate bounds the stock of crossers by 2030 (68.5k on this build) by HMRC's
+   pounds of taxable gain. On the current candidate that group is 2.8k
+   people holding £0.009bn of gains and paying under £0.001bn of CGT, and the
+   candidate's own build fences it: microcosm's `uk_cgt_projection_entrants`
+   gate (from microcosm#979) bounds the stock of crossers by 2030 (6.7k on
+   this build, 68.5k on the microcosm#979 build it replaced) by HMRC's
    count of taxpayers in the £3,000 to £5,999 band (73k in 2024-25). The
    previous candidate, spine assessment v20, built every gainer beyond HMRC's
    taxpayer count with gains capped at exactly £3,000 (microcosm's
@@ -168,12 +175,12 @@ Two things separate the datasets before the reform is applied:
    because the rate rises announced in October 2024 brought disposals
    forward, and a base calibrated to that year and then uprated with GDP per
    capita carries the one-off into every projected year: the candidate's
-   2026-27 liability sits about a fifth above the OBR-implied path, the
+   2026-27 liability sits about 15% above the OBR-implied path, the
    incumbent's about half below it. Issue #2's CGT-specific projection (work
    items 2-4) is where that timing effect belongs.
 
-The candidate carries more of the top of the distribution (35.5k taxpayers
-with gains over £500k against 17.9k, a largest gain of £185m against
+The candidate carries more of the top of the distribution (35.8k taxpayers
+with gains over £500k against 17.9k, a largest gain of £561m against
 £12.2m), as its calibration to HMRC's 2024-25 size-of-gain bands implies;
 its regional pattern concentrates the cost in London and the South East,
 where HMRC's Table 5 places the taxpayers, while the incumbent's regional
@@ -191,44 +198,65 @@ external figure with its source, locator, scope, year and basis.
   puts equalisation at about £13bn in 2026/27 and £17bn in 2029/30 (2026/27
   prices), applying HMRC's CGT statistics by income band to the OBR's March
   2026 receipts projection: an implied uplift of about 60% in 2026-27. This
-  repo's static uplift is 81% on the incumbent and 82% on the candidate;
-  applied to the same OBR receipts that is £16.8bn and £17.1bn in 2026-27,
-  and £24.5bn and £25.0bn in 2029-30 (deflated with the OBR's CPI path).
+  repo's static uplift is 81% on the incumbent and 90% on the candidate
+  (about a fifth of the candidate's static yield comes from withdrawing
+  Business Asset Disposal Relief); applied to the same OBR receipts that is
+  £16.8bn and £18.7bn in 2026-27, and £24.5bn and £27.1bn in 2029-30
+  (deflated with the OBR's CPI path).
 - **CenTax (2024), rates only at 2019/20 rules.** CenTax's static uplift from
   equalising alone is +139% on 2019/20 data (Table 3). Applying the same
   rules to this repo's 2026-27 data (main rates 10/20, residential and
   carried interest 18/28, BADR at 10% with a £1m lifetime limit, an exempt
   amount of £12,000; `reform.centax_1920_reforms`) and equalising gives +122%
-  on the incumbent and +113% on the candidate. Investors' Relief, which
+  on the incumbent and +130% on the candidate. Investors' Relief, which
   CenTax's Table 3 also abolishes, shares the engine's BADR input and is
-  withdrawn with it; neither current dataset records BADR or Investors'
-  Relief gains, so both are inert on them.
+  withdrawn with it; the candidate records those gains, the incumbent does
+  not, so on the incumbent both are inert.
   By region (Table 8), the candidate's shares of baseline CGT track
-  CenTax's (London 27.5% against 27.0%, South East 20.1% against 21.6%);
+  CenTax's (London 27.5% against 27.0%, South East 21.6% against 21.6%);
   the incumbent puts 12% in London and 13% in Wales. CenTax's uplift is
   lowest in London (+123%) and higher elsewhere (+137% to +163%); on the
-  candidate London's is the highest (+123%) and the other regions range from
-  +71% to +121%.
+  candidate London's is +135% and the other regions range from +111% (East
+  Midlands) to +141% (Yorkshire and the Humber).
 - **CenTax's package estimates** (Tables 5 and 6 of the 2024 report, the
   August 2025 technical note and "Taxes at the top", September 2026) add an
   investment allowance, the removal of the death uplift and a charge on
   departure, so they are listed as context, not compared.
-- **HMRC's ready reckoner (June 2025).** Five rows (higher rate +1, +5 and
-  +10 points; lower rate +1 and +5 points) are scored through the rate
-  explorer's code at the central and the official elasticity, comparing
-  HMRC's receipts in 2027-28 and 2028-29 with this repo's liabilities a year
-  earlier. For +10 points on the higher rate HMRC shows −£2,060m and
-  −£3,565m; at the official elasticity the incumbent gives −£2,104m and
-  −£2,182m and the candidate −£4,836m and −£4,918m, while at the central
-  elasticity both gain (+£2,766m and +£6,535m on 2026-27 liabilities).
-  Lower rate +10 points, the BADR rows and the exempt-amount row are not
-  scored (the block records why). HMRC deferred its 2026 edition on 6 July
-  2026 pending a review of key assumptions, so the rows are provisional.
+- **HMRC's ready reckoner (June 2025).** Seven rows (higher rate +1, +5 and
+  +10 points; lower rate +1 and +5 points; the Business Asset Disposal Relief
+  rate +1 and +5 points) are scored through the rate explorer's code at the
+  central and the official elasticity, comparing HMRC's receipts in 2027-28
+  and 2028-29 with this repo's liabilities a year earlier. The official case
+  is a retention elasticity of 3.6 for the rate rows and 1.4 for the relief
+  rows (the OBR's BADR elasticity); the incumbent records no qualifying
+  gains, so its relief rows are zero. For the relief at 19% HMRC shows
+  +£135m and +£180m and the candidate gives +£158m and +£161m at the
+  official elasticity; at 23%, +£635m and +£840m against +£751m and
+  +£767m. For +10 points on the higher rate HMRC shows −£2,060m
+  and −£3,565m; at the official elasticity the incumbent gives −£2,104m and
+  −£2,182m and the candidate −£4,709m and −£4,907m, while at the central
+  elasticity both gain (+£2,766m and +£5,362m on 2026-27 liabilities).
+  Lower rate +10 points and the exempt-amount row are not scored (the block
+  records why). HMRC deferred its 2026 edition on 6 July 2026 pending a
+  review of key assumptions, so the rows are provisional.
+- **The one-point rows and the largest gains.** policyengine-uk 2.100.0
+  measures each person's marginal CGT rate from a £1,000 rise in gains, in
+  single precision. Above about £100m of gains the rounding moves the
+  measured rate by up to 1.6 points (at £200k of earnings: exactly 24% up to
+  £100m of gains, 24.8% from £185m to £300m, 23.2% from £561m), so the
+  response of those persons to a one-point change is noise. On the candidate
+  one person (a £561m gain, weight 18.9) carries £2.5bn of baseline CGT, and
+  for higher rate +1 point at the official elasticity their measured
+  response is three times the true one in 2026-27 and zero in 2027-28: the
+  row reads −£533m and −£173m, where the true response for that person gives
+  about −£294m and −£301m. The same error moves the equalisation estimates by
+  about £0.1bn at most and leaves the static case untouched; the fix belongs
+  in the engine's `marginal_tax_rate_on_capital_gains`.
 - **The official elasticity.** HMRC and the OBR use a retention-rate
   elasticity of 3.6 for the main rates ([OBR, January 2025](https://obr.uk/docs/dlm_uploads/CGT-supplementary-release-Jan-2025.pdf),
   para 1.9). Applied in that convention, equalisation changes 2026-27 CGT
-  revenue by −£5.7bn on the incumbent and −£13.1bn on the candidate,
-  against +£4.1bn and +£9.5bn at the central case.
+  revenue by −£5.7bn on the incumbent and −£12.9bn on the candidate,
+  against +£4.1bn and +£10.3bn at the central case.
 
 Left out by decision: the Office of Tax Simplification's 2020 static figure
 (2018-19 rules) and a validation run of the Autumn Budget 2024 rate rise.
@@ -268,7 +296,7 @@ last release). `pyproject.toml` carries the pins.
 4.22.3 is only lenient when it cannot see the data-release manifest. With
 `HUGGING_FACE_TOKEN` set it fetches the live manifest from Hugging Face on
 first import, finds the bundled populace-uk-2023 data certified for
-policyengine-uk 2.89.2 rather than 2.99.x, and raises. Without the token the
+policyengine-uk 2.89.2 rather than the pinned release, and raises. Without the token the
 manifest is unavailable and the wrapper falls back to its bundled
 certification (basis `unverified_data_release_manifest_unavailable`) and
 runs against the installed engine. Every committed result was produced that
@@ -369,7 +397,7 @@ reading the installed engine's index map and growth parameters:
 | weights (population) | 1.011 | 1.015 | 1.019 | 1.023 | 1.028 | OBR long-term economic determinants, March 2025 EFO (ONS 2022-based projections); see below |
 | CPI (sensitivity, not applied) | 1.058 | 1.079 | 1.100 | 1.123 | 1.145 | OBR EFO March 2026, Table A.1 |
 
-Cumulative factors from the 2024 base on policyengine-uk 2.99.1; the
+Cumulative factors from the 2024 base on policyengine-uk 2.100.0; the
 committed `data/cgt_uprating_audit.json` carries the year-on-year rates,
 the parameter references, the OBR March 2026 CGT receipts path (unbridged:
 receipts are not gains and lag them), the entrant ceilings (the base-year
@@ -410,8 +438,9 @@ and 18/24/24 with the relief at current law gives zero change.
 
 Scope (`reform.EXPLORER_SCOPE`, `reform.cgt_rate_reform`, `reform.BadrPolicy`):
 main and residential rates and the relief. Carried interest has been taxed as
-income since April 2026 and stays outside. HMRC's ready-reckoner rows move
-rates only, so they run with the relief at current law.
+income since April 2026 and stays outside. HMRC's ready-reckoner rows run
+with the relief at current law, except the two relief rows, which raise its
+rate.
 
 ### Locally
 
@@ -438,7 +467,7 @@ Every completed run is written to `data/explore_results/<key>.json`
 (gitignored) and, on Modal, to the Volume's `explore_results/` and a
 `modal.Dict` in front of it. The key is
 `<dataset key>__<dataset digest>__<projection fingerprint>__<policyengine-uk version>__<policyengine version>__<policyengine-core version>__<code fingerprint>__<reform fingerprint>`;
-the reform fingerprint digests the rates and the elasticity, and the code
+the reform fingerprint digests the rates, the relief and the elasticity, and the code
 fingerprint digests this package's result-shaping modules (`reform`,
 `impacts`, `explore`, `simulations`, `pipeline`, `uprating_audit`), so a
 code change cannot serve a stale result. Redeploy the workers and the
@@ -556,7 +585,7 @@ is in the Modal logs for `uk-cgt-reform-workers`.
 ```bash
 pip install -e ".[simulation,dev]"
 uk-cgt-reform-build                       # every registered dataset
-uk-cgt-reform-build --dataset microcosm_uk_2024_25_979   # one dataset
+uk-cgt-reform-build --dataset microcosm_uk_2024_25_c5a1cba8   # one dataset
 uk-cgt-reform-build --audit-only          # the projection audit alone
 ```
 
@@ -565,18 +594,21 @@ exported as `HF_TOKEN` (the variable `huggingface_hub` reads for the pinned
 downloads). Do not also export `HUGGING_FACE_TOKEN` while running on the pinned
 engine: policyengine.py 4.22.3 uses that variable to fetch the data package's
 current release manifest at import, and since 23 September 2026 that manifest
-certifies only newer policyengine-uk releases, so the import refuses 2.99.1.
+certifies only newer policyengine-uk releases, so the import refuses the pinned
+engine.
 Without it the wrapper records its bundled default dataset as
 `unverified_data_release_manifest_unavailable`, which does not touch these
 runs: every dataset here is pinned explicitly by revision and digest.
-`pyproject.toml` bounds policyengine-uk below 2.100 because 2.100.x moves the
-projection fingerprint; raising the bound is a deliberate re-pin that
+`pyproject.toml` pins policyengine-uk 2.100.0, the release the candidate was
+built and calibrated with (and the first whose local-authority enum carries the
+April 2023 unitary authorities the candidate records); a later release moves the
+projection fingerprint, so changing the pin is a deliberate re-pin that
 regenerates every results file. Each
-dataset needs its per-year builds, nineteen stored simulations (baseline,
-central and static reform for every year, two more sensitivity cases, and
-the CenTax counterfactual pair) and twenty in-memory ready-reckoner runs; a
-run with the stored outputs in place takes about eight minutes for both
-datasets, most of it the ready-reckoner runs. Copy the four results files
+dataset needs its per-year builds, twenty-four stored simulations (baseline,
+central and static reform for every year, three more sensitivity cases, the
+CenTax counterfactual pair and four schedule-split steps) and twenty-eight
+in-memory ready-reckoner runs; a run with the stored outputs in place spends
+most of its time on the ready-reckoner runs. Copy the four results files
 from `data/` into `dashboard/public/data/` for the dashboard, which bundles
 them at build time, and regenerate `explore_options.json` with
 `uk-cgt-reform-explore --options` when the explorer's options change.
