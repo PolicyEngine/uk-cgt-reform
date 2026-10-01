@@ -875,7 +875,7 @@
       "revenue_2026_bn": -0.7591335686566276
     },
     {
-      "name": "HMRC/OBR official (retention elasticity 3.6)",
+      "name": "HMRC/OBR official (retention elasticity 3.6; 1.4 for BADR gains)",
       "e_retention": 3.6,
       "elasticity_parameter": "gov.simulation.capital_gains_responses.elasticity",
       "applied_as": "retention",

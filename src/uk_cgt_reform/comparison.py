@@ -44,7 +44,7 @@ SENSITIVITY_CASES = {
     "CenTax lower (retention elasticity 0.5)": CENTAX_LOWER_ELASTICITY,
     "CenTax central (retention elasticity 1.0)": ELASTICITY,
     "CenTax upper (retention elasticity 2.0)": CENTAX_UPPER_ELASTICITY,
-    "HMRC/OBR official (retention elasticity 3.6)": OFFICIAL_ELASTICITY,
+    "HMRC/OBR official (retention elasticity 3.6; 1.4 for BADR gains)": OFFICIAL_ELASTICITY,
 }
 
 #: Every external figure carries exactly these keys.
