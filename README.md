@@ -688,11 +688,14 @@ precise marginal rate on large gains and the separate BADR elasticity
 (PolicyEngine/policyengine-uk#1980). The dataset was built with 2.100.0, the
 first release whose local-authority enum carries the April 2023 unitary
 authorities it records. Each release can move the projection fingerprint, so
-changing the pin is a deliberate re-pin that regenerates the results. A run needs the per-year builds, twenty-four stored simulations (baseline,
-central and static reform for every year, three more sensitivity cases, the
-CenTax counterfactual pair and four schedule-split steps) and twenty-eight
-in-memory ready-reckoner runs; a run with the stored outputs in place spends
-most of its time on the ready-reckoner runs. Copy
+changing the pin is a deliberate re-pin that regenerates the results. A run
+needs the per-year builds, thirty-one stored simulations (baseline, central
+and static reform for every year, the gross approach's central case of 1.5
+for every year, three more sensitivity cases, the CenTax counterfactual pair
+and six schedule-split steps) and forty-two in-memory ready-reckoner runs
+(seven rows, each approach's central case and the official case, two years
+each); a run with the stored outputs in place spends most of its time on the
+ready-reckoner runs. Copy
 `data/cgt_equalisation_results.json` into `dashboard/public/data/` for the
 dashboard, which bundles it at build time, and regenerate
 `explore_options.json` with `uk-cgt-reform-explore --options` when the
