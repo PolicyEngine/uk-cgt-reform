@@ -250,11 +250,12 @@ external figure with its source, locator, scope, year and basis.
   at the official elasticity their measured response is three times the true
   one in 2026-27 and zero in 2027-28, so the row reads −£533m and −£173m where
   the true response for that person gives about −£294m and −£301m. On the
-  equalisation reform the same person's measured rate rises by about 24
-  points instead of 21, which lowers the 2026-27 estimate by £0.13bn at
+  equalisation reform the engine reads that person's rate as 20.0% rising to
+  45.6% (true: 24% to 45%), which lowers the 2026-27 estimate by £0.13bn at
   retention 0.5, £0.21bn at 1.0 (2% of the central +£10.3bn), £0.30bn at 2.0
   and £0.30bn at 3.6; the static case is untouched. The fix belongs in the
-  engine's `marginal_tax_rate_on_capital_gains`.
+  engine's `marginal_tax_rate_on_capital_gains`
+  ([PolicyEngine/policyengine-uk#1979](https://github.com/PolicyEngine/policyengine-uk/issues/1979)).
 - **The official elasticity.** HMRC and the OBR use a retention-rate
   elasticity of 3.6 for the main rates ([OBR, January 2025](https://obr.uk/docs/dlm_uploads/CGT-supplementary-release-Jan-2025.pdf),
   para 1.9). Applied in that convention, equalisation changes 2026-27 CGT
@@ -562,6 +563,34 @@ Set `CGT_EXPLORER_URL` (the gateway URL the deploy printed),
 `CGT_EXPLORER_MODAL_KEY` and `CGT_EXPLORER_MODAL_SECRET` as server-only
 Vercel variables, and in `dashboard/.env.local` (gitignored) for a local dev
 server that should use the backend.
+
+#### Preview backend for a branch
+
+The production gateway knows only production's datasets and request fields,
+so a branch that changes them (a new dataset, engine or request field) cannot
+use it from its Vercel preview. Deploy the branch as the preview stage
+instead. `CGT_EXPLORER_STAGE=preview` adds `-preview` to every app, Volume
+and Dict name (`backend/common.py`), so the preview shares no data, cache or
+daily budget with production:
+
+```bash
+export CGT_EXPLORER_STAGE=preview
+modal deploy backend/workers.py
+modal run backend/warm.py
+modal deploy backend/modal_app.py   # https://policyengine--uk-cgt-reform-preview-fastapi-app.modal.run
+```
+
+The production proxy token works unchanged, because the workspace scopes
+proxy tokens to the Modal environment, not to an app. To point that branch's
+previews at the preview gateway, add `CGT_EXPLORER_URL` as a Preview variable
+scoped to the branch; production and other branches keep the production
+gateway, and the gateway's `GET /metadata` reports which stage answered.
+After the branch merges:
+1. Redeploy production from main with the variable unset, re-warming if the
+   projection or the manifest changed.
+2. Remove the branch variable.
+3. Stop the preview apps (`modal app stop uk-cgt-reform-preview -y`, and the
+   same for `uk-cgt-reform-workers-preview`).
 
 Measured on 2026-09-23 through the dashboard's route (Modal `main`, workers
 at 4 CPU / 16 GiB, the five years in parallel containers): a schedule
