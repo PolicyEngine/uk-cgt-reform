@@ -242,6 +242,19 @@ def test_badr_treatments_parse_and_round_trip():
         assert validate_request(req.to_payload()) == req
 
 
+def test_a_relief_above_the_basic_rate_is_accepted_as_hmrcs_rows_need():
+    # HMRC's ready-reckoner rows for the relief put it at 19% and 23% with the
+    # basic rate at 18%, so the guard stops at the additional rate. The engine
+    # then charges the relief's rate on every qualifying gain (it does not
+    # model the claim), which the explorer and the README say.
+    kept = [row for row in READY_RECKONER["rows"] if not row["badr"]["withdrawn"]]
+    above = [row for row in kept if row["badr"]["rate"] > row["rates"]["basic_rate"]]
+    assert [row["id"] for row in above] == ["badr_plus_1", "badr_plus_5"]
+    for row in above:
+        req = validate_request({"rates": row["rates"], "badr": row["badr"]})
+        assert req.badr == BadrPolicy(rate=row["badr"]["rate"])
+
+
 def test_api_options_carry_what_a_client_needs():
     options = api_options()
     assert options["scope"] == EXPLORER_SCOPE

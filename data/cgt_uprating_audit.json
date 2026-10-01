@@ -1,7 +1,7 @@
 {
   "policyengine_uk_version": "2.104.0",
   "base_year": 2024,
-  "base_year_note": "Engine period of the published single-year Enhanced FRS 2024-25 file (time_period 2024); the observation is the FRS 2024-25 survey year. Uprating runs year on year from the base year; the base year itself is not uprated.",
+  "base_year_note": "Engine period of the Microcosm UK 2024-25 build (time_period 2024), an FRS 2024-25 spine with weights calibrated to 2024-25. Uprating runs year on year from the base year; the base year itself is not uprated.",
   "years": [
     2026,
     2027,

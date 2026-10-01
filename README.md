@@ -80,8 +80,8 @@ it alone. On a dataset without these columns the parameters are inert.
 The results split the reform's 2026-27 yield by schedule
 (`schedule_split`, static and central): the main rates first, then the
 residential property schedule (which is equalisation with the relief kept,
-the reading closest to Wes Streeting's proposed exemption for genuine
-entrepreneurs), then the relief withdrawn. The Rate explorer scores any rate
+one reading of Wes Streeting's proposed exemption for genuine entrepreneurs,
+which has not been defined), then the relief withdrawn. The Rate explorer scores any rate
 and lifetime limit for the relief, or withdraws it, for every year.
 
 ## Results (2026-27 unless stated)
@@ -229,7 +229,12 @@ external figure with its source, locator, scope, year and basis.
   the official elasticity. The engine now steps by 0.1% of the gain above £1m
   and divides by the step it stored (PolicyEngine/policyengine-uk#1980). The
   row reads −£245m and −£253m, and the central estimate for equalisation rose
-  by £0.2bn.
+  by £0.2bn. That record has a weight of 18.9, so it stands for £10.6bn of
+  gains and £2.5bn of baseline CGT (8.7%), and it carries about the same share
+  of the yield. Without it, equalisation would raise +£24.0bn static,
+  +£9.6bn at CenTax's 1.0 and +£4.0bn at 1.5 in 2026-27 (−£8.6bn at the
+  official case), against +£26.2bn, +£10.5bn, +£4.4bn and −£9.6bn with it. How many gains that large
+  the build should carry is a question for the data (#9).
 - **The official elasticity.** HMRC and the OBR use a retention-rate
   elasticity of 3.6 for the main rates ([OBR, January 2025](https://obr.uk/docs/dlm_uploads/CGT-supplementary-release-Jan-2025.pdf),
   para 1.9), and 1.4 for gains qualifying for BADR. Applied in that
@@ -494,6 +499,19 @@ explorer run at 20/40/45 with the relief withdrawn builds the equalisation
 reform's own dict (same fingerprint) and reproduces the committed results,
 and 18/24/24 with the relief at current law gives zero change.
 
+Links shared before the retention form carry a marginal-rate elasticity
+(−0.35, −0.7 or −2.52), which maps to the case it named. Those links have no
+relief fields, and one to 20/40/45 loads with the relief withdrawn, as the
+equalisation preset now does, so it still scores the Reform impacts tab's
+reform.
+
+The relief's rate may exceed the basic rate, as it does in HMRC's
+ready-reckoner rows for the relief (19% and 23% against 18%). The engine
+then overstates the tax on qualifying gains in the basic rate band: it
+charges the relief's rate on every qualifying gain, where in law a taxpayer
+would not claim a relief that raises their tax. The explorer says so when a
+schedule does this.
+
 Scope (`reform.EXPLORER_SCOPE`, `reform.cgt_rate_reform`, `reform.BadrPolicy`):
 main and residential rates and the relief. Carried interest has been taxed as
 income since April 2026 and stays outside. HMRC's ready-reckoner rows run
@@ -638,7 +656,10 @@ proxy tokens to the Modal environment, not to an app. To point that branch's
 previews at the preview gateway, add `CGT_EXPLORER_URL` as a Preview variable
 scoped to the branch; production and other branches keep the production
 gateway, and the gateway's `GET /metadata` reports which stage answered.
-After the branch merges:
+The preview stage also keeps its own daily budget and in-flight count
+(`DAILY_COMPUTE_BUDGET`, `MAX_IN_FLIGHT`, in Dicts named with the stage), so
+while it is deployed the workspace can run up to twice production's daily
+cap. Tear it down once the branch merges:
 1. Redeploy production from main with the variable unset, re-warming if the
    projection or the manifest changed.
 2. Remove the branch variable.

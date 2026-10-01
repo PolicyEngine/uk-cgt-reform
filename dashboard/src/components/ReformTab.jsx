@@ -297,8 +297,8 @@ export default function ReformTab({ data }) {
           )}
           Equalising the rates while keeping the relief at current law raises{" "}
           {formatSignedBn(keptRelief.static_cgt_change_bn, 1)} before behaviour and{" "}
-          {formatSignedBn(keptRelief.central_cgt_change_bn, 1)} at the central elasticity: the
-          reading closest to the exemption for genuine entrepreneurs in{" "}
+          {formatSignedBn(keptRelief.central_cgt_change_bn, 1)} at the central elasticity: one
+          reading of the exemption for genuine entrepreneurs in{" "}
           <a
             href="https://taxjustice.uk/blog/what-would-bunham-mean-for-britain/"
             target="_blank"
@@ -307,7 +307,7 @@ export default function ReformTab({ data }) {
           >
             Wes Streeting&apos;s proposal
           </a>
-          . The Rate explorer scores any rate for the relief, or withdraws it, for every year.
+          , which has not been defined. The Rate explorer scores any rate for the relief, or withdraws it, for every year.
         </p>
       </section>
 
