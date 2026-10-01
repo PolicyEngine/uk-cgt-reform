@@ -256,7 +256,11 @@ def _as_badr(value, rates: dict) -> BadrPolicy:
     true}`` withdraws it; otherwise a whole-point ``rate`` no higher than the
     additional rate (a relief above it would raise the tax on qualifying
     gains) and a ``lifetime_limit`` from :data:`BADR_LIFETIME_LIMITS`, each
-    defaulting to current law."""
+    defaulting to current law. A rate above the basic rate is accepted, as in
+    HMRC's ready-reckoner rows for the relief, though the engine then
+    overstates the tax: it charges the relief's rate on every qualifying gain,
+    where in law a taxpayer whose qualifying gains fall in the basic rate band
+    would not claim the relief."""
     if value is None:
         return BADR_CURRENT_LAW
     if not isinstance(value, dict):

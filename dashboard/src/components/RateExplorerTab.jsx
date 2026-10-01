@@ -118,6 +118,9 @@ const badrFormOf = (badr) =>
   badr.withdrawn
     ? { mode: "withdraw", rate: String(toPercent(BADR_CURRENT_LAW.rate)), limit: BADR_CURRENT_LAW.lifetime_limit }
     : { mode: "keep", rate: String(toPercent(badr.rate)), limit: badr.lifetime_limit };
+// The preset that reproduces the Reform impacts tab: 20% / 40% / 45% with the
+// relief withdrawn.
+const EQUALISATION = PRESETS.find((preset) => preset.id === "income_tax");
 const sameBadr = (a, b) =>
   a.withdrawn === b.withdrawn &&
   (a.withdrawn || (Math.abs(a.rate - b.rate) < 1e-9 && a.lifetime_limit === b.lifetime_limit));
@@ -160,6 +163,16 @@ function readUrlState(searchParams) {
   if (searchParams.get("br")) badrForm.rate = searchParams.get("br");
   const limit = Number(searchParams.get("bl"));
   if (BADR_LIMITS.includes(limit)) badrForm.limit = limit;
+  // A link from before the relief lever carries a marginal-rate elasticity
+  // and no relief fields. Its 20% / 40% / 45% was the "Equalise with income
+  // tax" preset, which now withdraws the relief, so it loads that way and
+  // still scores the Reform impacts tab's reform.
+  const relieflessLegacyLink =
+    legacy && ["bw", "br", "bl"].every((key) => searchParams.get(key) === null);
+  const equalisationRates = BANDS.every(
+    (band) => Number(percents[band.key]) === toPercent(EQUALISATION.rates[band.key]),
+  );
+  if (relieflessLegacyLink && equalisationRates) badrForm.mode = "withdraw";
   return { percents, elasticity, badrForm };
 }
 
@@ -347,6 +360,13 @@ export default function RateExplorerTab({ data, datasetKey }) {
     rates: rateCheck.rates && badrCheck.badr ? rateCheck.rates : null,
     badr: badrCheck.badr ?? null,
     error: rateCheck.error ?? badrCheck.error,
+    // The model charges the relief's rate on every qualifying gain. Above the
+    // basic rate, a taxpayer with qualifying gains in the basic rate band
+    // would not claim the relief, which the model does not capture.
+    reliefAboveBasic:
+      rateCheck.rates && badrCheck.badr && !badrCheck.badr.withdrawn
+        ? badrCheck.badr.rate > rateCheck.rates.basic_rate + 1e-9
+        : false,
   };
   const preset = validation.rates
     ? (PRESETS.find(
@@ -500,7 +520,8 @@ export default function RateExplorerTab({ data, datasetKey }) {
           <p className="mt-2 text-xs leading-5 text-slate-500">
             Gains on qualifying business disposals, Investors&apos; Relief included. Current law
             charges {describeBadr(BADR_CURRENT_LAW)}; withdrawn, those gains take the main rates
-            above. The relief&apos;s rate may not exceed the additional rate.
+            above. The relief&apos;s rate may not exceed the additional rate. The model charges
+            it on every qualifying gain, without the claim a taxpayer makes in law.
           </p>
         </fieldset>
         <div className="mt-5 flex flex-wrap items-center gap-4">
@@ -552,6 +573,15 @@ export default function RateExplorerTab({ data, datasetKey }) {
         </div>
         {validation.error ? (
           <p className="mt-3 text-sm leading-6 text-red-700">{validation.error}</p>
+        ) : null}
+        {validation.reliefAboveBasic ? (
+          <p className="mt-3 text-sm leading-6 text-amber-800">
+            The relief&apos;s {formatPct(validation.badr.rate * 100, 0)} is above the basic rate of{" "}
+            {formatPct(validation.rates.basic_rate * 100, 0)}. The model charges the relief&apos;s
+            rate on every qualifying gain, but in law the relief is claimed, and a taxpayer whose
+            qualifying gains fall in the basic rate band would not claim it, so the model overstates
+            the tax on those gains.
+          </p>
         ) : null}
         <StatusLine
           status={status}
