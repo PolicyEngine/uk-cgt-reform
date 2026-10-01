@@ -337,9 +337,8 @@ export default function RateExplorerTab({ data, datasetKey }) {
   const [percents, setPercents] = useState(() => initial?.percents ?? percentsOf(CURRENT_LAW));
   const [badrForm, setBadrForm] = useState(() => initial?.badrForm ?? badrFormOf(BADR_CURRENT_LAW));
   const [elasticity, setElasticity] = useState(() => initial?.elasticity ?? DEFAULT_ELASTICITY);
-  const { run, reset, status, result, error, elapsedSeconds } = useExploration();
+  const { run, status, result, error, elapsedSeconds } = useExploration();
   const autoRan = useRef(false);
-  const lastDataset = useRef(datasetKey);
 
   const dataset = getDatasetInfo(data);
   const rateCheck = validatePercents(percents);
@@ -397,14 +396,6 @@ export default function RateExplorerTab({ data, datasetKey }) {
     autoRan.current = true;
     if (initial && validatePercents(initial.percents).rates) submit();
   }, [initial, submit]);
-
-  // A result belongs to one dataset: switching datasets clears it.
-  useEffect(() => {
-    if (lastDataset.current !== datasetKey) {
-      lastDataset.current = datasetKey;
-      reset();
-    }
-  }, [datasetKey, reset]);
 
   const equalisation = {
     firstYear: getFirstYear(data),
