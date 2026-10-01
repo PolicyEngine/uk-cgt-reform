@@ -96,10 +96,10 @@ CENTAX_UNADJUSTED_ELASTICITY = 1.5
 INCOME_SHIFTING_SHARE = 0.125
 # The rate that income is taxed at, which the OBR does not state: 45%, the
 # additional rate on earnings. Two-thirds of the shifted income comes from
-# people with gains of £1m or more, all of it at 45%; stacked on each
-# person's other income, the rate on the whole averages 42.5% on the staged
-# Microcosm build (2026-27, official elasticity), so 45% overstates the
-# offset by about 6%. Dividends at the additional dividend rate (39.35%)
+# people with gains of £1m or more, almost all of it at 45%; stacked on each
+# person's other income, the rate on the whole averages 42.4% on the staged
+# Microcosm build (2026-27, official case), so 45% overstates the offset by
+# about 6%. Dividends at the additional dividend rate (39.35%)
 # would give about an eighth less; salary with employee and employer
 # National Insurance (about 54% of the employer's cost) about a fifth more.
 INCOME_SHIFTING_TAX_RATE = 0.45

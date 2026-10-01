@@ -89,8 +89,8 @@ INCOME_SHIFTING = {
     "tax_rate_note": (
         "The OBR does not say which income it becomes or at what rate. 45% is the "
         "additional rate on earnings. Stacked on each person's other income, the rate on "
-        "the shifted income averages 42.5% on the staged Microcosm UK build (2026-27, "
-        "official elasticity), so 45% overstates the offset by about 6%. Dividends at the "
+        "the shifted income averages 42.4% on the staged Microcosm UK build (2026-27, "
+        "official case), so 45% overstates the offset by about 6%. Dividends at the "
         "additional dividend rate (39.35%) would give about an eighth less, salary with "
         "employee and employer National Insurance about a fifth more."
     ),

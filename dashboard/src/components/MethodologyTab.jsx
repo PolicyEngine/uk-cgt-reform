@@ -297,7 +297,8 @@ export default function MethodologyTab({ data, anchor }) {
             <strong>Cases.</strong> No response; CenTax&apos;s {centaxRange.lower.toFixed(1)};
             CenTax&apos;s {unadjusted.e_retention.toFixed(1)} before its adjustments, the central
             case; CenTax&apos;s {centaxRange.upper.toFixed(1)}; and the official{" "}
-            {official.e_retention} with nothing added back.
+            {official.e_retention} ({official.badr_e_retention} for gains qualifying for the relief)
+            with nothing added back.
           </li>
           <li>
             <strong>Assumptions.</strong> {unadjusted.e_retention.toFixed(1)} removes both of
@@ -328,8 +329,8 @@ export default function MethodologyTab({ data, anchor }) {
           <li>
             <strong>Cases.</strong> No response; CenTax&apos;s {centaxRange.lower.toFixed(1)},{" "}
             {centaxCentral.e_retention.toFixed(1)} (the central case) and{" "}
-            {centaxRange.upper.toFixed(1)}; and the official {official.e_retention} plus the income
-            tax. The same addition goes to the official columns of the ready-reckoner rows.
+            {centaxRange.upper.toFixed(1)}; and the official {official.e_retention} (
+            {official.badr_e_retention} for gains qualifying for the relief) plus the income tax. The same addition goes to the official columns of the ready-reckoner rows.
           </li>
           <li>
             <strong>Assumptions.</strong> The income tax added back is{" "}
@@ -355,13 +356,7 @@ export default function MethodologyTab({ data, anchor }) {
                 reflect the change in CGT alone.
               </li>
               <li>
-                Gains that lose Business Asset Disposal Relief take the official{" "}
-                {official.e_retention}, where the OBR uses 1.4 for the relief, because the engine has
-                one elasticity per run (
-                <ExternalLink href="https://github.com/PolicyEngine/policyengine-uk/issues/1979">
-                  policyengine-uk#1979
-                </ExternalLink>
-                ). The {official.e_retention} itself was set for the October 2024 change; the
+                The official {official.e_retention} was set for the October 2024 change; the
                 OBR&apos;s figure for a rise as large as equalisation is not published.
               </li>
               <li>
@@ -381,14 +376,6 @@ export default function MethodologyTab({ data, anchor }) {
           <li>
             Every case is a medium-term response, applied in full from 2026-27; neither models the
             timing of disposals around the change.
-          </li>
-          <li>
-            The engine measures each person&apos;s marginal rate on gains with limited precision
-            at the largest gains, which moves the behavioural cases slightly (
-            <ExternalLink href="https://github.com/PolicyEngine/policyengine-uk/issues/1979">
-              policyengine-uk#1979
-            </ExternalLink>
-            ).
           </li>
           <li>
             <strong>On {dataset.shortLabel}.</strong> Equalisation raises{" "}
