@@ -36,7 +36,7 @@ from uk_cgt_reform.reform import (
     equalisation_reform,
     reform_fingerprint,
 )
-from uk_cgt_reform.simulations import CANDIDATE, DATASETS, DEFAULT_DATASET_KEY, INCUMBENT
+from uk_cgt_reform.simulations import CANDIDATE, DATASETS, DEFAULT_DATASET_KEY
 
 FLAT_30 = {"basic_rate": 0.18, "higher_rate": 0.30, "additional_rate": 0.30}
 
@@ -293,8 +293,8 @@ def test_cache_key_tracks_every_input_and_nothing_else():
         {"dataset": CANDIDATE.key, "rates": FLAT_30, "badr": {"withdrawn": True}}
     )
     assert cache_key(other_badr, context()) != key
-    other_dataset = validate_request({"dataset": INCUMBENT.key, "rates": FLAT_30})
-    assert cache_key(other_dataset, context()) != key
+    # The key names the dataset and its digest, so a re-pinned file misses.
+    assert key.startswith(f"{CANDIDATE.key}__{CANDIDATE.digest}__")
     # Changes that must hit: the same request again, and context fields the
     # key does not track.
     again = validate_request({"dataset": CANDIDATE.key, "rates": dict(FLAT_30), "elasticity": 1.0})

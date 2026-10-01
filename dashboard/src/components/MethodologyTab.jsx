@@ -53,7 +53,6 @@ export default function MethodologyTab({ data, anchor }) {
 
   const dataset = getDatasetInfo(data);
   const metadata = getMetadata(data);
-  const isCandidate = dataset.role === "candidate";
   const {
     central,
     centax_central: centaxCentral,
@@ -78,75 +77,31 @@ export default function MethodologyTab({ data, anchor }) {
         <SectionHeading title="Data and simulation" />
         <ul className="mt-2 list-disc space-y-2 pl-5 text-sm leading-6 text-slate-600">
           <li>
-            <strong>Two datasets, one pipeline.</strong> The pipeline registers an incumbent
-            (the Enhanced FRS 2024-25 published by{" "}
-            <ExternalLink href="https://github.com/PolicyEngine/policyengine-uk-data">
-              policyengine-uk-data
-            </ExternalLink>
-            ) and a candidate (the Microcosm UK 2024-25 national line staged from{" "}
-            <ExternalLink href="https://github.com/PolicyEngine/microcosm">microcosm</ExternalLink>
-            ), each pinned to an immutable revision and a sha256 digest that is checked
-            before anything runs. The same reform, engine and projection run on both; the
-            Dataset comparison tab lays the results side by side.
+            <strong>The dataset.</strong> {dataset.label}: {dataset.producer}. Pinned input{" "}
+            <span className="break-all font-mono text-xs">{dataset.uri}</span> (sha256{" "}
+            <span className="font-mono text-xs">{dataset.sha256.slice(0, 12)}…</span>), checked
+            before anything runs and used exactly as published with no local reweighting &mdash;
+            calibration belongs upstream in the dataset, so whatever the file provides is what is
+            simulated here. It is a staged build from{" "}
+            <ExternalLink href="https://github.com/PolicyEngine/microcosm">microcosm</ExternalLink>{" "}
+            main, not a certified release, and is re-pinned to the published release once that
+            exists.
           </li>
           <li>
-            <strong>Selected dataset.</strong> {dataset.label}: {dataset.producer}.{" "}
-            Pinned input <span className="break-all font-mono text-xs">{dataset.uri}</span>{" "}
-            (sha256 <span className="font-mono text-xs">{dataset.sha256.slice(0, 12)}…</span>
-            ), used exactly as published with no local reweighting &mdash; calibration belongs
-            upstream in the dataset, so whatever the file provides is what is simulated here.
+            <strong>Gains imputation.</strong> {dataset.observation}. Amounts are redrawn from
+            HMRC&apos;s Table 3 (size of gain by taxable income) so the top bands that carry most of
+            the tax are represented, and the weights reproduce Table 3&apos;s gains by taxable income
+            band, which sets the income tax band each gain falls in. Each liable gainer is assigned
+            a main asset type from HMRC Tables 7 and 8, with residential property gains written to
+            their own column, and gains qualifying for Business Asset Disposal Relief are imputed
+            and weighted to HMRC Table 4&apos;s bands, so the relief is charged on its own schedule.
           </li>
-          {isCandidate ? (
-            <>
-              <li>
-                <strong>Gains imputation.</strong> {dataset.observation}. Amounts are redrawn
-                from HMRC&apos;s Table 3 (size of gain by taxable income) so the top bands that
-                carry most of the tax are represented, and the weights reproduce Table 3&apos;s
-                gains by taxable income band, which sets the income tax band each gain falls in.
-                Each liable gainer is assigned a main asset type from HMRC Tables 7 and 8, with
-                residential property gains written to their own column, and gains qualifying for
-                Business Asset Disposal Relief are imputed and weighted to HMRC Table 4&apos;s
-                bands, so the relief is charged on its own schedule.
-              </li>
-              <li>
-                <strong>Gainers below the exempt amount.</strong> {dataset.notes} At the base
-                year they owe nothing; once the engine uprates gains past the frozen exempt
-                amount they become taxpayers. The Baseline tab reports them as entrants by
-                uprating and shows every figure with and without them.
-              </li>
-              <li>
-                <strong>Why this dataset is the default, and when it moves.</strong> The
-                candidate is the dataset this comparison exists to evaluate and the only one
-                carrying the schedules the reform charges. It is a staged candidate built from
-                microcosm main, not a certified release: it is re-pinned when a certified
-                national release exists.
-              </li>
-            </>
-          ) : (
-            <>
-              <li>
-                <strong>Gains imputation.</strong> The FRS barely captures capital gains, so
-                the dataset imputes them onto survey households from the{" "}
-                <ExternalLink href="https://warwick.ac.uk/fac/soc/economics/research/centres/cage/manage/publications/wp465.2020.pdf">
-                  Advani &amp; Summers
-                </ExternalLink>{" "}
-                distribution of gains by income band, drawn from HMRC administrative records.
-              </li>
-              <li>
-                <strong>Large gains.</strong> HMRC&apos;s size-of-gain distribution (
-                <ExternalLink href="https://www.gov.uk/government/statistics/capital-gains-tax-statistics">
-                  CGT statistics, Table 2.1a
-                </ExternalLink>
-                ) is represented directly: households carrying each published size-of-gain
-                band&apos;s mean gain are included in the dataset, and the calibrated weights
-                are targeted to reproduce each band&apos;s taxpayer count and gains total.
-              </li>
-              <li>
-                <strong>Calibration.</strong> {dataset.observation}. The measured fit is in the
-                benchmarks table on the Baseline tab.
-              </li>
-            </>
-          )}
+          <li>
+            <strong>Gainers below the exempt amount.</strong> {dataset.notes} At the base year they
+            owe nothing; once the engine uprates gains past the frozen exempt amount they become
+            taxpayers. The Baseline tab reports them as entrants by uprating and shows every figure
+            with and without them.
+          </li>
           <li>
             <strong>Projection.</strong> Each file is one engine year ({metadata.projection.base_year}
             ). The engine copies it forward to 2030 and uprates it year on year from its own

@@ -1,6 +1,5 @@
 /**
- * Accessors for the cgt_equalisation_results*.json payloads and the
- * dataset_comparison.json side-by-side.
+ * Accessors for the cgt_equalisation_results.json payload.
  *
  * Deliberately no fallbacks: if a field is missing the consumer throws
  * visibly rather than rendering placeholders.
@@ -120,16 +119,6 @@ export function getDatasetInfo(data) {
   };
 }
 
-// Every dataset the pipeline knows, for the dataset switch.
-export function getDatasetOptions(data) {
-  return data.metadata.datasets.map((d) => ({
-    value: d.key,
-    label: d.short_label,
-    role: d.role,
-    fullLabel: d.label,
-  }));
-}
-
 // Persons taxable only because uprating carried base-year gains at or below
 // the frozen exempt amount past it (see the pipeline's impacts module).
 export function getEntrants(data) {
@@ -139,15 +128,6 @@ export function getEntrants(data) {
 export function getEntrantShare(data) {
   const validation = data.validation;
   return validation.entrants_by_uprating.count / validation.cgt_taxpayers;
-}
-
-// dataset_comparison.json accessors.
-export function getComparisonDatasetKeys(comparison) {
-  return Object.keys(comparison.datasets);
-}
-
-export function getComparisonDataset(comparison, key) {
-  return comparison.datasets[key];
 }
 
 // ---------------------------------------------------------------------------
@@ -256,46 +236,6 @@ export function applyApproach(data, approachId) {
         })),
       },
     },
-  };
-}
-
-// dataset_comparison.json as the chosen approach shows it.
-export function applyApproachToComparison(comparison, approachId) {
-  const approach = findApproach(comparison.approaches, approachId);
-  const offsetIds = new Set(approach.offset_case_ids);
-  const byId = Object.fromEntries(comparison.sensitivity.map((row) => [row.id, row]));
-  const keys = Object.keys(comparison.datasets);
-  const sensitivity = approach.case_ids.map((id) => {
-    const row = byId[id];
-    if (!offsetIds.has(id)) return row;
-    return {
-      ...row,
-      name: withOffsetLabel(row.name),
-      ...Object.fromEntries(
-        keys.map((key) => [key, row[key] + row.income_shifting_offset_2026_bn[key]]),
-      ),
-    };
-  });
-  const central = comparison.approach_results?.[approach.id];
-  return {
-    ...comparison,
-    approach,
-    sensitivity,
-    schedule_split: Object.fromEntries(
-      Object.entries(comparison.schedule_split).map(([key, split]) => [
-        key,
-        centralSplit(split, approach.central_id),
-      ]),
-    ),
-    ...(central
-      ? {
-          budget: central.budget,
-          five_year_total_bn: central.five_year_total_bn,
-          top_quintile: central.top_quintile,
-          household_type: central.household_type,
-          region: central.region,
-        }
-      : {}),
   };
 }
 
