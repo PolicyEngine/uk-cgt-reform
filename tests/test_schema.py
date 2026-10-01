@@ -255,7 +255,39 @@ def test_validation_reports_entrants_by_uprating():
     assert validation["cgt_taxpayers_excluding_entrants"] <= validation["cgt_taxpayers"]
 
 
-def test_calibration_is_upstream():
+def test_budget_rows_use_fiscal_year_labels():
+    results = fake_results()
+    assert [r["year"] for r in results["budget"]] == [
+        "2026-27",
+        "2027-28",
+        "2028-29",
+        "2029-30",
+        "2030-31",
+    ]
+    assert set(results["budget"][0]) == {
+        "year",
+        "baseline_cgt_bn",
+        "reform_cgt_bn",
+        "cgt_change_bn",
+        "total_tax_change_bn",
+        "gov_balance_change_bn",
+        "cgt_change_from_entrants_bn",
+    }
+
+
+def test_income_change_groups_keyed_by_fiscal_year():
+    groups = fake_results()["income_change_groups"]
+    assert set(groups) == {"2026-27", "2027-28", "2028-29", "2029-30", "2030-31"}
+    year = groups["2026-27"]
+    assert set(year) == {"quintile", "quartile", "household_type", "region"}
+    assert set(year["quintile"][0]) == {
+        "group",
+        "avg_change_gbp",
+        "relative_change_pct",
+    }
+
+
+def test_calibration_block_is_explicitly_empty():
     cal = fake_results()["calibration"]
     assert set(cal) == {"targets", "ess_before", "ess_after", "note"}
     assert cal["targets"] == []
