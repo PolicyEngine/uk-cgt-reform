@@ -5,8 +5,8 @@ from ``pe.uk.ensure_datasets``, one ``policyengine.Simulation`` per
 (dataset, scenario, year), with distributional outputs grouped by weighted
 income quantile, household type and region. The pipeline asserts that the
 behavioural CGT elasticity actually fires (the static e=0 and the central
-retention-rate e=1.0 reform runs must differ materially) before writing any
-results.
+reform runs, at PolicyEngine's -0.7 against the marginal tax rate, must
+differ materially) before writing any results.
 
 The reform runs on the one registered dataset (``simulations.DATASETS``: the
 staged Microcosm UK national line built from microcosm main c5a1cba8). The
@@ -22,13 +22,14 @@ static reform by year beside JRF's estimate, a static re-score at CenTax's
 2019/20 rules beside its Tables 3 and 8, and HMRC's ready-reckoner rows
 scored at the central and the official elasticity (``comparison.py``).
 
-Two approaches to income shifting (``comparison.APPROACHES``) are carried
-side by side. The top-level ``budget`` and ``income_change_groups`` are the
-central case of the approach net of income shifting (CenTax's published
-1.0); ``approach_results.cgt_only`` holds the same blocks at CenTax's value
-before its adjustments (1.5). Every reform run reports the income tax the
-OBR's method would add back for income shifting, which only the official
-case of the approach net of income shifting includes.
+The top-level ``budget`` and ``income_change_groups`` are the central case,
+PolicyEngine's elasticity, which both approaches to income shifting
+(``comparison.APPROACHES``) share; the approaches differ in the CenTax and
+official cases the central case is compared with. Every reform run reports
+the income tax and National Insurance the OBR's method would add back for
+income shifting, which the approach net of income shifting adds to the cases
+measured on the CGT base: PolicyEngine's, CenTax's 0.5 and 2.0 and the
+official case.
 """
 
 from __future__ import annotations
@@ -60,14 +61,14 @@ from .impacts import (
     validation_stats,
 )
 from .reform import (
-    CENTAX_UNADJUSTED_ELASTICITY,
     ELASTICITY,
-    ELASTICITY_PARAMETER,
     INCOME_TAX_RATES,
     PERIOD,
     YEARS,
     centax_1920_reforms,
     centax_1920_rules,
+    elasticity_convention,
+    elasticity_form,
     equalisation_reform,
     reform_fingerprint,
     reform_schedules,
@@ -108,11 +109,19 @@ def dataset_folder(spec: DatasetSpec, fingerprint: str, root: Path = DATASET_FOL
     return root / simulation_stem(spec, fingerprint)
 
 
+def elasticity_tag(elasticity: float) -> str:
+    """An elasticity in a simulation id: its convention's letter and its size
+    in hundredths, ``r100`` for a retention-rate elasticity of 1.0, ``r000``
+    for the static case and ``m070`` for -0.7 against the marginal rate."""
+    letter = "m" if elasticity_form(elasticity) == "mtr" else "r"
+    return f"{letter}{round(100 * abs(elasticity)):03d}"
+
+
 def equalisation_case(elasticity: float) -> str:
-    """The case name in an equalisation simulation id: the retention-rate
-    elasticity in hundredths, ``equalise_r100`` for the central case and
-    ``equalise_r000`` for the static one."""
-    return f"equalise_r{round(100 * elasticity):03d}"
+    """The case name in an equalisation simulation id: ``equalise_m070`` for
+    the central case, ``equalise_r000`` for the static one and
+    ``equalise_r100`` for CenTax's central retention elasticity."""
+    return f"equalise_{elasticity_tag(elasticity)}"
 
 
 def equalisation_sim_id(sim_stem: str, elasticity: float, digest: str, year: int) -> str:
@@ -124,7 +133,7 @@ def equalisation_sim_id(sim_stem: str, elasticity: float, digest: str, year: int
 def step_sim_id(sim_stem: str, step: str, elasticity: float, digest: str, year: int) -> str:
     """A simulation id for one step of the schedule-by-schedule split of the
     equalisation reform (``reform.SCHEDULE_STEPS``)."""
-    return f"{sim_stem}_step_{step}_r{round(100 * elasticity):03d}_{digest}_{year}"
+    return f"{sim_stem}_step_{step}_{elasticity_tag(elasticity)}_{digest}_{year}"
 
 
 def counterfactual_sim_id(sim_stem: str, role: str, digest: str, year: int) -> str:
@@ -312,27 +321,6 @@ def run_dataset(
         for year in YEARS
     }
 
-    # ── Step 2c: the central case of the approach gross of income shifting
-    # (CenTax before its adjustments), every year ─────────────────────────
-    print(
-        f"Step 2c {tag}: CenTax before its adjustments (e={CENTAX_UNADJUSTED_ELASTICITY}), every year..."
-    )
-    unadjusted_reform = equalisation_reform(CENTAX_UNADJUSTED_ELASTICITY)
-    unadjusted_digest = reform_fingerprint(unadjusted_reform)
-    unadjusted_policy = make_policy(
-        unadjusted_reform, equalisation_case(CENTAX_UNADJUSTED_ELASTICITY)
-    )
-    unadjusted_sims = {
-        year: run_simulation(
-            datasets[year],
-            policy=unadjusted_policy,
-            sim_id=equalisation_sim_id(
-                sim_stem, CENTAX_UNADJUSTED_ELASTICITY, unadjusted_digest, year
-            ),
-        )
-        for year in YEARS
-    }
-
     # ── Step 3: elasticity sensitivity (2026), which doubles as the check
     # that the behavioural response fires through policyengine.py ─────────
     print(f"Step 3 {tag}: Elasticity sensitivity (2026)...")
@@ -341,8 +329,6 @@ def run_dataset(
     def run_case(e: float):
         if e == ELASTICITY:
             return reform_sims[2026]
-        if e == CENTAX_UNADJUSTED_ELASTICITY:
-            return unadjusted_sims[2026]
         if e == 0.0:
             return static_sims[2026]
         reform = equalisation_reform(e)
@@ -355,8 +341,8 @@ def run_dataset(
     sens = sensitivity(base_cgt_2026, ELASTICITY_CASES, run_case)
     for row in sens:
         print(f"    {row['name']}: {row['revenue_2026_bn']:+.1f}bn")
-    static_2026 = next(r["revenue_2026_bn"] for r in sens if r["e_retention"] == 0.0)
-    central_2026 = next(r["revenue_2026_bn"] for r in sens if r["e_retention"] == ELASTICITY)
+    static_2026 = next(r["revenue_2026_bn"] for r in sens if r["id"] == "static")
+    central_2026 = next(r["revenue_2026_bn"] for r in sens if r["elasticity"] == ELASTICITY)
     assert static_2026 - central_2026 > 1.0, (
         f"Behavioural CGT elasticity did not fire through policyengine.py on {spec.key}: "
         f"static (e=0) yield {static_2026:.2f}bn vs central (e={ELASTICITY}) "
@@ -366,17 +352,9 @@ def run_dataset(
     # ── Step 3d: the yield built up schedule by schedule (2026), static and
     # central: main rates, then residential property, then the relief
     # withdrawn; the step before the last is equalisation keeping the relief
-    print(f"Step 3d {tag}: The yield by schedule (2026, static and both central cases)...")
-    split_cases = {
-        "static": 0.0,
-        "central": ELASTICITY,
-        "unadjusted": CENTAX_UNADJUSTED_ELASTICITY,
-    }
-    full_runs = {
-        "static": static_sims[2026],
-        "central": reform_sims[2026],
-        "unadjusted": unadjusted_sims[2026],
-    }
+    print(f"Step 3d {tag}: The yield by schedule (2026, static and central)...")
+    split_cases = {"static": 0.0, "central": ELASTICITY}
+    full_runs = {"static": static_sims[2026], "central": reform_sims[2026]}
     revenues, split_digests = {}, {}
     for case, e in split_cases.items():
         revenues[case], split_digests[case] = {}, {}
@@ -407,8 +385,7 @@ def run_dataset(
     for row in split["steps"]:
         print(
             f"    {row['label']}: static {row['static_increment_bn']:+.2f}bn, "
-            f"central {row['central_increment_bn']:+.2f}bn, "
-            f"before adjustments {row['unadjusted_increment_bn']:+.2f}bn"
+            f"central {row['central_increment_bn']:+.2f}bn"
         )
 
     # ── Step 3b: CenTax's rates-only reform at its 2019/20 rules, static ──
@@ -463,28 +440,12 @@ def run_dataset(
     five_year_total = sum(r["gov_balance_change_bn"] for r in budget)
     print(f"    Five-year total budgetary impact: £{five_year_total:.1f}bn")
     static_budget = budget_impact(baseline_sims, static_sims, YEARS, aea, ceilings, elasticity=0.0)
-    unadjusted_budget = budget_impact(
-        baseline_sims,
-        unadjusted_sims,
-        YEARS,
-        aea,
-        ceilings,
-        elasticity=CENTAX_UNADJUSTED_ELASTICITY,
-    )
-    print(
-        "    Five-year total before CenTax's adjustments: "
-        f"£{sum(r['gov_balance_change_bn'] for r in unadjusted_budget):.1f}bn"
-    )
 
     # ── Step 6: distributional impacts (income quantiles, household type,
     # region), all years ──────────────────────────────────────────────────
     print(f"Step 6 {tag}: Distributional impacts...")
     groups = {
         fiscal_year_label(y): income_change_groups(baseline_sims[y], reform_sims[y]) for y in YEARS
-    }
-    unadjusted_groups = {
-        fiscal_year_label(y): income_change_groups(baseline_sims[y], unadjusted_sims[y])
-        for y in YEARS
     }
 
     # ── Step 7: benchmarks against other institutions' estimates ─────────
@@ -517,7 +478,8 @@ def run_dataset(
             "calibrated": False,
             "reform_period_start": PERIOD,
             "elasticity": ELASTICITY,
-            "elasticity_parameter": ELASTICITY_PARAMETER,
+            "elasticity_parameter": elasticity_convention(ELASTICITY)["elasticity_parameter"],
+            "elasticity_applied_as": elasticity_convention(ELASTICITY)["applied_as"],
             "reform": dict(INCOME_TAX_RATES),
             "reform_schedules": reform_schedules(),
             "reform_fingerprint": central_digest,
@@ -556,15 +518,6 @@ def run_dataset(
         "schedule_split": split,
         "benchmarks": benchmarks,
         "approaches": approaches_block(),
-        "approach_results": {
-            "cgt_only": {
-                "central_id": "centax_unadjusted",
-                "elasticity": CENTAX_UNADJUSTED_ELASTICITY,
-                "reform_fingerprint": unadjusted_digest,
-                "budget": unadjusted_budget,
-                "income_change_groups": unadjusted_groups,
-            }
-        },
     }
     return output, baseline_sims
 

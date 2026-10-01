@@ -35,6 +35,7 @@ from uk_cgt_reform.reform import (
     INCOME_SHIFTING_RATE_COMPONENTS,
     INCOME_SHIFTING_SHARE,
     INCOME_SHIFTING_TAX_RATE,
+    MTR_ELASTICITY_PARAMETER,
     OFFICIAL_BADR_ELASTICITY,
     OFFICIAL_ELASTICITY,
 )
@@ -117,7 +118,7 @@ def test_sensitivity_rows_record_how_each_case_was_applied():
         {
             "id",
             "name",
-            "e_retention",
+            "elasticity",
             "elasticity_parameter",
             "applied_as",
             "applied_value",
@@ -127,12 +128,19 @@ def test_sensitivity_rows_record_how_each_case_was_applied():
         }
     ] * len(ELASTICITY_CASES)
     assert [row["id"] for row in rows] == [case_id for case_id, _, _ in ELASTICITY_CASES]
-    assert [row["elasticity_parameter"] for row in rows] == [ELASTICITY_PARAMETER] * len(rows)
-    assert {row["applied_as"] for row in rows} == {"retention"}
-    assert [row["applied_value"] for row in rows] == [0.0, 0.5, 1.0, 1.5, 2.0, 3.6]
+    # PolicyEngine's case on the engine's marginal-tax-rate parameter, the
+    # rest on its retention-rate parameter, each value applied as stated.
+    by_id = {row["id"]: row for row in rows}
+    assert by_id["policyengine"]["elasticity_parameter"] == MTR_ELASTICITY_PARAMETER
+    assert by_id["policyengine"]["applied_as"] == "mtr"
+    others = [row for row in rows if row["id"] != "policyengine"]
+    assert [row["elasticity_parameter"] for row in others] == [ELASTICITY_PARAMETER] * len(others)
+    assert {row["applied_as"] for row in others} == {"retention"}
+    assert [row["applied_value"] for row in rows] == [0.0, -0.7, 0.5, 1.0, 1.5, 2.0, 3.6]
+    assert [row["elasticity"] for row in rows] == [row["applied_value"] for row in rows]
     # Only the official case gives gains qualifying for the relief their own
-    # elasticity (1.4); CenTax's cases apply one elasticity to every gain.
-    assert [row["badr_elasticity"] for row in rows] == [0.0, 0.5, 1.0, 1.5, 2.0, 1.4]
+    # elasticity (1.4); every other case applies one elasticity to every gain.
+    assert [row["badr_elasticity"] for row in rows] == [0.0, -0.7, 0.5, 1.0, 1.5, 2.0, 1.4]
     # No response in these fakes, so nothing to add back.
     assert {row["income_shifting_offset_2026_bn"] for row in rows} == {0.0}
 

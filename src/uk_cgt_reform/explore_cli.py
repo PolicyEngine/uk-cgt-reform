@@ -76,9 +76,15 @@ def build_parser() -> argparse.ArgumentParser:
         type=float,
         default=DEFAULT_ELASTICITY,
         help=(
-            "Elasticity of realised gains with respect to the retention rate (1 - t); one of "
-            + ", ".join(str(o["e_retention"]) for o in ELASTICITY_OPTIONS)
-            + f" (default {DEFAULT_ELASTICITY})."
+            "Elasticity of realised gains: "
+            + ", ".join(
+                str(o["elasticity"]) for o in ELASTICITY_OPTIONS if o["applied_as"] == "mtr"
+            )
+            + " with respect to the marginal tax rate (PolicyEngine's), or one of "
+            + ", ".join(
+                str(o["elasticity"]) for o in ELASTICITY_OPTIONS if o["applied_as"] == "retention"
+            )
+            + f" with respect to the retention rate (1 - t) (default {DEFAULT_ELASTICITY})."
         ),
     )
     parser.add_argument(
