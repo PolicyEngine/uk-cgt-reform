@@ -150,7 +150,8 @@ export default function MethodologyTab({ data, anchor }) {
           CenTax&apos;s {central.e_retention.toFixed(1)}. The Reform impacts tab&apos;s sensitivity
           table re-runs the analysis with no response, with CenTax&apos;s range (
           {centaxRange.lower.toFixed(1)} to {centaxRange.upper.toFixed(1)}) and with the official
-          HMRC/OBR {official.e_retention}.
+          HMRC/OBR {official.e_retention} for main-rate gains and {official.badr_e_retention} for
+          gains qualifying for Business Asset Disposal Relief.
         </p>
         <p className="mt-3 text-sm leading-6 text-slate-600">
           CenTax estimate their elasticity for a package that also removes the uplift at death
@@ -173,20 +174,27 @@ export default function MethodologyTab({ data, anchor }) {
         <ul className="mt-2 list-disc space-y-2 pl-5 text-sm leading-6 text-slate-600">
           <li>
             <strong>The official assumption.</strong> HMRC and the OBR use a retention-rate
-            elasticity of {official.e_retention} for the main CGT rates (
+            elasticity of {official.e_retention} for the main CGT rates and{" "}
+            {official.badr_e_retention} for gains qualifying for Business Asset Disposal Relief (
             <ExternalLink href={`${official.url}#page=3`}>
               OBR, {formatPublished(official.published.slice(0, 7))},{" "}
               {official.locator.toLowerCase()}
             </ExternalLink>
-            ; HMRC&apos;s estimate from 1998 to 2018 is 4.0), {(official.e_retention / central.e_retention).toFixed(1)}{" "}
-            times CenTax&apos;s central case.
+            ; HMRC&apos;s estimate from 1998 to 2018 is 4.0). The main figure is{" "}
+            {(official.e_retention / central.e_retention).toFixed(1)} times CenTax&apos;s central
+            case. The official case applies both: the engine gives gains qualifying for the relief
+            their own elasticity, and both kinds of gain respond to the same change in a
+            person&apos;s marginal rate.
           </li>
           <li>
-            <strong>Why the two differ.</strong> CenTax&apos;s central{" "}
-            {central.e_retention.toFixed(1)} starts from US evidence (about 1.5 five years after a
-            change) and adjusts it down because its package also removes the death uplift and
-            charges gains on departure, closing two ways of deferring or avoiding the tax.
-            HMRC&apos;s figure is estimated from UK responses under the current base.
+            <strong>Why the two differ.</strong> CenTax start from US evidence, about 1.5 five
+            years after a change (Agersnap and Zidar, 2021), and lower it to{" "}
+            {central.e_retention.toFixed(1)} for two reasons: their package removes the uplift at
+            death, which the US keeps; and equalisation brings income that was presented as gains
+            back into income tax, which estimates measured on the CGT base count as lost. The US
+            evidence already has emigration largely closed off, so no adjustment is made for the
+            charge on departure. HMRC&apos;s figure is estimated from UK responses under the
+            current base.
           </li>
           <li>
             <strong>What it does to a rate rise.</strong> Take a taxpayer whose marginal rate on

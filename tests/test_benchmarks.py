@@ -97,12 +97,16 @@ def test_sensitivity_rows_record_how_each_case_was_applied():
             "elasticity_parameter",
             "applied_as",
             "applied_value",
+            "badr_elasticity",
             "revenue_2026_bn",
         }
     ] * len(SENSITIVITY_CASES)
     assert [row["elasticity_parameter"] for row in rows] == [ELASTICITY_PARAMETER] * len(rows)
     assert {row["applied_as"] for row in rows} == {"retention"}
     assert [row["applied_value"] for row in rows] == [0.0, 0.5, 1.0, 2.0, 3.6]
+    # Only the official case gives gains qualifying for the relief their own
+    # elasticity (1.4); CenTax's cases apply one elasticity to every gain.
+    assert [row["badr_elasticity"] for row in rows] == [0.0, 0.5, 1.0, 2.0, 1.4]
 
 
 # --- the external figures, pinned to their sources ----------------------------
@@ -178,14 +182,14 @@ def test_ready_reckoner_rows_are_pinned():
         "badr_plus_1": (10, 135, 180),
         "badr_plus_5": (40, 635, 840),
     }
-    # The BADR rows move the relief's rate from 18% and take the official
-    # BADR elasticity; the rest keep the relief at current law.
+    # The BADR rows move the relief's rate from 18%; the rest keep the relief
+    # at current law. The official case is the same in every row (3.6 for
+    # main-rate gains, 1.4 for gains qualifying for the relief).
     assert {rid: row["badr"]["rate"] for rid, row in rows.items() if "badr" in rid} == {
         "badr_plus_1": 0.19,
         "badr_plus_5": 0.23,
     }
-    assert {row["official_elasticity"] for rid, row in rows.items() if "badr" in rid} == {1.4}
-    assert {row["official_elasticity"] for rid, row in rows.items() if "badr" not in rid} == {3.6}
+    assert not any("official_elasticity" in row for row in rows.values())
     assert all(
         row["badr"] == {"withdrawn": False, "rate": 0.18, "lifetime_limit": 1_000_000}
         for rid, row in rows.items()

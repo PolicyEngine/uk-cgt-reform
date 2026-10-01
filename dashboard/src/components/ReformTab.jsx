@@ -358,7 +358,9 @@ export default function ReformTab({ data }) {
             </a>
             , expecting a larger response to rates alone: the upper rows show how
             much of the yield rests on that. The last row is the official HMRC/OBR
-            assumption, {official.e_retention}; the Methodology tab explains why it
+            assumption, {official.e_retention} for main-rate gains and{" "}
+            {official.badr_e_retention} for gains qualifying for Business Asset Disposal
+            Relief; the Methodology tab explains why it
             turns the reform&apos;s yield so far down. CenTax&apos;s range is
             anchored on{" "}
             <a

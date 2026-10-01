@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  getBenchmarks,
-  getDatasetInfo,
-  getSensitivity,
-  getValidation,
-} from "../lib/dataHelpers";
+import { getBenchmarks, getDatasetInfo, getSensitivity } from "../lib/dataHelpers";
 import {
   formatBn,
   formatPct,
@@ -29,11 +24,6 @@ function formatUplift(value) {
 const percent = (rate) => `${Math.round(rate * 100)}%`;
 // "Exchequer receipts in £m ..." reads as the rest of a sentence.
 const lowerFirst = (text) => `${text[0].toLowerCase()}${text.slice(1)}`;
-// policyengine-uk 2.100.0 measures the marginal CGT rate from a £1,000 rise in
-// gains in single precision; the error grows with the gain (about 0.2 points at
-// £20m, about 3 points at £500m), so above about £100m it swamps the response
-// to a one-point change.
-const MTR_PRECISION_FLOOR_M = 100;
 
 function Dash() {
   return <span className="text-slate-400">—</span>;
@@ -217,10 +207,10 @@ function CentaxPackage({ rows }) {
   );
 }
 
-function ReadyReckoner({ block, dataset, elasticities, largestGainM }) {
+function ReadyReckoner({ block, dataset, elasticities }) {
   const [first, second] = block.lag;
   const centralLabel = `Central (retention ${elasticities.central.e_retention.toFixed(1)})`;
-  const officialLabel = `Official (retention ${elasticities.official.e_retention}; 1.4 for BADR rows)`;
+  const officialLabel = `Official (retention ${elasticities.official.e_retention}; ${elasticities.official.badr_e_retention} for BADR gains)`;
   const model = (row, elasticityId, year) => row.model_m[elasticityId][year];
   return (
     <section className="section-card">
@@ -279,17 +269,6 @@ function ReadyReckoner({ block, dataset, elasticities, largestGainM }) {
           .join("; ")}
         .
       </p>
-      {largestGainM > MTR_PRECISION_FLOOR_M ? (
-        <p className="mt-2 text-xs leading-5 text-slate-500">
-          The one-point rows are sensitive to the largest gains, which on {dataset.shortLabel} reach
-          £{Math.round(largestGainM)}m. policyengine-uk measures each person&apos;s marginal CGT rate from
-          a £1,000 rise in gains, in single precision, and the error grows with the gain: about 0.2
-          points at £20m and about 3 points at £500m. For those persons the response to a one-point
-          change is mostly noise, which can move a one-point row by a few hundred million pounds at
-          the official elasticity. The same error moves the equalisation estimates by much less than
-          the spread across elasticities.
-        </p>
-      ) : null}
     </section>
   );
 }
@@ -297,7 +276,6 @@ function ReadyReckoner({ block, dataset, elasticities, largestGainM }) {
 export default function BenchmarksTab({ data, onNavigate }) {
   const benchmarks = getBenchmarks(data);
   const dataset = getDatasetInfo(data);
-  const { largest_gain_m: largestGainM } = getValidation(data);
   const official = getSensitivity(data).find(
     (row) => row.e_retention === benchmarks.elasticities.official.e_retention,
   );
@@ -320,13 +298,14 @@ export default function BenchmarksTab({ data, onNavigate }) {
         block={benchmarks.ready_reckoner}
         dataset={dataset}
         elasticities={benchmarks.elasticities}
-        largestGainM={largestGainM}
       />
       <section className="note-card rounded-lg p-4 text-sm leading-6 text-slate-600">
         <p className="note-eyebrow">Why the elasticity matters</p>
         <p>
           The official HMRC/OBR assumption is a retention-rate elasticity of{" "}
-          {benchmarks.elasticities.official.e_retention}, against CenTax&apos;s central{" "}
+          {benchmarks.elasticities.official.e_retention} for main-rate gains and{" "}
+          {benchmarks.elasticities.official.badr_e_retention} for gains qualifying for Business
+          Asset Disposal Relief, against CenTax&apos;s central{" "}
           {benchmarks.elasticities.central.e_retention.toFixed(1)} behind this dashboard&apos;s central
           case. On {dataset.shortLabel}, equalisation changes CGT revenue in 2026-27 by{" "}
           {formatSignedBn(central.revenue_2026_bn, 1)} at the central elasticity and by{" "}

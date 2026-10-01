@@ -5,6 +5,7 @@ import pytest
 
 from uk_cgt_reform.reform import (
     BADR_CURRENT_LAW,
+    BADR_ELASTICITY_PARAMETER,
     BADR_LIFETIME_LIMIT_PARAMETER,
     BADR_LIFETIME_LIMITS,
     BADR_RATE_PARAMETER,
@@ -24,6 +25,7 @@ from uk_cgt_reform.reform import (
     RATE_BANDS,
     SCHEDULE_STEPS,
     SCHEDULES,
+    SEPARATE_BADR_ELASTICITY_PARAMETER,
     BadrPolicy,
     centax_1920_reforms,
     centax_1920_rules,
@@ -59,13 +61,27 @@ def test_behavioural_cases_are_centax_and_official_retention_elasticities():
     assert ELASTICITY == 1.0
     assert (CENTAX_LOWER_ELASTICITY, CENTAX_UPPER_ELASTICITY) == (0.5, 2.0)
     assert OFFICIAL_ELASTICITY == 3.6
-    for e in (0.0, CENTAX_LOWER_ELASTICITY, ELASTICITY, CENTAX_UPPER_ELASTICITY, 3.6):
+    # CenTax's cases: one elasticity for every gain, the engine's default.
+    for e in (0.0, CENTAX_LOWER_ELASTICITY, ELASTICITY, CENTAX_UPPER_ELASTICITY):
         assert elasticity_assignment(e) == {ELASTICITY_PARAMETER: e}
         assert elasticity_convention(e) == {
             "elasticity_parameter": ELASTICITY_PARAMETER,
             "applied_as": "retention",
             "applied_value": e,
+            "badr_elasticity": e,
         }
+    # The official case: 3.6 for main-rate gains, 1.4 for gains qualifying
+    # for the relief (OBR, January 2025), through the engine's switch.
+    assert elasticity_assignment(OFFICIAL_ELASTICITY) == {
+        ELASTICITY_PARAMETER: 3.6,
+        SEPARATE_BADR_ELASTICITY_PARAMETER: True,
+        BADR_ELASTICITY_PARAMETER: 1.4,
+    }
+    assert elasticity_convention(OFFICIAL_ELASTICITY)["badr_elasticity"] == 1.4
+    reform = equalisation_reform(OFFICIAL_ELASTICITY)
+    assert reform[SEPARATE_BADR_ELASTICITY_PARAMETER] == {PERIOD: True}
+    assert reform[BADR_ELASTICITY_PARAMETER] == {PERIOD: 1.4}
+    assert SEPARATE_BADR_ELASTICITY_PARAMETER not in equalisation_reform(ELASTICITY)
 
 
 def test_retention_response_is_the_engines_form():

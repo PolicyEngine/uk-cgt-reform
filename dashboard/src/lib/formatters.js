@@ -70,8 +70,12 @@ export function formatCount(value) {
 
 // How a behavioural case reached the engine: every case is an elasticity of
 // realised gains with respect to the retention rate (1 − t), applied as stated.
-export function formatElasticity({ applied_value: appliedValue }) {
-  return `retention ${Number(appliedValue).toFixed(1)}`;
+export function formatElasticity({ applied_value: appliedValue, badr_elasticity: badr }) {
+  const main = `retention ${Number(appliedValue).toFixed(1)}`;
+  // The official case gives gains qualifying for the relief their own 1.4.
+  return badr === undefined || badr === appliedValue
+    ? main
+    : `${main}; ${Number(badr).toFixed(1)} for BADR gains`;
 }
 
 const MONTHS = [

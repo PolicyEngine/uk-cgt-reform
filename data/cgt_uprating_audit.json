@@ -1,5 +1,5 @@
 {
-  "policyengine_uk_version": "2.100.0",
+  "policyengine_uk_version": "2.104.0",
   "base_year": 2024,
   "base_year_note": "Engine period of the published single-year Enhanced FRS 2024-25 file (time_period 2024); the observation is the FRS 2024-25 survey year. Uprating runs year on year from the base year; the base year itself is not uprated.",
   "years": [
@@ -182,7 +182,7 @@
       "2030-31": 34.9
     }
   },
-  "projection_fingerprint": "7c469f5300b6",
+  "projection_fingerprint": "e76b2e927c55",
   "datasets": {
     "microcosm_uk_2024_25_c5a1cba8": {
       "key": "microcosm_uk_2024_25_c5a1cba8",

@@ -317,9 +317,10 @@ OFFICIAL_ELASTICITY_SOURCE = {
     ),
 }
 
-# The elasticity cases the ready-reckoner rows are scored at. "official" is
-# each row's own official assumption (``official_elasticity``): 3.6 for the
-# main-rate rows and 1.4 for the BADR rows (OBR, January 2025, para 1.9).
+# The elasticity cases the ready-reckoner rows are scored at. The official
+# case is the same in every row: 3.6 for main-rate gains and 1.4 for gains
+# qualifying for the relief (OBR, January 2025, para 1.9;
+# ``reform.elasticity_assignment``).
 READY_RECKONER_ELASTICITIES = {"centax_central": ELASTICITY, "official": OFFICIAL_ELASTICITY}
 
 
@@ -330,13 +331,12 @@ def _rates(basic: float, higher: float, additional: float) -> dict:
 _CURRENT_RATES = _rates(0.18, 0.24, 0.24)
 
 
-def _row(row_id, label, rates, hmrc_m, *, badr=BADR_CURRENT_LAW, official=OFFICIAL_ELASTICITY):
+def _row(row_id, label, rates, hmrc_m, *, badr=BADR_CURRENT_LAW):
     return {
         "id": row_id,
         "label": label,
         "rates": rates,
         "badr": badr.to_dict(),
-        "official_elasticity": official,
         "hmrc_m": hmrc_m,
     }
 
@@ -407,7 +407,6 @@ READY_RECKONER = {
             _CURRENT_RATES,
             {"2026-27": 10, "2027-28": 135, "2028-29": 180},
             badr=BadrPolicy(rate=0.19),
-            official=OFFICIAL_BADR_ELASTICITY,
         ),
         _row(
             "badr_plus_5",
@@ -415,7 +414,6 @@ READY_RECKONER = {
             _CURRENT_RATES,
             {"2026-27": 40, "2027-28": 635, "2028-29": 840},
             badr=BadrPolicy(rate=0.23),
-            official=OFFICIAL_BADR_ELASTICITY,
         ),
     ],
     "excluded": [
@@ -532,8 +530,8 @@ def ready_reckoner_block(model_m: dict[str, dict[str, dict[str, float]]]) -> dic
         "model_measure": (
             "Change in government balance, £m, on this repo's liabilities in the model "
             "year, with each row's rates and relief (the main and residential rates move "
-            "together; the BADR rows move the relief's rate) and the official case at the "
-            "row's own elasticity (3.6 for the main rates, 1.4 for BADR)"
+            "together; the BADR rows move the relief's rate), the official case applying "
+            "3.6 to main-rate gains and 1.4 to gains qualifying for the relief"
         ),
         "rows": [{**row, "model_m": model_m[row["id"]]} for row in READY_RECKONER["rows"]],
     }
@@ -558,6 +556,7 @@ def elasticities_block() -> dict:
         "official": {
             "id": "official",
             "e_retention": OFFICIAL_ELASTICITY,
+            "badr_e_retention": OFFICIAL_BADR_ELASTICITY,
             "applied_as": "retention",
             **OFFICIAL_ELASTICITY_SOURCE,
         },
