@@ -8,6 +8,7 @@ import {
 } from "../lib/dataHelpers";
 import {
   formatBn,
+  formatElasticityValue,
   formatPct,
   formatPublished,
   formatSignedBn,
@@ -219,9 +220,9 @@ function CentaxPackage({ rows }) {
 
 function ReadyReckoner({ block, dataset, elasticities, largestGainM }) {
   const [first, second] = block.lag;
-  const centralLabel = `Central (retention ${elasticities.central.e_retention.toFixed(1)})`;
+  const centralLabel = `Central (PolicyEngine, marginal rate ${formatElasticityValue(elasticities.central.elasticity)})`;
   const withOffset = elasticities.official.includes_income_shifting_offset;
-  const officialLabel = `Official (retention ${elasticities.official.e_retention}; 1.4 for BADR rows${withOffset ? "; plus income tax on shifted income" : ""})`;
+  const officialLabel = `Official (retention ${elasticities.official.elasticity}; 1.4 for BADR rows${withOffset ? "; plus income tax on shifted income" : ""})`;
   const model = (row, elasticityId, year) => row.model_m[elasticityId][year];
   return (
     <section className="section-card">
@@ -257,10 +258,10 @@ function ReadyReckoner({ block, dataset, elasticities, largestGainM }) {
                 <td>{row.label}</td>
                 <td className="text-slate-500">{formatSignedMn(row.hmrc_m[block.hmrc_years[0]])}</td>
                 <td className="font-semibold">{formatSignedMn(row.hmrc_m[first.hmrc_year])}</td>
-                <td>{formatSignedMn(model(row, "centax_central", first.model_year))}</td>
+                <td>{formatSignedMn(model(row, "central", first.model_year))}</td>
                 <td>{formatSignedMn(model(row, "official", first.model_year))}</td>
                 <td className="font-semibold">{formatSignedMn(row.hmrc_m[second.hmrc_year])}</td>
-                <td>{formatSignedMn(model(row, "centax_central", second.model_year))}</td>
+                <td>{formatSignedMn(model(row, "central", second.model_year))}</td>
                 <td>{formatSignedMn(model(row, "official", second.model_year))}</td>
               </tr>
             ))}
@@ -303,12 +304,12 @@ export default function BenchmarksTab({ data, onNavigate }) {
   const benchmarks = getBenchmarks(data);
   const dataset = getDatasetInfo(data);
   const { largest_gain_m: largestGainM } = getValidation(data);
-  const official = getSensitivity(data).find(
-    (row) => row.e_retention === benchmarks.elasticities.official.e_retention,
-  );
-  const central = getSensitivity(data).find(
-    (row) => row.e_retention === benchmarks.elasticities.central.e_retention,
-  );
+  const { elasticities } = benchmarks;
+  const official = getSensitivity(data).find((row) => row.id === elasticities.official.id);
+  const central = getSensitivity(data).find((row) => row.id === elasticities.central.id);
+  // The retention elasticity the central case behaves like for gains moving
+  // from 24% to 45% and from 24% to 40%.
+  const [, higher, additional] = elasticities.central.retention_equivalents;
   return (
     <div className="space-y-6">
       <section>
@@ -331,11 +332,12 @@ export default function BenchmarksTab({ data, onNavigate }) {
         <p className="note-eyebrow">Why the elasticity matters</p>
         <p>
           The official HMRC/OBR assumption is a retention-rate elasticity of{" "}
-          {benchmarks.elasticities.official.e_retention}, against{" "}
-          {data.approach.id === "total_revenue"
-            ? `CenTax's central ${benchmarks.elasticities.central.e_retention.toFixed(1)}`
-            : `CenTax's ${benchmarks.elasticities.central.e_retention.toFixed(1)} before its adjustments`}{" "}
-          behind this approach&apos;s central case. On {dataset.shortLabel}, equalisation changes{" "}
+          {elasticities.official.elasticity}. This dashboard&apos;s central case is
+          PolicyEngine&apos;s {formatElasticityValue(elasticities.central.elasticity)} with respect
+          to the marginal tax rate, which over this reform&apos;s rises at the higher and
+          additional rates behaves like a retention-rate elasticity of about{" "}
+          {additional.e_retention.toFixed(1)} to {higher.e_retention.toFixed(1)}. On{" "}
+          {dataset.shortLabel}, equalisation changes{" "}
           {data.approach.id === "total_revenue" ? "revenue" : "CGT revenue"} in 2026-27 by{" "}
           {formatSignedBn(central.revenue_2026_bn, 1)} at the central elasticity and by{" "}
           {formatSignedBn(official.revenue_2026_bn, 1)} at the official one

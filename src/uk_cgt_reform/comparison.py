@@ -19,10 +19,12 @@ so the dashboard can say how comparable it is:
   central and the official elasticity.
 - The official elasticity itself (OBR, January 2025): retention 3.6.
 
-The two approaches to income shifting (``APPROACHES``) say which elasticity
-cases the dashboard shows and whether the official case adds back the
-income tax the OBR's method attributes to income no longer presented as
-gains (``INCOME_SHIFTING``).
+The central case is PolicyEngine's own elasticity (November 2024), -0.7
+with respect to the marginal tax rate (``POLICYENGINE_ELASTICITY_SOURCE``).
+The two approaches to income shifting (``APPROACHES``) say which CenTax and
+official cases the dashboard compares it with, and whether the official
+case adds back the income tax the OBR's method attributes to income no
+longer presented as gains (``INCOME_SHIFTING``).
 """
 
 from __future__ import annotations
@@ -30,27 +32,39 @@ from __future__ import annotations
 from .impacts import REGION_NAMES
 from .reform import (
     BADR_CURRENT_LAW,
+    CENTAX_CENTRAL_ELASTICITY,
     CENTAX_LOWER_ELASTICITY,
     CENTAX_UNADJUSTED_ELASTICITY,
     CENTAX_UPPER_ELASTICITY,
-    ELASTICITY,
     INCOME_SHIFTING_SHARE,
     INCOME_SHIFTING_TAX_RATE,
+    INCOME_TAX_RATES,
     OFFICIAL_BADR_ELASTICITY,
     OFFICIAL_ELASTICITY,
+    POLICYENGINE_ELASTICITY,
+    POLICYENGINE_ELASTICITY_URL,
     RATE_BANDS,
     BadrPolicy,
+    elasticity_form,
+    equivalent_retention_elasticity,
 )
 from .uprating_audit import CPI_INDEX, OBR_CGT_RECEIPTS_BN, OBR_CGT_RECEIPTS_SOURCE
 
-# The behavioural cases, ``(id, label, retention-rate elasticity)``, each
-# applied as stated (``reform.elasticity_assignment``): CenTax's central
-# case, its value before CenTax's adjustments and its range, and the official
-# HMRC/OBR assumption for the main rates. The approaches below pick five.
+# The behavioural cases, ``(id, label, elasticity)``, each applied as stated
+# in its own convention (``reform.elasticity_assignment``): PolicyEngine's
+# elasticity with respect to the marginal tax rate, the central case; CenTax's
+# central case, its value before CenTax's adjustments and its range, and the
+# official HMRC/OBR assumption for the main rates, all with respect to the
+# retention rate. The approaches below pick six.
 ELASTICITY_CASES = (
     ("static", "Static (no behavioural response)", 0.0),
+    (
+        "policyengine",
+        "PolicyEngine (marginal-rate elasticity −0.7)",
+        POLICYENGINE_ELASTICITY,
+    ),
     ("centax_lower", "CenTax lower (retention elasticity 0.5)", CENTAX_LOWER_ELASTICITY),
-    ("centax_central", "CenTax central (retention elasticity 1.0)", ELASTICITY),
+    ("centax_central", "CenTax central (retention elasticity 1.0)", CENTAX_CENTRAL_ELASTICITY),
     (
         "centax_unadjusted",
         "CenTax before its adjustments (retention elasticity 1.5)",
@@ -101,20 +115,33 @@ INCOME_SHIFTING = {
 }
 
 #: Two ways to put CenTax's and the official elasticities on the same footing
-#: with respect to income shifting. ``case_ids`` are the five cases each
-#: shows, ``central_id`` its central case, and ``offset_case_ids`` the cases
-#: that add ``INCOME_SHIFTING``'s income tax to the change in CGT.
+#: with respect to income shifting. ``case_ids`` are the six cases each
+#: shows, ``central_id`` its central case, ``centax_id`` the CenTax case it
+#: compares the central case with, and ``offset_case_ids`` the cases that
+#: add ``INCOME_SHIFTING``'s income tax to the change in CGT. The central
+#: case is PolicyEngine's elasticity in both, applied as PolicyEngine has
+#: applied it: it makes no allowance for income shifting, so nothing is added
+#: back to it under either approach.
 APPROACHES = {
     "total_revenue": {
         "id": "total_revenue",
         "label": "Net of income shifting",
         "description": (
-            "Total revenue: CenTax's published elasticities, which already allow for "
-            "income no longer presented as gains, and the official elasticity with the "
-            "OBR's income tax on that income added back."
+            "Total revenue for the comparison cases: CenTax's published elasticities, which "
+            "already allow for income no longer presented as gains, and the official "
+            "elasticity with the OBR's income tax on that income added back. PolicyEngine's "
+            "central case is the same in both approaches."
         ),
-        "case_ids": ["static", "centax_lower", "centax_central", "centax_upper", "official"],
-        "central_id": "centax_central",
+        "case_ids": [
+            "static",
+            "policyengine",
+            "centax_lower",
+            "centax_central",
+            "centax_upper",
+            "official",
+        ],
+        "central_id": "policyengine",
+        "centax_id": "centax_central",
         "offset_case_ids": ["official"],
     },
     "cgt_only": {
@@ -123,10 +150,18 @@ APPROACHES = {
         "description": (
             "CGT only: every gain not realised counts as lost revenue, with CenTax's "
             "elasticity before its adjustments and the official elasticity with no income "
-            "tax added back."
+            "tax added back. PolicyEngine's central case is the same in both approaches."
         ),
-        "case_ids": ["static", "centax_lower", "centax_unadjusted", "centax_upper", "official"],
-        "central_id": "centax_unadjusted",
+        "case_ids": [
+            "static",
+            "policyengine",
+            "centax_lower",
+            "centax_unadjusted",
+            "centax_upper",
+            "official",
+        ],
+        "central_id": "policyengine",
+        "centax_id": "centax_unadjusted",
         "offset_case_ids": [],
     },
 }
@@ -140,7 +175,7 @@ def approaches_block() -> dict:
         "default": DEFAULT_APPROACH,
         "approaches": [dict(approach) for approach in APPROACHES.values()],
         "cases": [
-            {"id": case_id, "label": label, "e_retention": e}
+            {"id": case_id, "label": label, "elasticity": e, "applied_as": elasticity_form(e)}
             for case_id, label, e in ELASTICITY_CASES
         ],
         "income_shifting": dict(INCOME_SHIFTING),
@@ -413,13 +448,44 @@ OFFICIAL_ELASTICITY_SOURCE = {
     ),
 }
 
-# The elasticity cases the ready-reckoner rows are scored at: each
-# approach's central case and the official one. "official" is each row's own
-# official assumption (``official_elasticity``): 3.6 for the main-rate rows
-# and 1.4 for the BADR rows (OBR, January 2025, para 1.9).
+#: Where the central case comes from, and how it was chosen, in brief.
+POLICYENGINE_ELASTICITY_SOURCE = {
+    "source": "PolicyEngine, How PolicyEngine UK models behavioural responses (Vahid Ahmadi)",
+    "published": "2024-11-12",
+    "url": POLICYENGINE_ELASTICITY_URL,
+    "locator": "Capital gains elasticity",
+    "evidence": [
+        {
+            "study": "Dowd and McClelland (2019)",
+            "elasticity": -0.79,
+            "note": "Overall, from US federal and state tax returns, 1999-2008",
+        },
+        {
+            "study": "Auten and Clotfelter (1982)",
+            "elasticity": -0.37,
+            "note": "Permanent change in the rate, US",
+        },
+        {
+            "study": "Auten and Clotfelter (1982)",
+            "elasticity": -1.05,
+            "note": "Transitory change in the rate, US",
+        },
+    ],
+    "note": (
+        "No UK estimates were available, so PolicyEngine drew on US evidence and took a "
+        "slightly smaller response than the US overall estimate, judging UK gains less "
+        "responsive: the US has more tax-advantaged investment vehicles, more generous "
+        "treatment of real estate, a more active trading culture and scope to move "
+        "investments between state tax jurisdictions."
+    ),
+}
+
+# The elasticity cases the ready-reckoner rows are scored at: the central
+# case and the official one. "official" is each row's own official
+# assumption (``official_elasticity``): 3.6 for the main-rate rows and 1.4
+# for the BADR rows (OBR, January 2025, para 1.9).
 READY_RECKONER_ELASTICITIES = {
-    "centax_central": ELASTICITY,
-    "centax_unadjusted": CENTAX_UNADJUSTED_ELASTICITY,
+    "policyengine": POLICYENGINE_ELASTICITY,
     "official": OFFICIAL_ELASTICITY,
 }
 
@@ -656,21 +722,46 @@ def ready_reckoner_block(
     }
 
 
+def retention_equivalents(e_mtr: float) -> list[dict]:
+    """For each band the equalisation reform moves, the retention-rate
+    elasticity that changes realised gains by the same factor as ``e_mtr``
+    (``reform.equivalent_retention_elasticity``)."""
+    return [
+        {
+            "band": band,
+            "t0": _CURRENT_RATES[band],
+            "t1": INCOME_TAX_RATES[band],
+            "e_retention": equivalent_retention_elasticity(
+                e_mtr, _CURRENT_RATES[band], INCOME_TAX_RATES[band]
+            ),
+        }
+        for band in RATE_BANDS
+    ]
+
+
 def elasticities_block() -> dict:
-    """The central and the official behavioural assumptions, CenTax's range,
-    and how the engine applies each: every case is a retention-rate
-    elasticity, realised gains scaled by ((1 - t1) / (1 - t0)) ** e."""
+    """The central and the official behavioural assumptions, CenTax's cases,
+    and how the engine applies each: PolicyEngine's elasticity scales
+    realised gains by (t1 / t0) ** e, every other case by
+    ((1 - t1) / (1 - t0)) ** e."""
     return {
         "central": {
+            "id": "policyengine",
+            "elasticity": POLICYENGINE_ELASTICITY,
+            "applied_as": "mtr",
+            **POLICYENGINE_ELASTICITY_SOURCE,
+            "retention_equivalents": retention_equivalents(POLICYENGINE_ELASTICITY),
+        },
+        "centax_central": {
             "id": "centax_central",
-            "e_retention": ELASTICITY,
+            "elasticity": CENTAX_CENTRAL_ELASTICITY,
             "applied_as": "retention",
             "source": CENTAX_2024_SOURCE,
             "url": f"{CENTAX_2024_URL}#page=38",
         },
         "unadjusted": {
             "id": "centax_unadjusted",
-            "e_retention": CENTAX_UNADJUSTED_ELASTICITY,
+            "elasticity": CENTAX_UNADJUSTED_ELASTICITY,
             "applied_as": "retention",
             "source": CENTAX_2024_SOURCE,
             "url": f"{CENTAX_2024_URL}#page=37",
@@ -681,11 +772,14 @@ def elasticities_block() -> dict:
         },
         "official": {
             "id": "official",
-            "e_retention": OFFICIAL_ELASTICITY,
+            "elasticity": OFFICIAL_ELASTICITY,
             "applied_as": "retention",
             **OFFICIAL_ELASTICITY_SOURCE,
         },
-        "form": "realised gains × ((1 − t₁) / (1 − t₀))^e, t the marginal rate on gains",
+        "form": {
+            "mtr": "realised gains × (t₁ / t₀)^e, t the marginal rate on gains",
+            "retention": "realised gains × ((1 − t₁) / (1 − t₀))^e, t the marginal rate on gains",
+        },
     }
 
 

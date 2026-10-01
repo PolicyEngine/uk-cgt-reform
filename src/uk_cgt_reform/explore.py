@@ -92,22 +92,23 @@ RATE_DECIMALS = 4
 RATE_STEP = 0.01
 
 #: The behavioural assumptions a request may pick from: the pipeline's
-#: elasticity cases, each a retention-rate elasticity the engine applies as
-#: stated (``reform.elasticity_convention``). Each approach to income
-#: shifting (``comparison.APPROACHES``) offers five of them; every response
-#: reports the income-shifting offset, which the client adds to the official
-#: case under the approach net of income shifting.
+#: elasticity cases, each applied as stated in its own convention
+#: (``reform.elasticity_convention``): PolicyEngine's -0.7 against the
+#: marginal tax rate, the default, and the retention-rate cases. Each
+#: approach to income shifting (``comparison.APPROACHES``) offers six of
+#: them; every response reports the income-shifting offset, which the client
+#: adds to the official case under the approach net of income shifting.
 ELASTICITY_OPTIONS = tuple(
-    {"id": option_id, "label": label, "e_retention": e, **elasticity_convention(e)}
+    {"id": option_id, "label": label, "elasticity": e, **elasticity_convention(e)}
     for option_id, label, e in ELASTICITY_CASES
 )
 DEFAULT_ELASTICITY = ELASTICITY
-#: Requests from before the retention form keyed each case by a
-#: marginal-tax-rate value; shared links still carry them, so they map to
-#: the case they named.
+#: Links shared before CenTax's and the official cases took the retention
+#: form keyed them by a marginal-tax-rate value, so those values map to the
+#: case they named. -0.7 named PolicyEngine's elasticity, applied in the
+#: same form then as now, so it needs no mapping.
 LEGACY_MTR_ELASTICITIES = {
     -0.35: CENTAX_LOWER_ELASTICITY,
-    -0.7: ELASTICITY,
     -2.52: OFFICIAL_ELASTICITY,
 }
 
@@ -245,12 +246,15 @@ def _as_elasticity(value) -> float:
         if math.isclose(legacy, float(value), abs_tol=1e-9):
             value = retention
     for option in ELASTICITY_OPTIONS:
-        if math.isclose(option["e_retention"], float(value), abs_tol=1e-9):
-            return option["e_retention"]
-    allowed = ", ".join(str(o["e_retention"]) for o in ELASTICITY_OPTIONS)
-    raise ExploreValidationError(
-        f"elasticity must be one of {allowed} (a retention-rate elasticity); got {value}."
+        if math.isclose(option["elasticity"], float(value), abs_tol=1e-9):
+            return option["elasticity"]
+    forms = {"mtr": "against the marginal tax rate", "retention": "against the retention rate"}
+    allowed = "; ".join(
+        f"{', '.join(str(o['elasticity']) for o in ELASTICITY_OPTIONS if o['applied_as'] == form)} "
+        f"({label})"
+        for form, label in forms.items()
     )
+    raise ExploreValidationError(f"elasticity must be one of {allowed}; got {value}.")
 
 
 _BADR_KEYS = {"withdrawn", "rate", "lifetime_limit"}
@@ -629,6 +633,7 @@ def assemble_response(
             "reform_period_start": PERIOD,
             "elasticity": req.elasticity,
             "elasticity_parameter": elasticity_convention(req.elasticity)["elasticity_parameter"],
+            "elasticity_applied_as": elasticity_convention(req.elasticity)["applied_as"],
             "elasticity_applied": elasticity_assignment(req.elasticity),
             # budget[].income_shifting_offset_bn is never in the figures; the
             # approach net of income shifting adds it to the official case.

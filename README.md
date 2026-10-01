@@ -105,14 +105,16 @@ fingerprint `7c469f5300b6`.
 | Static yield (e = 0) | +£26.2bn | JRF (2026): about £13bn, static, equalisation alone (see [Benchmarks](#benchmarks)) |
 | of which the relief withdrawn (static) | +£5.0bn | none |
 | Uplift from equalising at 2019/20 rules (static) | +130% | CenTax (2024), Table 3: +139% on 2019/20 data |
+| **Yield, PolicyEngine (marginal-rate elasticity −0.7), the central case** | **+£5.2bn** | none for equalisation alone |
+| of which the relief withdrawn (central) | +£1.9bn | none |
 | Yield, CenTax lower (retention 0.5) | +£17.6bn | none |
-| **Yield, CenTax central (retention 1.0)** | **+£10.3bn** | none for equalisation alone; CenTax's £14.3bn (2025-26), £11.3bn (2026-27) and £19.7bn (2029-30) add an investment allowance and base broadening |
-| of which the relief withdrawn (central) | +£2.8bn | none |
+| Yield, CenTax central (retention 1.0) | +£10.3bn | none for equalisation alone; CenTax's £14.3bn (2025-26), £11.3bn (2026-27) and £19.7bn (2029-30) add an investment allowance and base broadening |
+| Yield, CenTax before its adjustments (retention 1.5) | +£4.1bn | none |
 | Yield, CenTax upper (retention 2.0) | −£1.1bn | none |
 | Yield, official HMRC/OBR elasticity (retention 3.6) | −£12.9bn | none |
-| Five-year total, 2026-27 to 2030-31 | +£56.5bn | none |
-| Top income quintile, net income change | −5.3% (−£7,751/household) | none |
-| Lowest income quintile, net income change | −0.07% (−£14) | none |
+| Five-year total, 2026-27 to 2030-31 (central) | +£29.9bn | none |
+| Top income quintile, net income change (central) | −6.1% (−£8,819/household) | none |
+| Lowest income quintile, net income change (central) | −0.09% (−£17) | none |
 
 Benchmarks are outturns for the tax year stated (HMRC Capital Gains Tax
 statistics, 2026 release, Tables 1, 2 and 8) or other institutions'
@@ -214,7 +216,7 @@ external figure with its source, locator, scope, year and basis.
   elasticity; at 23%, +£635m and +£840m against +£751m and +£767m. For +10
   points on the higher rate HMRC shows −£2,060m and −£3,565m; at the official
   elasticity this repo gives −£4,709m and −£4,907m, while at the central
-  elasticity the change raises +£5,362m on 2026-27 liabilities.
+  elasticity the change raises +£2,011m on 2026-27 liabilities.
   Lower rate +10 points and the exempt-amount row are not scored (the block
   records why). HMRC deferred its 2026 edition on 6 July 2026 pending a
   review of key assumptions, so the rows are provisional.
@@ -230,15 +232,16 @@ external figure with its source, locator, scope, year and basis.
   one in 2026-27 and zero in 2027-28, so the row reads −£533m and −£173m where
   the true response for that person gives about −£294m and −£301m. On the
   equalisation reform the engine reads that person's rate as 20.0% rising to
-  45.6% (true: 24% to 45%), which lowers the 2026-27 estimate by £0.13bn at
-  retention 0.5, £0.21bn at 1.0 (2% of the central +£10.3bn), £0.30bn at 2.0
-  and £0.30bn at 3.6; the static case is untouched. The fix belongs in the
+  45.6% (true: 24% to 45%), which lowers the 2026-27 estimate by £0.39bn at
+  PolicyEngine's −0.7 (7.5% of the central +£5.2bn), £0.13bn at retention
+  0.5, £0.21bn at 1.0, £0.30bn at 2.0 and £0.30bn at 3.6; the static case is
+  untouched. The fix belongs in the
   engine's `marginal_tax_rate_on_capital_gains`
   ([PolicyEngine/policyengine-uk#1979](https://github.com/PolicyEngine/policyengine-uk/issues/1979)).
 - **The official elasticity.** HMRC and the OBR use a retention-rate
   elasticity of 3.6 for the main rates ([OBR, January 2025](https://obr.uk/docs/dlm_uploads/CGT-supplementary-release-Jan-2025.pdf),
   para 1.9). Applied in that convention, equalisation changes 2026-27 CGT
-  revenue by −£12.9bn, against +£10.3bn at the central case.
+  revenue by −£12.9bn, against +£5.2bn at the central case.
 
 Left out by decision: the Office of Tax Simplification's 2020 static figure
 (2018-19 rules) and a validation run of the Autumn Budget 2024 rate rise.
@@ -287,42 +290,89 @@ variable removed and restores it straight after (downloads read it at call
 time); the basis is recorded in the explorer's `metadata.wrapper_certification`
 and in the Modal Volume's `manifest.json`.
 
-### Behavioural response (CenTax's elasticities, in CenTax's form)
+### Behavioural response (PolicyEngine's elasticity, −0.7)
 
+The central case is the capital gains elasticity PolicyEngine has used by
+default since November 2024: **−0.7** with respect to the **marginal tax
+rate** on gains, so a 10% rise in the rate (24% to 26.4%, say) lowers
+realised gains by about 7%. [How PolicyEngine UK models behavioural
+responses](https://www.policyengine.org/uk/research/behavioural-responses)
+(Vahid Ahmadi, November 2024) explains the choice. In brief:
+
+- **US evidence.** PolicyEngine found no UK estimates of how realised gains
+  respond to the tax rate, so it drew on US studies: Dowd & McClelland
+  (2019) estimate −0.79 overall from US federal and state tax returns for
+  1999–2008, and Auten & Clotfelter (1982) −0.37 for a permanent change in
+  the rate and −1.05 for a transitory one.
+- **A smaller response in the UK.** PolicyEngine took −0.7, a slightly
+  smaller response than the US overall estimate, judging UK gains less
+  responsive than US gains: the US has more tax-advantaged investment
+  vehicles, more generous treatment of real estate, a more active trading
+  culture and scope to move investments between state tax jurisdictions.
+- **Use.** PolicyEngine's models apply it by default, and the post applies
+  it to the October 2024 rate rise.
+
+policyengine-uk's `gov.simulation.capital_gains_responses.mtr_elasticity`
+applies it in that form, scaling each person's realised gains by
+(t₁/t₀)^e, with t the person's marginal rate on gains (each floored at 0.1%,
+and shared across the main, residential and BADR schedules in proportion to
+the gains on each).
+
+The comparison cases are stated with respect to the **retention rate**
+(1 − t), the share of a marginal pound of gain the taxpayer keeps.
 Advani, Lonsdale & Summers (CenTax, October 2024, *Reforming Capital Gains
-Tax*) estimate how realised gains respond to the **retention rate** (1 − t),
-the share of a marginal pound of gain the taxpayer keeps: a central
-medium-term elasticity of **1.0**, range 0.5–2.0, anchored on Agersnap &
-Zidar (2021) and Lavecchia & Tazhitdinova (2024). The official HMRC/OBR
-assumption is stated in the same convention: 3.6 for the main rates and 1.4
-for BADR (OBR, January 2025, para 1.9). policyengine-uk's
-`gov.simulation.capital_gains_responses.elasticity` applies an elasticity in
-exactly that form, scaling each person's realised gains by
-((1 − t₁)/(1 − t₀))^e, with t the person's marginal rate on gains (shared
-across the main, residential and BADR schedules in proportion to the gains on
-each). Every case sets that parameter and leaves `...mtr_elasticity` at zero;
-the sensitivity runs cover 0 (static), CenTax's 0.5, 1.0, 1.5 (before its
+Tax*) use a central medium-term elasticity of 1.0, range 0.5–2.0, anchored on
+Agersnap & Zidar (2021) and Lavecchia & Tazhitdinova (2024); the official
+HMRC/OBR assumption is 3.6 for the main rates and 1.4 for BADR (OBR, January
+2025, para 1.9). They set `gov.simulation.capital_gains_responses.elasticity`,
+which scales realised gains by ((1 − t₁)/(1 − t₀))^e. A case sets one of the
+two parameters and leaves the other at zero; a negative value is an
+elasticity with respect to the rate, zero or a positive one with respect to
+the retention rate (`reform.elasticity_form`). The sensitivity runs cover 0
+(static), PolicyEngine's −0.7, CenTax's 0.5, 1.0, 1.5 (before its
 adjustments, below) and 2.0, and the official 3.6. Every sensitivity row,
-explorer option and explorer response
-records the engine parameter it set, the convention (`applied_as`) and the
-value applied (`reform.elasticity_convention`).
+explorer option and explorer response records the engine parameter it set,
+the convention (`applied_as`: `mtr` or `retention`) and the value applied
+(`reform.elasticity_convention`).
 
-Until this change the pipeline converted CenTax's 1.0 into a
-marginal-tax-rate elasticity of −0.7 (`e_mtr = −e_retention × t/(1 − t)` at
-the reformed 40–45% rates) and applied it in the engine's MTR form,
-(t₁/t₀)^e. The conversion holds only for small changes. Across this reform's
-jumps −0.7 behaves like a retention elasticity of about 1.4 (24% to 45%), 1.5
-(24% to 40%) and 3.0 (18% to 20%): for one taxpayer's gains moving from 24% to
-45% it raised the tax on them by 21% where CenTax's convention gives 36%. The
-central yield was correspondingly understated.
+**How −0.7 compares with a retention elasticity.** The two forms agree only
+near one rate:
 
-Caveat: CenTax's elasticity belongs to a package that also removes the uplift
-at death and charges gains on departure, closing two ways of deferring or
-avoiding the tax, which this repo does not model. CenTax expect a larger
-response to a rate rise on the current base and advise against equalising
-rates without the base reforms (*Taxes at the top*, September 2026, p.17);
-the upper end of the range and the official case show how much of the yield
-rests on the assumption.
+- *At one rate t*, an elasticity e with respect to the rate equals a
+  retention elasticity of −e × (1 − t)/t
+  (`reform.point_retention_elasticity`). −0.7 equals CenTax's 1.0 only at
+  t = 7/17, about 41%; it is 2.2 at today's 24% and 0.86 at 45%. Earlier
+  versions of this repo described −0.7 as CenTax's 1.0 converted at the
+  reformed 40–45% rates; that is this conversion, and it holds only near
+  those rates.
+- *Across a discrete change*, the comparable figure is the retention
+  elasticity that moves realised gains by the same factor,
+  e × ln(t₁/t₀) / ln((1 − t₁)/(1 − t₀))
+  (`reform.equivalent_retention_elasticity`; the results file carries it per
+  band in `benchmarks.elasticities.central.retention_equivalents`). Over this
+  reform's changes −0.7 behaves like 1.4 (24% to 45%), 1.5 (24% to 40%) and
+  3.0 (18% to 20%): a larger response than CenTax's 1.0 at every rate, and
+  close to CenTax's 1.5 before its adjustments at the higher and additional
+  rates, where most of the yield arises. For one taxpayer's gains moving from
+  24% to 45%, the tax on them rises by 21% at −0.7 and by 36% at retention
+  1.0.
+- *Rate rises.* The tax on a gain scales with t^(1 + e) = t^0.3, so at −0.7
+  a higher rate always raises more, with diminishing returns. A retention
+  elasticity e has a revenue-maximising rate of 1/(1 + e): 50% at 1.0, 40% at
+  1.5 and 22% at the official 3.6.
+- *Rate cuts.* Towards a zero rate the form with respect to the rate makes
+  realisations grow without bound; the engine's 0.1% floor stops a cut from
+  24% to 0% at about 46 times the gains (1.3 times at retention 1.0). The Rate
+  explorer warns when a schedule cuts a rate under this case.
+
+Caveats: the evidence behind −0.7 is from the US, and carrying it to UK
+taxpayers is a judgement. CenTax's elasticity belongs to a package that also
+removes the uplift at death and charges gains on departure, closing two ways
+of deferring or avoiding the tax, which this repo does not model. CenTax
+expect a larger response to a rate rise on the current base and advise
+against equalising rates without the base reforms (*Taxes at the top*,
+September 2026, p.17); the upper end of CenTax's range and the official case
+show how much of the yield rests on the assumption.
 
 ### Income shifting: two approaches
 
@@ -350,14 +400,23 @@ differently:
   £2.5bn raised in 2029-30, against £4.9bn of CGT lost to behaviour (Table
   1.3).
 
+PolicyEngine's −0.7 makes no allowance for income shifting: every gain not
+realised counts as lost CGT, as PolicyEngine has applied it. It is the
+central case under both approaches, which change only the CenTax and official
+cases it is compared with. On the OBR's method its 2026-27 addition would be
++£2.7bn, taking the central case from +£5.2bn to +£7.9bn; adding
+`"policyengine"` to the net approach's `offset_case_ids` would show that,
+and the dashboard's figures follow, though its wording assumes the central
+case adds nothing.
+
 The results carry both approaches (`comparison.APPROACHES`), and the
 dashboard's "Income shifting" switch chooses between them on every tab except
 Baseline:
 
 - **Gross of income shifting (CGT only).** Every gain not realised counts as
-  lost revenue. Cases: static, CenTax's 0.5, CenTax's 1.5 before its
-  adjustments (the central case), 2.0, and the official 3.6 with nothing
-  added back.
+  lost revenue. Cases: static, PolicyEngine's −0.7 (the central case),
+  CenTax's 0.5, CenTax's 1.5 before its adjustments, 2.0, and the official
+  3.6 with nothing added back.
   - *Assumptions:* 1.5 removes both of CenTax's adjustments, because CenTax
     don't say how much each accounts for. A rates-only reform keeps the
     uplift at death, so the second would not apply to it either. CenTax
@@ -366,8 +425,9 @@ Baseline:
   - *Caveats:* it understates total revenue by leaving out income tax that
     both sources count. HMRC's ready-reckoner figures include income tax
     effects, so that comparison is not like for like.
-- **Net of income shifting (total revenue).** CenTax as published (0.5, 1.0
-  central, 2.0), and the official 3.6 plus the income tax on shifted income
+- **Net of income shifting (total revenue).** PolicyEngine's −0.7 (the
+  central case, nothing added back), CenTax as published (0.5, 1.0, 2.0),
+  and the official 3.6 plus the income tax on shifted income
   (`impacts.income_shifting_offset`). That is 12.5% of the behavioural fall
   in realised gains, taxed at 45% (`reform.INCOME_SHIFTING_SHARE`,
   `INCOME_SHIFTING_TAX_RATE`). The ready-reckoner rows' official columns
@@ -382,6 +442,9 @@ Baseline:
     OBR's own costing (£4.9bn of CGT lost on gains taxed at 22–24%), the
     method gives about £1.2bn against the OBR's £1.5bn.
   - *Caveats:*
+    - The central case leaves out the income tax on shifted income that the
+      comparison cases count, so beside them it understates total revenue
+      (by £2.7bn in 2026-27 on the OBR's method).
     - CenTax's 1.0 also includes their adjustment for the uplift at death,
       which a rates-only reform doesn't remove. By CenTax's reasoning the
       response to this reform is larger.
@@ -413,7 +476,7 @@ whose clone keeps its own unreformed parameter tree) before applying the
 same parameter updates. Each Simulation covers a single year, so the old
 multi-year "restore the neutralised response variable" workaround is no
 longer needed. The pipeline asserts that the static (e=0) and central
-(retention e=1.0) runs differ before writing any results.
+(PolicyEngine's −0.7) runs differ before writing any results.
 
 ### Outputs
 
@@ -683,10 +746,11 @@ runs: the dataset is pinned explicitly by revision and digest.
 built and calibrated with (and the first whose local-authority enum carries the
 April 2023 unitary authorities the dataset records); a later release moves the
 projection fingerprint, so changing the pin is a deliberate re-pin that
-regenerates the results. A run needs the per-year builds, twenty-four stored simulations (baseline,
-central and static reform for every year, three more sensitivity cases, the
+regenerates the results. A run needs the per-year builds, twenty-six stored simulations (baseline,
+central and static reform for every year, five more sensitivity cases, the
 CenTax counterfactual pair and four schedule-split steps) and twenty-eight
-in-memory ready-reckoner runs; a run with the stored outputs in place spends
+in-memory ready-reckoner runs (seven rows, the central and the official case,
+two years each); a run with the stored outputs in place spends
 most of its time on the ready-reckoner runs. Copy
 `data/cgt_equalisation_results.json` into `dashboard/public/data/` for the
 dashboard, which bundles it at build time, and regenerate

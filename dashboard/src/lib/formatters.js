@@ -68,10 +68,19 @@ export function formatCount(value) {
   return Math.round(num).toLocaleString("en-GB");
 }
 
-// How a behavioural case reached the engine: every case is an elasticity of
-// realised gains with respect to the retention rate (1 − t), applied as stated.
-export function formatElasticity({ applied_value: appliedValue }) {
-  return `retention ${Number(appliedValue).toFixed(1)}`;
+// An elasticity with a true minus sign: "−0.7", "1.0", or "−0.79" at two
+// digits.
+export function formatElasticityValue(value, digits = 1) {
+  const text = Number(value).toFixed(digits);
+  return text.startsWith("-") ? `−${text.slice(1)}` : text;
+}
+
+// How a behavioural case reached the engine, as each source states it:
+// PolicyEngine's elasticity of realised gains with respect to the marginal
+// tax rate, or one with respect to the retention rate (1 − t).
+export function formatElasticity({ applied_as: appliedAs, applied_value: appliedValue }) {
+  const value = formatElasticityValue(appliedValue);
+  return appliedAs === "mtr" ? `marginal rate ${value}` : `retention ${value}`;
 }
 
 const MONTHS = [

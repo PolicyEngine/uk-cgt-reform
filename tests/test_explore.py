@@ -140,48 +140,73 @@ def test_validate_request_rejects(payload, message):
 
 def test_rate_bounds_and_elasticity_options():
     assert RATE_BOUNDS == (0.0, 0.75)
-    assert [o["e_retention"] for o in ELASTICITY_OPTIONS] == [e for _, _, e in ELASTICITY_CASES]
-    assert [o["e_retention"] for o in ELASTICITY_OPTIONS] == [0.0, 0.5, 1.0, 1.5, 2.0, 3.6]
+    assert [o["elasticity"] for o in ELASTICITY_OPTIONS] == [e for _, _, e in ELASTICITY_CASES]
+    assert [o["elasticity"] for o in ELASTICITY_OPTIONS] == [0.0, -0.7, 0.5, 1.0, 1.5, 2.0, 3.6]
     assert [o["id"] for o in ELASTICITY_OPTIONS] == [
         "static",
+        "policyengine",
         "centax_lower",
         "centax_central",
         "centax_unadjusted",
         "centax_upper",
         "official",
     ]
-    # Every case is applied as stated, on the engine's retention parameter.
-    assert all(o["applied_as"] == "retention" for o in ELASTICITY_OPTIONS)
-    assert all(o["elasticity_parameter"] == ELASTICITY_PARAMETER for o in ELASTICITY_OPTIONS)
-    assert [o["applied_value"] for o in ELASTICITY_OPTIONS] == [0.0, 0.5, 1.0, 1.5, 2.0, 3.6]
-    # Each approach offers five of the cases, all of them options here.
-    ids = {o["id"] for o in ELASTICITY_OPTIONS}
+    # Every case is applied as stated, in its own convention: PolicyEngine's
+    # on the engine's marginal-tax-rate parameter, the rest on its
+    # retention-rate parameter.
+    options = {o["id"]: o for o in ELASTICITY_OPTIONS}
+    assert options["policyengine"]["applied_as"] == "mtr"
+    assert options["policyengine"]["elasticity_parameter"] == MTR_ELASTICITY_PARAMETER
+    retention = [o for o in ELASTICITY_OPTIONS if o["id"] != "policyengine"]
+    assert all(o["applied_as"] == "retention" for o in retention)
+    assert all(o["elasticity_parameter"] == ELASTICITY_PARAMETER for o in retention)
+    assert [o["applied_value"] for o in ELASTICITY_OPTIONS] == [0.0, -0.7, 0.5, 1.0, 1.5, 2.0, 3.6]
+    # Each approach offers six of the cases, all of them options here.
     for approach in APPROACHES.values():
-        assert set(approach["case_ids"]) <= ids
+        assert set(approach["case_ids"]) <= set(options)
+        assert len(approach["case_ids"]) == 6
 
 
-def test_every_case_applies_the_retention_parameter():
+def test_each_case_applies_its_own_parameter():
     req = validate_request({"rates": FLAT_30, "elasticity": OFFICIAL_ELASTICITY})
     assert req.elasticity == 3.6
     reform = req.reform()
     assert reform[ELASTICITY_PARAMETER] == {"2026-01-01": 3.6}
     assert MTR_ELASTICITY_PARAMETER not in reform
-    central = validate_request({"rates": FLAT_30}).reform()
-    assert central[ELASTICITY_PARAMETER] == {"2026-01-01": ELASTICITY}
-    assert MTR_ELASTICITY_PARAMETER not in central
+    central = validate_request({"rates": FLAT_30})
+    assert central.elasticity == ELASTICITY == -0.7
+    assert central.reform()[MTR_ELASTICITY_PARAMETER] == {"2026-01-01": -0.7}
+    assert ELASTICITY_PARAMETER not in central.reform()
     result = assemble_response(req, context(), year_rows())
     assert result["metadata"]["elasticity_applied"] == {ELASTICITY_PARAMETER: 3.6}
     assert result["metadata"]["elasticity_parameter"] == ELASTICITY_PARAMETER
+    assert result["metadata"]["elasticity_applied_as"] == "retention"
+    central_result = assemble_response(central, context(), year_rows())
+    assert central_result["metadata"]["elasticity_applied"] == {MTR_ELASTICITY_PARAMETER: -0.7}
+    assert central_result["metadata"]["elasticity_applied_as"] == "mtr"
     options = {o["id"]: o for o in api_options()["elasticity_options"]}
     assert options["official"]["elasticity_parameter"] == ELASTICITY_PARAMETER
-    assert api_options()["elasticity_parameter"] == ELASTICITY_PARAMETER
+    assert api_options()["elasticity_parameter"] == MTR_ELASTICITY_PARAMETER
     assert api_options()["default_elasticity"] == ELASTICITY
 
 
 def test_links_from_before_the_retention_form_map_to_the_case_they_named():
-    # Shared links carried each case's old marginal-tax-rate key.
-    for legacy, retention in ((-0.35, 0.5), (-0.7, 1.0), (-2.52, 3.6), (0.0, 0.0)):
-        assert validate_request({"rates": FLAT_30, "elasticity": legacy}).elasticity == retention
+    # Shared links carried CenTax's and the official cases' old
+    # marginal-tax-rate keys; -0.7 named PolicyEngine's elasticity, applied
+    # in the same form then as now.
+    for legacy, mapped in ((-0.35, 0.5), (-2.52, 3.6), (-0.7, -0.7), (0.0, 0.0)):
+        assert validate_request({"rates": FLAT_30, "elasticity": legacy}).elasticity == mapped
+    req = validate_request({"rates": FLAT_30, "elasticity": -0.7})
+    assert req.reform()[MTR_ELASTICITY_PARAMETER] == {"2026-01-01": -0.7}
+
+
+def test_a_refused_elasticity_names_each_convention():
+    with pytest.raises(ExploreValidationError) as refused:
+        validate_request({"rates": FLAT_30, "elasticity": 1.4})
+    assert str(refused.value) == (
+        "elasticity must be one of -0.7 (against the marginal tax rate); "
+        "0.0, 0.5, 1.0, 1.5, 2.0, 3.6 (against the retention rate); got 1.4."
+    )
 
 
 def test_ready_reckoner_rows_are_valid_requests_and_not_presets():
@@ -297,7 +322,9 @@ def test_cache_key_tracks_every_input_and_nothing_else():
     assert key.startswith(f"{CANDIDATE.key}__{CANDIDATE.digest}__")
     # Changes that must hit: the same request again, and context fields the
     # key does not track.
-    again = validate_request({"dataset": CANDIDATE.key, "rates": dict(FLAT_30), "elasticity": 1.0})
+    again = validate_request(
+        {"dataset": CANDIDATE.key, "rates": dict(FLAT_30), "elasticity": ELASTICITY}
+    )
     assert cache_key(again, context(base_year=2023)) == key
 
 
@@ -358,7 +385,8 @@ def test_assemble_response_has_the_pipeline_shapes():
     assert md["wrapper_certification"]["compatibility_basis"] == (
         "unverified_data_release_manifest_unavailable"
     )
-    assert md["elasticity"] == 1.0
+    assert md["elasticity"] == ELASTICITY
+    assert md["elasticity_applied_as"] == "mtr"
     assert md["years"] == list(YEARS)
     assert list(md["exempt_amount_gbp"]) == labels
     assert md["projection"] == {"fingerprint": "1b0cd0dff144", "base_year": 2024}

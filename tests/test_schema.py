@@ -37,7 +37,6 @@ TOP_LEVEL_KEYS = {
     "benchmarks",
     "schedule_split",
     "approaches",
-    "approach_results",
 }
 
 
@@ -125,15 +124,10 @@ def fake_schedule_split(scale: float = 1.0) -> dict:
             "residential": base + 3.5e9,
             "badr_withdrawn": base + 4e9,
         },
-        "unadjusted": {
-            "main_rates": base + 1e9,
-            "residential": base + 1.2e9,
-            "badr_withdrawn": base + 1.5e9,
-        },
     }
     return {
         "year": "2026-27",
-        "elasticities": {"static": 0.0, "central": 1.0, "unadjusted": 1.5},
+        "elasticities": {"static": 0.0, "central": -0.7},
         "reform_fingerprints": {case: {step: "0" * 12 for step, _ in steps} for case in revenues},
         "steps": schedule_split(base, steps, revenues),
     }
@@ -167,8 +161,9 @@ def fake_results(spec=CANDIDATE, scale: float = 1.0) -> dict:
             "default_dataset_key": DEFAULT_DATASET_KEY,
             "calibrated": False,
             "reform_period_start": "2026-01-01",
-            "elasticity": 1.0,
-            "elasticity_parameter": "gov.simulation.capital_gains_responses.elasticity",
+            "elasticity": -0.7,
+            "elasticity_parameter": "gov.simulation.capital_gains_responses.mtr_elasticity",
+            "elasticity_applied_as": "mtr",
             "reform": {"basic_rate": 0.20, "higher_rate": 0.40, "additional_rate": 0.45},
             "reform_schedules": reform_schedules(),
             "reform_fingerprint": "def456",
@@ -239,55 +234,16 @@ def fake_results(spec=CANDIDATE, scale: float = 1.0) -> dict:
             {
                 "id": case_id,
                 "name": name,
-                "e_retention": e,
+                "elasticity": e,
                 **elasticity_convention(e),
                 "revenue_2026_bn": 1.0,
-                "income_shifting_offset_2026_bn": 0.1 * e,
+                "income_shifting_offset_2026_bn": 0.1 * abs(e),
             }
             for case_id, name, e in ELASTICITY_CASES
         ],
         "benchmarks": fake_benchmarks(scale),
         "schedule_split": fake_schedule_split(scale),
         "approaches": approaches_block(),
-        "approach_results": {
-            "cgt_only": {
-                "central_id": "centax_unadjusted",
-                "elasticity": 1.5,
-                "reform_fingerprint": "0" * 12,
-                "budget": [
-                    {
-                        "year": label,
-                        "baseline_cgt_bn": 17.2 * scale,
-                        "reform_cgt_bn": 18.5 * scale,
-                        "cgt_change_bn": 1.3 * scale,
-                        "total_tax_change_bn": 1.3 * scale,
-                        "gov_balance_change_bn": 1.3 * scale,
-                        "income_shifting_offset_bn": 0.6 * scale,
-                        "cgt_change_from_entrants_bn": 0.01 * scale,
-                    }
-                    for label in labels
-                ],
-                "income_change_groups": {
-                    label: {
-                        "quintile": [
-                            {"group": g, "avg_change_gbp": -1.0, "relative_change_pct": -0.1}
-                            for g in ["Lowest 20%", "20–40%", "40–60%", "60–80%", "Highest 20%"]
-                        ],
-                        "household_type": [
-                            {
-                                "group": "Pensioner",
-                                "avg_change_gbp": -1.0,
-                                "relative_change_pct": 0.0,
-                            }
-                        ],
-                        "region": [
-                            {"group": "London", "avg_change_gbp": -1.0, "relative_change_pct": 0.0}
-                        ],
-                    }
-                    for label in YEAR_LABELS
-                },
-            }
-        },
     }
 
 
@@ -298,7 +254,10 @@ def test_top_level_keys():
 def test_metadata_and_years():
     md = fake_results()["metadata"]
     assert md["years"] == [2026, 2027, 2028, 2029, 2030]
-    assert md["elasticity"] == 1.0
+    # The central case: PolicyEngine's elasticity against the marginal rate.
+    assert md["elasticity"] == -0.7
+    assert md["elasticity_applied_as"] == "mtr"
+    assert md["elasticity_parameter"].endswith(".capital_gains_responses.mtr_elasticity")
     assert set(md["reform"]) == {"basic_rate", "higher_rate", "additional_rate"}
     # Carried interest has been taxed as income since April 2026: the reform
     # moves the residential schedule and withdraws the relief.
@@ -363,22 +322,24 @@ def test_calibration_block_is_explicitly_empty():
 
 def test_sensitivity_cases():
     rows = fake_results()["sensitivity"]
-    assert [r["e_retention"] for r in rows] == [0.0, 0.5, 1.0, 1.5, 2.0, 3.6]
+    assert [r["elasticity"] for r in rows] == [0.0, -0.7, 0.5, 1.0, 1.5, 2.0, 3.6]
     assert [r["id"] for r in rows] == [case_id for case_id, _, _ in ELASTICITY_CASES]
     assert rows[0]["name"] == "Static (no behavioural response)"
-    # Every row says how its case reached the engine: a retention-rate
-    # elasticity, applied as stated.
+    assert rows[1]["name"] == "PolicyEngine (marginal-rate elasticity −0.7)"
+    # Every row says how its case reached the engine: PolicyEngine's against
+    # the marginal tax rate, the rest against the retention rate, each
+    # applied as stated.
     assert [(r["applied_as"], r["applied_value"]) for r in rows] == [
         ("retention", 0.0),
+        ("mtr", -0.7),
         ("retention", 0.5),
         ("retention", 1.0),
         ("retention", 1.5),
         ("retention", 2.0),
         ("retention", 3.6),
     ]
-    assert all(
-        r["elasticity_parameter"].endswith(".capital_gains_responses.elasticity") for r in rows
-    )
+    parameters = [r["elasticity_parameter"].rsplit(".", 1)[1] for r in rows]
+    assert parameters == ["elasticity", "mtr_elasticity", *["elasticity"] * 5]
 
 
 def test_benchmarks_block_shape():
@@ -390,12 +351,33 @@ def test_benchmarks_block_shape():
         "centax_package_context",
         "ready_reckoner",
     }
-    assert bench["elasticities"]["official"]["applied_as"] == "retention"
-    assert bench["elasticities"]["official"]["e_retention"] == 3.6
-    assert bench["elasticities"]["central"]["applied_as"] == "retention"
-    assert bench["elasticities"]["central"]["e_retention"] == 1.0
-    assert bench["elasticities"]["unadjusted"]["e_retention"] == 1.5
-    assert bench["elasticities"]["centax_range"] == {"lower": 0.5, "upper": 2.0}
+    elasticities = bench["elasticities"]
+    assert elasticities["official"]["applied_as"] == "retention"
+    assert elasticities["official"]["elasticity"] == 3.6
+    # The central case is PolicyEngine's, with its source and, for each band
+    # the reform moves, the retention elasticity it behaves like.
+    central = elasticities["central"]
+    assert (central["id"], central["applied_as"], central["elasticity"]) == (
+        "policyengine",
+        "mtr",
+        -0.7,
+    )
+    assert central["url"] == "https://www.policyengine.org/uk/research/behavioural-responses"
+    assert central["published"] == "2024-11-12"
+    assert [row["elasticity"] for row in central["evidence"]] == [-0.79, -0.37, -1.05]
+    assert [
+        (row["band"], row["t0"], row["t1"], round(row["e_retention"], 2))
+        for row in central["retention_equivalents"]
+    ] == [
+        ("basic_rate", 0.18, 0.20, 2.99),
+        ("higher_rate", 0.24, 0.40, 1.51),
+        ("additional_rate", 0.24, 0.45, 1.36),
+    ]
+    assert elasticities["centax_central"]["elasticity"] == 1.0
+    assert elasticities["centax_central"]["applied_as"] == "retention"
+    assert elasticities["unadjusted"]["elasticity"] == 1.5
+    assert elasticities["centax_range"] == {"lower": 0.5, "upper": 2.0}
+    assert set(elasticities["form"]) == {"mtr", "retention"}
     static = bench["static_equalisation"]
     assert [row["year"] for row in static["by_year"]] == YEAR_LABELS
     first = static["by_year"][0]
@@ -411,7 +393,7 @@ def test_benchmarks_block_shape():
     rows = bench["ready_reckoner"]["rows"]
     assert [row["id"] for row in rows] == [row["id"] for row in READY_RECKONER["rows"]]
     assert set(rows[0]["model_m"]) == set(READY_RECKONER_ELASTICITIES)
-    assert set(rows[0]["model_m"]) == {"centax_central", "centax_unadjusted", "official"}
+    assert set(rows[0]["model_m"]) == {"policyengine", "official"}
     assert set(rows[0]["model_m"]["official"]) == {"2026-27", "2027-28"}
     assert set(rows[0]["income_shifting_offset_m"]) == set(READY_RECKONER_ELASTICITIES)
     assert set(rows[0]["income_shifting_offset_m"]["official"]) == {"2026-27", "2027-28"}
@@ -420,7 +402,7 @@ def test_benchmarks_block_shape():
 def test_schedule_split_builds_the_yield_up_step_by_step():
     split = fake_results()["schedule_split"]
     assert split["year"] == "2026-27"
-    assert split["elasticities"] == {"static": 0.0, "central": 1.0, "unadjusted": 1.5}
+    assert split["elasticities"] == {"static": 0.0, "central": -0.7}
     steps = split["steps"]
     assert [row["step"] for row in steps] == ["main_rates", "residential", "badr_withdrawn"]
     # Cumulative changes from current law, and each step's own increment.
@@ -439,29 +421,34 @@ def test_two_approaches_to_income_shifting():
     case_ids = [case_id for case_id, _, _ in ELASTICITY_CASES]
     assert [c["id"] for c in block["cases"]] == case_ids
     for approach in APPROACHES.values():
-        # Five cases each, every one a known case, the central among them.
-        assert len(approach["case_ids"]) == 5
+        # Six cases each, every one a known case, the central and the CenTax
+        # comparison among them.
+        assert len(approach["case_ids"]) == 6
         assert set(approach["case_ids"]) <= set(case_ids)
         assert approach["central_id"] in approach["case_ids"]
+        assert approach["centax_id"] in approach["case_ids"]
         assert set(approach["offset_case_ids"]) <= set(approach["case_ids"])
-    # Net of income shifting: CenTax as published, the official case plus
-    # the OBR's income tax. Gross: CenTax before its adjustments, no offset.
+    # Both approaches share the central case, PolicyEngine's elasticity,
+    # with nothing added back. Net of income shifting: CenTax as published,
+    # the official case plus the OBR's income tax. Gross: CenTax before its
+    # adjustments, no offset.
     net, gross = APPROACHES["total_revenue"], APPROACHES["cgt_only"]
-    assert net["central_id"] == "centax_central" and net["offset_case_ids"] == ["official"]
-    assert gross["central_id"] == "centax_unadjusted" and gross["offset_case_ids"] == []
-    # The CenTax cases that never carry an offset: CenTax's elasticities are
-    # either net already (1.0) or counted as CGT only (1.5).
-    assert "centax_central" not in net["offset_case_ids"]
+    assert net["central_id"] == gross["central_id"] == "policyengine"
+    assert net["centax_id"] == "centax_central" and net["offset_case_ids"] == ["official"]
+    assert gross["centax_id"] == "centax_unadjusted" and gross["offset_case_ids"] == []
+    # The cases that never carry an offset: PolicyEngine's, applied as
+    # PolicyEngine has applied it, and CenTax's, either net already (1.0) or
+    # counted as CGT only (1.5).
+    assert not {"policyengine", "centax_central"} & set(net["offset_case_ids"])
     shifting = block["income_shifting"]
     assert (shifting["share"], shifting["tax_rate"]) == (0.125, 0.45)
     assert shifting == INCOME_SHIFTING
     assert shifting["url"].startswith("https://obr.uk/")
 
 
-def test_approach_results_hold_the_gross_central_case():
+def test_one_central_case_serves_both_approaches():
+    # The top-level budget and groups are the central case, which both
+    # approaches share, so the results carry no per-approach blocks.
     results = fake_results()
-    gross = results["approach_results"]["cgt_only"]
-    assert gross["central_id"] == APPROACHES["cgt_only"]["central_id"]
-    assert gross["elasticity"] == 1.5
-    assert [row["year"] for row in gross["budget"]] == [row["year"] for row in results["budget"]]
-    assert set(gross["income_change_groups"]) == set(results["income_change_groups"])
+    assert "approach_results" not in results
+    assert {a["central_id"] for a in results["approaches"]["approaches"]} == {"policyengine"}
