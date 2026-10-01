@@ -980,21 +980,34 @@
         "evidence": [
           {
             "study": "Dowd and McClelland (2019)",
-            "elasticity": -0.79,
-            "note": "Overall, from US federal and state tax returns, 1999-2008"
+            "cited_in_post": true,
+            "estimates": {
+              "quasi_permanent": -0.79,
+              "short_run": -0.47
+            },
+            "data": "the bunching of realisations just after the one-year holding period, on US transaction-level data"
+          },
+          {
+            "study": "Dowd, McClelland and Muthitacharoen (2015)",
+            "cited_in_post": false,
+            "estimates": {
+              "permanent": -0.72,
+              "permanent_corrected": -0.78,
+              "transitory": -1.2
+            },
+            "data": "a panel of US individual income tax returns for 1999-2008"
           },
           {
             "study": "Auten and Clotfelter (1982)",
-            "elasticity": -0.37,
-            "note": "Permanent change in the rate, US"
-          },
-          {
-            "study": "Auten and Clotfelter (1982)",
-            "elasticity": -1.05,
-            "note": "Transitory change in the rate, US"
+            "cited_in_post": true,
+            "estimates": {
+              "permanent": -0.37,
+              "transitory": -1.05
+            },
+            "data": null
           }
         ],
-        "note": "No UK estimates were available, so PolicyEngine drew on US evidence and took a slightly smaller response than the US overall estimate, judging UK gains less responsive: the US has more tax-advantaged investment vehicles, more generous treatment of real estate, a more active trading culture and scope to move investments between state tax jurisdictions.",
+        "note": "No UK estimates were available, so PolicyEngine drew on US evidence. It set -0.7 for the UK judging that UK capital gains respond less to tax changes than US gains: the US has more tax-advantaged investment vehicles, more generous treatment of real estate, a more active trading culture and scope to move investments between state tax jurisdictions.",
         "retention_equivalents": [
           {
             "band": "basic_rate",
@@ -1837,7 +1850,7 @@
       {
         "id": "total_revenue",
         "label": "Net of income shifting",
-        "description": "Total revenue for the comparison cases: CenTax's published elasticities, which already allow for income no longer presented as gains, and the official elasticity with the OBR's income tax on that income added back. PolicyEngine's central case is the same in both approaches.",
+        "description": "Total revenue: PolicyEngine's and the official elasticities, both measured on gains alone, with the OBR's income tax on income no longer presented as gains added back, and CenTax's published elasticities, which already allow for it.",
         "case_ids": [
           "static",
           "policyengine",
@@ -1849,13 +1862,14 @@
         "central_id": "policyengine",
         "centax_id": "centax_central",
         "offset_case_ids": [
+          "policyengine",
           "official"
         ]
       },
       {
         "id": "cgt_only",
         "label": "Gross of income shifting",
-        "description": "CGT only: every gain not realised counts as lost revenue, with CenTax's elasticity before its adjustments and the official elasticity with no income tax added back. PolicyEngine's central case is the same in both approaches.",
+        "description": "CGT only: every gain not realised counts as lost revenue, with PolicyEngine's and the official elasticities as they stand and CenTax's elasticity before its adjustments.",
         "case_ids": [
           "static",
           "policyengine",

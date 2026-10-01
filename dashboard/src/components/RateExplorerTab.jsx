@@ -478,16 +478,33 @@ export default function RateExplorerTab({ data, datasetKey }) {
     ? rowFor(result.metadata.reform, result.metadata.reform_badr ?? BADR_CURRENT_LAW)
     : null;
   const centralOption = ELASTICITIES.find((option) => option.id === approach.central_id);
-  // The chosen case, and whether any chosen rate is a cut: under PolicyEngine's
-  // elasticity the response to a cut grows steeply as a rate nears zero.
+  // The chosen case, and the deepest cut the schedule makes under PolicyEngine's
+  // elasticity, whose response to a cut grows steeply as a rate nears zero:
+  // the factor (t1 / t0) ** e on the gains a cut reaches, each rate floored as
+  // the engine floors it.
   const chosenOption = ELASTICITIES.find((option) => sameElasticity(option.elasticity, elasticity));
-  const cutsARate = Boolean(
-    validation.rates &&
-      (BANDS.some((band) => validation.rates[band.key] < CURRENT_LAW[band.key] - 1e-9) ||
-        (validation.badr && !validation.badr.withdrawn && validation.badr.rate < BADR_CURRENT_LAW.rate - 1e-9)),
-  );
+  const cutFactor = (from, to) =>
+    (Math.max(to, MTR_FLOOR) / Math.max(from, MTR_FLOOR)) ** chosenOption.elasticity;
+  const deepestCut =
+    chosenOption?.applied_as === "mtr" && validation.rates
+      ? [
+          ...BANDS.map((band) => ({
+            label: band.label.toLowerCase(),
+            from: CURRENT_LAW[band.key],
+            to: validation.rates[band.key],
+          })),
+          ...(validation.badr && !validation.badr.withdrawn
+            ? [{ label: "relief's rate", from: BADR_CURRENT_LAW.rate, to: validation.badr.rate }]
+            : []),
+        ]
+          .filter((cut) => cut.to < cut.from - 1e-9)
+          .map((cut) => ({ ...cut, factor: cutFactor(cut.from, cut.to), toZero: cutFactor(cut.from, 0) }))
+          .reduce((deepest, cut) => (deepest && deepest.factor >= cut.factor ? deepest : cut), null)
+      : null;
+  const formatFactor = (factor) => (factor >= 10 ? factor.toFixed(0) : factor.toFixed(1));
   // The run as the approach shows it: under the approach net of income
-  // shifting, the official case adds the OBR's income tax on shifted income.
+  // shifting, PolicyEngine's and the official case add the OBR's income tax on
+  // shifted income.
   // A backend older than the approaches does not report it; the run then
   // counts CGT alone and says so.
   const wantsOffset = Boolean(
@@ -650,12 +667,16 @@ export default function RateExplorerTab({ data, datasetKey }) {
         {validation.error ? (
           <p className="mt-3 text-sm leading-6 text-red-700">{validation.error}</p>
         ) : null}
-        {chosenOption?.applied_as === "mtr" && cutsARate ? (
+        {deepestCut ? (
           <p className="mt-3 text-sm leading-6 text-amber-800">
             PolicyEngine&apos;s elasticity works on the marginal tax rate itself, so the response
-            to a cut grows steeply as a rate nears zero: a cut from 24% to 0% multiplies the gains
-            it reaches by about {Math.round((MTR_FLOOR / 0.24) ** chosenOption.elasticity)}. The
-            retention-rate cases respond less to cuts; the Methodology tab compares the two forms.
+            to a cut grows steeply as a rate nears zero. This schedule&apos;s deepest cut, the{" "}
+            {deepestCut.label} from {formatPct(deepestCut.from * 100, 0)} to{" "}
+            {formatPct(deepestCut.to * 100, 0)}, multiplies the realised gains it reaches by about{" "}
+            {formatFactor(deepestCut.factor)}
+            {deepestCut.to > 0 ? `; a cut to 0% would multiply them by about ${formatFactor(deepestCut.toZero)}` : ""}
+            . The retention-rate cases respond less to cuts; the Methodology tab compares the two
+            forms.
           </p>
         ) : null}
         {validation.reliefAboveBasic ? (

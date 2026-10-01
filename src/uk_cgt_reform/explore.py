@@ -97,7 +97,8 @@ RATE_STEP = 0.01
 #: marginal tax rate, the default, and the retention-rate cases. Each
 #: approach to income shifting (``comparison.APPROACHES``) offers six of
 #: them; every response reports the income-shifting offset, which the client
-#: adds to the official case under the approach net of income shifting.
+#: adds to PolicyEngine's and the official case under the approach net of
+#: income shifting.
 ELASTICITY_OPTIONS = tuple(
     {"id": option_id, "label": label, "elasticity": e, **elasticity_convention(e)}
     for option_id, label, e in ELASTICITY_CASES
@@ -640,7 +641,8 @@ def assemble_response(
             "elasticity_applied_as": elasticity_convention(req.elasticity)["applied_as"],
             "elasticity_applied": elasticity_assignment(req.elasticity),
             # budget[].income_shifting_offset_bn is never in the figures; the
-            # approach net of income shifting adds it to the official case.
+            # approach net of income shifting adds it to PolicyEngine's and the
+            # official case.
             "income_shifting": {
                 key: INCOME_SHIFTING[key] for key in ("share", "tax_rate", "url", "locator")
             },

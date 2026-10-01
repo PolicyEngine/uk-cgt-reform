@@ -132,12 +132,12 @@ export function getEntrantShare(data) {
 
 // ---------------------------------------------------------------------------
 // The two approaches to income shifting (comparison.APPROACHES in the
-// pipeline). Both share the central case, PolicyEngine's elasticity, and
-// differ in the cases it is compared with. Net of income shifting: CenTax's
-// published elasticities, and the official case plus the OBR's income tax on
-// income no longer presented as gains. Gross of income shifting: CenTax
-// before its adjustments, and the official case with nothing added back. A
-// view puts the chosen approach's cases where the tabs read the CenTax and
+// pipeline). Both share the central case, PolicyEngine's elasticity. Net of
+// income shifting: CenTax's published elasticities, and PolicyEngine's and
+// the official cases plus the OBR's income tax on income no longer presented
+// as gains. Gross of income shifting: CenTax before its adjustments, and
+// PolicyEngine's and the official cases with nothing added back. A view puts
+// the chosen approach's figures where the tabs read the central, CenTax and
 // official ones, so the tabs themselves need not know which approach is
 // shown.
 // ---------------------------------------------------------------------------
@@ -195,8 +195,8 @@ export function applyApproach(data, approachId) {
   });
   const elasticities = data.benchmarks.elasticities;
   const rr = data.benchmarks.ready_reckoner;
-  // The central case's budget is the committed one; it changes only if an
-  // approach adds the income-shifting offset to the central case too.
+  // The central case's budget: the committed one, plus the income-shifting
+  // offset under the approach net of income shifting.
   const budget = applyApproachToBudget(data.budget, approach, approach.central_id);
   return {
     ...data,
@@ -237,8 +237,9 @@ export function applyApproach(data, approachId) {
   };
 }
 
-// Explorer budget rows as an approach shows them: the official case adds the
-// income-shifting offset under the approach net of income shifting.
+// Budget rows as an approach shows them: the cases in its offset_case_ids
+// (PolicyEngine's and the official one, net of income shifting) add the
+// income-shifting offset.
 export function applyApproachToBudget(rows, approach, elasticityId) {
   if (!approach.offset_case_ids.includes(elasticityId)) return rows;
   return rows.map((row) => ({

@@ -27,23 +27,27 @@ split of the yield by schedule. Carried interest has been taxed as income
 since 6 April 2026 and is left where it is. On a dataset without those
 columns the extra parameters are inert.
 
-Behavioural response: PolicyEngine's elasticity. The central case is the
-capital gains elasticity PolicyEngine has used by default since November
-2024, -0.7: the elasticity of realised gains with respect to the marginal
-tax rate on them, so a 10% rise in the rate (24% to 26.4%, say) lowers
-realised gains by about 7% ("How PolicyEngine UK models behavioural
-responses", :data:`POLICYENGINE_ELASTICITY_URL`). With no UK estimates to
-draw on, it rests on US evidence: Dowd and McClelland (2019) estimate -0.79
-from US federal and state tax returns for 1999-2008, and Auten and
-Clotfelter (1982) -0.37 for a permanent change in the rate and -1.05 for a
-transitory one. PolicyEngine took a slightly smaller response than the US
-overall estimate, judging UK gains less responsive: the US has more tax-advantaged
-investment vehicles, more generous treatment of real estate, a more active
-trading culture and scope to move investments between state tax
-jurisdictions. policyengine-uk applies it through
-``gov.simulation.capital_gains_responses.mtr_elasticity``: realised gains
-scale by (t1 / t0) ** e, with t each person's marginal rate on gains before
-and after the reform, each floored at 0.1%.
+Behavioural response: PolicyEngine's elasticity. The central case is -0.7,
+the capital gains elasticity PolicyEngine has used by default since
+November 2024 ("How PolicyEngine UK models behavioural responses",
+:data:`POLICYENGINE_ELASTICITY_URL`). policyengine-uk applies it as an
+elasticity of realised gains with respect to the marginal tax rate on them,
+through ``gov.simulation.capital_gains_responses.mtr_elasticity``: realised
+gains scale by (t1 / t0) ** e, with t each person's marginal rate on gains
+before and after the reform, each floored at 0.1%, so a 10% rise in the
+rate (24% to 26.4%, say) lowers realised gains by about 6.5%. With no UK
+estimates to draw on, the post rests the value on US evidence: Dowd and
+McClelland (2019) estimate -0.79 for the quasi-permanent response (-0.47 in
+the short run) from the bunching of realisations just after the one-year
+holding period, and Auten and Clotfelter (1982), as the post reports them,
+-0.37 for a permanent change in the rate and -1.05 for a transitory one. A
+panel of US tax returns for 1999-2008, which the post attributes to the 2019
+paper, is Dowd, McClelland and Muthitacharoen (2015): -0.72 permanent (-0.78
+after a 2024 correction) and -1.2 transitory. PolicyEngine set -0.7 for the
+UK judging that UK capital gains respond less to tax changes than US gains:
+the US has more tax-advantaged investment vehicles, more generous treatment
+of real estate, a more active trading culture and scope to move investments
+between state tax jurisdictions.
 
 The other cases are stated against the retention rate, the share 1 - t of a
 marginal pound of gain the taxpayer keeps. Advani, Lonsdale and Summers
@@ -83,12 +87,12 @@ medium-term and abstracts from short-run forestalling.
 
 Income shifting: CenTax net it into their elasticity (1.5 lowered to 1.0),
 while the OBR's 3.6 is gross of it and its costing adds income tax back
-(``INCOME_SHIFTING_SHARE``). ``comparison.APPROACHES`` puts the comparison
-cases on one footing either way: gross of income shifting (CenTax's 1.5,
-nothing added back) or net of it (CenTax as published, the official case
-plus the income tax). PolicyEngine's -0.7 makes no allowance for it, so
-every gain not realised counts as lost CGT, and it is applied that way under
-both approaches. The README and the dashboard's Methodology tab set out
+(``INCOME_SHIFTING_SHARE``). PolicyEngine's -0.7 rests on estimates of
+realisations on the gains base alone, so it is gross of income shifting, as
+the OBR's 3.6 is. ``comparison.APPROACHES`` puts the cases on one footing
+either way: gross of income shifting (CenTax's 1.5, nothing added back) or
+net of it (CenTax as published, and PolicyEngine's and the official cases
+plus the income tax). The README and the dashboard's Methodology tab set out
 both.
 """
 

@@ -124,18 +124,18 @@ INCOME_SHIFTING = {
 #: shows, ``central_id`` its central case, ``centax_id`` the CenTax case it
 #: compares the central case with, and ``offset_case_ids`` the cases that
 #: add ``INCOME_SHIFTING``'s income tax to the change in CGT. The central
-#: case is PolicyEngine's elasticity in both, applied as PolicyEngine has
-#: applied it: it makes no allowance for income shifting, so nothing is added
-#: back to it under either approach.
+#: case is PolicyEngine's elasticity in both. Like the official one, it rests
+#: on estimates of realisations on the gains base alone (the US studies the
+#: post cites), so it is gross of income shifting: the approach net of income
+#: shifting adds the OBR's income tax to both.
 APPROACHES = {
     "total_revenue": {
         "id": "total_revenue",
         "label": "Net of income shifting",
         "description": (
-            "Total revenue for the comparison cases: CenTax's published elasticities, which "
-            "already allow for income no longer presented as gains, and the official "
-            "elasticity with the OBR's income tax on that income added back. PolicyEngine's "
-            "central case is the same in both approaches."
+            "Total revenue: PolicyEngine's and the official elasticities, both measured on "
+            "gains alone, with the OBR's income tax on income no longer presented as gains "
+            "added back, and CenTax's published elasticities, which already allow for it."
         ),
         "case_ids": [
             "static",
@@ -147,15 +147,15 @@ APPROACHES = {
         ],
         "central_id": "policyengine",
         "centax_id": "centax_central",
-        "offset_case_ids": ["official"],
+        "offset_case_ids": ["policyengine", "official"],
     },
     "cgt_only": {
         "id": "cgt_only",
         "label": "Gross of income shifting",
         "description": (
-            "CGT only: every gain not realised counts as lost revenue, with CenTax's "
-            "elasticity before its adjustments and the official elasticity with no income "
-            "tax added back. PolicyEngine's central case is the same in both approaches."
+            "CGT only: every gain not realised counts as lost revenue, with PolicyEngine's "
+            "and the official elasticities as they stand and CenTax's elasticity before its "
+            "adjustments."
         ),
         "case_ids": [
             "static",
@@ -453,7 +453,15 @@ OFFICIAL_ELASTICITY_SOURCE = {
     ),
 }
 
-#: Where the central case comes from, and how it was chosen, in brief.
+#: Where the central case comes from, and how it was chosen, in brief. The
+#: post cites Dowd and McClelland (2019) and Auten and Clotfelter (1982), but
+#: describes the 2019 paper with the data of Dowd, McClelland and
+#: Muthitacharoen (2015), US tax returns for 1999-2008. The papers are kept
+#: apart here as Dowd and Richards (2021, "Contextualizing elasticities for
+#: policymaking: capital gains and revenue-maximizing tax rates") describe
+#: them; CRS report R48562 (June 2025) records the 2024 correction of the 2015
+#: estimate. The Auten and Clotfelter figures are the post's, not checked
+#: against the paper.
 POLICYENGINE_ELASTICITY_SOURCE = {
     "source": "PolicyEngine, How PolicyEngine UK models behavioural responses (Vahid Ahmadi)",
     "published": "2024-11-12",
@@ -462,26 +470,32 @@ POLICYENGINE_ELASTICITY_SOURCE = {
     "evidence": [
         {
             "study": "Dowd and McClelland (2019)",
-            "elasticity": -0.79,
-            "note": "Overall, from US federal and state tax returns, 1999-2008",
+            "cited_in_post": True,
+            "estimates": {"quasi_permanent": -0.79, "short_run": -0.47},
+            "data": (
+                "the bunching of realisations just after the one-year holding period, on US "
+                "transaction-level data"
+            ),
+        },
+        {
+            "study": "Dowd, McClelland and Muthitacharoen (2015)",
+            "cited_in_post": False,
+            "estimates": {"permanent": -0.72, "permanent_corrected": -0.78, "transitory": -1.2},
+            "data": "a panel of US individual income tax returns for 1999-2008",
         },
         {
             "study": "Auten and Clotfelter (1982)",
-            "elasticity": -0.37,
-            "note": "Permanent change in the rate, US",
-        },
-        {
-            "study": "Auten and Clotfelter (1982)",
-            "elasticity": -1.05,
-            "note": "Transitory change in the rate, US",
+            "cited_in_post": True,
+            "estimates": {"permanent": -0.37, "transitory": -1.05},
+            "data": None,
         },
     ],
     "note": (
-        "No UK estimates were available, so PolicyEngine drew on US evidence and took a "
-        "slightly smaller response than the US overall estimate, judging UK gains less "
-        "responsive: the US has more tax-advantaged investment vehicles, more generous "
-        "treatment of real estate, a more active trading culture and scope to move "
-        "investments between state tax jurisdictions."
+        "No UK estimates were available, so PolicyEngine drew on US evidence. It set -0.7 "
+        "for the UK judging that UK capital gains respond less to tax changes than US "
+        "gains: the US has more tax-advantaged investment vehicles, more generous treatment "
+        "of real estate, a more active trading culture and scope to move investments "
+        "between state tax jurisdictions."
     ),
 }
 
@@ -696,7 +710,7 @@ def ready_reckoner_block(
     """HMRC's rows beside this repo's scores. ``model_m`` maps row id to
     elasticity id to model year to the change in government balance, £m;
     ``offset_m`` the same to the income-shifting offset, £m, which the
-    approaches add to the official case or not."""
+    approaches add to PolicyEngine's and the official case or not."""
     missing = [
         row["id"]
         for row in READY_RECKONER["rows"]

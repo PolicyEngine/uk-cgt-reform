@@ -364,7 +364,24 @@ def test_benchmarks_block_shape():
     )
     assert central["url"] == "https://www.policyengine.org/uk/research/behavioural-responses"
     assert central["published"] == "2024-11-12"
-    assert [row["elasticity"] for row in central["evidence"]] == [-0.79, -0.37, -1.05]
+    # The post's evidence, with each paper described as it is: the 2019
+    # paper's notch estimates, the 2015 panel the post attributes to it, and
+    # Auten and Clotfelter as the post reports them.
+    evidence = {row["study"]: row for row in central["evidence"]}
+    assert evidence["Dowd and McClelland (2019)"]["estimates"] == {
+        "quasi_permanent": -0.79,
+        "short_run": -0.47,
+    }
+    assert evidence["Dowd, McClelland and Muthitacharoen (2015)"]["estimates"] == {
+        "permanent": -0.72,
+        "permanent_corrected": -0.78,
+        "transitory": -1.2,
+    }
+    assert not evidence["Dowd, McClelland and Muthitacharoen (2015)"]["cited_in_post"]
+    assert evidence["Auten and Clotfelter (1982)"]["estimates"] == {
+        "permanent": -0.37,
+        "transitory": -1.05,
+    }
     assert [
         (row["band"], row["t0"], row["t1"], round(row["e_retention"], 2))
         for row in central["retention_equivalents"]
@@ -428,18 +445,18 @@ def test_two_approaches_to_income_shifting():
         assert approach["central_id"] in approach["case_ids"]
         assert approach["centax_id"] in approach["case_ids"]
         assert set(approach["offset_case_ids"]) <= set(approach["case_ids"])
-    # Both approaches share the central case, PolicyEngine's elasticity,
-    # with nothing added back. Net of income shifting: CenTax as published,
-    # the official case plus the OBR's income tax. Gross: CenTax before its
-    # adjustments, no offset.
+    # Both approaches share the central case, PolicyEngine's elasticity. Net
+    # of income shifting: CenTax as published, and PolicyEngine's and the
+    # official cases, both measured on gains alone, plus the OBR's income
+    # tax. Gross: CenTax before its adjustments, no offset.
     net, gross = APPROACHES["total_revenue"], APPROACHES["cgt_only"]
     assert net["central_id"] == gross["central_id"] == "policyengine"
-    assert net["centax_id"] == "centax_central" and net["offset_case_ids"] == ["official"]
+    assert net["centax_id"] == "centax_central"
+    assert net["offset_case_ids"] == ["policyengine", "official"]
     assert gross["centax_id"] == "centax_unadjusted" and gross["offset_case_ids"] == []
-    # The cases that never carry an offset: PolicyEngine's, applied as
-    # PolicyEngine has applied it, and CenTax's, either net already (1.0) or
+    # CenTax's cases never carry an offset: they are net already (1.0) or
     # counted as CGT only (1.5).
-    assert not {"policyengine", "centax_central"} & set(net["offset_case_ids"])
+    assert not {"centax_central", "centax_unadjusted"} & set(net["offset_case_ids"])
     shifting = block["income_shifting"]
     assert (shifting["share"], shifting["tax_rate"]) == (0.125, 0.45)
     assert shifting == INCOME_SHIFTING

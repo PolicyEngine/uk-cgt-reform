@@ -89,7 +89,14 @@ export default function MethodologyTab({ data, anchor }) {
   const [basic, higher, additional] = central.retention_equivalents.map((row) =>
     row.e_retention.toFixed(1),
   );
-  const [evidenceOverall, evidencePermanent, evidenceTransitory] = central.evidence;
+  // The US studies behind the central case, as each paper reports them.
+  const evidence = Object.fromEntries(central.evidence.map((row) => [row.study, row]));
+  const notch = evidence["Dowd and McClelland (2019)"];
+  const panel = evidence["Dowd, McClelland and Muthitacharoen (2015)"];
+  const auten = evidence["Auten and Clotfelter (1982)"];
+  const estimate = (value) => formatElasticityValue(value, 2);
+  // How far a 10% rise in the rate lowers realised gains at the central case.
+  const tenPercentRise = (100 * (1 - 1.1 ** central.elasticity)).toFixed(1);
   // The rate at which the central case equals CenTax's central elasticity.
   const parity = -central.elasticity / (centaxCentral.elasticity - central.elasticity);
   const revenuePeak = (eRetention) => share(1 / (1 + eRetention));
@@ -183,33 +190,12 @@ export default function MethodologyTab({ data, anchor }) {
           description="How realised gains respond to the tax rate on them, and how PolicyEngine chose its central case."
         />
         <p className="text-sm leading-6 text-slate-600">
-          The central case is the capital gains elasticity PolicyEngine has used by default since{" "}
-          {formatPublished(central.published.slice(0, 7))}: {e} with respect to the marginal tax
-          rate on gains, so a 10% rise in the rate (from 24% to 26.4%, say) lowers realised gains
-          by about {Math.round(-10 * central.elasticity)}%.{" "}
-          <ExternalLink href={central.url}>How PolicyEngine UK models behavioural responses</ExternalLink>{" "}
-          explains how it was chosen. In brief:
-        </p>
-        <ul className="mt-2 list-disc space-y-2 pl-5 text-sm leading-6 text-slate-600">
-          <li>
-            <strong>US evidence.</strong> PolicyEngine found no UK estimates of how realised gains
-            respond to the tax rate, so it drew on US studies. {evidenceOverall.study} estimate{" "}
-            {formatElasticityValue(evidenceOverall.elasticity, 2)} overall, from US federal and
-            state tax returns for 1999 to 2008; {evidencePermanent.study} estimate{" "}
-            {formatElasticityValue(evidencePermanent.elasticity, 2)} for a permanent change in the
-            rate and {formatElasticityValue(evidenceTransitory.elasticity, 2)} for a transitory
-            one, which people can time their sales around.
-          </li>
-          <li>
-            <strong>A smaller response in the UK.</strong> PolicyEngine took {e}, a slightly
-            smaller response than the US overall estimate, judging UK gains less responsive than
-            US gains: the US has more tax-advantaged investment vehicles, more generous treatment
-            of real estate, a more active trading culture and scope to move investments between
-            state tax jurisdictions.
-          </li>
-        </ul>
-        <p className="mt-3 text-sm leading-6 text-slate-600">
-          The model applies it in the same form. For each person,
+          The central case is {e}, the capital gains elasticity PolicyEngine has used by default
+          since {formatPublished(central.published.slice(0, 7))} (
+          <ExternalLink href={central.url}>How PolicyEngine UK models behavioural responses</ExternalLink>
+          ). The model applies it as an elasticity of realised gains with respect to the marginal
+          tax rate on them, through policyengine-uk&apos;s marginal-tax-rate parameter. For each
+          person,
         </p>
         <p className="my-3 rounded-lg bg-slate-50 p-4 text-center font-mono text-sm">
           realised gains × (t₁ / t₀)<sup>e</sup>
@@ -217,7 +203,33 @@ export default function MethodologyTab({ data, anchor }) {
         <p className="text-sm leading-6 text-slate-600">
           where t₀ and t₁ are the person&apos;s marginal rates on gains under current law and
           under the reform (each at least 0.1%), shared across the main, residential property and
-          Business Asset Disposal Relief schedules in proportion to the gains on each.
+          Business Asset Disposal Relief schedules in proportion to the gains on each. A 10% rise
+          in the rate (from 24% to 26.4%, say) lowers realised gains by about {tenPercentRise}%.
+          The post explains how the value was chosen. In brief:
+        </p>
+        <ul className="mt-2 list-disc space-y-2 pl-5 text-sm leading-6 text-slate-600">
+          <li>
+            <strong>US evidence.</strong> PolicyEngine found no UK estimates of how realised gains
+            respond to the tax rate, so it drew on US studies. {notch.study} estimate{" "}
+            {estimate(notch.estimates.quasi_permanent)} for the quasi-permanent response (
+            {estimate(notch.estimates.short_run)} in the short run), from the bunching of
+            realisations just after the one-year holding period, on transaction-level data. The
+            post also cites {auten.study}: {estimate(auten.estimates.permanent)} for a permanent
+            change in the rate and {estimate(auten.estimates.transitory)} for a transitory one,
+            which people can time their sales around. An earlier paper by the same authors,{" "}
+            {panel.study}, uses a panel of US tax returns for 1999 to 2008 and estimates{" "}
+            {estimate(panel.estimates.permanent)} for a permanent change (
+            {estimate(panel.estimates.permanent_corrected)} after a 2024 correction) and{" "}
+            {formatElasticityValue(panel.estimates.transitory)} for a transitory one.
+          </li>
+          <li>
+            <strong>A smaller response in the UK.</strong> PolicyEngine set {e} for the UK, judging
+            that UK capital gains respond less to tax changes than US gains: the US has more
+            tax-advantaged investment vehicles, more generous treatment of real estate, a more
+            active trading culture and scope to move investments between state tax jurisdictions.
+          </li>
+        </ul>
+        <p className="mt-3 text-sm leading-6 text-slate-600">
           CenTax&apos;s and the official elasticities are stated with respect to the{" "}
           <em>retention rate</em> (1 − t), the share of each pound of gain a taxpayer keeps, and
           the model applies them in that form, realised gains × ((1 − t₁) / (1 − t₀))
@@ -229,8 +241,8 @@ export default function MethodologyTab({ data, anchor }) {
           and range ({centaxRange.lower.toFixed(1)} to {centaxRange.upper.toFixed(1)}), and the
           official HMRC/OBR {official.elasticity} for main-rate gains and{" "}
           {official.badr_elasticity} for gains qualifying for Business Asset Disposal Relief. The
-          approach to income shifting chosen above sets which CenTax case is shown and whether the official case adds income tax back; the
-          central case is the same under both (see{" "}
+          approach to income shifting chosen above sets which CenTax case is shown and whether
+          PolicyEngine&apos;s and the official cases add income tax back (see{" "}
           <a href="#income-shifting" className="underline decoration-1 underline-offset-2">
             Income shifting: two approaches
           </a>
@@ -395,17 +407,18 @@ export default function MethodologyTab({ data, anchor }) {
           </li>
         </ul>
         <p className="mt-4 text-sm leading-6 text-slate-600">
-          PolicyEngine&apos;s {e} makes no allowance for income shifting: every gain not realised
-          counts as lost CGT, as PolicyEngine has applied it. It is the central case under both
-          approaches below, which change only the CenTax and official cases it is compared with.
-          Were the OBR&apos;s addition applied to it as well, the central 2026-27 figure would rise
-          by {formatSignedBn(centralOffset, 1)}, to{" "}
-          {formatSignedBn(cases[central.id].revenue_2026_bn + centralOffset, 1)}.
+          PolicyEngine&apos;s {e} is in the same position as the official elasticity: the US
+          studies behind it measure realisations on the gains base alone, so the fall in realised
+          gains they capture includes income that comes back as income. Net of income shifting, the
+          OBR&apos;s income tax is added to it as well ({formatSignedBn(centralOffset, 1)} in
+          2026-27, taking the central case from{" "}
+          {formatSignedBn(cases[central.id].revenue_2026_bn, 1)} to{" "}
+          {formatSignedBn(cases[central.id].revenue_2026_bn + centralOffset, 1)}); gross of it, the
+          central case counts CGT alone, as PolicyEngine&apos;s own analyses have.
         </p>
         <p className="mt-3 text-sm leading-6 text-slate-600">
-          The two approaches put CenTax&apos;s and the official cases on one footing in opposite
-          directions. The switch at the top of the page chooses between them for every tab except
-          Baseline.
+          The two approaches put the cases on one footing in opposite directions. The switch at the
+          top of the page chooses between them for every tab except Baseline.
         </p>
 
         <h3 className="mt-5 text-base font-semibold text-slate-800">
@@ -417,11 +430,11 @@ export default function MethodologyTab({ data, anchor }) {
             figures are the change in CGT alone.
           </li>
           <li>
-            <strong>Cases.</strong> No response; PolicyEngine&apos;s {e}, the central case;
-            CenTax&apos;s {centaxRange.lower.toFixed(1)}; CenTax&apos;s{" "}
-            {unadjusted.elasticity.toFixed(1)} before its adjustments; CenTax&apos;s{" "}
-            {centaxRange.upper.toFixed(1)}; and the official {official.elasticity} (
-            {official.badr_elasticity} for gains qualifying for the relief) with nothing added back.
+            <strong>Cases.</strong> No response; CenTax&apos;s {centaxRange.lower.toFixed(1)};
+            CenTax&apos;s {unadjusted.elasticity.toFixed(1)} before its adjustments; CenTax&apos;s{" "}
+            {centaxRange.upper.toFixed(1)}; and PolicyEngine&apos;s {e}, the central case, and the
+            official {official.elasticity} ({official.badr_elasticity} for gains qualifying for the
+            relief), both with nothing added back.
           </li>
           <li>
             <strong>Assumptions.</strong> {unadjusted.elasticity.toFixed(1)} removes both of
@@ -446,16 +459,17 @@ export default function MethodologyTab({ data, anchor }) {
         <ul className="mt-2 list-disc space-y-2 pl-5 text-sm leading-6 text-slate-600">
           <li>
             <strong>What it shows.</strong> CenTax&apos;s published elasticities, which already
-            allow for shifted income, and the official elasticity with the OBR&apos;s income tax on
-            shifted income added back: total revenue across CGT and income tax. The central case,
-            PolicyEngine&apos;s {e}, still counts CGT alone.
+            allow for shifted income, and PolicyEngine&apos;s and the official elasticities, both
+            measured on gains alone, with the OBR&apos;s income tax on shifted income added back:
+            total revenue across CGT and income tax.
           </li>
           <li>
-            <strong>Cases.</strong> No response; PolicyEngine&apos;s {e}, the central case;
-            CenTax&apos;s {centaxRange.lower.toFixed(1)}, {centaxCentral.elasticity.toFixed(1)} and{" "}
-            {centaxRange.upper.toFixed(1)}; and the official {official.elasticity} (
-            {official.badr_elasticity} for gains qualifying for the relief) plus the income tax. The
-            same addition goes to the official columns of the ready-reckoner rows.
+            <strong>Cases.</strong> No response; CenTax&apos;s {centaxRange.lower.toFixed(1)},{" "}
+            {centaxCentral.elasticity.toFixed(1)} and {centaxRange.upper.toFixed(1)}; and
+            PolicyEngine&apos;s {e}, the central case, and the official {official.elasticity} (
+            {official.badr_elasticity} for gains qualifying for the relief), both plus the income
+            tax. The same addition goes to the central and official columns of the ready-reckoner
+            rows.
           </li>
           <li>
             <strong>Assumptions.</strong> The income tax added back is{" "}
@@ -467,9 +481,9 @@ export default function MethodologyTab({ data, anchor }) {
             <strong>Caveats.</strong>
             <ul className="mt-1 list-[circle] space-y-1 pl-5">
               <li>
-                The central case leaves out the income tax on shifted income that the comparison
-                cases count, so beside them it understates total revenue: by{" "}
-                {formatSignedBn(centralOffset, 1)} in 2026-27 on the OBR&apos;s method.
+                The OBR set its {Math.round(shifting.share * 1000) / 10}% share for its own
+                elasticity. Applying it to PolicyEngine&apos;s {e} assumes the same share of a
+                smaller response is income no longer presented as gains.
               </li>
               <li>
                 CenTax&apos;s {centaxCentral.elasticity.toFixed(1)} also includes their adjustment for
@@ -508,9 +522,10 @@ export default function MethodologyTab({ data, anchor }) {
             timing of disposals around the change.
           </li>
           <li>
-            <strong>On {dataset.shortLabel}.</strong> Equalisation raises{" "}
-            {formatSignedBn(cases[central.id].revenue_2026_bn, 1)} in 2026-27 at PolicyEngine&apos;s{" "}
-            {e} under either approach. CenTax&apos;s elasticity gives{" "}
+            <strong>On {dataset.shortLabel}.</strong> At PolicyEngine&apos;s {e}, equalisation
+            raises {formatSignedBn(cases[central.id].revenue_2026_bn + centralOffset, 1)} in 2026-27
+            net of income shifting and {formatSignedBn(cases[central.id].revenue_2026_bn, 1)} gross
+            of it. CenTax&apos;s elasticity gives{" "}
             {formatSignedBn(cases.centax_central.revenue_2026_bn, 1)} net of income shifting (
             {centaxCentral.elasticity.toFixed(1)}) and{" "}
             {formatSignedBn(cases.centax_unadjusted.revenue_2026_bn, 1)} gross of it (

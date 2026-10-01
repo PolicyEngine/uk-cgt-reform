@@ -82,7 +82,7 @@
       {
         "id": "total_revenue",
         "label": "Net of income shifting",
-        "description": "Total revenue for the comparison cases: CenTax's published elasticities, which already allow for income no longer presented as gains, and the official elasticity with the OBR's income tax on that income added back. PolicyEngine's central case is the same in both approaches.",
+        "description": "Total revenue: PolicyEngine's and the official elasticities, both measured on gains alone, with the OBR's income tax on income no longer presented as gains added back, and CenTax's published elasticities, which already allow for it.",
         "case_ids": [
           "static",
           "policyengine",
@@ -94,13 +94,14 @@
         "central_id": "policyengine",
         "centax_id": "centax_central",
         "offset_case_ids": [
+          "policyengine",
           "official"
         ]
       },
       {
         "id": "cgt_only",
         "label": "Gross of income shifting",
-        "description": "CGT only: every gain not realised counts as lost revenue, with CenTax's elasticity before its adjustments and the official elasticity with no income tax added back. PolicyEngine's central case is the same in both approaches.",
+        "description": "CGT only: every gain not realised counts as lost revenue, with PolicyEngine's and the official elasticities as they stand and CenTax's elasticity before its adjustments.",
         "case_ids": [
           "static",
           "policyengine",

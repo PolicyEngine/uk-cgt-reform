@@ -27,7 +27,8 @@ PolicyEngine's elasticity, which both approaches to income shifting
 (``comparison.APPROACHES``) share; the approaches differ in the CenTax and
 official cases the central case is compared with. Every reform run reports
 the income tax the OBR's method would add back for income shifting, which
-only the official case of the approach net of income shifting includes.
+the approach net of income shifting adds to PolicyEngine's and the official
+case.
 """
 
 from __future__ import annotations
