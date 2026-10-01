@@ -11,10 +11,10 @@ from uk_cgt_reform.comparison import (
     CENTAX_TABLE_3,
     CENTAX_TABLE_8,
     CENTAX_TABLE_8_REGIONS,
+    ELASTICITY_CASES,
     EXTERNAL_ROW_KEYS,
     JRF_STATIC,
     READY_RECKONER,
-    SENSITIVITY_CASES,
     UNITS,
     price_factors,
     ready_reckoner_block,
@@ -24,19 +24,42 @@ from uk_cgt_reform.impacts import (
     UNASSIGNED_REGION,
     cgt_by_region,
     cgt_uplift,
+    gains_response,
+    income_shifting_offset,
+    residential_gains_response,
     sensitivity,
+    shiftable_gains_response,
 )
-from uk_cgt_reform.reform import ELASTICITY_PARAMETER
+from uk_cgt_reform.reform import (
+    ELASTICITY_PARAMETER,
+    INCOME_SHIFTING_RATE_COMPONENTS,
+    INCOME_SHIFTING_SHARE,
+    INCOME_SHIFTING_TAX_RATE,
+    OFFICIAL_BADR_ELASTICITY,
+    OFFICIAL_ELASTICITY,
+)
 
 
-def fake_sim(cgt: list[float]) -> SimpleNamespace:
+def fake_sim(
+    cgt: list[float],
+    gains_after: list[float] | None = None,
+    residential: list[float] | None = None,
+    qualifying: list[float] | None = None,
+) -> SimpleNamespace:
     """Three households (London, Wales, an unassigned region) and four
-    people; person weights 2, 2, 1, 3."""
+    people; person weights 2, 2, 1, 3. Pre-response gains are 1000, 500,
+    100 and 0; ``gains_after`` defaults to no response, and ``residential``
+    and ``qualifying`` (gains qualifying for the relief) to none."""
+    gains_before = [1000.0, 500.0, 100.0, 0.0]
     person = mdf.MicroDataFrame(
         {
             "person_id": [1, 2, 3, 4],
             "household_id": [10, 10, 20, 30],
             "capital_gains_tax": cgt,
+            "capital_gains_before_response": gains_before,
+            "capital_gains": gains_before if gains_after is None else gains_after,
+            "capital_gains_residential_property": residential or [0.0] * 4,
+            "capital_gains_badr": qualifying or [0.0] * 4,
         },
         weights=[2.0, 2.0, 1.0, 3.0],
     )
@@ -88,10 +111,11 @@ def test_price_factors_express_each_year_in_the_first_years_prices():
 
 
 def test_sensitivity_rows_record_how_each_case_was_applied():
-    runs = {e: fake_sim([100.0 + e, 50.0, 10.0, 7.0]) for e in SENSITIVITY_CASES.values()}
-    rows = sensitivity(0.0, SENSITIVITY_CASES, lambda e: runs[e])
+    runs = {e: fake_sim([100.0 + e, 50.0, 10.0, 7.0]) for _, _, e in ELASTICITY_CASES}
+    rows = sensitivity(0.0, ELASTICITY_CASES, lambda e: runs[e])
     assert [set(row) for row in rows] == [
         {
+            "id",
             "name",
             "e_retention",
             "elasticity_parameter",
@@ -99,14 +123,89 @@ def test_sensitivity_rows_record_how_each_case_was_applied():
             "applied_value",
             "badr_elasticity",
             "revenue_2026_bn",
+            "income_shifting_offset_2026_bn",
         }
-    ] * len(SENSITIVITY_CASES)
+    ] * len(ELASTICITY_CASES)
+    assert [row["id"] for row in rows] == [case_id for case_id, _, _ in ELASTICITY_CASES]
     assert [row["elasticity_parameter"] for row in rows] == [ELASTICITY_PARAMETER] * len(rows)
     assert {row["applied_as"] for row in rows} == {"retention"}
-    assert [row["applied_value"] for row in rows] == [0.0, 0.5, 1.0, 2.0, 3.6]
+    assert [row["applied_value"] for row in rows] == [0.0, 0.5, 1.0, 1.5, 2.0, 3.6]
     # Only the official case gives gains qualifying for the relief their own
     # elasticity (1.4); CenTax's cases apply one elasticity to every gain.
-    assert [row["badr_elasticity"] for row in rows] == [0.0, 0.5, 1.0, 2.0, 1.4]
+    assert [row["badr_elasticity"] for row in rows] == [0.0, 0.5, 1.0, 1.5, 2.0, 1.4]
+    # No response in these fakes, so nothing to add back.
+    assert {row["income_shifting_offset_2026_bn"] for row in rows} == {0.0}
+
+
+def test_the_rate_on_shifted_income_is_salary_with_national_insurance():
+    # An additional-rate taxpayer's salary: income tax 45% and employee NI 2%
+    # on it, employer NI 15% on top, as a share of what the employer spends.
+    assert INCOME_SHIFTING_RATE_COMPONENTS == {
+        "income_tax": 0.45,
+        "employee_national_insurance": 0.02,
+        "employer_national_insurance": 0.15,
+    }
+    assert INCOME_SHIFTING_TAX_RATE == pytest.approx(0.62 / 1.15)
+    assert round(100 * INCOME_SHIFTING_TAX_RATE, 1) == 53.9
+    # On the OBR's own costing (£4.9bn of CGT lost on gains taxed at 22-24%)
+    # it gives £1.4bn to £1.5bn, against the OBR's £1.5bn.
+    for rate in (0.22, 0.24):
+        offset = 4.9 / rate * INCOME_SHIFTING_SHARE * INCOME_SHIFTING_TAX_RATE
+        assert 1.37 < offset < 1.51
+
+
+def test_income_shifting_offset_taxes_a_share_of_the_fall_in_gains():
+    # Gains fall from 1000/500/100/0 to 600/400/100/0: weighted fall
+    # 2*400 + 2*100 = 1000, none of it residential.
+    reformed = fake_sim([0.0] * 4, gains_after=[600.0, 400.0, 100.0, 0.0])
+    assert gains_response(reformed) == pytest.approx(1000.0)
+    assert income_shifting_offset(reformed, 1.0) == pytest.approx(
+        1000.0 * INCOME_SHIFTING_SHARE * INCOME_SHIFTING_TAX_RATE
+    )
+    assert INCOME_SHIFTING_SHARE == 0.125
+    # A cut that raises realisations takes income tax away instead.
+    cut = fake_sim([0.0] * 4, gains_after=[1100.0, 500.0, 100.0, 0.0])
+    assert income_shifting_offset(cut, 1.0) == pytest.approx(
+        -200.0 * INCOME_SHIFTING_SHARE * INCOME_SHIFTING_TAX_RATE
+    )
+    # A static run has no response and so no offset.
+    assert income_shifting_offset(fake_sim([0.0] * 4), 0.0) == 0.0
+
+
+def test_the_offset_leaves_out_residential_property_gains():
+    # Person 1's gains fall from 1000 to 600, a factor of 0.6, and 500 of them
+    # are residential, which fall by 200 (weight 2: 400 of the 1000 fall).
+    reformed = fake_sim(
+        [0.0] * 4,
+        gains_after=[600.0, 400.0, 100.0, 0.0],
+        residential=[500.0, 0.0, 0.0, 0.0],
+    )
+    assert residential_gains_response(reformed, 1.0) == pytest.approx(400.0)
+    assert shiftable_gains_response(reformed, 1.0) == pytest.approx(600.0)
+    assert income_shifting_offset(reformed, 1.0) == pytest.approx(
+        600.0 * INCOME_SHIFTING_SHARE * INCOME_SHIFTING_TAX_RATE
+    )
+
+
+def test_residential_response_with_the_official_case_two_elasticities():
+    # Person 1 has 600 of other gains (300 residential) and 400 qualifying for
+    # the relief. Under the official case both factors come from the same rate
+    # change, the relief's being the main one to the power 1.4 / 3.6. With a
+    # main factor of 0.5, realised gains are 600 * 0.5 + 400 * 0.5 ** (1.4 /
+    # 3.6), and residential gains fall by 300 * (1 - 0.5) = 150 (weight 2).
+    exponent = OFFICIAL_BADR_ELASTICITY / OFFICIAL_ELASTICITY
+    after = 600.0 * 0.5 + 400.0 * 0.5**exponent
+    reformed = fake_sim(
+        [0.0] * 4,
+        gains_after=[after, 500.0, 100.0, 0.0],
+        residential=[300.0, 0.0, 0.0, 0.0],
+        qualifying=[400.0, 0.0, 0.0, 0.0],
+    )
+    assert residential_gains_response(reformed, OFFICIAL_ELASTICITY) == pytest.approx(300.0)
+    # Read as one elasticity for every gain, the same totals would give the
+    # residential gains the overall factor instead.
+    one_factor = after / 1000.0
+    assert residential_gains_response(reformed, 1.0) == pytest.approx(2 * 300 * (1 - one_factor))
 
 
 # --- the external figures, pinned to their sources ----------------------------
@@ -207,4 +306,4 @@ def test_ready_reckoner_rows_are_pinned():
 
 def test_ready_reckoner_block_refuses_unscored_rows():
     with pytest.raises(ValueError, match="not scored"):
-        ready_reckoner_block({})
+        ready_reckoner_block({}, {})

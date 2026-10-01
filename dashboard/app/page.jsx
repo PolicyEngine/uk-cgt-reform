@@ -8,12 +8,22 @@ import MethodologyTab from "../src/components/MethodologyTab";
 import PolicyEngineHeader from "../src/components/PolicyEngineHeader";
 import RateExplorerTab from "../src/components/RateExplorerTab";
 import ReformTab from "../src/components/ReformTab";
-import { getDatasetInfo } from "../src/lib/dataHelpers";
+import {
+  applyApproach,
+  getApproachOptions,
+  getDatasetInfo,
+  getDefaultApproach,
+} from "../src/lib/dataHelpers";
 import results from "../public/data/cgt_equalisation_results.json";
 
 // Bundled at build time: a runtime fetch() 404s when the app is served
 // behind proxies/rewrites that don't forward public assets. The pipeline
 // writes one results file, for the one registered dataset.
+// The two approaches to income shifting, and the one shown first.
+const APPROACH_OPTIONS = getApproachOptions(results);
+const DEFAULT_APPROACH = getDefaultApproach(results);
+// Tabs whose figures depend on the approach (the Baseline tab's do not).
+const APPROACH_TABS = new Set(["reform", "explorer", "benchmarks", "methodology"]);
 
 const TAB_OPTIONS = [
   { id: "reform", label: "Reform impacts" },
@@ -30,6 +40,13 @@ function getInitialTab(tabParam) {
   return "reform";
 }
 
+function getInitialApproach(approachParam) {
+  if (APPROACH_OPTIONS.some((approach) => approach.id === approachParam)) {
+    return approachParam;
+  }
+  return DEFAULT_APPROACH;
+}
+
 function TabLink({ onSelect, children }) {
   return (
     <button
@@ -42,26 +59,69 @@ function TabLink({ onSelect, children }) {
   );
 }
 
+function ApproachSwitch({ options, value, onChange, onExplain }) {
+  const current = options.find((option) => option.id === value);
+  return (
+    <div className="mb-6 flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm shadow-sm">
+      <span className="font-semibold text-slate-700">Income shifting</span>
+      <div className="inline-flex overflow-hidden rounded-md border border-slate-300">
+        {options.map((option) => (
+          <button
+            key={option.id}
+            type="button"
+            onClick={() => onChange(option.id)}
+            className={
+              option.id === value
+                ? "bg-[color:var(--pe-color-primary-600)] px-3 py-1.5 font-semibold text-white"
+                : "bg-white px-3 py-1.5 text-slate-600 hover:bg-slate-50"
+            }
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+      <span className="text-slate-500">
+        {current.description}{" "}
+        <button
+          type="button"
+          onClick={onExplain}
+          className="font-semibold text-[color:var(--pe-color-primary-600)] underline decoration-1 underline-offset-2 hover:opacity-80"
+        >
+          How the two approaches differ
+        </button>
+      </span>
+    </div>
+  );
+}
+
 function Dashboard() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
   const [activeTab, setActiveTab] = useState(() => getInitialTab(searchParams.get("tab")));
+  const [approachId, setApproachId] = useState(() =>
+    getInitialApproach(searchParams.get("approach")),
+  );
   const [anchor, setAnchor] = useState(null);
   const data = results;
   const dataset = getDatasetInfo(data);
+  // The figures as the chosen approach to income shifting shows them.
+  const view = applyApproach(data, approachId);
 
   useEffect(() => {
     setActiveTab(getInitialTab(searchParams.get("tab")));
+    setApproachId(getInitialApproach(searchParams.get("approach")));
   }, [searchParams]);
 
-  function replaceUrl(tab) {
+  function replaceUrl(tab, approach = approachId) {
     // Keep any other parameters (the Rate explorer's schedule) in place; a
     // `dataset` parameter from before the dashboard had one dataset is dropped.
     const params = new URLSearchParams(searchParams.toString());
     if (tab !== "reform") params.set("tab", tab);
     else params.delete("tab");
     params.delete("dataset");
+    if (approach !== DEFAULT_APPROACH) params.set("approach", approach);
+    else params.delete("approach");
     const query = params.toString();
     router.replace(query ? `/?${query}` : "/", { scroll: false });
   }
@@ -70,6 +130,11 @@ function Dashboard() {
     setActiveTab(tab);
     setAnchor(null);
     replaceUrl(tab);
+  }
+
+  function handleApproachChange(approach) {
+    setApproachId(approach);
+    replaceUrl(activeTab, approach);
   }
 
   // Open a tab at one of its sections (e.g. Methodology's #elasticity-gap).
@@ -147,11 +212,20 @@ function Dashboard() {
           ))}
         </div>
 
-        {activeTab === "reform" && <ReformTab data={data} />}
-        {activeTab === "explorer" && <RateExplorerTab data={data} datasetKey={dataset.key} />}
+        {APPROACH_TABS.has(activeTab) && (
+          <ApproachSwitch
+            options={APPROACH_OPTIONS}
+            value={approachId}
+            onChange={handleApproachChange}
+            onExplain={() => handleNavigate("methodology", "income-shifting")}
+          />
+        )}
+
+        {activeTab === "reform" && <ReformTab data={view} />}
+        {activeTab === "explorer" && <RateExplorerTab data={view} datasetKey={dataset.key} />}
         {activeTab === "baseline" && <BaselineTab data={data} />}
-        {activeTab === "benchmarks" && <BenchmarksTab data={data} onNavigate={handleNavigate} />}
-        {activeTab === "methodology" && <MethodologyTab data={data} anchor={anchor} />}
+        {activeTab === "benchmarks" && <BenchmarksTab data={view} onNavigate={handleNavigate} />}
+        {activeTab === "methodology" && <MethodologyTab data={view} anchor={anchor} />}
 
         <footer className="mt-12 border-t border-slate-200 pt-8 text-center text-sm text-slate-500">
           <p>

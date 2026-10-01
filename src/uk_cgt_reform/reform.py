@@ -54,6 +54,15 @@ against equalising rates without the base reforms (*Taxes at the top*,
 September 2026, p.17); the upper end of the range and the official case
 show how much of the yield rests on the assumption. The elasticity is
 medium-term and abstracts from short-run forestalling.
+
+Income shifting: CenTax net it into their central elasticity (1.5 lowered
+to 1.0), while their 0.5 and 2.0 and the OBR's 3.6 are measured on the CGT
+base, and the OBR's costing adds income tax back (``INCOME_SHIFTING_SHARE``).
+``comparison.APPROACHES`` puts the cases on one footing either way: gross of
+income shifting (CenTax's 1.5 as the central case, nothing added back) or net
+of it (CenTax's 1.0 as published, and the income tax and National Insurance
+on shifted income added to CenTax's 0.5 and 2.0 and the official case). The
+README and the dashboard's Methodology tab set out both.
 """
 
 from __future__ import annotations
@@ -73,6 +82,46 @@ PERIOD = "2026-01-01"
 ELASTICITY = 1.0
 CENTAX_LOWER_ELASTICITY = 0.5
 CENTAX_UPPER_ELASTICITY = 2.0
+# CenTax's starting point before their two downward adjustments (Advani,
+# Lonsdale and Summers 2024, p. 36): Agersnap and Zidar's five-year
+# elasticity with controls, about 1.5. CenTax lower it to 1.0 because their
+# package abolishes the uplift at death, and because equalisation brings
+# income that was presented as gains back into income tax, which estimates
+# measured on the CGT base alone count as lost. CenTax do not say how the
+# 0.5 splits between the two. A rates-only reform keeps the uplift at death,
+# so the CGT-only approach (``APPROACHES`` in ``comparison``) takes the
+# value before both adjustments. CenTax's 0.5 and 2.0 are not adjusted.
+CENTAX_UNADJUSTED_ELASTICITY = 1.5
+# The OBR's treatment of income shifting (January 2025, p. 3 and Table 1.1):
+# 12.5% of the behavioural response to the narrowing gap between income tax
+# and CGT rates is income no longer presented as gains, taxed as income. It
+# applies here to the fall in realised gains outside residential property
+# (``impacts.shiftable_gains_response``): the OBR's costing left the
+# residential rates where they were, and it describes labour income
+# presented as gains (para 1.9), which residential property gains are not.
+INCOME_SHIFTING_SHARE = 0.125
+# The rate that income is taxed at, which the OBR does not state. The OBR
+# describes the behaviour as structuring earnings as income or gains (para
+# 1.11), against "employment tax rates" (para 1.9), so the shifted income is
+# taken as salary paid to an additional-rate taxpayer: income tax at 45% and
+# employee National Insurance at 2% on the salary, and employer National
+# Insurance at 15% on top of it, as a share of what the employer spends.
+INCOME_SHIFTING_RATE_COMPONENTS = {
+    "income_tax": 0.45,
+    "employee_national_insurance": 0.02,
+    "employer_national_insurance": 0.15,
+}
+# (0.45 + 0.02 + 0.15) / 1.15 = 53.9%. Applied to the OBR's own costing
+# (£4.9bn of CGT lost to behaviour in 2029-30, on gains taxed at about
+# 22-24%), it gives £1.4bn to £1.5bn against the OBR's £1.5bn of income
+# taxes, which imply about 56%. Income tax alone at 45% would give a sixth
+# less, and dividends at the additional dividend rate (39.35%) about a
+# quarter less.
+INCOME_SHIFTING_TAX_RATE = (
+    INCOME_SHIFTING_RATE_COMPONENTS["income_tax"]
+    + INCOME_SHIFTING_RATE_COMPONENTS["employee_national_insurance"]
+    + INCOME_SHIFTING_RATE_COMPONENTS["employer_national_insurance"]
+) / (1 + INCOME_SHIFTING_RATE_COMPONENTS["employer_national_insurance"])
 # The official HMRC/OBR assumption for the main CGT rates (OBR, "Costing of
 # changes to the main, BADR and IR rates of CGT", January 2025, para 1.9).
 OFFICIAL_ELASTICITY = 3.6
@@ -206,6 +255,16 @@ def elasticity_assignment(elasticity: float) -> dict[str, float | bool]:
         assignment[SEPARATE_BADR_ELASTICITY_PARAMETER] = True
         assignment[BADR_ELASTICITY_PARAMETER] = badr
     return assignment
+
+
+def badr_response_exponent(elasticity: float) -> float | None:
+    """For a case with its own elasticity for gains qualifying for the relief,
+    that elasticity over the main one. The engine scales a person's
+    qualifying gains by exp(badr_elasticity * d) and the rest of their gains
+    by exp(elasticity * d), for the same d, so the first factor is the second
+    to this power. None where every gain takes one elasticity."""
+    badr = BADR_ELASTICITY_BY_CASE.get(elasticity)
+    return None if badr is None else badr / elasticity
 
 
 def elasticity_convention(elasticity: float) -> dict:

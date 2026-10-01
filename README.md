@@ -231,10 +231,10 @@ external figure with its source, locator, scope, year and basis.
   row reads −£245m and −£253m, and the central estimate for equalisation rose
   by £0.2bn. That record has a weight of 18.9, so it stands for £10.6bn of
   gains and £2.5bn of baseline CGT (8.7%), and it carries about the same share
-  of the yield. Without it, equalisation would raise +£24.0bn static and
-  +£9.6bn at the central elasticity in 2026-27 (−£8.6bn at the official one),
-  against +£26.2bn, +£10.5bn and −£9.6bn with it. How many gains that large
-  the build should carry is a question for the data (#9).
+  of the yield. Without it, equalisation would raise +£24.0bn static, +£9.6bn
+  at CenTax's 1.0 and +£4.0bn at 1.5 in 2026-27 (−£8.6bn at the official
+  case), against +£26.2bn, +£10.5bn, +£4.4bn and −£9.6bn with it. How many
+  gains that large the build should carry is a question for the data (#9).
 - **The official elasticity.** HMRC and the OBR use a retention-rate
   elasticity of 3.6 for the main rates ([OBR, January 2025](https://obr.uk/docs/dlm_uploads/CGT-supplementary-release-Jan-2025.pdf),
   para 1.9), and 1.4 for gains qualifying for BADR. Applied in that
@@ -303,11 +303,11 @@ exactly that form, scaling each person's realised gains by
 ((1 − t₁)/(1 − t₀))^e, with t the person's marginal rate on gains (shared
 across the main, residential and BADR schedules in proportion to the gains on
 each). Every case sets that parameter and leaves `...mtr_elasticity` at zero;
-the sensitivity runs cover 0 (static), CenTax's 0.5, 1.0 and 2.0, and the
-official 3.6. Every sensitivity row, explorer option and explorer response
-records the engine parameter it set, the convention (`applied_as`), the
-value applied and the elasticity gains qualifying for the relief respond at
-(`reform.elasticity_convention`).
+the sensitivity runs cover 0 (static), CenTax's 0.5, 1.0, 1.5 (before its
+adjustments, below) and 2.0, and the official 3.6. Every sensitivity row,
+explorer option and explorer response records the engine parameter it set,
+the convention (`applied_as`), the value applied and the elasticity gains
+qualifying for the relief respond at (`reform.elasticity_convention`).
 
 The official case applies both of the OBR's figures. Since policyengine-uk
 2.104.0 (PolicyEngine/policyengine-uk#1980), gains qualifying for Business
@@ -334,6 +334,97 @@ response to a rate rise on the current base and advise against equalising
 rates without the base reforms (*Taxes at the top*, September 2026, p.17);
 the upper end of the range and the official case show how much of the yield
 rests on the assumption.
+
+### Income shifting: two approaches
+
+When CGT rates rise towards income tax rates, some of the gains people stop
+realising were income presented as gains, such as a company owner's pay
+taken as a gain rather than as salary or dividends. With the rates equal it
+comes back as income and is taxed as income. An elasticity measured on the
+CGT base alone counts that money as lost, and the two sources treat it
+differently:
+
+- **CenTax net it into the elasticity.** They lower Agersnap & Zidar's
+  five-year estimate of about 1.5 to a central 1.0 for two reasons: their
+  package removes the uplift at death, which the US keeps, and equalisation
+  brings shifted income back into income tax (Advani, Lonsdale & Summers 2024,
+  pp. 35–36). They do not say how the 0.5 splits between the two, and they
+  report total revenue across CGT and income tax without a split (p. 37).
+  Their range is not adjusted: 2.0 is the US estimate for larger changes
+  without controls, 0.5 approaches the Canadian estimate of no lasting
+  response, and CenTax say both estimates measure the CGT base only
+  (pp. 36–37).
+- **The OBR adds income tax back separately.** Its 3.6 covers every
+  behaviour, income shifting included. Its costing of the October 2024 rise
+  then treats 12.5% of the response to the narrowing gap between income tax
+  and CGT rates as income no longer presented as gains (OBR, January 2025,
+  p. 3 and Table 1.1). In that costing the income tax was £1.5bn of the
+  £2.5bn raised in 2029-30, against £4.9bn of CGT lost to behaviour (Table
+  1.3).
+
+The results carry both approaches (`comparison.APPROACHES`), and the
+dashboard's "Income shifting" switch chooses between them on every tab except
+Baseline:
+
+- **Gross of income shifting (CGT only).** Every gain not realised counts as
+  lost revenue. Cases: static, CenTax's 0.5, CenTax's 1.5 before its
+  adjustments (the central case), 2.0, and the official case (3.6; 1.4 for
+  gains qualifying for the relief) with nothing added back.
+  - *Assumptions:* 1.5 removes both of CenTax's adjustments, because CenTax
+    don't say how much each accounts for. A rates-only reform keeps the
+    uplift at death, so the second would not apply to it either. CenTax
+    don't publish 1.5 as an estimate for any reform; it is their starting
+    point.
+  - *Caveats:* it understates total revenue by leaving out the income tax
+    and National Insurance that both sources count. HMRC's ready-reckoner
+    figures include income tax effects, so that comparison is not like for
+    like. CenTax's 0.5 and 2.0 are measured on the CGT base, like the
+    official case, so nothing is added to them here either.
+- **Net of income shifting (total revenue).** CenTax's central 1.0 as
+  published, and the cases measured on the CGT base (CenTax's 0.5 and 2.0,
+  and the official case: 3.6, and 1.4 for gains qualifying for the relief)
+  plus the income tax and National Insurance on shifted income
+  (`impacts.income_shifting_offset`). That is 12.5% of the behavioural fall
+  in realised gains outside residential property, taxed at 53.9%
+  (`reform.INCOME_SHIFTING_SHARE`, `INCOME_SHIFTING_TAX_RATE`). The
+  ready-reckoner rows' official columns get the same addition.
+  - *Assumptions:*
+    - The rate. The OBR doesn't say what rate the shifted income pays. It
+      describes the behaviour as structuring earnings as income or gains,
+      against employment tax rates (paras 1.9 and 1.11), so the income is
+      taxed here as salary paid to an additional-rate taxpayer: income tax
+      at 45% and employee National Insurance at 2% on the salary, and
+      employer National Insurance at 15% on top of it, which is 53.9% of what
+      the employer spends (`reform.INCOME_SHIFTING_RATE_COMPONENTS`).
+      Applied to the OBR's own costing (£4.9bn of CGT lost to behaviour on
+      gains taxed at about 22–24%), it gives £1.4bn to £1.5bn against the
+      OBR's £1.5bn of income taxes, which imply about 56%. Income tax alone
+      at 45% would give a sixth less (about £1.2bn on the OBR's costing),
+      and dividends at 39.35% about a quarter less.
+    - The base. The share applies to the fall outside residential property
+      (`impacts.shiftable_gains_response`): the OBR's costing left the
+      residential rates where they were, and it describes labour income
+      presented as gains, which residential property gains are not.
+      Residential gains are about a tenth of the fall. The engine scales a
+      person's residential gains by the same factor as their other gains
+      outside the relief, so the residential part of the fall is computed
+      from each person's gains before and after the response.
+  - *Caveats:*
+    - CenTax's 1.0 also includes their adjustment for the uplift at death,
+      which a rates-only reform doesn't remove. By CenTax's reasoning the
+      response to this reform is larger.
+    - The addition applies to the whole response outside residential
+      property. That holds for equalisation, where the response comes from
+      narrowing the gap, but not for explorer schedules with CGT above
+      income tax rates; the explorer says so beside the case.
+    - The addition is in the revenue figures, not the distributional ones.
+    - The engine doesn't model the shifted income itself; this repo adds it
+      to the engine's results (PolicyEngine/policyengine-uk#1982).
+
+Both approaches apply a medium-term response in full from 2026-27. The
+explorer runs any case and reports `budget[].income_shifting_offset_bn`. The
+dashboard adds it, under the approach net of income shifting, to CenTax's 0.5
+and 2.0 and the official case.
 
 ### Reforms via `Policy.simulation_modifier` (load-bearing)
 
@@ -635,11 +726,14 @@ precise marginal rate on large gains and the separate BADR elasticity
 (PolicyEngine/policyengine-uk#1980). The dataset was built with 2.100.0, the
 first release whose local-authority enum carries the April 2023 unitary
 authorities it records. Each release can move the projection fingerprint, so
-changing the pin is a deliberate re-pin that regenerates the results. A run needs the per-year builds, twenty-four stored simulations (baseline,
-central and static reform for every year, three more sensitivity cases, the
-CenTax counterfactual pair and four schedule-split steps) and twenty-eight
-in-memory ready-reckoner runs; a run with the stored outputs in place spends
-most of its time on the ready-reckoner runs. Copy
+changing the pin is a deliberate re-pin that regenerates the results. A run
+needs the per-year builds, thirty-one stored simulations (baseline, central
+and static reform for every year, the gross approach's central case of 1.5
+for every year, three more sensitivity cases, the CenTax counterfactual pair
+and six schedule-split steps) and forty-two in-memory ready-reckoner runs
+(seven rows, each approach's central case and the official case, two years
+each); a run with the stored outputs in place spends most of its time on the
+ready-reckoner runs. Copy
 `data/cgt_equalisation_results.json` into `dashboard/public/data/` for the
 dashboard, which bundles it at build time, and regenerate
 `explore_options.json` with `uk-cgt-reform-explore --options` when the
