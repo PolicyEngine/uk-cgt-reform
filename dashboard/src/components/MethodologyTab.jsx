@@ -37,6 +37,8 @@ function percent(change) {
   return `${Math.abs(100 * change).toFixed(0)}%`;
 }
 
+// CenTax's PDF pages run one ahead of its printed pages (#page=37 opens
+// printed p. 36); the text cites printed pages.
 const CENTAX_2024_PDF =
   "https://centax.org.uk/wp-content/uploads/2024/10/AdvaniLonsdaleSummers2024_CGTReform.pdf";
 
@@ -212,7 +214,7 @@ export default function MethodologyTab({ data, anchor }) {
           <li>
             <strong>Why the two differ.</strong> CenTax start from US evidence, about{" "}
             {unadjusted.e_retention.toFixed(1)} five years after a change (
-            <ExternalLink href={`${CENTAX_2024_PDF}#page=36`}>Agersnap and Zidar, 2021</ExternalLink>
+            <ExternalLink href={`${CENTAX_2024_PDF}#page=35`}>Agersnap and Zidar, 2021</ExternalLink>
             ), and lower it to {centaxCentral.e_retention.toFixed(1)} for two reasons (
             <ExternalLink href={`${CENTAX_2024_PDF}#page=37`}>pp. 35–36</ExternalLink>): their package
             removes the uplift at death, which the US keeps; and equalisation brings income that was
@@ -267,7 +269,7 @@ export default function MethodologyTab({ data, anchor }) {
             ). Their range, {centaxRange.lower.toFixed(1)} to {centaxRange.upper.toFixed(1)}, is not
             adjusted: {centaxRange.upper.toFixed(1)} is the US estimate for larger changes without
             controls, and {centaxRange.lower.toFixed(1)} approaches a Canadian estimate of no lasting
-            response.
+            response, and CenTax say both estimates measure the CGT base only.
           </li>
           <li>
             <strong>The OBR adds income tax back separately.</strong> Its{" "}
@@ -309,11 +311,12 @@ export default function MethodologyTab({ data, anchor }) {
             starting point.
           </li>
           <li>
-            <strong>Caveats.</strong> It understates total revenue by leaving out the income tax on
-            shifted income, which both CenTax and the OBR count. HMRC&apos;s ready-reckoner figures
-            include income tax effects, so the comparison on the Benchmarks tab is not like for like.
-            CenTax&apos;s {centaxRange.lower.toFixed(1)} and {centaxRange.upper.toFixed(1)} are the
-            same unadjusted bounds as in the other approach.
+            <strong>Caveats.</strong> It understates total revenue by leaving out the income tax and
+            National Insurance on shifted income, which both CenTax and the OBR count. HMRC&apos;s
+            ready-reckoner figures include income tax effects, so the comparison on the Benchmarks
+            tab is not like for like. CenTax&apos;s {centaxRange.lower.toFixed(1)} and{" "}
+            {centaxRange.upper.toFixed(1)} are measured on the CGT base, like the official case, so
+            nothing is added to them here either.
           </li>
         </ul>
 
@@ -322,21 +325,27 @@ export default function MethodologyTab({ data, anchor }) {
         </h3>
         <ul className="mt-2 list-disc space-y-2 pl-5 text-sm leading-6 text-slate-600">
           <li>
-            <strong>What it shows.</strong> CenTax&apos;s published elasticities, which already
-            allow for shifted income, and the official elasticity with the OBR&apos;s income tax on
-            shifted income added back: total revenue across CGT and income tax.
+            <strong>What it shows.</strong> CenTax&apos;s central{" "}
+            {centaxCentral.e_retention.toFixed(1)}, which already allows for shifted income, and the
+            cases measured on the CGT base (CenTax&apos;s {centaxRange.lower.toFixed(1)} and{" "}
+            {centaxRange.upper.toFixed(1)} and the official elasticity) with the OBR&apos;s income tax
+            and National Insurance on shifted income added back: total revenue across CGT, income tax
+            and National Insurance.
           </li>
           <li>
-            <strong>Cases.</strong> No response; CenTax&apos;s {centaxRange.lower.toFixed(1)},{" "}
-            {centaxCentral.e_retention.toFixed(1)} (the central case) and{" "}
-            {centaxRange.upper.toFixed(1)}; and the official {official.e_retention} (
-            {official.badr_e_retention} for gains qualifying for the relief) plus the income tax. The same addition goes to the official columns of the ready-reckoner rows.
+            <strong>Cases.</strong> No response; CenTax&apos;s {centaxRange.lower.toFixed(1)} plus
+            the addition; CenTax&apos;s {centaxCentral.e_retention.toFixed(1)} as published, the
+            central case; CenTax&apos;s {centaxRange.upper.toFixed(1)} plus the addition; and the
+            official {official.e_retention} ({official.badr_e_retention} for gains qualifying for the
+            relief) plus the addition. The same addition goes to the official columns of the
+            ready-reckoner rows.
           </li>
           <li>
-            <strong>Assumptions.</strong> The income tax added back is{" "}
-            {Math.round(shifting.share * 1000) / 10}% of the behavioural fall in realised gains, taxed
-            at {Math.round(shifting.tax_rate * 100)}%. {shifting.tax_rate_note}{" "}
-            {shifting.obr_check}
+            <strong>Assumptions.</strong> The income tax and National Insurance added back are
+            charged at {(shifting.tax_rate * 100).toFixed(1)}% on{" "}
+            {Math.round(shifting.share * 1000) / 10}% of the behavioural fall in realised gains
+            outside residential property.{" "}
+            {shifting.base_note} {shifting.tax_rate_note} {shifting.obr_check}
           </li>
           <li>
             <strong>Caveats.</strong>
@@ -347,13 +356,14 @@ export default function MethodologyTab({ data, anchor }) {
                 reasoning the response to this reform would be larger.
               </li>
               <li>
-                The addition applies to the whole response. For equalisation the whole response comes
-                from narrowing the gap with income tax, as the OBR describes; for a schedule in the
-                Rate explorer that sets CGT above income tax rates the assumption does not hold.
+                The addition applies to the whole response outside residential property. For
+                equalisation that response comes from narrowing the gap with income tax, as the OBR
+                describes; for a schedule in the Rate explorer that sets CGT above income tax rates
+                the assumption does not hold, and the explorer says so.
               </li>
               <li>
-                The income tax is in the revenue figures but not in the distributional charts, which
-                reflect the change in CGT alone.
+                The income tax and National Insurance are in the revenue figures but not in the
+                distributional charts, which reflect the change in CGT alone.
               </li>
               <li>
                 The official {official.e_retention} was set for the October 2024 change; the
@@ -385,8 +395,8 @@ export default function MethodologyTab({ data, anchor }) {
             {unadjusted.e_retention.toFixed(1)}). At the official elasticity it changes revenue by{" "}
             {formatSignedBn(cases.official.revenue_2026_bn, 1)} counting CGT alone, and by{" "}
             {formatSignedBn(cases.official.revenue_2026_bn + officialOffset, 1)} once the
-            OBR&apos;s income tax on shifted income ({formatSignedBn(officialOffset, 1)}) is added
-            back.
+            OBR&apos;s income tax and National Insurance on shifted income (
+            {formatSignedBn(officialOffset, 1)}) are added back.
           </li>
         </ul>
       </section>

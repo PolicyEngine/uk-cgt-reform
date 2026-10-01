@@ -22,18 +22,25 @@ edited; the decomposition lets a reader net them out.
 Income shifting
 ---------------
 Every reform run also reports ``income_shifting_offset_bn``: the income tax
-the OBR's method would add back because part of the fall in realised gains
-is income no longer presented as gains (``reform.INCOME_SHIFTING_SHARE`` of
-the fall, taxed at ``reform.INCOME_SHIFTING_TAX_RATE``). The figures here
-never include it; the approaches in ``comparison.APPROACHES`` decide which
-cases add it.
+and National Insurance the OBR's method would add back because part of the
+fall in realised gains is income no longer presented as gains
+(``reform.INCOME_SHIFTING_SHARE`` of the fall outside residential property,
+taxed at ``reform.INCOME_SHIFTING_TAX_RATE``). The figures here never include
+it; the approaches in ``comparison.APPROACHES`` decide which cases add it.
 """
 
 from __future__ import annotations
 
+import warnings
+
 import numpy as np
 
-from .reform import INCOME_SHIFTING_SHARE, INCOME_SHIFTING_TAX_RATE, elasticity_convention
+from .reform import (
+    INCOME_SHIFTING_SHARE,
+    INCOME_SHIFTING_TAX_RATE,
+    badr_response_exponent,
+    elasticity_convention,
+)
 
 AEA = 3_000  # annual exempt amount, unchanged by the reform
 
@@ -159,12 +166,80 @@ def gains_response(reformed) -> float:
     return float((person["capital_gains_before_response"] - person["capital_gains"]).sum())
 
 
-def income_shifting_offset(reformed) -> float:
-    """Income tax on the part of the fall in realised gains the OBR treats as
-    income no longer presented as gains, £: ``INCOME_SHIFTING_SHARE`` of the
-    fall, taxed at ``INCOME_SHIFTING_TAX_RATE``. Negative when a cut in CGT
-    rates raises realisations, since more income is then presented as gains."""
-    return INCOME_SHIFTING_SHARE * INCOME_SHIFTING_TAX_RATE * gains_response(reformed)
+def _plain(series) -> np.ndarray:
+    """A person column as a plain array, for per-person arithmetic whose
+    result goes back into a weighted MicroSeries (microdf warns that the
+    array itself carries no weights, which is the point here)."""
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", message="Accessing .values on a MicroSeries")
+        return np.asarray(series.values, dtype=float)
+
+
+def _other_gains_factor(before, after, qualifying, exponent):
+    """The factor the engine applied to each person's gains outside the relief
+    (main, residential and carried interest), from their gains before and
+    after the response. With one elasticity for every gain it is after /
+    before. With a separate elasticity for qualifying gains, those scale by
+    the factor to the power ``exponent`` (``reform.badr_response_exponent``),
+    so for a person with both kinds of gain the factor f solves
+    other * f + qualifying * f ** exponent = after, found by bisection on
+    [0, after / other]."""
+    factor = np.ones_like(before)
+    has_gains = before > 0
+    factor[has_gains] = after[has_gains] / before[has_gains]
+    if exponent is None:
+        return factor
+    other = before - qualifying
+    mixed = has_gains & (qualifying > 0) & (other > 0)
+    if mixed.any():
+        o, q, a = other[mixed], qualifying[mixed], after[mixed]
+        lo, hi = np.zeros_like(a), a / o
+        for _ in range(100):
+            mid = (lo + hi) / 2
+            below = o * mid + q * mid**exponent < a
+            lo, hi = np.where(below, mid, lo), np.where(below, hi, mid)
+        factor[mixed] = (lo + hi) / 2
+    return factor
+
+
+def residential_gains_response(reformed, elasticity: float) -> float:
+    """The weighted fall in realised residential property gains, £, in a run
+    at ``elasticity``. The engine scales a person's residential gains by the
+    factor on all their gains outside the relief (``_other_gains_factor``),
+    so they fall by (1 - factor) of the residential gains the person had,
+    capped at their gains outside the relief."""
+    person = _person(reformed)
+    before = person["capital_gains_before_response"]
+    qualifying = person["capital_gains_badr"].clip(lower=0).clip(upper=before)
+    other = before - qualifying
+    factor = _other_gains_factor(
+        _plain(before),
+        _plain(person["capital_gains"]),
+        _plain(qualifying),
+        badr_response_exponent(elasticity),
+    )
+    residential = person["capital_gains_residential_property"].clip(lower=0).clip(upper=other)
+    return float((residential * (1 - factor)).sum())
+
+
+def shiftable_gains_response(reformed, elasticity: float) -> float:
+    """The weighted fall in realised gains the OBR's income-shifting share
+    applies to, £: every schedule's except residential property's
+    (``reform.INCOME_SHIFTING_SHARE``)."""
+    return gains_response(reformed) - residential_gains_response(reformed, elasticity)
+
+
+def income_shifting_offset(reformed, elasticity: float) -> float:
+    """Income tax and National Insurance on the part of the fall in realised
+    gains the OBR treats as income no longer presented as gains, £:
+    ``INCOME_SHIFTING_SHARE`` of the fall outside residential property, taxed
+    at ``INCOME_SHIFTING_TAX_RATE``. Negative when a cut in CGT rates raises
+    realisations, since more income is then presented as gains."""
+    return (
+        INCOME_SHIFTING_SHARE
+        * INCOME_SHIFTING_TAX_RATE
+        * shiftable_gains_response(reformed, elasticity)
+    )
 
 
 def _aligned(base, ref):
@@ -180,11 +255,14 @@ def budget_impact(
     years: list[int],
     exempt_amounts: dict[int, float] | None = None,
     ceilings: dict[int, float] | None = None,
+    *,
+    elasticity: float,
 ) -> list[dict]:
     """Change in government revenue (positive = revenue raised), overall
     and for CGT specifically. Weighted sums via microdf. With
     ``exempt_amounts`` and ``ceilings`` the CGT change is also reported for
-    the entrants by uprating alone."""
+    the entrants by uprating alone. ``elasticity`` is the reform runs' case,
+    which the income-shifting offset needs to split the response."""
     rows = []
     for year in years:
         base, ref = baseline_sims[year], reform_sims[year]
@@ -201,7 +279,7 @@ def budget_impact(
             "gov_balance_change_bn": float(
                 (ref_hh["gov_balance"].sum() - base_hh["gov_balance"].sum()) / 1e9
             ),
-            "income_shifting_offset_bn": income_shifting_offset(ref) / 1e9,
+            "income_shifting_offset_bn": income_shifting_offset(ref, elasticity) / 1e9,
         }
         if exempt_amounts is not None and ceilings is not None:
             base_person, ref_person = _aligned(base, ref)
@@ -341,8 +419,9 @@ def sensitivity(baseline_cgt: float, cases, run_case) -> list[dict]:
     return the completed reform simulation for 2026 with that elasticity.
     Each case is a retention-rate elasticity (``e_retention``); the row also
     says which engine parameter carried it and in which convention
-    (``reform.elasticity_convention``), and the income tax the OBR's method
-    would add back for income shifting (never included in the revenue).
+    (``reform.elasticity_convention``), and the income tax and National
+    Insurance the OBR's method would add back for income shifting (never
+    included in the revenue).
     """
     rows = []
     for case_id, name, e in cases:
@@ -354,7 +433,7 @@ def sensitivity(baseline_cgt: float, cases, run_case) -> list[dict]:
                 "e_retention": e,
                 **elasticity_convention(e),
                 "revenue_2026_bn": (cgt_revenue(sim) - baseline_cgt) / 1e9,
-                "income_shifting_offset_2026_bn": income_shifting_offset(sim) / 1e9,
+                "income_shifting_offset_2026_bn": income_shifting_offset(sim, e) / 1e9,
             }
         )
     return rows

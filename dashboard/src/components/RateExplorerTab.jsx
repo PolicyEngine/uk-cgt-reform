@@ -61,10 +61,13 @@ const CURRENT_LAW = PRESETS.find((preset) => preset.id === "current_law").rates;
 // HMRC's ready-reckoner rows (June 2025): schedules a reader can load, with
 // HMRC's own post-behavioural receipts to set beside the run.
 const READY_RECKONER = options.ready_reckoner;
+// The OBR's treatment of income shifting, as the approaches apply it.
+const INCOME_SHIFTING = options.approaches.income_shifting;
 
 // Every behavioural option is an elasticity of realised gains with respect to
 // the retention rate (1 − t), applied as stated; its label names the source,
-// and says so when the approach adds the OBR's income tax on shifted income.
+// and says so when the approach adds the OBR's income tax and National
+// Insurance on shifted income.
 function elasticityLabel(option, approach) {
   return approach?.offset_case_ids.includes(option.id) ? withOffsetLabel(option.label) : option.label;
 }
@@ -367,6 +370,11 @@ export default function RateExplorerTab({ data, datasetKey }) {
     () => initial?.elasticity ?? approachCentral(approach),
   );
   const offered = approachOptions(approach);
+  // The chosen case takes the OBR's addition under this approach; it fits a
+  // schedule that narrows the gap with income tax (20% / 40% / 45%).
+  const addsOffset = approach.offset_case_ids.includes(
+    ELASTICITIES.find((option) => sameElasticity(option.e_retention, elasticity))?.id,
+  );
   // Switching approach keeps a case both offer and otherwise moves to the
   // new approach's central case.
   useEffect(() => {
@@ -392,6 +400,10 @@ export default function RateExplorerTab({ data, datasetKey }) {
         ? badrCheck.badr.rate > rateCheck.rates.basic_rate + 1e-9
         : false,
   };
+  const aboveIncomeTax = Boolean(
+    validation.rates &&
+      BANDS.some((band) => validation.rates[band.key] > EQUALISATION.rates[band.key] + 1e-9),
+  );
   const preset = validation.rates
     ? (PRESETS.find(
         (candidate) =>
@@ -458,7 +470,8 @@ export default function RateExplorerTab({ data, datasetKey }) {
   const centralE = approachCentral(approach);
   const centralOption = ELASTICITIES.find((option) => sameElasticity(option.e_retention, centralE));
   // The run as the approach shows it: under the approach net of income
-  // shifting, the official case adds the OBR's income tax on shifted income.
+  // shifting, the cases measured on the CGT base add the OBR's income tax and
+  // National Insurance on shifted income.
   // A backend older than the approaches does not report it; the run then
   // counts CGT alone and says so.
   const wantsOffset = Boolean(
@@ -621,6 +634,19 @@ export default function RateExplorerTab({ data, datasetKey }) {
         {validation.error ? (
           <p className="mt-3 text-sm leading-6 text-red-700">{validation.error}</p>
         ) : null}
+        {addsOffset ? (
+          <p
+            className={`mt-3 text-sm leading-6 ${aboveIncomeTax ? "text-amber-800" : "text-slate-600"}`}
+          >
+            Net of income shifting, this case adds the OBR&apos;s income tax and National Insurance
+            on {Math.round(INCOME_SHIFTING.share * 1000) / 10}% of the fall in realised gains outside
+            residential property, for the whole response. That fits a schedule that narrows the gap
+            between CGT and income tax, as equalisation does.
+            {aboveIncomeTax
+              ? " This schedule sets CGT above income tax in at least one band, where the gap widens instead, so the addition does not fit it."
+              : ""}
+          </p>
+        ) : null}
         {validation.reliefAboveBasic ? (
           <p className="mt-3 text-sm leading-6 text-amber-800">
             The relief&apos;s {formatPct(validation.badr.rate * 100, 0)} is above the basic rate of{" "}
@@ -652,7 +678,7 @@ export default function RateExplorerTab({ data, datasetKey }) {
                 value={formatSignedBn(firstRow.gov_balance_change_bn, 1)}
                 note={
                   withOffset
-                    ? "Net change in the government balance after taxpayers adjust realisations to the new rates, plus the income tax the OBR adds back for income no longer presented as gains."
+                    ? "Net change in the government balance after taxpayers adjust realisations to the new rates, plus the income tax and National Insurance the OBR's method adds back for income no longer presented as gains."
                     : "Net change in the government balance after taxpayers adjust realisations to the new rates."
                 }
               />
@@ -669,7 +695,7 @@ export default function RateExplorerTab({ data, datasetKey }) {
             </div>
             {offsetMissing ? (
               <p className="mt-3 text-sm leading-6 text-amber-800">
-                The explorer&apos;s backend did not report the income tax on shifted income for this
+                The explorer&apos;s backend did not report the income tax and National Insurance on shifted income for this
                 run, so these figures count CGT alone, not the total revenue this approach shows
                 elsewhere.
               </p>
@@ -760,7 +786,7 @@ export default function RateExplorerTab({ data, datasetKey }) {
             <GroupImpactChart groupsByYear={shown.income_change_groups} initialYear={firstYear} />
             {withOffset ? (
               <p className="mt-3 text-xs leading-5 text-slate-500">
-                The income tax added back for shifted income is in the revenue figures above but not
+                The income tax and National Insurance added back for shifted income are in the revenue figures above but not
                 in these household figures, which reflect the CGT change alone.
               </p>
             ) : null}

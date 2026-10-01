@@ -95,8 +95,9 @@ RATE_STEP = 0.01
 #: elasticity cases, each a retention-rate elasticity the engine applies as
 #: stated (``reform.elasticity_convention``). Each approach to income
 #: shifting (``comparison.APPROACHES``) offers five of them; every response
-#: reports the income-shifting offset, which the client adds to the official
-#: case under the approach net of income shifting.
+#: reports the income-shifting offset, which the client adds to the cases
+#: measured on the CGT base (``offset_case_ids``) under the approach net of
+#: income shifting.
 ELASTICITY_OPTIONS = tuple(
     {"id": option_id, "label": label, "e_retention": e, **elasticity_convention(e)}
     for option_id, label, e in ELASTICITY_CASES
@@ -593,6 +594,7 @@ def run_year(req: ExploreRequest, year: int, folder: Path, context: dict | None 
         [year],
         context["exempt_amounts"],
         context["entrant_ceilings"],
+        elasticity=req.elasticity,
     )[0]
     groups = income_change_groups(baseline, reform)
     return {
@@ -635,7 +637,8 @@ def assemble_response(
             "elasticity_parameter": elasticity_convention(req.elasticity)["elasticity_parameter"],
             "elasticity_applied": elasticity_assignment(req.elasticity),
             # budget[].income_shifting_offset_bn is never in the figures; the
-            # approach net of income shifting adds it to the official case.
+            # approach net of income shifting adds it to the cases measured on
+            # the CGT base (``offset_case_ids``).
             "income_shifting": {
                 key: INCOME_SHIFTING[key] for key in ("share", "tax_rate", "url", "locator")
             },

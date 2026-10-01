@@ -444,16 +444,20 @@ def test_two_approaches_to_income_shifting():
         assert set(approach["case_ids"]) <= set(case_ids)
         assert approach["central_id"] in approach["case_ids"]
         assert set(approach["offset_case_ids"]) <= set(approach["case_ids"])
-    # Net of income shifting: CenTax as published, the official case plus
-    # the OBR's income tax. Gross: CenTax before its adjustments, no offset.
+    # Net of income shifting: CenTax's central case as published, and the
+    # cases measured on the CGT base (CenTax's bounds and the official case)
+    # plus the OBR's income tax and National Insurance. Gross: CenTax before
+    # its adjustments, no offset.
     net, gross = APPROACHES["total_revenue"], APPROACHES["cgt_only"]
-    assert net["central_id"] == "centax_central" and net["offset_case_ids"] == ["official"]
+    assert net["central_id"] == "centax_central"
+    assert net["offset_case_ids"] == ["centax_lower", "centax_upper", "official"]
     assert gross["central_id"] == "centax_unadjusted" and gross["offset_case_ids"] == []
     # The CenTax cases that never carry an offset: CenTax's elasticities are
     # either net already (1.0) or counted as CGT only (1.5).
     assert "centax_central" not in net["offset_case_ids"]
     shifting = block["income_shifting"]
-    assert (shifting["share"], shifting["tax_rate"]) == (0.125, 0.45)
+    assert shifting["share"] == 0.125
+    assert shifting["tax_rate"] == pytest.approx(0.62 / 1.15)
     assert shifting == INCOME_SHIFTING
     assert shifting["url"].startswith("https://obr.uk/")
 

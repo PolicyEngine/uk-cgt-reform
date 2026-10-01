@@ -146,7 +146,7 @@
       "cgt_change_bn": 10.516542748106842,
       "total_tax_change_bn": 10.516542591644287,
       "gov_balance_change_bn": 10.516542476698975,
-      "income_shifting_offset_bn": 1.98304957344139,
+      "income_shifting_offset_bn": 2.1531541944800243,
       "cgt_change_from_entrants_bn": -6.0041711750609625e-05
     },
     {
@@ -156,7 +156,7 @@
       "cgt_change_bn": 10.91843558380072,
       "total_tax_change_bn": 10.918435425064942,
       "gov_balance_change_bn": 10.918435445062439,
-      "income_shifting_offset_bn": 2.05674455348059,
+      "income_shifting_offset_bn": 2.232830255804627,
       "cgt_change_from_entrants_bn": -0.00010851167826360528
     },
     {
@@ -166,7 +166,7 @@
       "cgt_change_bn": 11.35059389990184,
       "total_tax_change_bn": 11.350594078370971,
       "gov_balance_change_bn": 11.350594073835206,
-      "income_shifting_offset_bn": 2.1275954682496567,
+      "income_shifting_offset_bn": 2.309041943465639,
       "cgt_change_from_entrants_bn": -0.00016829270624645708
     },
     {
@@ -176,7 +176,7 @@
       "cgt_change_bn": 11.76344566624768,
       "total_tax_change_bn": 11.76344562081067,
       "gov_balance_change_bn": 11.763445670829833,
-      "income_shifting_offset_bn": 2.2012508136870927,
+      "income_shifting_offset_bn": 2.3887728213492125,
       "cgt_change_from_entrants_bn": -0.00024433092080087735
     },
     {
@@ -186,7 +186,7 @@
       "cgt_change_bn": 12.217693620784829,
       "total_tax_change_bn": 12.217693803159667,
       "gov_balance_change_bn": 12.217693646701905,
-      "income_shifting_offset_bn": 2.2814208401086375,
+      "income_shifting_offset_bn": 2.4751519625444645,
       "cgt_change_from_entrants_bn": -0.00035102609506301334
     }
   ],
@@ -863,7 +863,7 @@
       "applied_value": 0.5,
       "badr_elasticity": 0.5,
       "revenue_2026_bn": 17.71944490490391,
-      "income_shifting_offset_2026_bn": 1.0720818124353697
+      "income_shifting_offset_2026_bn": 1.1646764470766449
     },
     {
       "id": "centax_central",
@@ -874,7 +874,7 @@
       "applied_value": 1.0,
       "badr_elasticity": 1.0,
       "revenue_2026_bn": 10.516542748106842,
-      "income_shifting_offset_2026_bn": 1.98304957344139
+      "income_shifting_offset_2026_bn": 2.1531541944800243
     },
     {
       "id": "centax_unadjusted",
@@ -885,7 +885,7 @@
       "applied_value": 1.5,
       "badr_elasticity": 1.5,
       "revenue_2026_bn": 4.410098097404892,
-      "income_shifting_offset_2026_bn": 2.7573308808306844
+      "income_shifting_offset_2026_bn": 2.99229777758313
     },
     {
       "id": "centax_upper",
@@ -896,7 +896,7 @@
       "applied_value": 2.0,
       "badr_elasticity": 2.0,
       "revenue_2026_bn": -0.7591335686566276,
-      "income_shifting_offset_2026_bn": 3.4156208999537987
+      "income_shifting_offset_2026_bn": 3.7048462984342896
     },
     {
       "id": "official",
@@ -907,7 +907,7 @@
       "applied_value": 3.6,
       "badr_elasticity": 1.4,
       "revenue_2026_bn": -9.631687735543563,
-      "income_shifting_offset_2026_bn": 4.556937332223896
+      "income_shifting_offset_2026_bn": 4.89281414414603
     }
   ],
   "schedule_split": {
@@ -1540,16 +1540,16 @@
           },
           "income_shifting_offset_m": {
             "centax_central": {
-              "2026-27": 85.78853785321806,
-              "2027-28": 89.11438518021687
+              "2026-27": 91.49464430185769,
+              "2027-28": 95.04713433250313
             },
             "centax_unadjusted": {
-              "2026-27": 128.2591775596561,
-              "2027-28": 133.23096457443899
+              "2026-27": 136.79020338113708,
+              "2027-28": 142.10073297946604
             },
             "official": {
-              "2026-27": 289.94712553327804,
-              "2027-28": 301.07384240000783
+              "2026-27": 307.4371268884519,
+              "2027-28": 319.23849836633696
             }
           }
         },
@@ -1587,16 +1587,16 @@
           },
           "income_shifting_offset_m": {
             "centax_central": {
-              "2026-27": 429.4302361048329,
-              "2027-28": 445.57522571851416
+              "2026-27": 458.03644140335564,
+              "2027-28": 475.2328709946196
             },
             "centax_unadjusted": {
-              "2026-27": 633.4338974873083,
-              "2027-28": 657.2490360018609
+              "2026-27": 675.6299345160139,
+              "2027-28": 700.9955966496392
             },
             "official": {
-              "2026-27": 1357.1571336708005,
-              "2027-28": 1407.6230421869611
+              "2026-27": 1439.5226088608565,
+              "2027-28": 1492.8894160720438
             }
           }
         },
@@ -1634,16 +1634,16 @@
           },
           "income_shifting_offset_m": {
             "centax_central": {
-              "2026-27": 858.962489737654,
-              "2027-28": 891.1669646537337
+              "2026-27": 916.1970526490455,
+              "2027-28": 950.4861449239904
             },
             "centax_unadjusted": {
-              "2026-27": 1245.0858756927614,
-              "2027-28": 1291.7733077845016
+              "2026-27": 1328.0489714997163,
+              "2027-28": 1377.757402460488
             },
             "official": {
-              "2026-27": 2493.7305987777722,
-              "2027-28": 2586.3008761699775
+              "2026-27": 2645.9628218526855,
+              "2027-28": 2743.8510787718865
             }
           }
         },
@@ -1681,16 +1681,16 @@
           },
           "income_shifting_offset_m": {
             "centax_central": {
-              "2026-27": 1.147538908806714,
-              "2027-28": 1.1470105235829806
+              "2026-27": 0.8983925522654105,
+              "2027-28": 0.899403068344251
             },
             "centax_unadjusted": {
-              "2026-27": 1.7160626686287233,
-              "2027-28": 1.715341252257489
+              "2026-27": 1.3434869395670443,
+              "2027-28": 1.3450580390537223
             },
             "official": {
-              "2026-27": 4.066252713871753,
-              "2027-28": 4.06513437493163
+              "2026-27": 3.183475146701349,
+              "2027-28": 3.187692595294965
             }
           }
         },
@@ -1728,16 +1728,16 @@
           },
           "income_shifting_offset_m": {
             "centax_central": {
-              "2026-27": 5.735917991885148,
-              "2027-28": 5.713559374242545
+              "2026-27": 4.489990469473266,
+              "2027-28": 4.475863368652363
             },
             "centax_unadjusted": {
-              "2026-27": 8.471697961318783,
-              "2027-28": 8.439755680256937
+              "2026-27": 6.631629603187365,
+              "2027-28": 6.6116094605506746
             },
             "official": {
-              "2026-27": 19.06916948746611,
-              "2027-28": 19.00743164729038
+              "2026-27": 14.928360827354492,
+              "2027-28": 14.89119347958389
             }
           }
         },
@@ -1775,16 +1775,16 @@
           },
           "income_shifting_offset_m": {
             "centax_central": {
-              "2026-27": 7.991380068130943,
-              "2027-28": 8.217308534244523
+              "2026-27": 9.574213801432242,
+              "2027-28": 9.843411588829602
             },
             "centax_unadjusted": {
-              "2026-27": 11.95043126815692,
-              "2027-28": 12.28830175477717
+              "2026-27": 14.317424900980274,
+              "2027-28": 14.719995553831966
             },
             "official": {
-              "2026-27": 11.160591247278674,
-              "2027-28": 11.478877976438422
+              "2026-27": 13.371143136836286,
+              "2027-28": 13.747144332205911
             }
           }
         },
@@ -1822,16 +1822,16 @@
           },
           "income_shifting_offset_m": {
             "centax_central": {
-              "2026-27": 39.96298027181177,
-              "2027-28": 41.07934550063082
+              "2026-27": 47.87835317589044,
+              "2027-28": 49.21435442778516
             },
             "centax_unadjusted": {
-              "2026-27": 59.02137367892273,
-              "2027-28": 60.66997615334204
+              "2026-27": 70.71159745107651,
+              "2027-28": 72.68451367385171
             },
             "official": {
-              "2026-27": 55.265439666875835,
-              "2027-28": 56.80217221518818
+              "2026-27": 66.21173448012178,
+              "2027-28": 68.0475161737998
             }
           }
         }
@@ -1844,7 +1844,7 @@
       {
         "id": "total_revenue",
         "label": "Net of income shifting",
-        "description": "Total revenue: CenTax's published elasticities, which already allow for income no longer presented as gains, and the official elasticity with the OBR's income tax on that income added back.",
+        "description": "Total revenue: CenTax's central 1.0, which already allows for income no longer presented as gains, and the cases measured on the CGT base (CenTax's 0.5 and 2.0 and the official elasticity) with the OBR's income tax and National Insurance on that income added back.",
         "case_ids": [
           "static",
           "centax_lower",
@@ -1854,13 +1854,15 @@
         ],
         "central_id": "centax_central",
         "offset_case_ids": [
+          "centax_lower",
+          "centax_upper",
           "official"
         ]
       },
       {
         "id": "cgt_only",
         "label": "Gross of income shifting",
-        "description": "CGT only: every gain not realised counts as lost revenue, with CenTax's elasticity before its adjustments and the official elasticity with no income tax added back.",
+        "description": "CGT only: every gain not realised counts as lost revenue, with CenTax's elasticity before its adjustments and the official elasticity with no income tax or National Insurance added back.",
         "case_ids": [
           "static",
           "centax_lower",
@@ -1910,10 +1912,16 @@
       "url": "https://obr.uk/docs/dlm_uploads/CGT-supplementary-release-Jan-2025.pdf",
       "locator": "p. 3 and Table 1.1",
       "share": 0.125,
-      "tax_rate": 0.45,
+      "tax_rate": 0.5391304347826087,
+      "tax_rate_components": {
+        "income_tax": 0.45,
+        "employee_national_insurance": 0.02,
+        "employer_national_insurance": 0.15
+      },
       "share_note": "The OBR's costing of the October 2024 rate rise assumes 12.5% of the behavioural response to the narrowing gap between income tax and CGT rates is income no longer presented as gains, which raises income tax receipts: HMRC assumes a quarter of the income tax response to a 1-point rise in marginal rates is avoidance, and half of that is income-to-gains shifting.",
-      "tax_rate_note": "The OBR does not say which income it becomes or at what rate. 45% is the additional rate on earnings. Stacked on each person's other income, the rate on the shifted income averages 42.4% on the staged Microcosm UK build (2026-27, official case), so 45% overstates the offset by about 6%. Dividends at the additional dividend rate (39.35%) would give about an eighth less, salary with employee and employer National Insurance about a fifth more.",
-      "obr_check": "Applied to the OBR's own costing (\u00a34.9bn of CGT lost to behaviour in 2029-30, on gains taxed at 22-24%), this gives about \u00a31.2bn of income tax against the OBR's \u00a31.5bn: it adds back somewhat less than the OBR did."
+      "base_note": "Residential property gains are left out: the OBR's costing left the residential rates where they were, and it describes labour income presented as gains, which residential property gains are not. They are about a tenth of the fall.",
+      "tax_rate_note": "The OBR does not say what rate the shifted income pays. It describes the behaviour as structuring earnings as income or gains, against employment tax rates (paras 1.9 and 1.11), so the income is taxed here as salary paid to an additional-rate taxpayer: income tax at 45% and employee National Insurance at 2% on the salary, and employer National Insurance at 15% on top of it, 53.9% of what the employer spends. Income tax alone at 45% would give a sixth less, and dividends at the additional dividend rate (39.35%) about a quarter less.",
+      "obr_check": "Applied to the OBR's own costing (\u00a34.9bn of CGT lost to behaviour in 2029-30, on gains taxed at about 22-24%), this rate gives \u00a31.4bn to \u00a31.5bn against the OBR's \u00a31.5bn of income taxes, which imply about 56%. Income tax alone at 45% gives about \u00a31.2bn."
     }
   },
   "approach_results": {
@@ -1929,7 +1937,7 @@
           "cgt_change_bn": 4.410098097404892,
           "total_tax_change_bn": 4.41009816351416,
           "gov_balance_change_bn": 4.410098005908569,
-          "income_shifting_offset_bn": 2.7573308808306844,
+          "income_shifting_offset_bn": 2.99229777758313,
           "cgt_change_from_entrants_bn": -6.588845504467402e-05
         },
         {
@@ -1939,7 +1947,7 @@
           "cgt_change_bn": 4.583278094800529,
           "total_tax_change_bn": 4.5832780058433835,
           "gov_balance_change_bn": 4.583278057636414,
-          "income_shifting_offset_bn": 2.8597343522609844,
+          "income_shifting_offset_bn": 3.1029630648915094,
           "cgt_change_from_entrants_bn": -0.0001184249936959862
         },
         {
@@ -1949,7 +1957,7 @@
           "cgt_change_bn": 4.792269131706482,
           "total_tax_change_bn": 4.792269368038941,
           "gov_balance_change_bn": 4.792269343496521,
-          "income_shifting_offset_bn": 2.9586657258426796,
+          "income_shifting_offset_bn": 3.209404954547472,
           "cgt_change_from_entrants_bn": -0.0001815961786121827
         },
         {
@@ -1959,7 +1967,7 @@
           "cgt_change_bn": 4.976406694619034,
           "total_tax_change_bn": 4.976406638598511,
           "gov_balance_change_bn": 4.976406695541748,
-          "income_shifting_offset_bn": 3.0611371613550786,
+          "income_shifting_offset_bn": 3.320271531532647,
           "cgt_change_from_entrants_bn": -0.0002612791731535229
         },
         {
@@ -1969,7 +1977,7 @@
           "cgt_change_bn": 5.180225777564148,
           "total_tax_change_bn": 5.180225863198975,
           "gov_balance_change_bn": 5.180225820476258,
-          "income_shifting_offset_bn": 3.172631604334804,
+          "income_shifting_offset_bn": 3.440367235822391,
           "cgt_change_from_entrants_bn": -0.0003702449815969171
         }
       ],

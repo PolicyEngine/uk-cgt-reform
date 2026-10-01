@@ -20,9 +20,12 @@ so the dashboard can say how comparable it is:
 - The official elasticity itself (OBR, January 2025): retention 3.6.
 
 The two approaches to income shifting (``APPROACHES``) say which elasticity
-cases the dashboard shows and whether the official case adds back the
-income tax the OBR's method attributes to income no longer presented as
-gains (``INCOME_SHIFTING``).
+cases the dashboard shows and which of them add back the income tax and
+National Insurance the OBR's method attributes to income no longer
+presented as gains (``INCOME_SHIFTING``).
+
+CenTax's PDF pages run one ahead of its printed pages: ``#page=37`` opens
+printed p. 36. Citations give printed pages.
 """
 
 from __future__ import annotations
@@ -34,6 +37,7 @@ from .reform import (
     CENTAX_UNADJUSTED_ELASTICITY,
     CENTAX_UPPER_ELASTICITY,
     ELASTICITY,
+    INCOME_SHIFTING_RATE_COMPONENTS,
     INCOME_SHIFTING_SHARE,
     INCOME_SHIFTING_TAX_RATE,
     OFFICIAL_BADR_ELASTICITY,
@@ -76,13 +80,15 @@ OBR_JANUARY_2025 = {
 }
 
 #: The OBR's treatment of income no longer presented as gains, as applied
-#: here: ``share`` of the behavioural fall in realised gains comes back as
-#: income taxed at ``tax_rate`` (``impacts.income_shifting_offset``).
+#: here: ``share`` of the behavioural fall in realised gains outside
+#: residential property comes back as earnings, taxed at ``tax_rate``
+#: (``impacts.income_shifting_offset``).
 INCOME_SHIFTING = {
     **OBR_JANUARY_2025,
     "locator": "p. 3 and Table 1.1",
     "share": INCOME_SHIFTING_SHARE,
     "tax_rate": INCOME_SHIFTING_TAX_RATE,
+    "tax_rate_components": dict(INCOME_SHIFTING_RATE_COMPONENTS),
     "share_note": (
         "The OBR's costing of the October 2024 rate rise assumes 12.5% of the "
         "behavioural response to the narrowing gap between income tax and CGT rates is "
@@ -90,37 +96,49 @@ INCOME_SHIFTING = {
         "assumes a quarter of the income tax response to a 1-point rise in marginal rates "
         "is avoidance, and half of that is income-to-gains shifting."
     ),
+    "base_note": (
+        "Residential property gains are left out: the OBR's costing left the residential "
+        "rates where they were, and it describes labour income presented as gains, which "
+        "residential property gains are not. They are about a tenth of the fall."
+    ),
     "tax_rate_note": (
-        "The OBR does not say which income it becomes or at what rate. 45% is the "
-        "additional rate on earnings. Stacked on each person's other income, the rate on "
-        "the shifted income averages 42.4% on the staged Microcosm UK build (2026-27, "
-        "official case), so 45% overstates the offset by about 6%. Dividends at the "
-        "additional dividend rate (39.35%) would give about an eighth less, salary with "
-        "employee and employer National Insurance about a fifth more."
+        "The OBR does not say what rate the shifted income pays. It describes the "
+        "behaviour as structuring earnings as income or gains, against employment tax "
+        "rates (paras 1.9 and 1.11), so the income is taxed here as salary paid to an "
+        "additional-rate taxpayer: income tax at 45% and employee National Insurance at "
+        "2% on the salary, and employer National Insurance at 15% on top of it, 53.9% of "
+        "what the employer spends. Income tax alone at 45% would give a sixth less, and "
+        "dividends at the additional dividend rate (39.35%) about a quarter less."
     ),
     "obr_check": (
         "Applied to the OBR's own costing (£4.9bn of CGT lost to behaviour in 2029-30, on "
-        "gains taxed at 22-24%), this gives about £1.2bn of income tax against the OBR's "
-        "£1.5bn: it adds back somewhat less than the OBR did."
+        "gains taxed at about 22-24%), this rate gives £1.4bn to £1.5bn against the OBR's "
+        "£1.5bn of income taxes, which imply about 56%. Income tax alone at 45% gives "
+        "about £1.2bn."
     ),
 }
 
 #: Two ways to put CenTax's and the official elasticities on the same footing
 #: with respect to income shifting. ``case_ids`` are the five cases each
 #: shows, ``central_id`` its central case, and ``offset_case_ids`` the cases
-#: that add ``INCOME_SHIFTING``'s income tax to the change in CGT.
+#: that add ``INCOME_SHIFTING``'s income tax and National Insurance to the
+#: change in CGT. Net of income shifting, that is every case measured on the
+#: CGT base: CenTax's 0.5 (near Lavecchia and Tazhitdinova's five-year
+#: estimate) and 2.0 (Agersnap and Zidar's, unadjusted), which CenTax say
+#: measure the CGT base only (printed pp. 36-37), and the official 3.6.
 APPROACHES = {
     "total_revenue": {
         "id": "total_revenue",
         "label": "Net of income shifting",
         "description": (
-            "Total revenue: CenTax's published elasticities, which already allow for "
-            "income no longer presented as gains, and the official elasticity with the "
-            "OBR's income tax on that income added back."
+            "Total revenue: CenTax's central 1.0, which already allows for income no "
+            "longer presented as gains, and the cases measured on the CGT base (CenTax's "
+            "0.5 and 2.0 and the official elasticity) with the OBR's income tax and National "
+            "Insurance on that income added back."
         ),
         "case_ids": ["static", "centax_lower", "centax_central", "centax_upper", "official"],
         "central_id": "centax_central",
-        "offset_case_ids": ["official"],
+        "offset_case_ids": ["centax_lower", "centax_upper", "official"],
     },
     "cgt_only": {
         "id": "cgt_only",
@@ -128,7 +146,7 @@ APPROACHES = {
         "description": (
             "CGT only: every gain not realised counts as lost revenue, with CenTax's "
             "elasticity before its adjustments and the official elasticity with no income "
-            "tax added back."
+            "tax or National Insurance added back."
         ),
         "case_ids": ["static", "centax_lower", "centax_unadjusted", "centax_upper", "official"],
         "central_id": "centax_unadjusted",

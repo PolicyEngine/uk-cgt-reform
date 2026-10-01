@@ -454,7 +454,7 @@ def run_dataset(
 
     # ── Step 5: budgetary impact ──────────────────────────────────────────
     print(f"Step 5 {tag}: Budgetary impact 2026-27 to 2030-31...")
-    budget = budget_impact(baseline_sims, reform_sims, YEARS, aea, ceilings)
+    budget = budget_impact(baseline_sims, reform_sims, YEARS, aea, ceilings, elasticity=ELASTICITY)
     for row in budget:
         print(
             f"    {row['year']}: gov balance {row['gov_balance_change_bn']:+.2f}bn "
@@ -462,8 +462,15 @@ def run_dataset(
         )
     five_year_total = sum(r["gov_balance_change_bn"] for r in budget)
     print(f"    Five-year total budgetary impact: £{five_year_total:.1f}bn")
-    static_budget = budget_impact(baseline_sims, static_sims, YEARS, aea, ceilings)
-    unadjusted_budget = budget_impact(baseline_sims, unadjusted_sims, YEARS, aea, ceilings)
+    static_budget = budget_impact(baseline_sims, static_sims, YEARS, aea, ceilings, elasticity=0.0)
+    unadjusted_budget = budget_impact(
+        baseline_sims,
+        unadjusted_sims,
+        YEARS,
+        aea,
+        ceilings,
+        elasticity=CENTAX_UNADJUSTED_ELASTICITY,
+    )
     print(
         "    Five-year total before CenTax's adjustments: "
         f"£{sum(r['gov_balance_change_bn'] for r in unadjusted_budget):.1f}bn"
