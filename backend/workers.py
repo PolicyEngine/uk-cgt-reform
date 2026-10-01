@@ -37,13 +37,15 @@ app = modal.App(WORKERS_APP_NAME)
     timeout=900,
     max_containers=10,
 )
-def run_year(dataset_key: str, year: int, rates: dict, elasticity: float) -> dict:
-    """One (dataset, year): cached baseline versus an in-memory reform run."""
+def run_year(payload: dict, year: int) -> dict:
+    """One (dataset, year): cached baseline versus an in-memory reform run.
+    ``payload`` is the validated request's own payload (``to_payload``), so
+    every field a request carries reaches the worker."""
     from uk_cgt_reform.explore import engine_context, validate_request
     from uk_cgt_reform.explore import run_year as score_year
     from uk_cgt_reform.pipeline import dataset_folder
 
-    request = validate_request({"dataset": dataset_key, "rates": rates, "elasticity": elasticity})
+    request = validate_request(payload)
     context = engine_context()
     manifest = read_manifest()
     if manifest["projection_fingerprint"] != context["projection_fingerprint"]:
@@ -91,11 +93,7 @@ def run_reform(payload: dict) -> dict:
         if cached is not None:
             return mark_cache_hit(cached)
 
-        rows = list(
-            run_year.starmap(
-                [(request.dataset_key, year, request.rates, request.elasticity) for year in YEARS]
-            )
-        )
+        rows = list(run_year.starmap([(request.to_payload(), year) for year in YEARS]))
         result = assemble_response(request, context, rows)
         store.put(key, result)
         volume.commit()

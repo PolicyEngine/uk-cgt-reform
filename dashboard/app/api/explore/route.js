@@ -58,7 +58,7 @@ function cliArgs(body) {
   }
   const dataset = body.dataset ?? "";
   if (dataset && !DATASET_KEY.test(dataset)) return { error: "Unknown dataset." };
-  const elasticity = body.elasticity ?? -0.7;
+  const elasticity = body.elasticity ?? 1.0;
   if (typeof elasticity !== "number" || !Number.isFinite(elasticity)) {
     return { error: "elasticity must be a number." };
   }
@@ -77,6 +77,27 @@ function cliArgs(body) {
     String(elasticity),
   ];
   if (dataset) args.push("--dataset", dataset);
+  // Business Asset Disposal Relief: withdrawn, or kept at a rate and limit.
+  const badr = body.badr ?? {};
+  if (typeof badr !== "object" || Array.isArray(badr)) {
+    return { error: "badr must be an object." };
+  }
+  if (badr.withdrawn === true) {
+    args.push("--withdraw-badr");
+  } else {
+    if (badr.rate !== undefined && badr.rate !== null) {
+      if (typeof badr.rate !== "number" || !Number.isFinite(badr.rate)) {
+        return { error: "badr.rate must be a number." };
+      }
+      args.push("--badr-rate", String(badr.rate));
+    }
+    if (badr.lifetime_limit !== undefined && badr.lifetime_limit !== null) {
+      if (!Number.isInteger(badr.lifetime_limit)) {
+        return { error: "badr.lifetime_limit must be a whole number of pounds." };
+      }
+      args.push("--badr-limit", String(badr.lifetime_limit));
+    }
+  }
   return { args };
 }
 

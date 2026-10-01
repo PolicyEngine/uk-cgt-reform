@@ -24,6 +24,7 @@ from common import (
     JOB_TTL_SECONDS,
     MAX_IN_FLIGHT,
     RESULTS_DIR,
+    STAGE,
     WORKERS_APP_NAME,
     gateway_image,
     jobs,
@@ -78,7 +79,10 @@ def build_web_app():
         if failure:
             return failure
         manifest, _ = loaded
-        return JSONResponse({"manifest": manifest, "options": api_options()}, headers=no_store)
+        return JSONResponse(
+            {"manifest": manifest, "options": api_options(), "stage": STAGE or "production"},
+            headers=no_store,
+        )
 
     @web_app.post("/submit")
     def submit(payload: dict):

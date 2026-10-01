@@ -1,6 +1,8 @@
 "use client";
 
 import {
+  formatBn,
+  formatCount,
   formatElasticity,
   formatPct,
   formatPublished,
@@ -10,6 +12,7 @@ import {
 } from "../lib/formatters";
 import {
   BASELINE_SCHEDULE_RATES,
+  describeBadr,
   getBenchmarks,
   getBudget,
   getDatasetInfo,
@@ -19,6 +22,7 @@ import {
   getIncomeChangeGroups,
   getIncomeChangeGroupsByYear,
   getReformSchedules,
+  getScheduleSplit,
   getSensitivity,
   getReform,
   getValidation,
@@ -28,18 +32,14 @@ import GroupImpactChart from "./charts/GroupImpactChart";
 import { MetricCard, TipHeader } from "./controls";
 import SectionHeading from "./SectionHeading";
 
-// Where each sensitivity scenario's elasticity comes from. Keys match the
-// scenario names emitted by the pipeline's SENSITIVITY_CASES; the official
-// case's source comes from the results file's benchmarks block.
+// Where each sensitivity scenario's elasticity comes from: the static case
+// has none, the official HMRC/OBR case's source is in the results file's
+// benchmarks block, and the rest are CenTax's central case and range.
 const CENTAX_SOURCE = {
   label: "Advani, Lonsdale & Summers (2024), CenTax",
   url: "https://centax.org.uk/wp-content/uploads/2024/10/AdvaniLonsdaleSummers2024_CGTReform.pdf#page=38",
 };
-const ELASTICITY_SOURCES = {
-  "Static (no behavioural response)": { label: "None: taxpayers do not respond", url: null },
-  "CenTax lower (retention e=0.5)": CENTAX_SOURCE,
-  "CenTax central (retention e=1.0)": CENTAX_SOURCE,
-};
+const STATIC_SOURCE = { label: "None: taxpayers do not respond", url: null };
 
 function officialSource(official) {
   return {
@@ -49,9 +49,9 @@ function officialSource(official) {
 }
 
 function SourceLink({ row, official }) {
-  const source =
-    row.applied_as === "retention" ? officialSource(official) : ELASTICITY_SOURCES[row.name];
-  if (!source) return <td>—</td>;
+  let source = CENTAX_SOURCE;
+  if (row.e_retention === 0) source = STATIC_SOURCE;
+  else if (row.e_retention === official.e_retention) source = officialSource(official);
   if (!source.url) return <td className="font-normal text-slate-500">{source.label}</td>;
   return (
     <td>
@@ -73,7 +73,7 @@ export default function ReformTab({ data }) {
   const fiveYearTotal = getFiveYearTotal(data);
   const headlineGroups = getIncomeChangeGroups(data, firstYear);
   const sensitivity = getSensitivity(data);
-  const official = getBenchmarks(data).elasticities.official;
+  const { central, official, centax_range: centaxRange } = getBenchmarks(data).elasticities;
   const reform = getReform(data);
   const schedules = getReformSchedules(data);
   const validation = getValidation(data);
@@ -85,6 +85,9 @@ export default function ReformTab({ data }) {
     firstYearRow.cgt_change_from_entrants_bn / firstYearRow.gov_balance_change_bn;
   const recorded = (gains) => (gains > 0 ? "" : ` ${dataset.shortLabel} records no such gains, so this line is inert here.`);
   const topQuintile = headlineGroups.quintile[headlineGroups.quintile.length - 1];
+  const split = getScheduleSplit(data);
+  // Equalisation with the relief kept: the step before it is withdrawn.
+  const keptRelief = split.steps.find((row) => row.step === "residential");
 
   return (
     <div className="space-y-6">
@@ -103,7 +106,10 @@ export default function ReformTab({ data }) {
               {formatPct(reform.higher_rate.reform * 100, 0)}, and the
               additional rate from{" "}
               {formatPct(reform.additional_rate.baseline * 100, 0)} to{" "}
-              {formatPct(reform.additional_rate.reform * 100, 0)}. Taxpayers
+              {formatPct(reform.additional_rate.reform * 100, 0)}. It also
+              withdraws Business Asset Disposal Relief, so gains that qualify for
+              it take the new rates too, as in CenTax&apos;s rates-only estimate;
+              the table below splits the yield by schedule. Taxpayers
               respond by realising fewer gains, modelled with{" "}
               <a
                 href="https://centax.org.uk/wp-content/uploads/2024/10/AdvaniLonsdaleSummers2024_CGTReform.pdf#page=38"
@@ -111,9 +117,12 @@ export default function ReformTab({ data }) {
                 rel="noopener noreferrer"
                 className="underline decoration-1 underline-offset-2 hover:opacity-80"
               >
-                Advani/CenTax&apos;s central retention-rate elasticity of 1.0
+                CenTax&apos;s central elasticity of 1.0
               </a>{" "}
-              (≈ MTR elasticity of −0.7).
+              with respect to the share of each gain they keep, applied in that
+              form. CenTax&apos;s elasticity comes from a package that also reforms
+              the tax base; for a rate rise alone CenTax expect a larger response,
+              which the sensitivity table below explores.
             </>
           }
         />
@@ -138,7 +147,7 @@ export default function ReformTab({ data }) {
           <MetricCard
             label="Top quintile net income change"
             value={formatSignedPct(topQuintile.relative_change_pct)}
-            note={`Average of ${formatSignedCurrency(topQuintile.avg_change_gbp)} per household in the highest-income 20%, which holds most realised gains. Includes the gains taxpayers stop realising under the −0.7 elasticity, not just tax paid.`}
+            note={`Average of ${formatSignedCurrency(topQuintile.avg_change_gbp)} per household in the highest-income 20%, which holds most realised gains. Includes the gains taxpayers stop realising under the central elasticity, not just tax paid.`}
           />
         </div>
       </section>
@@ -153,7 +162,11 @@ export default function ReformTab({ data }) {
         <div className="mt-4 space-y-3">
           <p className="text-sm leading-6 text-slate-600">
             Effective from the 2026-27 fiscal year and held in place through 2030-31. All results on
-            this page compare this reform against current policy on the same baseline.
+            this page compare this reform against current policy on the same baseline. The reformed
+            rates are the income tax rates on earnings; from April 2027 savings and property income
+            face 22%, 42% and 47% (the property rates in England, Wales and Northern Ireland), and
+            Scottish taxpayers&apos; earnings face Scotland&apos;s own bands, which the reform does not
+            follow.
           </p>
           <table className="data-table">
             <thead>
@@ -200,24 +213,23 @@ export default function ReformTab({ data }) {
                 </td>
               </tr>
               <tr>
-                <td>Carried interest CGT rate</td>
-                <td>{formatPct(BASELINE_SCHEDULE_RATES.carried_interest.higher_rate * 100, 0)} flat</td>
-                <td className="font-semibold">
-                  {formatPct(schedules.carried_interest.basic_rate * 100, 0)} /{" "}
-                  {formatPct(schedules.carried_interest.higher_rate * 100, 0)} /{" "}
-                  {formatPct(schedules.carried_interest.additional_rate * 100, 0)}
-                </td>
+                <td>Business Asset Disposal Relief</td>
+                <td>{describeBadr(BASELINE_SCHEDULE_RATES.badr)}</td>
+                <td className="font-semibold">{describeBadr(schedules.badr)}</td>
                 <td>
-                  Carried interest takes the income tax rates too.{recorded(validation.carried_interest_gains_bn)}
+                  {schedules.badr.withdrawn
+                    ? "Gains that qualify for the relief (Investors' Relief included) fall onto the main schedule at the reformed rates."
+                    : "Gains that qualify for the relief keep their own rate."}
+                  {recorded(validation.badr_gains_bn)}
                 </td>
               </tr>
               <tr>
-                <td>Business Asset Disposal Relief lifetime limit</td>
-                <td>£{BASELINE_SCHEDULE_RATES.badr_lifetime_limit.toLocaleString("en-GB")}</td>
-                <td className="font-semibold">£{schedules.badr_lifetime_limit.toLocaleString("en-GB")}</td>
+                <td>Carried interest</td>
+                <td>Taxed as income since April 2026</td>
+                <td>Unchanged</td>
                 <td>
-                  The relief is withdrawn: qualifying gains fall onto the main schedule at the
-                  reformed rates.{recorded(validation.badr_gains_bn)}
+                  Carried interest moved from capital gains tax into the income tax framework on 6
+                  April 2026, so equalising CGT with income tax leaves it where it is.
                 </td>
               </tr>
               <tr>
@@ -230,6 +242,64 @@ export default function ReformTab({ data }) {
           </table>
         </div>
       </details>
+
+      <section className="section-card">
+        <SectionHeading
+          title={`Where the yield comes from, ${split.year}`}
+          description="The reform built up one schedule at a time: the main rates first, then residential property gains, then withdrawing Business Asset Disposal Relief. Each row is what that change adds once the rows above it are in place, with no behavioural response and at the central elasticity."
+        />
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>Step</th>
+              <th>Change in CGT, static</th>
+              <th>Change in CGT, central elasticity</th>
+            </tr>
+          </thead>
+          <tbody>
+            {split.steps.map((row) => (
+              <tr key={row.step}>
+                <td>{row.label}</td>
+                <td>{formatSignedBn(row.static_increment_bn, 1)}</td>
+                <td>{formatSignedBn(row.central_increment_bn, 1)}</td>
+              </tr>
+            ))}
+            <tr className="font-semibold">
+              <td>The reform</td>
+              <td>{formatSignedBn(split.steps.at(-1).static_cgt_change_bn, 1)}</td>
+              <td>{formatSignedBn(split.steps.at(-1).central_cgt_change_bn, 1)}</td>
+            </tr>
+          </tbody>
+        </table>
+        <p className="mt-4 text-sm leading-6 text-slate-600">
+          {validation.badr_gains_bn > 0 ? (
+            <>
+              On {dataset.shortLabel}, {formatCount(validation.badr_claimants)} people hold{" "}
+              {formatBn(validation.badr_gains_bn)} of gains that qualify for the relief in{" "}
+              {split.year}; HMRC counted 61,000 claimants and £18.4bn of qualifying gains in
+              2024-25 (Capital Gains Tax statistics, Table 4).{" "}
+            </>
+          ) : (
+            <>
+              {dataset.shortLabel} records no gains that qualify for the relief, so withdrawing it
+              changes nothing here.{" "}
+            </>
+          )}
+          Equalising the rates while keeping the relief at current law raises{" "}
+          {formatSignedBn(keptRelief.static_cgt_change_bn, 1)} before behaviour and{" "}
+          {formatSignedBn(keptRelief.central_cgt_change_bn, 1)} at the central elasticity: one
+          reading of the exemption for genuine entrepreneurs in{" "}
+          <a
+            href="https://taxjustice.uk/blog/what-would-bunham-mean-for-britain/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline decoration-1 underline-offset-2 hover:opacity-80"
+          >
+            Wes Streeting&apos;s proposal
+          </a>
+          , which has not been defined. The Rate explorer scores any rate for the relief, or withdraws it, for every year.
+        </p>
+      </section>
 
       <section className="section-card">
         <SectionHeading
@@ -268,16 +338,31 @@ export default function ReformTab({ data }) {
           <p className="mb-4 text-sm leading-6 text-slate-600">
             The revenue estimate hinges on how strongly taxpayers reduce
             realisations when rates rise. Each row re-runs the reform with a
-            different marginal-tax-rate elasticity of realised gains. The bold
-            row is this dashboard&apos;s central assumption, converted from
-            CenTax&apos;s central retention-rate elasticity of 1.0 at the
-            reformed 40–45% rates. That conversion is exact only for a marginal
-            rate change, so applying −0.7 across the full 24%→40% jump is
-            somewhat more responsive than CenTax&apos;s own convention implies
-            (roughly −0.5 here). The last row is the official HMRC/OBR
-            assumption, a retention-rate elasticity of {official.e_retention},
-            applied in that convention; the Methodology tab explains why it turns
-            the reform&apos;s yield so far down. CenTax&apos;s range is anchored on{" "}
+            different elasticity of realised gains with respect to the retention
+            rate, the share (1 − t) of each marginal pound of gain a taxpayer
+            keeps: the model scales each person&apos;s realised gains by
+            ((1 − t₁) / (1 − t₀))<sup>e</sup>, the form CenTax and the OBR state
+            their elasticities in. The bold row is this dashboard&apos;s central
+            assumption, CenTax&apos;s central {central.e_retention.toFixed(1)}; the
+            rows either side are CenTax&apos;s range,{" "}
+            {centaxRange.lower.toFixed(1)} to {centaxRange.upper.toFixed(1)}.
+            CenTax estimate their elasticity for a package that also removes the
+            uplift at death and charges gains on departure, and{" "}
+            <a
+              href="https://www.nuffieldfoundation.org/wp-content/uploads/2023/03/Taxes-at-the-top-Understanding-what-high-earners-pay-and-options-for-reform.pdf#page=20"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline decoration-1 underline-offset-2 hover:opacity-80"
+            >
+              advise against equalising rates without those reforms
+            </a>
+            , expecting a larger response to rates alone: the upper rows show how
+            much of the yield rests on that. The last row is the official HMRC/OBR
+            assumption, {official.e_retention} for main-rate gains and{" "}
+            {official.badr_e_retention} for gains qualifying for Business Asset Disposal
+            Relief; the Methodology tab explains why it
+            turns the reform&apos;s yield so far down. CenTax&apos;s range is
+            anchored on{" "}
             <a
               href="https://www.aeaweb.org/articles?id=10.1257/aeri.20200535"
               target="_blank"
@@ -303,7 +388,7 @@ export default function ReformTab({ data }) {
               <th>Scenario</th>
               <TipHeader
                 label="Elasticity, as applied"
-                tip="The elasticity of realised gains the engine applies. For the static and CenTax cases it is with respect to the marginal tax rate (MTR), converted from a retention-rate elasticity via e_mtr = −e_retention × t/(1−t). The official HMRC/OBR case is applied with respect to the retention rate (1 − t), as the OBR states it; its MTR equivalent is shown for comparison."
+                tip="The elasticity of realised gains with respect to the retention rate (1 − t) that the engine applies, as each source states it: realised gains scale by ((1 − t₁) / (1 − t₀)) to the power e, with t the marginal rate on gains."
               />
               <TipHeader
                 label={`CGT revenue, ${firstYear}`}
@@ -316,7 +401,7 @@ export default function ReformTab({ data }) {
             {sensitivity.map((row) => (
               <tr
                 key={row.name}
-                className={row.e_mtr === -0.7 ? "font-semibold" : ""}
+                className={row.e_retention === central.e_retention ? "font-semibold" : ""}
               >
                 <td>{row.name}</td>
                 <td>{formatElasticity(row)}</td>

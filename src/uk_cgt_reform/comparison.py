@@ -1,4 +1,4 @@
-"""External benchmarks, and the registered datasets side by side.
+"""External benchmarks beside this repo's own figures.
 
 Benchmarks (issue #7) are other institutions' published figures that match
 what this repo scores, each stored with its source, scope, year and basis
@@ -24,22 +24,27 @@ from __future__ import annotations
 
 from .impacts import REGION_NAMES
 from .reform import (
+    BADR_CURRENT_LAW,
+    CENTAX_LOWER_ELASTICITY,
+    CENTAX_UPPER_ELASTICITY,
     ELASTICITY,
+    OFFICIAL_BADR_ELASTICITY,
     OFFICIAL_ELASTICITY,
-    OFFICIAL_RETENTION_ELASTICITY,
     RATE_BANDS,
+    BadrPolicy,
 )
 from .uprating_audit import CPI_INDEX, OBR_CGT_RECEIPTS_BN, OBR_CGT_RECEIPTS_SOURCE
 
-# Sensitivity cases, in the marginal-tax-rate convention: each shop's
-# retention elasticity converted at the reformed 40-45% top rates
-# (e_mtr = -e_retention * t / (1 - t), at t = 7/17). The official case is
-# applied in the retention convention (``reform.RETENTION_NATIVE``).
+# Sensitivity cases: retention-rate elasticities, applied as stated
+# (``reform.elasticity_assignment``). CenTax's central case and range, and
+# the official HMRC/OBR assumption, keyed by its main-rate 3.6 (gains
+# qualifying for the relief respond at 1.4).
 SENSITIVITY_CASES = {
     "Static (no behavioural response)": 0.0,
-    "CenTax lower (retention e=0.5)": -0.35,
-    "CenTax central (retention e=1.0)": -0.7,
-    "HMRC/OBR official (retention e=3.6)": OFFICIAL_ELASTICITY,
+    "CenTax lower (retention elasticity 0.5)": CENTAX_LOWER_ELASTICITY,
+    "CenTax central (retention elasticity 1.0)": ELASTICITY,
+    "CenTax upper (retention elasticity 2.0)": CENTAX_UPPER_ELASTICITY,
+    "HMRC/OBR official (retention elasticity 3.6; 1.4 for BADR gains)": OFFICIAL_ELASTICITY,
 }
 
 #: Every external figure carries exactly these keys.
@@ -306,19 +311,35 @@ OFFICIAL_ELASTICITY_SOURCE = {
     "published": "2025-01-22",
     "url": "https://obr.uk/docs/dlm_uploads/CGT-supplementary-release-Jan-2025.pdf",
     "locator": "Para 1.9 and Table 1.1",
-    "retention_elasticity": OFFICIAL_RETENTION_ELASTICITY,
+    "retention_elasticity": OFFICIAL_ELASTICITY,
     "note": (
         "Retention-rate elasticity 3.6 for the main rates (HMRC's 1998-2018 estimate is 4.0) "
         "and 1.4 for BADR."
     ),
 }
 
-# The elasticity cases the ready-reckoner rows are scored at.
+# The elasticity cases the ready-reckoner rows are scored at. The official
+# case is the same in every row: 3.6 for main-rate gains and 1.4 for gains
+# qualifying for the relief (OBR, January 2025, para 1.9;
+# ``reform.elasticity_assignment``).
 READY_RECKONER_ELASTICITIES = {"centax_central": ELASTICITY, "official": OFFICIAL_ELASTICITY}
 
 
 def _rates(basic: float, higher: float, additional: float) -> dict:
     return dict(zip(RATE_BANDS, (basic, higher, additional), strict=True))
+
+
+_CURRENT_RATES = _rates(0.18, 0.24, 0.24)
+
+
+def _row(row_id, label, rates, hmrc_m, *, badr=BADR_CURRENT_LAW):
+    return {
+        "id": row_id,
+        "label": label,
+        "rates": rates,
+        "badr": badr.to_dict(),
+        "hmrc_m": hmrc_m,
+    }
 
 
 READY_RECKONER = {
@@ -328,6 +349,7 @@ READY_RECKONER = {
         "https://assets.publishing.service.gov.uk/media/68552862b46781eacfd71d71/"
         "June_2025_TRR_ODS__1_.ods"
     ),
+    "sha256": "1201953391d6201d1df8df4d60288c9094b43e0679ebf285e82ad3c912d476c1",
     "locator": "Capital gains tax rows; notes 13 and 14",
     "basis": "post_behavioural",
     "unit": "gbp_m",
@@ -338,8 +360,9 @@ READY_RECKONER = {
     "note": (
         "The higher-rate rows move the higher and additional rates together, for main "
         "and residential gains (note 13); rows are non-linear and must not be scaled "
-        "(note 14). HMRC deferred the 2026 edition on 6 July 2026 pending a review of "
-        "key assumptions, so these rows are provisional."
+        "(note 14). The BADR rows raise the relief's rate from its 18% in 2026-27. HMRC "
+        "deferred the 2026 edition on 6 July 2026 pending a review of key assumptions, "
+        "so these rows are provisional."
     ),
     "hmrc_years": ["2026-27", "2027-28", "2028-29"],
     # Receipts lag liabilities by about a year: this repo's liabilities in
@@ -349,36 +372,50 @@ READY_RECKONER = {
         {"model_year": "2027-28", "hmrc_year": "2028-29"},
     ],
     "rows": [
-        {
-            "id": "higher_plus_1",
-            "label": "Higher rate +1pp (18% / 25% / 25%)",
-            "rates": _rates(0.18, 0.25, 0.25),
-            "hmrc_m": {"2026-27": -15, "2027-28": 80, "2028-29": -30},
-        },
-        {
-            "id": "higher_plus_5",
-            "label": "Higher rate +5pp (18% / 29% / 29%)",
-            "rates": _rates(0.18, 0.29, 0.29),
-            "hmrc_m": {"2026-27": -170, "2027-28": -235, "2028-29": -870},
-        },
-        {
-            "id": "higher_plus_10",
-            "label": "Higher rate +10pp (18% / 34% / 34%)",
-            "rates": _rates(0.18, 0.34, 0.34),
-            "hmrc_m": {"2026-27": -540, "2027-28": -2060, "2028-29": -3565},
-        },
-        {
-            "id": "lower_plus_1",
-            "label": "Lower rate +1pp (19% / 24% / 24%)",
-            "rates": _rates(0.19, 0.24, 0.24),
-            "hmrc_m": {"2026-27": -5, "2027-28": 10, "2028-29": 5},
-        },
-        {
-            "id": "lower_plus_5",
-            "label": "Lower rate +5pp (23% / 24% / 24%)",
-            "rates": _rates(0.23, 0.24, 0.24),
-            "hmrc_m": {"2026-27": -40, "2027-28": 20, "2028-29": -10},
-        },
+        _row(
+            "higher_plus_1",
+            "Higher rate +1pp (18% / 25% / 25%)",
+            _rates(0.18, 0.25, 0.25),
+            {"2026-27": -15, "2027-28": 80, "2028-29": -30},
+        ),
+        _row(
+            "higher_plus_5",
+            "Higher rate +5pp (18% / 29% / 29%)",
+            _rates(0.18, 0.29, 0.29),
+            {"2026-27": -170, "2027-28": -235, "2028-29": -870},
+        ),
+        _row(
+            "higher_plus_10",
+            "Higher rate +10pp (18% / 34% / 34%)",
+            _rates(0.18, 0.34, 0.34),
+            {"2026-27": -540, "2027-28": -2060, "2028-29": -3565},
+        ),
+        _row(
+            "lower_plus_1",
+            "Lower rate +1pp (19% / 24% / 24%)",
+            _rates(0.19, 0.24, 0.24),
+            {"2026-27": -5, "2027-28": 10, "2028-29": 5},
+        ),
+        _row(
+            "lower_plus_5",
+            "Lower rate +5pp (23% / 24% / 24%)",
+            _rates(0.23, 0.24, 0.24),
+            {"2026-27": -40, "2027-28": 20, "2028-29": -10},
+        ),
+        _row(
+            "badr_plus_1",
+            "Business Asset Disposal Relief rate +1pp (19%)",
+            _CURRENT_RATES,
+            {"2026-27": 10, "2027-28": 135, "2028-29": 180},
+            badr=BadrPolicy(rate=0.19),
+        ),
+        _row(
+            "badr_plus_5",
+            "Business Asset Disposal Relief rate +5pp (23%)",
+            _CURRENT_RATES,
+            {"2026-27": 40, "2027-28": 635, "2028-29": 840},
+            badr=BadrPolicy(rate=0.23),
+        ),
     ],
     "excluded": [
         {
@@ -387,14 +424,9 @@ READY_RECKONER = {
             "reason": "A lower rate above the higher rate breaks the explorer's ordering rule.",
         },
         {
-            "hmrc_label": "BADR rate +1pp and +5pp",
-            "hmrc_m": None,
-            "reason": "Neither registered dataset records BADR gains.",
-        },
-        {
-            "hmrc_label": "Annual exempt amount +£500",
-            "hmrc_m": None,
-            "reason": "The explorer changes rates only.",
+            "hmrc_label": "Annual exempt amount +£500 (individuals; £250 for trusts)",
+            "hmrc_m": {"2026-27": 0, "2027-28": -35, "2028-29": -30},
+            "reason": "The explorer changes rates and the relief, not the exempt amount.",
         },
     ],
 }
@@ -498,30 +530,38 @@ def ready_reckoner_block(model_m: dict[str, dict[str, dict[str, float]]]) -> dic
         "elasticity_ids": list(READY_RECKONER_ELASTICITIES),
         "model_measure": (
             "Change in government balance, £m, on this repo's liabilities in the model "
-            "year (the explorer's scope: main and residential rates)"
+            "year, with each row's rates and relief (the main and residential rates move "
+            "together; the BADR rows move the relief's rate), the official case applying "
+            "3.6 to main-rate gains and 1.4 to gains qualifying for the relief"
         ),
         "rows": [{**row, "model_m": model_m[row["id"]]} for row in READY_RECKONER["rows"]],
     }
 
 
 def elasticities_block() -> dict:
-    """The central and the official behavioural assumptions, with how the
-    engine applies each."""
+    """The central and the official behavioural assumptions, CenTax's range,
+    and how the engine applies each: every case is a retention-rate
+    elasticity, realised gains scaled by ((1 - t1) / (1 - t0)) ** e."""
     return {
         "central": {
             "id": "centax_central",
-            "e_mtr": ELASTICITY,
-            "e_retention": 1.0,
-            "applied_as": "mtr",
+            "e_retention": ELASTICITY,
+            "applied_as": "retention",
+            "source": CENTAX_2024_SOURCE,
+            "url": f"{CENTAX_2024_URL}#page=38",
+        },
+        "centax_range": {
+            "lower": CENTAX_LOWER_ELASTICITY,
+            "upper": CENTAX_UPPER_ELASTICITY,
         },
         "official": {
             "id": "official",
-            "e_mtr": OFFICIAL_ELASTICITY,
-            "e_retention": OFFICIAL_RETENTION_ELASTICITY,
+            "e_retention": OFFICIAL_ELASTICITY,
+            "badr_e_retention": OFFICIAL_BADR_ELASTICITY,
             "applied_as": "retention",
             **OFFICIAL_ELASTICITY_SOURCE,
         },
-        "conversion": "e_mtr = -e_retention × t / (1 − t) at t = 7/17 (the reformed 40–45% rates)",
+        "form": "realised gains × ((1 − t₁) / (1 − t₀))^e, t the marginal rate on gains",
     }
 
 
@@ -535,157 +575,4 @@ def benchmarks_block(
         "centax_2019_20_rules": centax_2019_20_rules,
         "centax_package_context": [dict(row) for row in CENTAX_PACKAGE_CONTEXT],
         "ready_reckoner": ready_reckoner,
-    }
-
-
-# ---------------------------------------------------------------------------
-# Side-by-side comparison of the registered datasets
-# ---------------------------------------------------------------------------
-
-# Validation metrics shown side by side, in display order. Dotted names
-# read nested blocks.
-VALIDATION_METRICS = [
-    ("cgt_taxpayers", "CGT taxpayers (gains above the exempt amount)"),
-    ("entrants_by_uprating.count", "of which entrants by uprating"),
-    ("cgt_taxpayers_excluding_entrants", "CGT taxpayers excluding entrants"),
-    ("total_gains_bn", "Taxable gains, £bn"),
-    ("entrants_by_uprating.gains_bn", "of which held by entrants, £bn"),
-    ("total_gains_excluding_entrants_bn", "Taxable gains excluding entrants, £bn"),
-    ("mean_gain", "Mean gain per taxpayer, £"),
-    ("median_gain", "Median gain per taxpayer, £"),
-    ("share_gains_over_1m_pct", "Share of gains from gains of £1m or more, %"),
-    ("share_gains_over_5m_pct", "Share of gains from gains of £5m or more, %"),
-    ("taxpayers_over_500k", "Taxpayers with gains over £500k"),
-    ("gains_over_500k_bn", "Gains held by taxpayers with gains over £500k, £bn"),
-    ("gains_over_5m_bn", "Gains in the £5m-and-over band, £bn"),
-    ("largest_gain_m", "Largest single gain, £m"),
-    ("baseline_cgt_revenue_bn", "Baseline CGT liability, £bn"),
-    ("entrants_by_uprating.cgt_bn", "of which paid by entrants, £bn"),
-    ("residential_property_gains_bn", "Residential property gains (own schedule), £bn"),
-    ("badr_gains_bn", "BADR gains (own schedule), £bn"),
-    ("carried_interest_gains_bn", "Carried interest gains (own schedule), £bn"),
-]
-
-DATASET_METADATA_FIELDS = (
-    "dataset",
-    "dataset_key",
-    "dataset_label",
-    "dataset_short_label",
-    "dataset_role",
-    "dataset_sha256",
-    "dataset_producer",
-    "dataset_observation",
-    "dataset_notes",
-    "policyengine_version",
-    "policyengine_uk_version",
-    "generated",
-)
-
-
-def _metric(validation: dict, name: str):
-    value = validation
-    for part in name.split("."):
-        if not isinstance(value, dict) or part not in value:
-            return None
-        value = value[part]
-    return value
-
-
-def dataset_comparison(results: dict[str, dict]) -> dict:
-    """The registered datasets' results side by side, keyed by dataset.
-
-    ``results`` maps dataset key to the results dict ``pipeline.run_dataset``
-    emits. Every block below carries one entry per dataset key so the
-    dashboard can lay them out as columns.
-    """
-    keys = list(results)
-    if not keys:
-        raise ValueError("dataset_comparison needs at least one dataset's results")
-    first = results[keys[0]]
-    years = [row["year"] for row in first["budget"]]
-    first_year = years[0]
-    projection = first["metadata"].get("projection", {})
-    return {
-        "generated": first["metadata"]["generated"],
-        "first_year": first_year,
-        "years": years,
-        "projection_fingerprint": projection.get("fingerprint"),
-        "datasets": {
-            key: {field: results[key]["metadata"].get(field) for field in DATASET_METADATA_FIELDS}
-            for key in keys
-        },
-        "validation": [
-            {
-                "metric": name,
-                "label": label,
-                **{key: _metric(results[key]["validation"], name) for key in keys},
-            }
-            for name, label in VALIDATION_METRICS
-        ],
-        "budget": [
-            {"year": year, **{key: results[key]["budget"][i] for key in keys}}
-            for i, year in enumerate(years)
-        ],
-        "five_year_total_bn": {
-            key: sum(row["gov_balance_change_bn"] for row in results[key]["budget"]) for key in keys
-        },
-        "sensitivity": [
-            {
-                "name": row["name"],
-                "e_mtr": row["e_mtr"],
-                "elasticity_parameter": row["elasticity_parameter"],
-                "applied_as": row["applied_as"],
-                "applied_value": row["applied_value"],
-                **{key: results[key]["sensitivity"][i]["revenue_2026_bn"] for key in keys},
-            }
-            for i, row in enumerate(first["sensitivity"])
-        ],
-        "top_quintile": {
-            key: results[key]["income_change_groups"][first_year]["quintile"][-1] for key in keys
-        },
-        "household_type": {
-            key: results[key]["income_change_groups"][first_year]["household_type"] for key in keys
-        },
-        "region": {key: results[key]["income_change_groups"][first_year]["region"] for key in keys},
-        "benchmarks": _benchmarks_side_by_side(results, keys),
-    }
-
-
-def _benchmarks_side_by_side(results: dict[str, dict], keys: list[str]) -> dict:
-    """The like-for-like benchmark figures per dataset: the static yield by
-    year beside JRF, and the 2019/20-rules uplift beside CenTax's."""
-    first = results[keys[0]]["benchmarks"]
-    jrf = {row["year"]: row for row in first["static_equalisation"]["external"]}
-    static_rows = {
-        key: {
-            row["year"]: row for row in results[key]["benchmarks"]["static_equalisation"]["by_year"]
-        }
-        for key in keys
-    }
-    fields = (
-        "static_cgt_change_bn",
-        "static_uplift_pct",
-        "static_cgt_change_real_bn",
-        "uplift_on_obr_receipts_real_bn",
-    )
-    return {
-        "static_equalisation": [
-            {
-                "year": row["year"],
-                "jrf_bn": jrf[row["year"]]["value"] if row["year"] in jrf else None,
-                **{key: {f: static_rows[key][row["year"]][f] for f in fields} for key in keys},
-            }
-            for row in first["static_equalisation"]["by_year"]
-        ],
-        "centax_2019_20_rules": {
-            "centax_uplift_pct": first["centax_2019_20_rules"]["external"]["value"],
-            **{
-                key: results[key]["benchmarks"]["centax_2019_20_rules"]["national"]["uplift_pct"]
-                for key in keys
-            },
-        },
-        "external": {
-            "jrf": [dict(row) for row in JRF_STATIC],
-            "centax_table_3": dict(CENTAX_TABLE_3),
-        },
     }

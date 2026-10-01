@@ -1,23 +1,23 @@
-"""Main pipeline: build the dashboard JSON for the Burnham CGT reform.
+"""Main pipeline: build the dashboard JSON for equalising CGT with income tax.
 
 Everything runs on the standard policyengine.py stack: per-year datasets
 from ``pe.uk.ensure_datasets``, one ``policyengine.Simulation`` per
 (dataset, scenario, year), with distributional outputs grouped by weighted
 income quantile, household type and region. The pipeline asserts that the
-behavioural CGT elasticity actually fires (the static e=0 and central
-e=-0.7 reform runs must differ materially) before writing any results.
+behavioural CGT elasticity actually fires (the static e=0 and the central
+retention-rate e=1.0 reform runs must differ materially) before writing any
+results.
 
-The same reform runs on every registered dataset (``simulations.DATASETS``:
-the incumbent Enhanced FRS 2024-25 and the staged Microcosm UK national-line
-candidate built on microcosm#979) on the same engine and the same projection, and the per-dataset
-results are written side by side. Simulations run directly on each file
-as published, with no local reweighting and no edited inputs: calibration
-and imputation belong upstream in the dataset producer, not in an analysis
-repo. What differs between the datasets is disclosed in the validation
-block (taxpayer counts, gains totals, the schedule components and the
-entrants by uprating) rather than adjusted away.
+The reform runs on the one registered dataset (``simulations.DATASETS``: the
+staged Microcosm UK national line built from microcosm main c5a1cba8). The
+simulations run directly on the file as published, with no local
+reweighting and no edited inputs: calibration and imputation belong
+upstream in the dataset producer, not in an analysis repo. The validation
+block reports the dataset against HMRC's statistics (taxpayer counts, gains
+totals, the schedule components and the entrants by uprating) rather than
+adjusting anything away.
 
-Each dataset's results also carry a ``benchmarks`` block (issue #7): the
+The results also carry a ``benchmarks`` block (issue #7): the
 static reform by year beside JRF's estimate, a static re-score at CenTax's
 2019/20 rules beside its Tables 3 and 8, and HMRC's ready-reckoner rows
 scored at the central and the official elasticity (``comparison.py``).
@@ -36,7 +36,6 @@ from .comparison import (
     SENSITIVITY_CASES,
     benchmarks_block,
     centax_1920_block,
-    dataset_comparison,
     price_factors,
     ready_reckoner_block,
     static_equalisation_block,
@@ -47,20 +46,22 @@ from .impacts import (
     cgt_uplift,
     fiscal_year_label,
     income_change_groups,
+    schedule_split,
     sensitivity,
     validation_stats,
 )
 from .reform import (
-    BURNHAM_RATES,
     ELASTICITY,
     ELASTICITY_PARAMETER,
+    INCOME_TAX_RATES,
     PERIOD,
     YEARS,
-    burnham_reform,
     centax_1920_reforms,
     centax_1920_rules,
+    equalisation_reform,
     reform_fingerprint,
     reform_schedules,
+    schedule_step_reforms,
 )
 from .simulations import (
     DATASETS,
@@ -74,15 +75,10 @@ from .uprating_audit import baseline_by_year, engine_audit, projection_fingerpri
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DATA_DIR = REPO_ROOT / "data"
-# The dashboard's primary file: the default dataset's results.
+# The results file the dashboard reads.
 OUTPUT_PATH = DATA_DIR / "cgt_equalisation_results.json"
-COMPARISON_PATH = DATA_DIR / "dataset_comparison.json"
 AUDIT_PATH = DATA_DIR / "cgt_uprating_audit.json"
 DATASET_FOLDER = DATA_DIR / "policyengine_datasets"
-
-
-def results_path(spec: DatasetSpec, data_dir: Path = DATA_DIR) -> Path:
-    return data_dir / f"cgt_equalisation_results_{spec.key}.json"
 
 
 def simulation_stem(spec: DatasetSpec, fingerprint: str) -> str:
@@ -102,19 +98,23 @@ def dataset_folder(spec: DatasetSpec, fingerprint: str, root: Path = DATASET_FOL
     return root / simulation_stem(spec, fingerprint)
 
 
-def burnham_case(elasticity: float) -> str:
-    """The case name in a Burnham simulation id: ``burnham_e07`` for the
-    central case (the name the cached outputs carry), otherwise the
-    elasticity's magnitude to two decimals without the point."""
-    if elasticity == ELASTICITY:
-        return "burnham_e07"
-    return f"burnham_e{abs(elasticity):.2f}".replace(".", "")
+def equalisation_case(elasticity: float) -> str:
+    """The case name in an equalisation simulation id: the retention-rate
+    elasticity in hundredths, ``equalise_r100`` for the central case and
+    ``equalise_r000`` for the static one."""
+    return f"equalise_r{round(100 * elasticity):03d}"
 
 
-def burnham_sim_id(sim_stem: str, elasticity: float, digest: str, year: int) -> str:
-    """A Burnham simulation id: the dataset stem, the case, the reform's own
+def equalisation_sim_id(sim_stem: str, elasticity: float, digest: str, year: int) -> str:
+    """An equalisation simulation id: the dataset stem, the case, the reform's own
     fingerprint (which tells cases of equal magnitude apart) and the year."""
-    return f"{sim_stem}_{burnham_case(elasticity)}_{digest}_{year}"
+    return f"{sim_stem}_{equalisation_case(elasticity)}_{digest}_{year}"
+
+
+def step_sim_id(sim_stem: str, step: str, elasticity: float, digest: str, year: int) -> str:
+    """A simulation id for one step of the schedule-by-schedule split of the
+    equalisation reform (``reform.SCHEDULE_STEPS``)."""
+    return f"{sim_stem}_step_{step}_r{round(100 * elasticity):03d}_{digest}_{year}"
 
 
 def counterfactual_sim_id(sim_stem: str, role: str, digest: str, year: int) -> str:
@@ -127,8 +127,11 @@ def score_ready_reckoner(spec: DatasetSpec, folder: Path, fingerprint: str) -> d
     """Score HMRC's ready-reckoner rows on one dataset through the rate
     explorer's code path (the explorer's scope, the cached baselines, the
     reform in memory), at each elasticity in ``READY_RECKONER_ELASTICITIES``
-    and in each model year the lag names. Returns ``{row id: {elasticity id:
-    {model year: change in government balance, £m}}}``."""
+    and in each model year the lag names. Each row carries its rates and its
+    treatment of Business Asset Disposal Relief; the official case applies
+    3.6 to main-rate gains and 1.4 to gains qualifying for the relief in
+    every row. Returns ``{row id: {elasticity id: {model year: change in
+    government balance, £m}}}``."""
     from .explore import engine_context, run_year, validate_request
 
     context = engine_context()
@@ -142,7 +145,12 @@ def score_ready_reckoner(spec: DatasetSpec, folder: Path, fingerprint: str) -> d
         scores[row["id"]] = {}
         for elasticity_id, elasticity in READY_RECKONER_ELASTICITIES.items():
             request = validate_request(
-                {"dataset": spec.key, "rates": row["rates"], "elasticity": elasticity}
+                {
+                    "dataset": spec.key,
+                    "rates": row["rates"],
+                    "badr": row["badr"],
+                    "elasticity": elasticity,
+                }
             )
             scores[row["id"]][elasticity_id] = {}
             for lag in READY_RECKONER["lag"]:
@@ -259,9 +267,9 @@ def run_dataset(
 
     # ── Step 2: baseline and reformed simulations, one per year ───────────
     print(f"Step 2 {tag}: Running baseline and reformed simulations...")
-    central_reform = burnham_reform(ELASTICITY)
+    central_reform = equalisation_reform(ELASTICITY)
     central_digest = reform_fingerprint(central_reform)
-    reform_policy = make_policy(central_reform, "burnham_e07")
+    reform_policy = make_policy(central_reform, equalisation_case(ELASTICITY))
     baseline_sims, reform_sims = {}, {}
     for year in YEARS:
         print(f"    {fiscal_year_label(year)}...")
@@ -272,20 +280,20 @@ def run_dataset(
         reform_sims[year] = run_simulation(
             datasets[year],
             policy=reform_policy,
-            sim_id=burnham_sim_id(sim_stem, ELASTICITY, central_digest, year),
+            sim_id=equalisation_sim_id(sim_stem, ELASTICITY, central_digest, year),
         )
 
     # ── Step 2b: the static reform in every year, for the static benchmarks
     # (the 2026 run is also the sensitivity table's static case) ──────────
     print(f"Step 2b {tag}: Static reform (e=0), every year...")
-    static_reform = burnham_reform(0.0)
+    static_reform = equalisation_reform(0.0)
     static_digest = reform_fingerprint(static_reform)
-    static_policy = make_policy(static_reform, burnham_case(0.0))
+    static_policy = make_policy(static_reform, equalisation_case(0.0))
     static_sims = {
         year: run_simulation(
             datasets[year],
             policy=static_policy,
-            sim_id=burnham_sim_id(sim_stem, 0.0, static_digest, year),
+            sim_id=equalisation_sim_id(sim_stem, 0.0, static_digest, year),
         )
         for year in YEARS
     }
@@ -300,23 +308,62 @@ def run_dataset(
             return reform_sims[2026]
         if e == 0.0:
             return static_sims[2026]
-        reform = burnham_reform(e)
+        reform = equalisation_reform(e)
         return run_simulation(
             datasets[2026],
-            policy=make_policy(reform, burnham_case(e)),
-            sim_id=burnham_sim_id(sim_stem, e, reform_fingerprint(reform), 2026),
+            policy=make_policy(reform, equalisation_case(e)),
+            sim_id=equalisation_sim_id(sim_stem, e, reform_fingerprint(reform), 2026),
         )
 
     sens = sensitivity(base_cgt_2026, SENSITIVITY_CASES, run_case)
     for row in sens:
-        print(f"    {row['name']} (e={row['e_mtr']}): {row['revenue_2026_bn']:+.1f}bn")
-    static_2026 = next(r["revenue_2026_bn"] for r in sens if r["e_mtr"] == 0.0)
-    central_2026 = next(r["revenue_2026_bn"] for r in sens if r["e_mtr"] == ELASTICITY)
+        print(f"    {row['name']}: {row['revenue_2026_bn']:+.1f}bn")
+    static_2026 = next(r["revenue_2026_bn"] for r in sens if r["e_retention"] == 0.0)
+    central_2026 = next(r["revenue_2026_bn"] for r in sens if r["e_retention"] == ELASTICITY)
     assert static_2026 - central_2026 > 1.0, (
         f"Behavioural CGT elasticity did not fire through policyengine.py on {spec.key}: "
         f"static (e=0) yield {static_2026:.2f}bn vs central (e={ELASTICITY}) "
         f"{central_2026:.2f}bn. Refusing to write results."
     )
+
+    # ── Step 3d: the yield built up schedule by schedule (2026), static and
+    # central: main rates, then residential property, then the relief
+    # withdrawn; the step before the last is equalisation keeping the relief
+    print(f"Step 3d {tag}: The yield by schedule (2026, static and central)...")
+    split_cases = {"static": 0.0, "central": ELASTICITY}
+    full_runs = {"static": static_sims[2026], "central": reform_sims[2026]}
+    revenues, split_digests = {}, {}
+    for case, e in split_cases.items():
+        revenues[case], split_digests[case] = {}, {}
+        steps = schedule_step_reforms(e)
+        assert steps[-1][2] == equalisation_reform(e), "the last step must be the reform"
+        for step, _label, reform in steps:
+            digest = reform_fingerprint(reform)
+            split_digests[case][step] = digest
+            if step == steps[-1][0]:
+                sim = full_runs[case]
+            else:
+                sim = run_simulation(
+                    datasets[2026],
+                    policy=make_policy(reform, f"step_{step}"),
+                    sim_id=step_sim_id(sim_stem, step, e, digest, 2026),
+                )
+            revenues[case][step] = cgt_revenue(sim)
+    split = {
+        "year": fiscal_year_label(2026),
+        "elasticities": split_cases,
+        "reform_fingerprints": split_digests,
+        "steps": schedule_split(
+            base_cgt_2026,
+            [(step, label) for step, label, _ in schedule_step_reforms(0.0)],
+            revenues,
+        ),
+    }
+    for row in split["steps"]:
+        print(
+            f"    {row['label']}: static {row['static_increment_bn']:+.2f}bn, "
+            f"central {row['central_increment_bn']:+.2f}bn"
+        )
 
     # ── Step 3b: CenTax's rates-only reform at its 2019/20 rules, static ──
     print(f"Step 3b {tag}: Equalisation at CenTax's 2019/20 rules (2026, static)...")
@@ -409,7 +456,7 @@ def run_dataset(
             "reform_period_start": PERIOD,
             "elasticity": ELASTICITY,
             "elasticity_parameter": ELASTICITY_PARAMETER,
-            "reform": dict(BURNHAM_RATES),
+            "reform": dict(INCOME_TAX_RATES),
             "reform_schedules": reform_schedules(),
             "reform_fingerprint": central_digest,
             "years": list(YEARS),
@@ -444,59 +491,36 @@ def run_dataset(
         "budget": budget,
         "income_change_groups": groups,
         "sensitivity": sens,
+        "schedule_split": split,
         "benchmarks": benchmarks,
     }
     return output, baseline_sims
 
 
-def run(output_dir: Path = DATA_DIR, dataset_keys: list[str] | None = None) -> dict[str, dict]:
-    """Run the pipeline end-to-end on the selected datasets (default: all)
-    and write the per-dataset results, the side-by-side comparison and the
-    uprating audit."""
-    keys = list(dataset_keys or DATASETS)
-    unknown = [key for key in keys if key not in DATASETS]
-    if unknown:
-        raise ValueError(f"Unknown dataset keys {unknown}; known: {sorted(DATASETS)}")
-    specs = [DATASETS[key] for key in keys]
+def run(output_dir: Path = DATA_DIR) -> dict:
+    """Run the pipeline end-to-end on the registered dataset and write its
+    results and the uprating audit."""
+    spec = DATASETS[DEFAULT_DATASET_KEY]
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # ── Step 0: the projection the engine will apply, before anything runs
     print("Step 0: Auditing the engine's uprating of gains and weights...")
-    base_year = shared_base_year(specs)
-    audit = engine_audit(base_year, YEARS)
+    audit = engine_audit(spec.base_year, YEARS)
     fingerprint = projection_fingerprint(audit)
-    aea = exempt_amounts(sorted({base_year, *YEARS}))
-    ceilings = entrant_ceilings(audit, aea[base_year], YEARS)
+    aea = exempt_amounts(sorted({spec.base_year, *YEARS}))
+    ceilings = entrant_ceilings(audit, aea[spec.base_year], YEARS)
     print(f"    projection {fingerprint}; entrant ceilings {ceilings}")
 
-    results: dict[str, dict] = {}
-    baselines: dict[str, dict] = {}
-    for spec in specs:
-        results[spec.key], baselines[spec.key] = run_dataset(
-            spec, audit, fingerprint, aea, ceilings
-        )
-        path = results_path(spec, output_dir)
-        path.write_text(json.dumps(results[spec.key], indent=2))
-        print(f"    wrote {path}")
+    results, baselines = run_dataset(spec, audit, fingerprint, aea, ceilings)
+    path = output_dir / OUTPUT_PATH.name
+    path.write_text(json.dumps(results, indent=2))
+    print(f"    wrote {path}")
 
     # ── Step 8: the uprating audit with the per-year baselines filled in ──
     print("Step 8: Writing the uprating audit...")
-    write_uprating_audit(baselines, output_dir / AUDIT_PATH.name, aea=aea, ceilings=ceilings)
-
-    # ── Step 9: the dashboard's primary file and the side-by-side ─────────
-    print("Step 9: Writing the dashboard results and the dataset comparison...")
-    if DEFAULT_DATASET_KEY in results:
-        primary = output_dir / OUTPUT_PATH.name
-        primary.write_text(json.dumps(results[DEFAULT_DATASET_KEY], indent=2))
-        print(f"    wrote {primary} ({DEFAULT_DATASET_KEY})")
-    else:
-        print(f"    default dataset {DEFAULT_DATASET_KEY} not run; primary results file untouched")
-    if set(results) == set(DATASETS):
-        comparison_path = output_dir / COMPARISON_PATH.name
-        comparison_path.write_text(json.dumps(dataset_comparison(results), indent=2))
-        print(f"    wrote {comparison_path}")
-    else:
-        print("    not every registered dataset ran; comparison file untouched")
+    write_uprating_audit(
+        {spec.key: baselines}, output_dir / AUDIT_PATH.name, aea=aea, ceilings=ceilings
+    )
     print("Done.")
     return results
