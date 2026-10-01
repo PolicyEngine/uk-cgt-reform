@@ -230,7 +230,7 @@ export default function MethodologyTab({ data, anchor }) {
             {percent(atOfficial.gains)} and revenue {atOfficial.revenue >= 0 ? "rises" : "falls"} by{" "}
             {percent(atOfficial.revenue)}, the direction HMRC&apos;s row shows. The engine applies
             the same formula to each person&apos;s own simulated marginal rate on gains, so the
-            aggregate effect depends on where each dataset&apos;s gains sit.
+            aggregate effect depends on where the dataset&apos;s gains sit.
           </li>
           <li>
             <strong>On this dataset.</strong> Equalisation changes CGT revenue in 2026-27 by{" "}
@@ -409,8 +409,8 @@ export default function MethodologyTab({ data, anchor }) {
         <ul className="mt-2 list-disc space-y-2 pl-5 text-sm leading-6 text-slate-600">
           <li>
             <strong>Same pipeline, run live.</strong> The Rate explorer tab scores a schedule of
-            CGT rates and a treatment of Business Asset Disposal Relief you choose on the selected
-            dataset for every modelled year. It runs the pipeline&apos;s own code (the same pinned
+            CGT rates and a treatment of Business Asset Disposal Relief you choose on{" "}
+            {dataset.shortLabel} for every modelled year. It runs the pipeline&apos;s own code (the same pinned
             per-year datasets, cached baseline simulations, behavioural response and impact
             calculations) on a Modal backend, or locally through the{" "}
             <span className="font-mono text-xs">uk-cgt-reform-explore</span> command. Nothing

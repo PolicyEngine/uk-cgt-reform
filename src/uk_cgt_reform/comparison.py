@@ -46,7 +46,8 @@ from .uprating_audit import CPI_INDEX, OBR_CGT_RECEIPTS_BN, OBR_CGT_RECEIPTS_SOU
 # The behavioural cases, ``(id, label, retention-rate elasticity)``, each
 # applied as stated (``reform.elasticity_assignment``): CenTax's central
 # case, its value before CenTax's adjustments and its range, and the official
-# HMRC/OBR assumption for the main rates. The approaches below pick five.
+# HMRC/OBR assumption, keyed by its main-rate 3.6 (gains qualifying for the
+# relief respond at 1.4). The approaches below pick five.
 ELASTICITY_CASES = (
     ("static", "Static (no behavioural response)", 0.0),
     ("centax_lower", "CenTax lower (retention elasticity 0.5)", CENTAX_LOWER_ELASTICITY),
