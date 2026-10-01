@@ -106,7 +106,7 @@ export default function ReformTab({ data, onNavigate }) {
   const shifting = getIncomeShifting(data);
   // How far a 10% rise in the rate lowers realised gains at the central case.
   const tenPercentRise = (100 * (1 - 1.1 ** central.elasticity)).toFixed(1);
-  // The income tax on shifted income the headline adds, net of income shifting.
+  // The income tax and NI on shifted income the headline adds, net of income shifting.
   const centralOffset = central.includes_income_shifting_offset
     ? getBudget(data)[0].income_shifting_offset_bn
     : 0;
@@ -187,7 +187,7 @@ export default function ReformTab({ data, onNavigate }) {
             value={formatSignedBn(firstYearRow.gov_balance_change_bn, 1)}
             note={
               centralOffset
-                ? "Net change in the government balance after taxpayers reduce realisations in response to the higher rates, plus the income tax the OBR adds back for income no longer presented as gains."
+                ? "Net change in the government balance after taxpayers reduce realisations in response to the higher rates, plus the income tax and National Insurance the OBR's method adds back for income no longer presented as gains."
                 : "Net change in the government balance after taxpayers reduce realisations in response to the higher rates."
             }
           />
@@ -408,14 +408,18 @@ export default function ReformTab({ data, onNavigate }) {
             of about {equivalents.additional_rate} to {equivalents.higher_rate} at the
             additional and higher rates and {equivalents.basic_rate} at the basic rate.
             {netOfShifting
-              ? " Measured on gains alone, like the official case, it adds the income tax the OBR's method attributes to income no longer presented as gains."
+              ? " Measured on gains alone, like the official case, it adds the income tax and National Insurance the OBR's method attributes to income no longer presented as gains."
               : ""}{" "}
             The other rows are elasticities with respect to the retention rate, the
             share (1 − t) of each marginal pound of gain a taxpayer keeps, applied
             as ((1 − t₁) / (1 − t₀))<sup>e</sup>, the form CenTax and the OBR state
             them in: {centaxCase}, with CenTax&apos;s range,{" "}
             {centaxRange.lower.toFixed(1)} to {centaxRange.upper.toFixed(1)}, either
-            side. CenTax estimate their elasticity for a package that also removes the
+            side
+            {netOfShifting
+              ? ", from estimates that measure the CGT base only, so they take the same addition"
+              : ""}
+            . CenTax estimate their elasticity for a package that also removes the
             uplift at death and charges gains on departure, and{" "}
             <a
               href="https://www.nuffieldfoundation.org/wp-content/uploads/2023/03/Taxes-at-the-top-Understanding-what-high-earners-pay-and-options-for-reform.pdf#page=20"
@@ -431,7 +435,7 @@ export default function ReformTab({ data, onNavigate }) {
             {official.badr_elasticity} for gains qualifying for Business Asset Disposal
             Relief
             {netOfShifting
-              ? `, plus the income tax the OBR adds back because part of the fall in realised gains is income no longer presented as gains (${Math.round(shifting.share * 1000) / 10}% of the fall, taxed here at ${Math.round(shifting.tax_rate * 100)}%)`
+              ? `, plus the income tax and National Insurance the OBR's method adds back because part of the fall in realised gains is income no longer presented as gains (${Math.round(shifting.share * 1000) / 10}% of the fall outside residential property, taxed as salary at ${(shifting.tax_rate * 100).toFixed(1)}%)`
               : ", with nothing added back for income no longer presented as gains"}
             ; the Methodology tab explains why it turns the reform&apos;s yield so
             far down. CenTax&apos;s range is
@@ -467,7 +471,7 @@ export default function ReformTab({ data, onNavigate }) {
                 label={netOfShifting ? `Revenue, ${firstYear}` : `CGT revenue, ${firstYear}`}
                 tip={
                   netOfShifting
-                    ? "Change in revenue in the first year of the reform under this elasticity: capital gains tax, plus, for PolicyEngine's and the official case, the income tax the OBR adds back for income no longer presented as gains."
+                    ? "Change in revenue in the first year of the reform under this elasticity: capital gains tax, plus, for PolicyEngine's case, CenTax's 0.5 and 2.0 and the official case, the income tax and National Insurance the OBR's method adds back for income no longer presented as gains."
                     : "Change in capital gains tax revenue in the first year of the reform under this elasticity."
                 }
               />

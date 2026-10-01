@@ -147,7 +147,7 @@
       "cgt_change_bn": 5.621906541819634,
       "total_tax_change_bn": 5.621906511087036,
       "gov_balance_change_bn": 5.621906411130982,
-      "income_shifting_offset_bn": 2.607823621683125,
+      "income_shifting_offset_bn": 2.829053344328844,
       "cgt_change_from_entrants_bn": -7.295722602542537e-05
     },
     {
@@ -157,7 +157,7 @@
       "cgt_change_bn": 5.84540972530941,
       "total_tax_change_bn": 5.8454095869500735,
       "gov_balance_change_bn": 5.845409625932678,
-      "income_shifting_offset_bn": 2.7039009870063277,
+      "income_shifting_offset_bn": 2.9328528665591143,
       "cgt_change_from_entrants_bn": -0.0001383203969157523
     },
     {
@@ -167,7 +167,7 @@
       "cgt_change_bn": 6.128170905594849,
       "total_tax_change_bn": 6.128171190706909,
       "gov_balance_change_bn": 6.128171243014648,
-      "income_shifting_offset_bn": 2.7936763587410716,
+      "income_shifting_offset_bn": 3.0291212159453775,
       "cgt_change_from_entrants_bn": -0.00021242975633896407
     },
     {
@@ -177,7 +177,7 @@
       "cgt_change_bn": 6.366693029343064,
       "total_tax_change_bn": 6.366693003057007,
       "gov_balance_change_bn": 6.366693128635376,
-      "income_shifting_offset_bn": 2.8892773612129528,
+      "income_shifting_offset_bn": 3.132375075391109,
       "cgt_change_from_entrants_bn": -0.00030077824205362695
     },
     {
@@ -187,7 +187,7 @@
       "cgt_change_bn": 6.623975842611191,
       "total_tax_change_bn": 6.623975988126343,
       "gov_balance_change_bn": 6.623975819295044,
-      "income_shifting_offset_bn": 2.994052168861595,
+      "income_shifting_offset_bn": 3.2453275865048656,
       "cgt_change_from_entrants_bn": -0.00041875326116709886
     }
   ],
@@ -864,7 +864,7 @@
       "applied_value": -0.7,
       "badr_elasticity": -0.7,
       "revenue_2026_bn": 5.621906541819634,
-      "income_shifting_offset_2026_bn": 2.607823621683125
+      "income_shifting_offset_2026_bn": 2.829053344328844
     },
     {
       "id": "centax_lower",
@@ -875,7 +875,7 @@
       "applied_value": 0.5,
       "badr_elasticity": 0.5,
       "revenue_2026_bn": 17.71944490490391,
-      "income_shifting_offset_2026_bn": 1.0720818124353697
+      "income_shifting_offset_2026_bn": 1.1646764470766449
     },
     {
       "id": "centax_central",
@@ -886,7 +886,7 @@
       "applied_value": 1.0,
       "badr_elasticity": 1.0,
       "revenue_2026_bn": 10.516542748106842,
-      "income_shifting_offset_2026_bn": 1.98304957344139
+      "income_shifting_offset_2026_bn": 2.1531541944800243
     },
     {
       "id": "centax_unadjusted",
@@ -897,7 +897,7 @@
       "applied_value": 1.5,
       "badr_elasticity": 1.5,
       "revenue_2026_bn": 4.410098097404892,
-      "income_shifting_offset_2026_bn": 2.7573308808306844
+      "income_shifting_offset_2026_bn": 2.99229777758313
     },
     {
       "id": "centax_upper",
@@ -908,7 +908,7 @@
       "applied_value": 2.0,
       "badr_elasticity": 2.0,
       "revenue_2026_bn": -0.7591335686566276,
-      "income_shifting_offset_2026_bn": 3.4156208999537987
+      "income_shifting_offset_2026_bn": 3.7048462984342896
     },
     {
       "id": "official",
@@ -919,7 +919,7 @@
       "applied_value": 3.6,
       "badr_elasticity": 1.4,
       "revenue_2026_bn": -9.631687735543563,
-      "income_shifting_offset_2026_bn": 4.556937332223896
+      "income_shifting_offset_2026_bn": 4.89281414414603
     }
   ],
   "schedule_split": {
@@ -1598,12 +1598,12 @@
           },
           "income_shifting_offset_m": {
             "policyengine": {
-              "2026-27": 183.68809162913965,
-              "2027-28": 190.8124942051582
+              "2026-27": 195.90791840466952,
+              "2027-28": 203.5150764903373
             },
             "official": {
-              "2026-27": 289.94712553327804,
-              "2027-28": 301.07384240000783
+              "2026-27": 307.4371268884519,
+              "2027-28": 319.23849836633696
             }
           }
         },
@@ -1637,12 +1637,12 @@
           },
           "income_shifting_offset_m": {
             "policyengine": {
-              "2026-27": 809.9047501244997,
-              "2027-28": 840.40330863027
+              "2026-27": 863.8644163631807,
+              "2027-28": 896.3371041130116
             },
             "official": {
-              "2026-27": 1357.1571336708005,
-              "2027-28": 1407.6230421869611
+              "2026-27": 1439.5226088608565,
+              "2027-28": 1492.8894160720438
             }
           }
         },
@@ -1676,12 +1676,12 @@
           },
           "income_shifting_offset_m": {
             "policyengine": {
-              "2026-27": 1412.557053929559,
-              "2027-28": 1465.6453224241036
+              "2026-27": 1506.6905058598327,
+              "2027-28": 1563.1940152083093
             },
             "official": {
-              "2026-27": 2493.7305987777722,
-              "2027-28": 2586.3008761699775
+              "2026-27": 2645.9628218526855,
+              "2027-28": 2743.8510787718865
             }
           }
         },
@@ -1715,12 +1715,12 @@
           },
           "income_shifting_offset_m": {
             "policyengine": {
-              "2026-27": 3.506514997561533,
-              "2027-28": 3.4919457314639684
+              "2026-27": 2.7503250121659093,
+              "2027-28": 2.742105367020152
             },
             "official": {
-              "2026-27": 4.066252713871753,
-              "2027-28": 4.06513437493163
+              "2026-27": 3.183475146701349,
+              "2027-28": 3.187692595294965
             }
           }
         },
@@ -1754,12 +1754,12 @@
           },
           "income_shifting_offset_m": {
             "policyengine": {
-              "2026-27": 14.886075178141105,
-              "2027-28": 14.805687985082121
+              "2026-27": 11.675518095102918,
+              "2027-28": 11.619441994486289
             },
             "official": {
-              "2026-27": 19.06916948746611,
-              "2027-28": 19.00743164729038
+              "2026-27": 14.928360827354492,
+              "2027-28": 14.89119347958389
             }
           }
         },
@@ -1793,12 +1793,12 @@
           },
           "income_shifting_offset_m": {
             "policyengine": {
-              "2026-27": 24.337226462100745,
-              "2027-28": 25.024194662082234
+              "2026-27": 29.157643297589296,
+              "2027-28": 29.977399607002386
             },
             "official": {
-              "2026-27": 11.160591247278674,
-              "2027-28": 11.478877976438422
+              "2026-27": 13.371143136836286,
+              "2027-28": 13.747144332205911
             }
           }
         },
@@ -1832,12 +1832,12 @@
           },
           "income_shifting_offset_m": {
             "policyengine": {
-              "2026-27": 103.33431274715687,
-              "2027-28": 106.22346642486639
+              "2026-27": 123.80149546519277,
+              "2027-28": 127.25961891700466
             },
             "official": {
-              "2026-27": 55.265439666875835,
-              "2027-28": 56.80217221518818
+              "2026-27": 66.21173448012178,
+              "2027-28": 68.0475161737998
             }
           }
         }
@@ -1850,7 +1850,7 @@
       {
         "id": "total_revenue",
         "label": "Net of income shifting",
-        "description": "Total revenue: PolicyEngine's and the official elasticities, both measured on gains alone, with the OBR's income tax on income no longer presented as gains added back, and CenTax's published elasticities, which already allow for it.",
+        "description": "Total revenue: CenTax's central 1.0, which already allows for income no longer presented as gains, and the cases measured on the CGT base (PolicyEngine's, CenTax's 0.5 and 2.0 and the official elasticity) with the OBR's income tax and National Insurance on that income added back.",
         "case_ids": [
           "static",
           "policyengine",
@@ -1863,13 +1863,15 @@
         "centax_id": "centax_central",
         "offset_case_ids": [
           "policyengine",
+          "centax_lower",
+          "centax_upper",
           "official"
         ]
       },
       {
         "id": "cgt_only",
         "label": "Gross of income shifting",
-        "description": "CGT only: every gain not realised counts as lost revenue, with PolicyEngine's and the official elasticities as they stand and CenTax's elasticity before its adjustments.",
+        "description": "CGT only: every gain not realised counts as lost revenue, with PolicyEngine's and the official elasticities as they stand and CenTax's elasticity before its adjustments, and no income tax or National Insurance added back.",
         "case_ids": [
           "static",
           "policyengine",
@@ -1933,10 +1935,16 @@
       "url": "https://obr.uk/docs/dlm_uploads/CGT-supplementary-release-Jan-2025.pdf",
       "locator": "p. 3 and Table 1.1",
       "share": 0.125,
-      "tax_rate": 0.45,
+      "tax_rate": 0.5391304347826087,
+      "tax_rate_components": {
+        "income_tax": 0.45,
+        "employee_national_insurance": 0.02,
+        "employer_national_insurance": 0.15
+      },
       "share_note": "The OBR's costing of the October 2024 rate rise assumes 12.5% of the behavioural response to the narrowing gap between income tax and CGT rates is income no longer presented as gains, which raises income tax receipts: HMRC assumes a quarter of the income tax response to a 1-point rise in marginal rates is avoidance, and half of that is income-to-gains shifting.",
-      "tax_rate_note": "The OBR does not say which income it becomes or at what rate. 45% is the additional rate on earnings. Stacked on each person's other income, the rate on the shifted income averages 42.4% on the staged Microcosm UK build (2026-27, official case), so 45% overstates the offset by about 6%. Dividends at the additional dividend rate (39.35%) would give about an eighth less, salary with employee and employer National Insurance about a fifth more.",
-      "obr_check": "Applied to the OBR's own costing (\u00a34.9bn of CGT lost to behaviour in 2029-30, on gains taxed at 22-24%), this gives about \u00a31.2bn of income tax against the OBR's \u00a31.5bn: it adds back somewhat less than the OBR did."
+      "base_note": "Residential property gains are left out: the OBR's costing left the residential rates where they were, and it describes labour income presented as gains, which residential property gains are not. They are about a tenth of the fall.",
+      "tax_rate_note": "The OBR does not say what rate the shifted income pays. It describes the behaviour as structuring earnings as income or gains, against employment tax rates (paras 1.9 and 1.11), so the income is taxed here as salary paid to an additional-rate taxpayer: income tax at 45% and employee National Insurance at 2% on the salary, and employer National Insurance at 15% on top of it, 53.9% of what the employer spends. Income tax alone at 45% would give a sixth less, and dividends at the additional dividend rate (39.35%) about a quarter less.",
+      "obr_check": "Applied to the OBR's own costing (\u00a34.9bn of CGT lost to behaviour in 2029-30, on gains taxed at about 22-24%), this rate gives \u00a31.4bn to \u00a31.5bn against the OBR's \u00a31.5bn of income taxes, which imply about 56%. Income tax alone at 45% gives about \u00a31.2bn."
     }
   }
 }

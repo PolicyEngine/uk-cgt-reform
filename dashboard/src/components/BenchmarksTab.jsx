@@ -212,8 +212,8 @@ function ReadyReckoner({ block, dataset, elasticities }) {
   const [first, second] = block.lag;
   const withOffset = elasticities.official.includes_income_shifting_offset;
   const centralOffset = elasticities.central.includes_income_shifting_offset;
-  const centralLabel = `Central (PolicyEngine, marginal rate ${formatElasticityValue(elasticities.central.elasticity)}${centralOffset ? "; plus income tax on shifted income" : ""})`;
-  const officialLabel = `Official (retention ${elasticities.official.elasticity}; ${elasticities.official.badr_elasticity} for BADR gains${withOffset ? "; plus income tax on shifted income" : ""})`;
+  const centralLabel = `Central (PolicyEngine, marginal rate ${formatElasticityValue(elasticities.central.elasticity)}${centralOffset ? "; plus income tax and NI on shifted income" : ""})`;
+  const officialLabel = `Official (retention ${elasticities.official.elasticity}; ${elasticities.official.badr_elasticity} for BADR gains${withOffset ? "; plus income tax and NI on shifted income" : ""})`;
   const model = (row, elasticityId, year) => row.model_m[elasticityId][year];
   return (
     <section className="section-card">
@@ -265,8 +265,8 @@ function ReadyReckoner({ block, dataset, elasticities }) {
         government balance on its own data, in the Rate explorer&apos;s scope (main and residential
         rates and the relief)
         {withOffset
-          ? `, and the ${centralOffset ? "central and official columns add" : "official columns add"} the income tax the OBR's method attributes to income no longer presented as gains, as HMRC's own figures include income tax effects`
-          : ", counting CGT alone: unlike HMRC's figures they include no income tax on income no longer presented as gains"}
+          ? `, and the ${centralOffset ? "central and official columns add" : "official columns add"} the income tax and National Insurance the OBR's method attributes to income no longer presented as gains, as HMRC's own figures include income tax effects`
+          : ", counting CGT alone: unlike HMRC's figures they include no income tax or National Insurance on income no longer presented as gains"}
         . Not scored:{" "}
         {block.excluded
           .map((row) => {
@@ -321,7 +321,7 @@ export default function BenchmarksTab({ data, onNavigate }) {
           {formatSignedBn(central.revenue_2026_bn, 1)} at the central elasticity and by{" "}
           {formatSignedBn(official.revenue_2026_bn, 1)} at the official one
           {data.approach.id === "total_revenue"
-            ? ", both including the income tax the OBR adds back for income no longer presented as gains"
+            ? ", both including the income tax and National Insurance the OBR's method adds back for income no longer presented as gains"
             : ""}
           .{" "}
           <button

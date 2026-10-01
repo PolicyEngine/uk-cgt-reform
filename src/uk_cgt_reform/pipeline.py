@@ -26,9 +26,10 @@ The top-level ``budget`` and ``income_change_groups`` are the central case,
 PolicyEngine's elasticity, which both approaches to income shifting
 (``comparison.APPROACHES``) share; the approaches differ in the CenTax and
 official cases the central case is compared with. Every reform run reports
-the income tax the OBR's method would add back for income shifting, which
-the approach net of income shifting adds to PolicyEngine's and the official
-case.
+the income tax and National Insurance the OBR's method would add back for
+income shifting, which the approach net of income shifting adds to the cases
+measured on the CGT base: PolicyEngine's, CenTax's 0.5 and 2.0 and the
+official case.
 """
 
 from __future__ import annotations
@@ -430,7 +431,7 @@ def run_dataset(
 
     # ── Step 5: budgetary impact ──────────────────────────────────────────
     print(f"Step 5 {tag}: Budgetary impact 2026-27 to 2030-31...")
-    budget = budget_impact(baseline_sims, reform_sims, YEARS, aea, ceilings)
+    budget = budget_impact(baseline_sims, reform_sims, YEARS, aea, ceilings, elasticity=ELASTICITY)
     for row in budget:
         print(
             f"    {row['year']}: gov balance {row['gov_balance_change_bn']:+.2f}bn "
@@ -438,7 +439,7 @@ def run_dataset(
         )
     five_year_total = sum(r["gov_balance_change_bn"] for r in budget)
     print(f"    Five-year total budgetary impact: £{five_year_total:.1f}bn")
-    static_budget = budget_impact(baseline_sims, static_sims, YEARS, aea, ceilings)
+    static_budget = budget_impact(baseline_sims, static_sims, YEARS, aea, ceilings, elasticity=0.0)
 
     # ── Step 6: distributional impacts (income quantiles, household type,
     # region), all years ──────────────────────────────────────────────────

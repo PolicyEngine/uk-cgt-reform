@@ -133,13 +133,13 @@ export function getEntrantShare(data) {
 // ---------------------------------------------------------------------------
 // The two approaches to income shifting (comparison.APPROACHES in the
 // pipeline). Both share the central case, PolicyEngine's elasticity. Net of
-// income shifting: CenTax's published elasticities, and PolicyEngine's and
-// the official cases plus the OBR's income tax on income no longer presented
-// as gains. Gross of income shifting: CenTax before its adjustments, and
-// PolicyEngine's and the official cases with nothing added back. A view puts
-// the chosen approach's figures where the tabs read the central, CenTax and
-// official ones, so the tabs themselves need not know which approach is
-// shown.
+// income shifting: CenTax's central case as published, and the cases measured
+// on the CGT base (PolicyEngine's, CenTax's bounds and the official case)
+// plus the OBR's income tax and National Insurance on income no longer
+// presented as gains. Gross of income shifting: CenTax before its
+// adjustments, and every case with nothing added back. A view puts the chosen
+// approach's figures where the tabs read the central, CenTax and official
+// ones, so the tabs themselves need not know which approach is shown.
 // ---------------------------------------------------------------------------
 
 export function getApproachOptions(data) {
@@ -161,10 +161,10 @@ function findApproach(block, approachId) {
   );
 }
 
-// "…, plus the OBR's income tax on shifted income": the name of a case that
-// carries the income-shifting offset.
+// "…, plus the OBR's income tax and NI on shifted income": the name of a case
+// that carries the income-shifting offset.
 export function withOffsetLabel(name) {
-  return `${name}, plus the OBR's income tax on shifted income`;
+  return `${name}, plus the OBR's income tax and NI on shifted income`;
 }
 
 function addByYear(values, offsets) {

@@ -85,15 +85,16 @@ September 2026, p.17); the upper end of CenTax's range and the official case
 show how much of the yield rests on the assumption. Every case is
 medium-term and abstracts from short-run forestalling.
 
-Income shifting: CenTax net it into their elasticity (1.5 lowered to 1.0),
-while the OBR's 3.6 is gross of it and its costing adds income tax back
-(``INCOME_SHIFTING_SHARE``). PolicyEngine's -0.7 rests on estimates of
-realisations on the gains base alone, so it is gross of income shifting, as
-the OBR's 3.6 is. ``comparison.APPROACHES`` puts the cases on one footing
-either way: gross of income shifting (CenTax's 1.5, nothing added back) or
-net of it (CenTax as published, and PolicyEngine's and the official cases
-plus the income tax). The README and the dashboard's Methodology tab set out
-both.
+Income shifting: CenTax net it into their central elasticity (1.5 lowered
+to 1.0), while their 0.5 and 2.0, PolicyEngine's -0.7 (which rests on
+estimates of realisations on the gains base alone) and the OBR's 3.6 are
+measured on the CGT base, and the OBR's costing adds income tax back
+(``INCOME_SHIFTING_SHARE``). ``comparison.APPROACHES`` puts the cases on one
+footing either way: gross of income shifting (CenTax's 1.5, nothing added
+back) or net of it (CenTax's 1.0 as published, and the income tax and
+National Insurance on shifted income added to PolicyEngine's case, CenTax's
+0.5 and 2.0 and the official case). The README and the dashboard's
+Methodology tab set out both.
 """
 
 from __future__ import annotations
@@ -131,17 +132,34 @@ CENTAX_UPPER_ELASTICITY = 2.0
 CENTAX_UNADJUSTED_ELASTICITY = 1.5
 # The OBR's treatment of income shifting (January 2025, p. 3 and Table 1.1):
 # 12.5% of the behavioural response to the narrowing gap between income tax
-# and CGT rates is income no longer presented as gains, taxed as income.
+# and CGT rates is income no longer presented as gains, taxed as income. It
+# applies here to the fall in realised gains outside residential property
+# (``impacts.shiftable_gains_response``): the OBR's costing left the
+# residential rates where they were, and it describes labour income
+# presented as gains (para 1.9), which residential property gains are not.
 INCOME_SHIFTING_SHARE = 0.125
-# The rate that income is taxed at, which the OBR does not state: 45%, the
-# additional rate on earnings. Two-thirds of the shifted income comes from
-# people with gains of £1m or more, almost all of it at 45%; stacked on each
-# person's other income, the rate on the whole averages 42.4% on the staged
-# Microcosm build (2026-27, official case), so 45% overstates the offset by
-# about 6%. Dividends at the additional dividend rate (39.35%)
-# would give about an eighth less; salary with employee and employer
-# National Insurance (about 54% of the employer's cost) about a fifth more.
-INCOME_SHIFTING_TAX_RATE = 0.45
+# The rate that income is taxed at, which the OBR does not state. The OBR
+# describes the behaviour as structuring earnings as income or gains (para
+# 1.11), against "employment tax rates" (para 1.9), so the shifted income is
+# taken as salary paid to an additional-rate taxpayer: income tax at 45% and
+# employee National Insurance at 2% on the salary, and employer National
+# Insurance at 15% on top of it, as a share of what the employer spends.
+INCOME_SHIFTING_RATE_COMPONENTS = {
+    "income_tax": 0.45,
+    "employee_national_insurance": 0.02,
+    "employer_national_insurance": 0.15,
+}
+# (0.45 + 0.02 + 0.15) / 1.15 = 53.9%. Applied to the OBR's own costing
+# (£4.9bn of CGT lost to behaviour in 2029-30, on gains taxed at about
+# 22-24%), it gives £1.4bn to £1.5bn against the OBR's £1.5bn of income
+# taxes, which imply about 56%. Income tax alone at 45% would give a sixth
+# less, and dividends at the additional dividend rate (39.35%) about a
+# quarter less.
+INCOME_SHIFTING_TAX_RATE = (
+    INCOME_SHIFTING_RATE_COMPONENTS["income_tax"]
+    + INCOME_SHIFTING_RATE_COMPONENTS["employee_national_insurance"]
+    + INCOME_SHIFTING_RATE_COMPONENTS["employer_national_insurance"]
+) / (1 + INCOME_SHIFTING_RATE_COMPONENTS["employer_national_insurance"])
 # The official HMRC/OBR assumption for the main CGT rates (OBR, "Costing of
 # changes to the main, BADR and IR rates of CGT", January 2025, para 1.9).
 OFFICIAL_ELASTICITY = 3.6
@@ -293,6 +311,16 @@ def elasticity_assignment(elasticity: float) -> dict[str, float | bool]:
         assignment[SEPARATE_BADR_ELASTICITY_PARAMETER] = True
         assignment[BADR_ELASTICITY_PARAMETER] = badr
     return assignment
+
+
+def badr_response_exponent(elasticity: float) -> float | None:
+    """For a case with its own elasticity for gains qualifying for the relief,
+    that elasticity over the main one. The engine scales a person's
+    qualifying gains by exp(badr_elasticity * d) and the rest of their gains
+    by exp(elasticity * d), for the same d, so the first factor is the second
+    to this power. None where every gain takes one elasticity."""
+    badr = BADR_ELASTICITY_BY_CASE.get(elasticity)
+    return None if badr is None else badr / elasticity
 
 
 def elasticity_convention(elasticity: float) -> dict:
