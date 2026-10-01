@@ -8,8 +8,8 @@ import SectionHeading from "./SectionHeading";
 // HMRC figures, not model outputs, so they live here rather than in the
 // pipeline JSON. Both columns come from the same release (Capital Gains Tax
 // statistics, 2026), which carries the revised 2023-24 year and the
-// provisional 2024-25 year; the two datasets calibrate their capital gains to
-// one or the other.
+// provisional 2024-25 year; the dataset calibrates its capital gains to the
+// 2024-25 year.
 const TABLE_1 =
   "https://assets.publishing.service.gov.uk/media/6a7b23f1bbafcd1db3b6e420/Table_1_2026_Taxpayer_numbers_gains_and_tax_liabilities.ods";
 const TABLE_2 =
@@ -121,14 +121,14 @@ export default function BaselineTab({ data }) {
         <SectionHeading
           size="lg"
           title="Baseline estimation"
-          description={`The Family Resources Survey barely captures capital gains, so each dataset imputes them from HMRC administrative data and calibrates household weights to HMRC's CGT statistics. This analysis uses ${dataset.shortLabel} exactly as published (${dataset.producer}), with no local reweighting: calibration belongs upstream in the data, not in an analysis repository. The tables below show the fit for the first simulated year and the two features that most affect how its numbers read: the entrants by uprating and the schedule components.`}
+          description={`The Family Resources Survey barely captures capital gains, so the dataset imputes them from HMRC administrative data and calibrates household weights to HMRC's CGT statistics. This analysis uses ${dataset.shortLabel} exactly as published (${dataset.producer}), with no local reweighting: calibration belongs upstream in the data, not in an analysis repository. The tables below show the fit for the first simulated year and the two features that most affect how its numbers read: the entrants by uprating and the schedule components.`}
         />
       </div>
 
       <section className="section-card">
         <SectionHeading
           title="Model versus external benchmarks"
-          description={`PolicyEngine's baseline for ${firstYear} on ${dataset.shortLabel}, alongside HMRC's statistics for the 2023-24 tax year (revised) and the provisional 2024-25 tax year, both from the 2026 release. The vintages differ by design: each dataset calibrates its base year to one HMRC year (${dataset.observation}) and the engine uprates it to the simulated years. HMRC's 2024-25 figures are far above 2023-24 because the rate rises announced in October 2024 brought disposals forward.`}
+          description={`PolicyEngine's baseline for ${firstYear} on ${dataset.shortLabel}, alongside HMRC's statistics for the 2023-24 tax year (revised) and the provisional 2024-25 tax year, both from the 2026 release. The dataset calibrates its base year to one HMRC year (${dataset.observation}) and the engine uprates it to the simulated years. HMRC's 2024-25 figures are far above 2023-24 because the rate rises announced in October 2024 brought disposals forward.`}
         />
         <table className="data-table">
           <thead>

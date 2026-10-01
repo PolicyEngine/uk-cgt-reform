@@ -4,33 +4,22 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import BaselineTab from "../src/components/BaselineTab";
 import BenchmarksTab from "../src/components/BenchmarksTab";
-import ComparisonTab from "../src/components/ComparisonTab";
 import MethodologyTab from "../src/components/MethodologyTab";
 import PolicyEngineHeader from "../src/components/PolicyEngineHeader";
 import RateExplorerTab from "../src/components/RateExplorerTab";
 import ReformTab from "../src/components/ReformTab";
-import { getDatasetInfo, getDatasetOptions } from "../src/lib/dataHelpers";
-import comparison from "../public/data/dataset_comparison.json";
-import resultsIncumbent from "../public/data/cgt_equalisation_results_enhanced_frs_2024_25.json";
-import resultsCandidate from "../public/data/cgt_equalisation_results_microcosm_uk_2024_25_c5a1cba8.json";
+import { getDatasetInfo } from "../src/lib/dataHelpers";
+import results from "../public/data/cgt_equalisation_results.json";
 
 // Bundled at build time: a runtime fetch() 404s when the app is served
-// behind proxies/rewrites that don't forward public assets. One results
-// file per registered dataset, plus the side-by-side comparison. The file
-// names follow the pipeline's dataset keys (simulations.DATASETS), so a
-// re-registered candidate needs its import path updated here too.
-const RESULTS = Object.fromEntries(
-  [resultsIncumbent, resultsCandidate].map((results) => [results.metadata.dataset_key, results]),
-);
-const DEFAULT_DATASET = resultsCandidate.metadata.default_dataset_key;
-const DATASET_OPTIONS = getDatasetOptions(resultsCandidate).filter((o) => o.value in RESULTS);
+// behind proxies/rewrites that don't forward public assets. The pipeline
+// writes one results file, for the one registered dataset.
 
 const TAB_OPTIONS = [
   { id: "reform", label: "Reform impacts" },
   { id: "explorer", label: "Rate explorer" },
   { id: "baseline", label: "Baseline" },
   { id: "benchmarks", label: "Benchmarks" },
-  { id: "datasets", label: "Dataset comparison" },
   { id: "methodology", label: "Methodology" },
 ];
 
@@ -39,13 +28,6 @@ function getInitialTab(tabParam) {
     return tabParam;
   }
   return "reform";
-}
-
-function getInitialDataset(datasetParam) {
-  if (datasetParam && datasetParam in RESULTS) {
-    return datasetParam;
-  }
-  return DEFAULT_DATASET;
 }
 
 function TabLink({ onSelect, children }) {
@@ -60,59 +42,26 @@ function TabLink({ onSelect, children }) {
   );
 }
 
-function DatasetSwitch({ options, value, onChange, info }) {
-  return (
-    <div className="mb-6 flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm shadow-sm">
-      <span className="font-semibold text-slate-700">Dataset</span>
-      <div className="inline-flex overflow-hidden rounded-md border border-slate-300">
-        {options.map((option) => (
-          <button
-            key={option.value}
-            type="button"
-            onClick={() => onChange(option.value)}
-            className={
-              option.value === value
-                ? "bg-[color:var(--pe-color-primary-600)] px-3 py-1.5 font-semibold text-white"
-                : "bg-white px-3 py-1.5 text-slate-600 hover:bg-slate-50"
-            }
-          >
-            {option.label}
-            <span className="ml-1 text-xs font-normal opacity-80">({option.role})</span>
-          </button>
-        ))}
-      </div>
-      <span className="text-slate-500">
-        {info.label}. The Reform impacts, Rate explorer, Baseline, Benchmarks and Methodology tabs
-        read from this dataset; Dataset comparison shows both side by side.
-      </span>
-    </div>
-  );
-}
-
 function Dashboard() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
   const [activeTab, setActiveTab] = useState(() => getInitialTab(searchParams.get("tab")));
-  const [datasetKey, setDatasetKey] = useState(() =>
-    getInitialDataset(searchParams.get("dataset")),
-  );
   const [anchor, setAnchor] = useState(null);
-  const data = RESULTS[datasetKey];
+  const data = results;
   const dataset = getDatasetInfo(data);
 
   useEffect(() => {
     setActiveTab(getInitialTab(searchParams.get("tab")));
-    setDatasetKey(getInitialDataset(searchParams.get("dataset")));
   }, [searchParams]);
 
-  function replaceUrl(tab, key) {
-    // Keep any other parameters (the Rate explorer's schedule) in place.
+  function replaceUrl(tab) {
+    // Keep any other parameters (the Rate explorer's schedule) in place; a
+    // `dataset` parameter from before the dashboard had one dataset is dropped.
     const params = new URLSearchParams(searchParams.toString());
     if (tab !== "reform") params.set("tab", tab);
     else params.delete("tab");
-    if (key !== DEFAULT_DATASET) params.set("dataset", key);
-    else params.delete("dataset");
+    params.delete("dataset");
     const query = params.toString();
     router.replace(query ? `/?${query}` : "/", { scroll: false });
   }
@@ -120,18 +69,13 @@ function Dashboard() {
   function handleTabChange(tab) {
     setActiveTab(tab);
     setAnchor(null);
-    replaceUrl(tab, datasetKey);
+    replaceUrl(tab);
   }
 
   // Open a tab at one of its sections (e.g. Methodology's #elasticity-gap).
   function handleNavigate(tab, sectionId) {
     handleTabChange(tab);
     setAnchor(sectionId);
-  }
-
-  function handleDatasetChange(key) {
-    setDatasetKey(key);
-    replaceUrl(activeTab, key);
   }
 
   return (
@@ -172,11 +116,10 @@ function Dashboard() {
               Bloomberg
             </a>{" "}
             reported; CenTax costs the change within a wider package that also
-            reforms the CGT base, which this dashboard does not model. The dashboard runs on two
-            datasets: the incumbent Enhanced Family Resources Survey and the
-            candidate Microcosm UK build, which records what kind of asset each
-            gain came from and which gains qualify for Business Asset Disposal
-            Relief.{" "}
+            reforms the CGT base, which this dashboard does not model. It runs on
+            PolicyEngine&apos;s Microcosm UK 2024-25 data, which records what kind of
+            asset each gain came from and which gains qualify for Business Asset
+            Disposal Relief.{" "}
             <TabLink onSelect={() => handleTabChange("reform")}>Reform impacts</TabLink>{" "}
             shows the equalisation reform&apos;s revenue and distributional effects,{" "}
             <TabLink onSelect={() => handleTabChange("explorer")}>Rate explorer</TabLink>{" "}
@@ -186,9 +129,7 @@ function Dashboard() {
             </TabLink>{" "}
             validates the baseline against HMRC,{" "}
             <TabLink onSelect={() => handleTabChange("benchmarks")}>Benchmarks</TabLink>{" "}
-            compares the results with other published estimates,{" "}
-            <TabLink onSelect={() => handleTabChange("datasets")}>Dataset comparison</TabLink>{" "}
-            puts the two datasets side by side, and{" "}
+            compares the results with other published estimates, and{" "}
             <TabLink onSelect={() => handleTabChange("methodology")}>Methodology</TabLink>{" "}
             explains the method.
           </p>
@@ -206,22 +147,10 @@ function Dashboard() {
           ))}
         </div>
 
-        {activeTab !== "datasets" && (
-          <DatasetSwitch
-            options={DATASET_OPTIONS}
-            value={datasetKey}
-            onChange={handleDatasetChange}
-            info={dataset}
-          />
-        )}
-
         {activeTab === "reform" && <ReformTab data={data} />}
-        {activeTab === "explorer" && <RateExplorerTab data={data} datasetKey={datasetKey} />}
+        {activeTab === "explorer" && <RateExplorerTab data={data} datasetKey={dataset.key} />}
         {activeTab === "baseline" && <BaselineTab data={data} />}
         {activeTab === "benchmarks" && <BenchmarksTab data={data} onNavigate={handleNavigate} />}
-        {activeTab === "datasets" && (
-          <ComparisonTab comparison={comparison} onNavigate={handleNavigate} />
-        )}
         {activeTab === "methodology" && <MethodologyTab data={data} anchor={anchor} />}
 
         <footer className="mt-12 border-t border-slate-200 pt-8 text-center text-sm text-slate-500">
@@ -237,7 +166,7 @@ function Dashboard() {
             {data?.metadata?.policyengine_version
               ? `, run on policyengine.py ${data.metadata.policyengine_version} with policyengine-uk ${data.metadata.policyengine_uk_version}`
               : ""}
-            .
+            , on {dataset.label}.
           </p>
         </footer>
       </main>

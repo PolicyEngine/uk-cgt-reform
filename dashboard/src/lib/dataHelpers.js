@@ -1,6 +1,5 @@
 /**
- * Accessors for the cgt_equalisation_results*.json payloads and the
- * dataset_comparison.json side-by-side.
+ * Accessors for the cgt_equalisation_results.json payload.
  *
  * Deliberately no fallbacks: if a field is missing the consumer throws
  * visibly rather than rendering placeholders.
@@ -120,16 +119,6 @@ export function getDatasetInfo(data) {
   };
 }
 
-// Every dataset the pipeline knows, for the dataset switch.
-export function getDatasetOptions(data) {
-  return data.metadata.datasets.map((d) => ({
-    value: d.key,
-    label: d.short_label,
-    role: d.role,
-    fullLabel: d.label,
-  }));
-}
-
 // Persons taxable only because uprating carried base-year gains at or below
 // the frozen exempt amount past it (see the pipeline's impacts module).
 export function getEntrants(data) {
@@ -139,13 +128,4 @@ export function getEntrants(data) {
 export function getEntrantShare(data) {
   const validation = data.validation;
   return validation.entrants_by_uprating.count / validation.cgt_taxpayers;
-}
-
-// dataset_comparison.json accessors.
-export function getComparisonDatasetKeys(comparison) {
-  return Object.keys(comparison.datasets);
-}
-
-export function getComparisonDataset(comparison, key) {
-  return comparison.datasets[key];
 }

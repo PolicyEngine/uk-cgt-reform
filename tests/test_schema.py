@@ -7,10 +7,8 @@ from uk_cgt_reform.comparison import (
     READY_RECKONER,
     READY_RECKONER_ELASTICITIES,
     SENSITIVITY_CASES,
-    VALIDATION_METRICS,
     benchmarks_block,
     centax_1920_block,
-    dataset_comparison,
     ready_reckoner_block,
     static_equalisation_block,
 )
@@ -21,7 +19,7 @@ from uk_cgt_reform.reform import (
     elasticity_convention,
     reform_schedules,
 )
-from uk_cgt_reform.simulations import CANDIDATE, DATASETS, DEFAULT_DATASET_KEY, INCUMBENT
+from uk_cgt_reform.simulations import CANDIDATE, DATASETS, DEFAULT_DATASET_KEY
 
 YEAR_LABELS = [fiscal_year_label(y) for y in range(2026, 2031)]
 
@@ -124,7 +122,7 @@ def fake_schedule_split(scale: float = 1.0) -> dict:
     }
 
 
-def fake_results(spec=INCUMBENT, scale: float = 1.0) -> dict:
+def fake_results(spec=CANDIDATE, scale: float = 1.0) -> dict:
     """A results dict with the exact shape pipeline.run_dataset emits."""
     labels = [fiscal_year_label(y) for y in YEARS]
     entrants = {
@@ -257,81 +255,7 @@ def test_validation_reports_entrants_by_uprating():
     assert validation["cgt_taxpayers_excluding_entrants"] <= validation["cgt_taxpayers"]
 
 
-def test_dataset_comparison_lays_datasets_out_as_columns():
-    results = {
-        spec.key: fake_results(spec, scale=1.0 if spec.role == "incumbent" else 2.0)
-        for spec in DATASETS.values()
-    }
-    side_by_side = dataset_comparison(results)
-    keys = set(DATASETS)
-    assert set(side_by_side["datasets"]) == keys
-    assert side_by_side["first_year"] == "2026-27"
-    assert [row["metric"] for row in side_by_side["validation"]] == [
-        name for name, _ in VALIDATION_METRICS
-    ]
-    taxpayers = next(r for r in side_by_side["validation"] if r["metric"] == "cgt_taxpayers")
-    assert taxpayers[CANDIDATE.key] == 2 * taxpayers[INCUMBENT.key]
-    entrants = next(
-        r for r in side_by_side["validation"] if r["metric"] == "entrants_by_uprating.count"
-    )
-    assert entrants["enhanced_frs_2024_25"] == 10_000.0
-    assert set(side_by_side["budget"][0]) == {"year", *keys}
-    assert set(side_by_side["five_year_total_bn"]) == keys
-    assert set(side_by_side["sensitivity"][0]) == {
-        "name",
-        "e_retention",
-        "elasticity_parameter",
-        "applied_as",
-        "applied_value",
-        *keys,
-    }
-    assert side_by_side["sensitivity"][-1]["applied_as"] == "retention"
-    assert set(side_by_side["top_quintile"]) == keys
-    assert set(side_by_side["region"]) == keys
-    assert set(side_by_side["schedule_split"]) == keys
-    bench = side_by_side["benchmarks"]
-    assert [row["year"] for row in bench["static_equalisation"]] == YEAR_LABELS
-    assert bench["static_equalisation"][0]["jrf_bn"] == 13.0
-    assert bench["static_equalisation"][3]["jrf_bn"] == 17.0
-    assert bench["static_equalisation"][1]["jrf_bn"] is None
-    assert set(bench["static_equalisation"][0]) == {"year", "jrf_bn", *keys}
-    assert bench["centax_2019_20_rules"]["centax_uplift_pct"] == 139.0
-    assert set(bench["centax_2019_20_rules"]) == {"centax_uplift_pct", *keys}
-
-
-def test_budget_rows_use_fiscal_year_labels():
-    results = fake_results()
-    assert [r["year"] for r in results["budget"]] == [
-        "2026-27",
-        "2027-28",
-        "2028-29",
-        "2029-30",
-        "2030-31",
-    ]
-    assert set(results["budget"][0]) == {
-        "year",
-        "baseline_cgt_bn",
-        "reform_cgt_bn",
-        "cgt_change_bn",
-        "total_tax_change_bn",
-        "gov_balance_change_bn",
-        "cgt_change_from_entrants_bn",
-    }
-
-
-def test_income_change_groups_keyed_by_fiscal_year():
-    groups = fake_results()["income_change_groups"]
-    assert set(groups) == {"2026-27", "2027-28", "2028-29", "2029-30", "2030-31"}
-    year = groups["2026-27"]
-    assert set(year) == {"quintile", "quartile", "household_type", "region"}
-    assert set(year["quintile"][0]) == {
-        "group",
-        "avg_change_gbp",
-        "relative_change_pct",
-    }
-
-
-def test_calibration_block_is_explicitly_empty():
+def test_calibration_is_upstream():
     cal = fake_results()["calibration"]
     assert set(cal) == {"targets", "ess_before", "ess_after", "note"}
     assert cal["targets"] == []
