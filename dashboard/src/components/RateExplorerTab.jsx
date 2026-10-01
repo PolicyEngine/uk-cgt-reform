@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import options from "../../public/data/explore_options.json";
 import {
   BASELINE_SCHEDULE_RATES,
+  applyApproachToBudget,
   badrLimitLabel,
   describeBadr,
   getBudget,
@@ -14,6 +15,7 @@ import {
   getFiveYearTotal,
   getIncomeChangeGroups,
   getValidation,
+  withOffsetLabel,
 } from "../lib/dataHelpers";
 import { useExploration } from "../lib/exploreApi";
 import {
@@ -55,16 +57,25 @@ const PCT_MAX = options.rate_bounds[1] * 100;
 const STEP_PCT = (options.rate_step ?? 0.01) * 100;
 const PRESETS = options.presets;
 const ELASTICITIES = options.elasticity_options;
-const DEFAULT_ELASTICITY = options.default_elasticity;
 const CURRENT_LAW = PRESETS.find((preset) => preset.id === "current_law").rates;
 // HMRC's ready-reckoner rows (June 2025): schedules a reader can load, with
 // HMRC's own post-behavioural receipts to set beside the run.
 const READY_RECKONER = options.ready_reckoner;
 
 // Every behavioural option is an elasticity of realised gains with respect to
-// the retention rate (1 − t), applied as stated; its label names the source.
-function elasticityLabel(option) {
-  return option.label;
+// the retention rate (1 − t), applied as stated; its label names the source,
+// and says so when the approach adds the OBR's income tax on shifted income.
+function elasticityLabel(option, approach) {
+  return approach?.offset_case_ids.includes(option.id) ? withOffsetLabel(option.label) : option.label;
+}
+
+// The options an approach to income shifting offers, and its central case.
+function approachOptions(approach) {
+  return approach.case_ids.map((id) => ELASTICITIES.find((option) => option.id === id));
+}
+
+function approachCentral(approach) {
+  return ELASTICITIES.find((option) => option.id === approach.central_id).e_retention;
 }
 
 // Links shared before the retention form keyed each case by a marginal-tax-rate
@@ -141,18 +152,20 @@ function validateBadr(form, rates) {
   return { badr: { withdrawn: false, rate: toFraction(value), lifetime_limit: Number(form.limit) } };
 }
 
-function readUrlState(searchParams) {
+function readUrlState(searchParams, approach) {
   const values = BANDS.map((band) => searchParams.get(band.param));
   if (values.some((value) => value === null || value === "")) return null;
   const percents = Object.fromEntries(BANDS.map((band, i) => [band.key, values[i]]));
-  // An absent or empty `e` means the default; Number(null) would be 0, the static case.
+  // An absent or empty `e` means the approach's central case; Number(null)
+  // would be 0, the static case. A case the approach does not offer falls
+  // back to its central case too.
   const rawE = searchParams.get("e");
   const parsed = rawE === null || rawE.trim() === "" ? NaN : Number(rawE);
   const legacy = [...LEGACY_MTR_ELASTICITIES].find(([mtr]) => sameElasticity(mtr, parsed));
   const e = legacy ? legacy[1] : parsed;
-  const elasticity = ELASTICITIES.some((option) => sameElasticity(option.e_retention, e))
+  const elasticity = approachOptions(approach).some((option) => sameElasticity(option.e_retention, e))
     ? e
-    : DEFAULT_ELASTICITY;
+    : approachCentral(approach);
   // The relief: `bw=1` withdraws it; `br` (percent) and `bl` (£) keep it at
   // other than current law; neither means current law.
   const badrForm = badrFormOf(BADR_CURRENT_LAW);
@@ -332,11 +345,22 @@ function ReadyReckonerPanel({ row, result }) {
 export default function RateExplorerTab({ data, datasetKey }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { approach } = data;
   // Read once: a shared link arrives with a full schedule in the URL.
-  const initial = useMemo(() => readUrlState(searchParams), []); // eslint-disable-line react-hooks/exhaustive-deps
+  const initial = useMemo(() => readUrlState(searchParams, approach), []); // eslint-disable-line react-hooks/exhaustive-deps
   const [percents, setPercents] = useState(() => initial?.percents ?? percentsOf(CURRENT_LAW));
   const [badrForm, setBadrForm] = useState(() => initial?.badrForm ?? badrFormOf(BADR_CURRENT_LAW));
-  const [elasticity, setElasticity] = useState(() => initial?.elasticity ?? DEFAULT_ELASTICITY);
+  const [elasticity, setElasticity] = useState(
+    () => initial?.elasticity ?? approachCentral(approach),
+  );
+  const offered = approachOptions(approach);
+  // Switching approach keeps a case both offer and otherwise moves to the
+  // new approach's central case.
+  useEffect(() => {
+    if (!offered.some((option) => sameElasticity(option.e_retention, elasticity))) {
+      setElasticity(approachCentral(approach));
+    }
+  }, [approach.id]); // eslint-disable-line react-hooks/exhaustive-deps
   const { run, reset, status, result, error, elapsedSeconds } = useExploration();
   const autoRan = useRef(false);
   const lastDataset = useRef(datasetKey);
@@ -414,17 +438,40 @@ export default function RateExplorerTab({ data, datasetKey }) {
   };
   const entrants = getEntrants(data);
   const entrantShare = entrants.count / getValidation(data).cgt_taxpayers;
-  const elasticityOption = ELASTICITIES.find((option) => sameElasticity(option.e_retention, elasticity));
   const resultElasticity = result
     ? ELASTICITIES.find((option) => sameElasticity(option.e_retention, result.metadata.elasticity))
     : null;
   const matchedRow = result
     ? rowFor(result.metadata.reform, result.metadata.reform_badr ?? BADR_CURRENT_LAW)
     : null;
+  const centralE = approachCentral(approach);
+  const centralOption = ELASTICITIES.find((option) => sameElasticity(option.e_retention, centralE));
+  // The run as the approach shows it: under the approach net of income
+  // shifting, the official case adds the OBR's income tax on shifted income.
+  // A backend older than the approaches does not report it; the run then
+  // counts CGT alone and says so.
+  const wantsOffset = Boolean(
+    resultElasticity && approach.offset_case_ids.includes(resultElasticity.id),
+  );
+  const offsetMissing =
+    wantsOffset && result.budget.some((row) => typeof row.income_shifting_offset_bn !== "number");
+  const withOffset = wantsOffset && !offsetMissing;
+  const shown = result
+    ? (() => {
+        const budget = withOffset
+          ? applyApproachToBudget(result.budget, approach, resultElasticity.id)
+          : result.budget;
+        return {
+          ...result,
+          budget,
+          five_year_total_bn: budget.reduce((sum, row) => sum + row.gov_balance_change_bn, 0),
+        };
+      })()
+    : null;
 
-  const firstYear = result ? result.budget[0].year : null;
-  const firstRow = result ? result.budget[0] : null;
-  const topQuintile = result ? result.income_change_groups[firstYear].quintile.at(-1) : null;
+  const firstYear = shown ? shown.budget[0].year : null;
+  const firstRow = shown ? shown.budget[0] : null;
+  const topQuintile = shown ? shown.income_change_groups[firstYear].quintile.at(-1) : null;
 
   return (
     <div className="space-y-6">
@@ -543,9 +590,9 @@ export default function RateExplorerTab({ data, datasetKey }) {
           />
           <LabelledSelect
             label="Behavioural response"
-            options={ELASTICITIES.map((option) => ({
+            options={offered.map((option) => ({
               value: String(option.e_retention),
-              label: elasticityLabel(option),
+              label: elasticityLabel(option, approach),
             }))}
             value={String(elasticity)}
             onChange={(value) => setElasticity(Number(value))}
@@ -571,22 +618,26 @@ export default function RateExplorerTab({ data, datasetKey }) {
         />
       </section>
 
-      {result ? (
+      {shown ? (
         <>
           <section className="section-card">
             <SectionHeading
               title={`Headline results, ${firstYear}`}
-              description={`${formatPct(result.metadata.reform.basic_rate * 100, 0)} / ${formatPct(result.metadata.reform.higher_rate * 100, 0)} / ${formatPct(result.metadata.reform.additional_rate * 100, 0)}, Business Asset Disposal Relief ${describeBadr(result.metadata.reform_badr ?? BADR_CURRENT_LAW).toLowerCase()}, on ${result.metadata.dataset_short_label}, ${resultElasticity ? elasticityLabel(resultElasticity) : `retention elasticity ${result.metadata.elasticity}`}; distributional figures cover all households.`}
+              description={`${formatPct(shown.metadata.reform.basic_rate * 100, 0)} / ${formatPct(shown.metadata.reform.higher_rate * 100, 0)} / ${formatPct(shown.metadata.reform.additional_rate * 100, 0)}, Business Asset Disposal Relief ${describeBadr(shown.metadata.reform_badr ?? BADR_CURRENT_LAW).toLowerCase()}, on ${shown.metadata.dataset_short_label}, ${resultElasticity ? elasticityLabel(resultElasticity, approach) : `retention elasticity ${shown.metadata.elasticity}`}; distributional figures cover all households.`}
             />
             <div className="grid gap-4 md:grid-cols-3">
               <MetricCard
                 label={`Revenue raised, ${firstYear}`}
                 value={formatSignedBn(firstRow.gov_balance_change_bn, 1)}
-                note="Net change in the government balance after taxpayers adjust realisations to the new rates."
+                note={
+                  withOffset
+                    ? "Net change in the government balance after taxpayers adjust realisations to the new rates, plus the income tax the OBR adds back for income no longer presented as gains."
+                    : "Net change in the government balance after taxpayers adjust realisations to the new rates."
+                }
               />
               <MetricCard
                 label="Five-year total, 2026-27 to 2030-31"
-                value={formatSignedBn(result.five_year_total_bn, 1)}
+                value={formatSignedBn(shown.five_year_total_bn, 1)}
                 note="Sum of the annual government balance changes over the five modelled years."
               />
               <MetricCard
@@ -595,6 +646,13 @@ export default function RateExplorerTab({ data, datasetKey }) {
                 note={`Average of ${formatSignedCurrency(topQuintile.avg_change_gbp)} per household in the highest-income 20%. Includes the gains taxpayers stop realising under the elasticity, not just tax paid.`}
               />
             </div>
+            {offsetMissing ? (
+              <p className="mt-3 text-sm leading-6 text-amber-800">
+                The explorer&apos;s backend did not report the income tax on shifted income for this
+                run, so these figures count CGT alone, not the total revenue this approach shows
+                elsewhere.
+              </p>
+            ) : null}
             <table className="data-table mt-5">
               <thead>
                 <tr>
@@ -611,7 +669,7 @@ export default function RateExplorerTab({ data, datasetKey }) {
                 </tr>
                 <tr>
                   <td>Five-year total</td>
-                  <td>{formatSignedBn(result.five_year_total_bn, 1)}</td>
+                  <td>{formatSignedBn(shown.five_year_total_bn, 1)}</td>
                   <td>{formatSignedBn(equalisation.fiveYear, 1)}</td>
                 </tr>
                 <tr>
@@ -629,14 +687,14 @@ export default function RateExplorerTab({ data, datasetKey }) {
             </table>
             <p className="mt-3 text-xs leading-5 text-slate-500">
               The equalisation column is the committed result for {dataset.shortLabel}: 20% / 40% /
-              45% with Business Asset Disposal Relief withdrawn, at
-              CenTax&apos;s central elasticity (retention {DEFAULT_ELASTICITY.toFixed(1)})
-              {elasticityOption && !sameElasticity(elasticityOption.e_retention, DEFAULT_ELASTICITY)
+              45% with Business Asset Disposal Relief withdrawn, at this approach&apos;s central case
+              ({centralOption.label})
+              {resultElasticity && !sameElasticity(resultElasticity.e_retention, centralE)
                 ? "; this schedule ran with a different elasticity, so the two are not like for like"
                 : ""}
               .
             </p>
-            {matchedRow ? <ReadyReckonerPanel row={matchedRow} result={result} /> : null}
+            {matchedRow ? <ReadyReckonerPanel row={matchedRow} result={shown} /> : null}
           </section>
 
           <details className="section-card group">
@@ -660,7 +718,7 @@ export default function RateExplorerTab({ data, datasetKey }) {
               title="Budgetary impact by year"
               description="Baseline and reformed CGT revenue, and the net change in the government balance, for each fiscal year."
             />
-            <BudgetChart budget={result.budget} />
+            <BudgetChart budget={shown.budget} />
             {entrantShare > 0.05 ? (
               <p className="mt-4 text-sm leading-6 text-slate-600">
                 {formatPct(100 * entrantShare, 0)} of this dataset&apos;s {firstYear} CGT taxpayers
@@ -678,7 +736,13 @@ export default function RateExplorerTab({ data, datasetKey }) {
               title="Who bears the cost"
               description="Change in household net income, grouped by the household's position in the baseline income distribution, by household type, or by region. Losses include both the extra tax paid and the gains taxpayers choose not to realise in response."
             />
-            <GroupImpactChart groupsByYear={result.income_change_groups} initialYear={firstYear} />
+            <GroupImpactChart groupsByYear={shown.income_change_groups} initialYear={firstYear} />
+            {withOffset ? (
+              <p className="mt-3 text-xs leading-5 text-slate-500">
+                The income tax added back for shifted income is in the revenue figures above but not
+                in these household figures, which reflect the CGT change alone.
+              </p>
+            ) : null}
           </section>
 
           <p className="text-xs leading-5 text-slate-500">

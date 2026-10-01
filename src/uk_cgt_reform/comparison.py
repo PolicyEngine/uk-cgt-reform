@@ -18,6 +18,11 @@ so the dashboard can say how comparable it is:
   on the higher rate and +1/+5pp on the lower rate, scored here at the
   central and the official elasticity.
 - The official elasticity itself (OBR, January 2025): retention 3.6.
+
+The two approaches to income shifting (``APPROACHES``) say which elasticity
+cases the dashboard shows and whether the official case adds back the
+income tax the OBR's method attributes to income no longer presented as
+gains (``INCOME_SHIFTING``).
 """
 
 from __future__ import annotations
@@ -26,8 +31,11 @@ from .impacts import REGION_NAMES
 from .reform import (
     BADR_CURRENT_LAW,
     CENTAX_LOWER_ELASTICITY,
+    CENTAX_UNADJUSTED_ELASTICITY,
     CENTAX_UPPER_ELASTICITY,
     ELASTICITY,
+    INCOME_SHIFTING_SHARE,
+    INCOME_SHIFTING_TAX_RATE,
     OFFICIAL_BADR_ELASTICITY,
     OFFICIAL_ELASTICITY,
     RATE_BANDS,
@@ -35,16 +43,109 @@ from .reform import (
 )
 from .uprating_audit import CPI_INDEX, OBR_CGT_RECEIPTS_BN, OBR_CGT_RECEIPTS_SOURCE
 
-# Sensitivity cases: retention-rate elasticities, applied as stated
-# (``reform.elasticity_assignment``). CenTax's central case and range, and
-# the official HMRC/OBR assumption for the main rates.
-SENSITIVITY_CASES = {
-    "Static (no behavioural response)": 0.0,
-    "CenTax lower (retention elasticity 0.5)": CENTAX_LOWER_ELASTICITY,
-    "CenTax central (retention elasticity 1.0)": ELASTICITY,
-    "CenTax upper (retention elasticity 2.0)": CENTAX_UPPER_ELASTICITY,
-    "HMRC/OBR official (retention elasticity 3.6)": OFFICIAL_ELASTICITY,
+# The behavioural cases, ``(id, label, retention-rate elasticity)``, each
+# applied as stated (``reform.elasticity_assignment``): CenTax's central
+# case, its value before CenTax's adjustments and its range, and the official
+# HMRC/OBR assumption for the main rates. The approaches below pick five.
+ELASTICITY_CASES = (
+    ("static", "Static (no behavioural response)", 0.0),
+    ("centax_lower", "CenTax lower (retention elasticity 0.5)", CENTAX_LOWER_ELASTICITY),
+    ("centax_central", "CenTax central (retention elasticity 1.0)", ELASTICITY),
+    (
+        "centax_unadjusted",
+        "CenTax before its adjustments (retention elasticity 1.5)",
+        CENTAX_UNADJUSTED_ELASTICITY,
+    ),
+    ("centax_upper", "CenTax upper (retention elasticity 2.0)", CENTAX_UPPER_ELASTICITY),
+    ("official", "HMRC/OBR official (retention elasticity 3.6)", OFFICIAL_ELASTICITY),
+)
+SENSITIVITY_CASES = {label: e for _, label, e in ELASTICITY_CASES}
+
+OBR_JANUARY_2025 = {
+    "source": (
+        "OBR, Costing of changes to the main, BADR and IR rates of CGT "
+        "(supplementary forecast information)"
+    ),
+    "published": "2025-01-22",
+    "url": "https://obr.uk/docs/dlm_uploads/CGT-supplementary-release-Jan-2025.pdf",
 }
+
+#: The OBR's treatment of income no longer presented as gains, as applied
+#: here: ``share`` of the behavioural fall in realised gains comes back as
+#: income taxed at ``tax_rate`` (``impacts.income_shifting_offset``).
+INCOME_SHIFTING = {
+    **OBR_JANUARY_2025,
+    "locator": "p. 3 and Table 1.1",
+    "share": INCOME_SHIFTING_SHARE,
+    "tax_rate": INCOME_SHIFTING_TAX_RATE,
+    "share_note": (
+        "The OBR's costing of the October 2024 rate rise assumes 12.5% of the "
+        "behavioural response to the narrowing gap between income tax and CGT rates is "
+        "income no longer presented as gains, which raises income tax receipts: HMRC "
+        "assumes a quarter of the income tax response to a 1-point rise in marginal rates "
+        "is avoidance, and half of that is income-to-gains shifting."
+    ),
+    "tax_rate_note": (
+        "The OBR does not say which income it becomes or at what rate. 45% is the "
+        "additional rate on earnings. Stacked on each person's other income, the rate on "
+        "the shifted income averages 42.5% on the staged Microcosm UK build (2026-27, "
+        "official elasticity), so 45% overstates the offset by about 6%. Dividends at the "
+        "additional dividend rate (39.35%) would give about an eighth less, salary with "
+        "employee and employer National Insurance about a fifth more."
+    ),
+    "obr_check": (
+        "Applied to the OBR's own costing (£4.9bn of CGT lost to behaviour in 2029-30, on "
+        "gains taxed at 22-24%), this gives about £1.2bn of income tax against the OBR's "
+        "£1.5bn: it adds back somewhat less than the OBR did."
+    ),
+}
+
+#: Two ways to put CenTax's and the official elasticities on the same footing
+#: with respect to income shifting. ``case_ids`` are the five cases each
+#: shows, ``central_id`` its central case, and ``offset_case_ids`` the cases
+#: that add ``INCOME_SHIFTING``'s income tax to the change in CGT.
+APPROACHES = {
+    "total_revenue": {
+        "id": "total_revenue",
+        "label": "Net of income shifting",
+        "description": (
+            "Total revenue: CenTax's published elasticities, which already allow for "
+            "income no longer presented as gains, and the official elasticity with the "
+            "OBR's income tax on that income added back."
+        ),
+        "case_ids": ["static", "centax_lower", "centax_central", "centax_upper", "official"],
+        "central_id": "centax_central",
+        "offset_case_ids": ["official"],
+    },
+    "cgt_only": {
+        "id": "cgt_only",
+        "label": "Gross of income shifting",
+        "description": (
+            "CGT only: every gain not realised counts as lost revenue, with CenTax's "
+            "elasticity before its adjustments and the official elasticity with no income "
+            "tax added back."
+        ),
+        "case_ids": ["static", "centax_lower", "centax_unadjusted", "centax_upper", "official"],
+        "central_id": "centax_unadjusted",
+        "offset_case_ids": [],
+    },
+}
+DEFAULT_APPROACH = "total_revenue"
+
+
+def approaches_block() -> dict:
+    """The results file's ``approaches`` block: both approaches, the cases
+    they draw on and the income-shifting assumption."""
+    return {
+        "default": DEFAULT_APPROACH,
+        "approaches": [dict(approach) for approach in APPROACHES.values()],
+        "cases": [
+            {"id": case_id, "label": label, "e_retention": e}
+            for case_id, label, e in ELASTICITY_CASES
+        ],
+        "income_shifting": dict(INCOME_SHIFTING),
+    }
+
 
 #: Every external figure carries exactly these keys.
 EXTERNAL_ROW_KEYS = (
@@ -303,12 +404,7 @@ CENTAX_PACKAGE_CONTEXT = [
 ]
 
 OFFICIAL_ELASTICITY_SOURCE = {
-    "source": (
-        "OBR, Costing of changes to the main, BADR and IR rates of CGT "
-        "(supplementary forecast information)"
-    ),
-    "published": "2025-01-22",
-    "url": "https://obr.uk/docs/dlm_uploads/CGT-supplementary-release-Jan-2025.pdf",
+    **OBR_JANUARY_2025,
     "locator": "Para 1.9 and Table 1.1",
     "retention_elasticity": OFFICIAL_ELASTICITY,
     "note": (
@@ -317,10 +413,15 @@ OFFICIAL_ELASTICITY_SOURCE = {
     ),
 }
 
-# The elasticity cases the ready-reckoner rows are scored at. "official" is
-# each row's own official assumption (``official_elasticity``): 3.6 for the
-# main-rate rows and 1.4 for the BADR rows (OBR, January 2025, para 1.9).
-READY_RECKONER_ELASTICITIES = {"centax_central": ELASTICITY, "official": OFFICIAL_ELASTICITY}
+# The elasticity cases the ready-reckoner rows are scored at: each
+# approach's central case and the official one. "official" is each row's own
+# official assumption (``official_elasticity``): 3.6 for the main-rate rows
+# and 1.4 for the BADR rows (OBR, January 2025, para 1.9).
+READY_RECKONER_ELASTICITIES = {
+    "centax_central": ELASTICITY,
+    "centax_unadjusted": CENTAX_UNADJUSTED_ELASTICITY,
+    "official": OFFICIAL_ELASTICITY,
+}
 
 
 def _rates(basic: float, higher: float, additional: float) -> dict:
@@ -520,10 +621,19 @@ def centax_1920_block(
     }
 
 
-def ready_reckoner_block(model_m: dict[str, dict[str, dict[str, float]]]) -> dict:
+def ready_reckoner_block(
+    model_m: dict[str, dict[str, dict[str, float]]],
+    offset_m: dict[str, dict[str, dict[str, float]]],
+) -> dict:
     """HMRC's rows beside this repo's scores. ``model_m`` maps row id to
-    elasticity id to model year to the change in government balance, £m."""
-    missing = [row["id"] for row in READY_RECKONER["rows"] if row["id"] not in model_m]
+    elasticity id to model year to the change in government balance, £m;
+    ``offset_m`` the same to the income-shifting offset, £m, which the
+    approaches add to the official case or not."""
+    missing = [
+        row["id"]
+        for row in READY_RECKONER["rows"]
+        if row["id"] not in model_m or row["id"] not in offset_m
+    ]
     if missing:
         raise ValueError(f"ready-reckoner rows not scored: {missing}")
     return {
@@ -535,7 +645,14 @@ def ready_reckoner_block(model_m: dict[str, dict[str, dict[str, float]]]) -> dic
             "together; the BADR rows move the relief's rate) and the official case at the "
             "row's own elasticity (3.6 for the main rates, 1.4 for BADR)"
         ),
-        "rows": [{**row, "model_m": model_m[row["id"]]} for row in READY_RECKONER["rows"]],
+        "rows": [
+            {
+                **row,
+                "model_m": model_m[row["id"]],
+                "income_shifting_offset_m": offset_m[row["id"]],
+            }
+            for row in READY_RECKONER["rows"]
+        ],
     }
 
 
@@ -550,6 +667,13 @@ def elasticities_block() -> dict:
             "applied_as": "retention",
             "source": CENTAX_2024_SOURCE,
             "url": f"{CENTAX_2024_URL}#page=38",
+        },
+        "unadjusted": {
+            "id": "centax_unadjusted",
+            "e_retention": CENTAX_UNADJUSTED_ELASTICITY,
+            "applied_as": "retention",
+            "source": CENTAX_2024_SOURCE,
+            "url": f"{CENTAX_2024_URL}#page=37",
         },
         "centax_range": {
             "lower": CENTAX_LOWER_ELASTICITY,
@@ -672,12 +796,17 @@ def dataset_comparison(results: dict[str, dict]) -> dict:
         },
         "sensitivity": [
             {
+                "id": row["id"],
                 "name": row["name"],
                 "e_retention": row["e_retention"],
                 "elasticity_parameter": row["elasticity_parameter"],
                 "applied_as": row["applied_as"],
                 "applied_value": row["applied_value"],
                 **{key: results[key]["sensitivity"][i]["revenue_2026_bn"] for key in keys},
+                "income_shifting_offset_2026_bn": {
+                    key: results[key]["sensitivity"][i]["income_shifting_offset_2026_bn"]
+                    for key in keys
+                },
             }
             for i, row in enumerate(first["sensitivity"])
         ],
@@ -690,6 +819,39 @@ def dataset_comparison(results: dict[str, dict]) -> dict:
         "region": {key: results[key]["income_change_groups"][first_year]["region"] for key in keys},
         "schedule_split": {key: results[key]["schedule_split"] for key in keys},
         "benchmarks": _benchmarks_side_by_side(results, keys),
+        "approaches": first["approaches"],
+        # The central case of each approach whose central runs are not the
+        # top-level ones (``APPROACHES[...]["central_id"]`` other than CenTax's
+        # published central), in the same shapes as the blocks above.
+        "approach_results": {
+            approach: _central_side_by_side(
+                {key: results[key]["approach_results"][approach] for key in keys}, first_year
+            )
+            for approach in first["approach_results"]
+        },
+    }
+
+
+def _central_side_by_side(central: dict[str, dict], first_year: str) -> dict:
+    """One approach's central runs per dataset, shaped like the top-level
+    comparison blocks they replace."""
+    keys = list(central)
+    years = [row["year"] for row in central[keys[0]]["budget"]]
+    return {
+        "budget": [
+            {"year": year, **{key: central[key]["budget"][i] for key in keys}}
+            for i, year in enumerate(years)
+        ],
+        "five_year_total_bn": {
+            key: sum(row["gov_balance_change_bn"] for row in central[key]["budget"]) for key in keys
+        },
+        "top_quintile": {
+            key: central[key]["income_change_groups"][first_year]["quintile"][-1] for key in keys
+        },
+        "household_type": {
+            key: central[key]["income_change_groups"][first_year]["household_type"] for key in keys
+        },
+        "region": {key: central[key]["income_change_groups"][first_year]["region"] for key in keys},
     }
 
 

@@ -11,10 +11,10 @@ from uk_cgt_reform.comparison import (
     CENTAX_TABLE_3,
     CENTAX_TABLE_8,
     CENTAX_TABLE_8_REGIONS,
+    ELASTICITY_CASES,
     EXTERNAL_ROW_KEYS,
     JRF_STATIC,
     READY_RECKONER,
-    SENSITIVITY_CASES,
     UNITS,
     price_factors,
     ready_reckoner_block,
@@ -24,19 +24,29 @@ from uk_cgt_reform.impacts import (
     UNASSIGNED_REGION,
     cgt_by_region,
     cgt_uplift,
+    gains_response,
+    income_shifting_offset,
     sensitivity,
 )
-from uk_cgt_reform.reform import ELASTICITY_PARAMETER
+from uk_cgt_reform.reform import (
+    ELASTICITY_PARAMETER,
+    INCOME_SHIFTING_SHARE,
+    INCOME_SHIFTING_TAX_RATE,
+)
 
 
-def fake_sim(cgt: list[float]) -> SimpleNamespace:
+def fake_sim(cgt: list[float], gains_after: list[float] | None = None) -> SimpleNamespace:
     """Three households (London, Wales, an unassigned region) and four
-    people; person weights 2, 2, 1, 3."""
+    people; person weights 2, 2, 1, 3. Pre-response gains are 1000, 500,
+    100 and 0; ``gains_after`` defaults to no response."""
+    gains_before = [1000.0, 500.0, 100.0, 0.0]
     person = mdf.MicroDataFrame(
         {
             "person_id": [1, 2, 3, 4],
             "household_id": [10, 10, 20, 30],
             "capital_gains_tax": cgt,
+            "capital_gains_before_response": gains_before,
+            "capital_gains": gains_before if gains_after is None else gains_after,
         },
         weights=[2.0, 2.0, 1.0, 3.0],
     )
@@ -88,21 +98,40 @@ def test_price_factors_express_each_year_in_the_first_years_prices():
 
 
 def test_sensitivity_rows_record_how_each_case_was_applied():
-    runs = {e: fake_sim([100.0 + e, 50.0, 10.0, 7.0]) for e in SENSITIVITY_CASES.values()}
-    rows = sensitivity(0.0, SENSITIVITY_CASES, lambda e: runs[e])
+    runs = {e: fake_sim([100.0 + e, 50.0, 10.0, 7.0]) for _, _, e in ELASTICITY_CASES}
+    rows = sensitivity(0.0, ELASTICITY_CASES, lambda e: runs[e])
     assert [set(row) for row in rows] == [
         {
+            "id",
             "name",
             "e_retention",
             "elasticity_parameter",
             "applied_as",
             "applied_value",
             "revenue_2026_bn",
+            "income_shifting_offset_2026_bn",
         }
-    ] * len(SENSITIVITY_CASES)
+    ] * len(ELASTICITY_CASES)
+    assert [row["id"] for row in rows] == [case_id for case_id, _, _ in ELASTICITY_CASES]
     assert [row["elasticity_parameter"] for row in rows] == [ELASTICITY_PARAMETER] * len(rows)
     assert {row["applied_as"] for row in rows} == {"retention"}
-    assert [row["applied_value"] for row in rows] == [0.0, 0.5, 1.0, 2.0, 3.6]
+    assert [row["applied_value"] for row in rows] == [0.0, 0.5, 1.0, 1.5, 2.0, 3.6]
+    # No response in these fakes, so nothing to add back.
+    assert {row["income_shifting_offset_2026_bn"] for row in rows} == {0.0}
+
+
+def test_income_shifting_offset_taxes_a_share_of_the_fall_in_gains():
+    # Gains fall from 1000/500/100/0 to 600/400/100/0: weighted fall
+    # 2*400 + 2*100 = 1000.
+    reformed = fake_sim([0.0] * 4, gains_after=[600.0, 400.0, 100.0, 0.0])
+    assert gains_response(reformed) == pytest.approx(1000.0)
+    assert income_shifting_offset(reformed) == pytest.approx(1000.0 * 0.125 * 0.45)
+    assert (INCOME_SHIFTING_SHARE, INCOME_SHIFTING_TAX_RATE) == (0.125, 0.45)
+    # A cut that raises realisations takes income tax away instead.
+    cut = fake_sim([0.0] * 4, gains_after=[1100.0, 500.0, 100.0, 0.0])
+    assert income_shifting_offset(cut) == pytest.approx(-200.0 * 0.125 * 0.45)
+    # A static run has no response and so no offset.
+    assert income_shifting_offset(fake_sim([0.0] * 4)) == 0.0
 
 
 # --- the external figures, pinned to their sources ----------------------------
@@ -203,4 +232,4 @@ def test_ready_reckoner_rows_are_pinned():
 
 def test_ready_reckoner_block_refuses_unscored_rows():
     with pytest.raises(ValueError, match="not scored"):
-        ready_reckoner_block({})
+        ready_reckoner_block({}, {})

@@ -41,7 +41,13 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
-from .comparison import READY_RECKONER, SENSITIVITY_CASES
+from .comparison import (
+    DEFAULT_APPROACH,
+    ELASTICITY_CASES,
+    INCOME_SHIFTING,
+    READY_RECKONER,
+    approaches_block,
+)
 from .impacts import budget_impact, fiscal_year_label, income_change_groups
 from .reform import (
     BADR_CURRENT_LAW,
@@ -86,15 +92,14 @@ RATE_DECIMALS = 4
 RATE_STEP = 0.01
 
 #: The behavioural assumptions a request may pick from: the pipeline's
-#: sensitivity cases, each a retention-rate elasticity the engine applies as
-#: stated (``reform.elasticity_convention``).
+#: elasticity cases, each a retention-rate elasticity the engine applies as
+#: stated (``reform.elasticity_convention``). Each approach to income
+#: shifting (``comparison.APPROACHES``) offers five of them; every response
+#: reports the income-shifting offset, which the client adds to the official
+#: case under the approach net of income shifting.
 ELASTICITY_OPTIONS = tuple(
     {"id": option_id, "label": label, "e_retention": e, **elasticity_convention(e)}
-    for option_id, (label, e) in zip(
-        ("static", "centax_lower", "centax_central", "centax_upper", "official"),
-        SENSITIVITY_CASES.items(),
-        strict=True,
-    )
+    for option_id, label, e in ELASTICITY_CASES
 )
 DEFAULT_ELASTICITY = ELASTICITY
 #: Requests from before the retention form keyed each case by a
@@ -343,6 +348,8 @@ def api_options() -> dict:
         "rate_step": RATE_STEP,
         "elasticity_options": [dict(o) for o in ELASTICITY_OPTIONS],
         "default_elasticity": DEFAULT_ELASTICITY,
+        "approaches": approaches_block(),
+        "default_approach": DEFAULT_APPROACH,
         # The default option's parameter; each option names its own.
         "elasticity_parameter": elasticity_convention(DEFAULT_ELASTICITY)["elasticity_parameter"],
         "presets": [{**p, "rates": dict(p["rates"]), "badr": dict(p["badr"])} for p in PRESETS],
@@ -623,6 +630,11 @@ def assemble_response(
             "elasticity": req.elasticity,
             "elasticity_parameter": elasticity_convention(req.elasticity)["elasticity_parameter"],
             "elasticity_applied": elasticity_assignment(req.elasticity),
+            # budget[].income_shifting_offset_bn is never in the figures; the
+            # approach net of income shifting adds it to the official case.
+            "income_shifting": {
+                key: INCOME_SHIFTING[key] for key in ("share", "tax_rate", "url", "locator")
+            },
             "reform": dict(req.rates),
             "reform_scope": EXPLORER_SCOPE,
             "reform_badr": req.badr.to_dict(),

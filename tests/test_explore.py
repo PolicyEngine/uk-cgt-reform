@@ -6,7 +6,7 @@ import json
 import pytest
 from test_schema import fake_results
 
-from uk_cgt_reform.comparison import READY_RECKONER, SENSITIVITY_CASES
+from uk_cgt_reform.comparison import APPROACHES, ELASTICITY_CASES, READY_RECKONER
 from uk_cgt_reform.explore import (
     CONTEXT_KEYS,
     ELASTICITY_OPTIONS,
@@ -140,19 +140,24 @@ def test_validate_request_rejects(payload, message):
 
 def test_rate_bounds_and_elasticity_options():
     assert RATE_BOUNDS == (0.0, 0.75)
-    assert [o["e_retention"] for o in ELASTICITY_OPTIONS] == list(SENSITIVITY_CASES.values())
-    assert [o["e_retention"] for o in ELASTICITY_OPTIONS] == [0.0, 0.5, 1.0, 2.0, 3.6]
+    assert [o["e_retention"] for o in ELASTICITY_OPTIONS] == [e for _, _, e in ELASTICITY_CASES]
+    assert [o["e_retention"] for o in ELASTICITY_OPTIONS] == [0.0, 0.5, 1.0, 1.5, 2.0, 3.6]
     assert [o["id"] for o in ELASTICITY_OPTIONS] == [
         "static",
         "centax_lower",
         "centax_central",
+        "centax_unadjusted",
         "centax_upper",
         "official",
     ]
     # Every case is applied as stated, on the engine's retention parameter.
     assert all(o["applied_as"] == "retention" for o in ELASTICITY_OPTIONS)
     assert all(o["elasticity_parameter"] == ELASTICITY_PARAMETER for o in ELASTICITY_OPTIONS)
-    assert [o["applied_value"] for o in ELASTICITY_OPTIONS] == [0.0, 0.5, 1.0, 2.0, 3.6]
+    assert [o["applied_value"] for o in ELASTICITY_OPTIONS] == [0.0, 0.5, 1.0, 1.5, 2.0, 3.6]
+    # Each approach offers five of the cases, all of them options here.
+    ids = {o["id"] for o in ELASTICITY_OPTIONS}
+    for approach in APPROACHES.values():
+        assert set(approach["case_ids"]) <= ids
 
 
 def test_every_case_applies_the_retention_parameter():

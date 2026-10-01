@@ -36,6 +36,14 @@
       "applied_value": 1.0
     },
     {
+      "id": "centax_unadjusted",
+      "label": "CenTax before its adjustments (retention elasticity 1.5)",
+      "e_retention": 1.5,
+      "elasticity_parameter": "gov.simulation.capital_gains_responses.elasticity",
+      "applied_as": "retention",
+      "applied_value": 1.5
+    },
+    {
       "id": "centax_upper",
       "label": "CenTax upper (retention elasticity 2.0)",
       "e_retention": 2.0,
@@ -53,6 +61,85 @@
     }
   ],
   "default_elasticity": 1.0,
+  "approaches": {
+    "default": "total_revenue",
+    "approaches": [
+      {
+        "id": "total_revenue",
+        "label": "Net of income shifting",
+        "description": "Total revenue: CenTax's published elasticities, which already allow for income no longer presented as gains, and the official elasticity with the OBR's income tax on that income added back.",
+        "case_ids": [
+          "static",
+          "centax_lower",
+          "centax_central",
+          "centax_upper",
+          "official"
+        ],
+        "central_id": "centax_central",
+        "offset_case_ids": [
+          "official"
+        ]
+      },
+      {
+        "id": "cgt_only",
+        "label": "Gross of income shifting",
+        "description": "CGT only: every gain not realised counts as lost revenue, with CenTax's elasticity before its adjustments and the official elasticity with no income tax added back.",
+        "case_ids": [
+          "static",
+          "centax_lower",
+          "centax_unadjusted",
+          "centax_upper",
+          "official"
+        ],
+        "central_id": "centax_unadjusted",
+        "offset_case_ids": []
+      }
+    ],
+    "cases": [
+      {
+        "id": "static",
+        "label": "Static (no behavioural response)",
+        "e_retention": 0.0
+      },
+      {
+        "id": "centax_lower",
+        "label": "CenTax lower (retention elasticity 0.5)",
+        "e_retention": 0.5
+      },
+      {
+        "id": "centax_central",
+        "label": "CenTax central (retention elasticity 1.0)",
+        "e_retention": 1.0
+      },
+      {
+        "id": "centax_unadjusted",
+        "label": "CenTax before its adjustments (retention elasticity 1.5)",
+        "e_retention": 1.5
+      },
+      {
+        "id": "centax_upper",
+        "label": "CenTax upper (retention elasticity 2.0)",
+        "e_retention": 2.0
+      },
+      {
+        "id": "official",
+        "label": "HMRC/OBR official (retention elasticity 3.6)",
+        "e_retention": 3.6
+      }
+    ],
+    "income_shifting": {
+      "source": "OBR, Costing of changes to the main, BADR and IR rates of CGT (supplementary forecast information)",
+      "published": "2025-01-22",
+      "url": "https://obr.uk/docs/dlm_uploads/CGT-supplementary-release-Jan-2025.pdf",
+      "locator": "p. 3 and Table 1.1",
+      "share": 0.125,
+      "tax_rate": 0.45,
+      "share_note": "The OBR's costing of the October 2024 rate rise assumes 12.5% of the behavioural response to the narrowing gap between income tax and CGT rates is income no longer presented as gains, which raises income tax receipts: HMRC assumes a quarter of the income tax response to a 1-point rise in marginal rates is avoidance, and half of that is income-to-gains shifting.",
+      "tax_rate_note": "The OBR does not say which income it becomes or at what rate. 45% is the additional rate on earnings. Stacked on each person's other income, the rate on the shifted income averages 42.5% on the staged Microcosm UK build (2026-27, official elasticity), so 45% overstates the offset by about 6%. Dividends at the additional dividend rate (39.35%) would give about an eighth less, salary with employee and employer National Insurance about a fifth more.",
+      "obr_check": "Applied to the OBR's own costing (\u00a34.9bn of CGT lost to behaviour in 2029-30, on gains taxed at 22-24%), this gives about \u00a31.2bn of income tax against the OBR's \u00a31.5bn: it adds back somewhat less than the OBR did."
+    }
+  },
+  "default_approach": "total_revenue",
   "elasticity_parameter": "gov.simulation.capital_gains_responses.elasticity",
   "presets": [
     {

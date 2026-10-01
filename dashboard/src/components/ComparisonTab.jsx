@@ -468,7 +468,7 @@ export default function ComparisonTab({ comparison, onNavigate }) {
       <section className="section-card">
         <SectionHeading
           title={`Sensitivity to the behavioural elasticity, ${firstYear}`}
-          description={`Change in CGT revenue in the first year under each elasticity of realised gains with respect to the retention rate, by dataset: no response, CenTax's range and central case, and the official HMRC/OBR ${comparison.sensitivity.at(-1).e_retention}.`}
+          description={`Change in ${comparison.approach.id === "total_revenue" ? "revenue" : "CGT revenue"} in the first year under each elasticity of realised gains with respect to the retention rate, by dataset: no response, CenTax's range and the central case of this approach (${comparison.approach.label.toLowerCase()}), and the official HMRC/OBR ${comparison.sensitivity.at(-1).e_retention}${comparison.approach.offset_case_ids.includes("official") ? ", plus the income tax the OBR adds back for income no longer presented as gains" : ""}.`}
         />
         <table className="data-table">
           <thead>
@@ -482,7 +482,10 @@ export default function ComparisonTab({ comparison, onNavigate }) {
           </thead>
           <tbody>
             {comparison.sensitivity.map((row) => (
-              <tr key={row.name} className={row.e_retention === 1 ? "font-semibold" : ""}>
+              <tr
+                key={row.name}
+                className={row.id === comparison.approach.central_id ? "font-semibold" : ""}
+              >
                 <td>{row.name}</td>
                 <td>{formatElasticity(row)}</td>
                 {keys.map((key) => (

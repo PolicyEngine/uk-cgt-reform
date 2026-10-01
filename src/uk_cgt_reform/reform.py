@@ -54,6 +54,13 @@ against equalising rates without the base reforms (*Taxes at the top*,
 September 2026, p.17); the upper end of the range and the official case
 show how much of the yield rests on the assumption. The elasticity is
 medium-term and abstracts from short-run forestalling.
+
+Income shifting: CenTax net it into their elasticity (1.5 lowered to 1.0),
+while the OBR's 3.6 is gross of it and its costing adds income tax back
+(``INCOME_SHIFTING_SHARE``). ``comparison.APPROACHES`` puts the cases on one
+footing either way: gross of income shifting (CenTax's 1.5, nothing added
+back) or net of it (CenTax as published, the official case plus the income
+tax). The README and the dashboard's Methodology tab set out both.
 """
 
 from __future__ import annotations
@@ -73,6 +80,29 @@ PERIOD = "2026-01-01"
 ELASTICITY = 1.0
 CENTAX_LOWER_ELASTICITY = 0.5
 CENTAX_UPPER_ELASTICITY = 2.0
+# CenTax's starting point before their two downward adjustments (Advani,
+# Lonsdale and Summers 2024, p. 36): Agersnap and Zidar's five-year
+# elasticity with controls, about 1.5. CenTax lower it to 1.0 because their
+# package abolishes the uplift at death, and because equalisation brings
+# income that was presented as gains back into income tax, which estimates
+# measured on the CGT base alone count as lost. CenTax do not say how the
+# 0.5 splits between the two. A rates-only reform keeps the uplift at death,
+# so the CGT-only approach (``APPROACHES`` in ``comparison``) takes the
+# value before both adjustments. CenTax's 0.5 and 2.0 are not adjusted.
+CENTAX_UNADJUSTED_ELASTICITY = 1.5
+# The OBR's treatment of income shifting (January 2025, p. 3 and Table 1.1):
+# 12.5% of the behavioural response to the narrowing gap between income tax
+# and CGT rates is income no longer presented as gains, taxed as income.
+INCOME_SHIFTING_SHARE = 0.125
+# The rate that income is taxed at, which the OBR does not state: 45%, the
+# additional rate on earnings. Two-thirds of the shifted income comes from
+# people with gains of £1m or more, all of it at 45%; stacked on each
+# person's other income, the rate on the whole averages 42.5% on the staged
+# Microcosm build (2026-27, official elasticity), so 45% overstates the
+# offset by about 6%. Dividends at the additional dividend rate (39.35%)
+# would give about an eighth less; salary with employee and employer
+# National Insurance (about 54% of the employer's cost) about a fifth more.
+INCOME_SHIFTING_TAX_RATE = 0.45
 # The official HMRC/OBR assumption for the main CGT rates (OBR, "Costing of
 # changes to the main, BADR and IR rates of CGT", January 2025, para 1.9).
 OFFICIAL_ELASTICITY = 3.6

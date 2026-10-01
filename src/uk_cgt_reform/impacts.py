@@ -18,13 +18,22 @@ pre-response gains in the analysis year exceed the year's exempt amount
 but not the base-year exempt amount times the cumulative gains factor
 (so they were not taxpayers in the base year). Nothing is removed or
 edited; the decomposition lets a reader net them out.
+
+Income shifting
+---------------
+Every reform run also reports ``income_shifting_offset_bn``: the income tax
+the OBR's method would add back because part of the fall in realised gains
+is income no longer presented as gains (``reform.INCOME_SHIFTING_SHARE`` of
+the fall, taxed at ``reform.INCOME_SHIFTING_TAX_RATE``). The figures here
+never include it; the approaches in ``comparison.APPROACHES`` decide which
+cases add it.
 """
 
 from __future__ import annotations
 
 import numpy as np
 
-from .reform import elasticity_convention
+from .reform import INCOME_SHIFTING_SHARE, INCOME_SHIFTING_TAX_RATE, elasticity_convention
 
 AEA = 3_000  # annual exempt amount, unchanged by the reform
 
@@ -142,6 +151,22 @@ def cgt_revenue(sim) -> float:
     return float(_person(sim)["capital_gains_tax"].sum())
 
 
+def gains_response(reformed) -> float:
+    """The weighted fall in realised gains from the behavioural response, £:
+    positive when the reform lowers realisations, negative when it raises
+    them, zero in a static run."""
+    person = _person(reformed)
+    return float((person["capital_gains_before_response"] - person["capital_gains"]).sum())
+
+
+def income_shifting_offset(reformed) -> float:
+    """Income tax on the part of the fall in realised gains the OBR treats as
+    income no longer presented as gains, £: ``INCOME_SHIFTING_SHARE`` of the
+    fall, taxed at ``INCOME_SHIFTING_TAX_RATE``. Negative when a cut in CGT
+    rates raises realisations, since more income is then presented as gains."""
+    return INCOME_SHIFTING_SHARE * INCOME_SHIFTING_TAX_RATE * gains_response(reformed)
+
+
 def _aligned(base, ref):
     base_person, ref_person = _person(base), _person(ref)
     if not np.array_equal(base_person["person_id"].values, ref_person["person_id"].values):
@@ -176,6 +201,7 @@ def budget_impact(
             "gov_balance_change_bn": float(
                 (ref_hh["gov_balance"].sum() - base_hh["gov_balance"].sum()) / 1e9
             ),
+            "income_shifting_offset_bn": income_shifting_offset(ref) / 1e9,
         }
         if exempt_amounts is not None and ceilings is not None:
             base_person, ref_person = _aligned(base, ref)
@@ -308,23 +334,27 @@ def cgt_uplift(baseline, reformed) -> dict:
     }
 
 
-def sensitivity(baseline_cgt: float, cases: dict[str, float], run_case) -> list[dict]:
+def sensitivity(baseline_cgt: float, cases, run_case) -> list[dict]:
     """Re-run the 2026 reform under each institution's elasticity assumption.
 
-    ``run_case(elasticity)`` must return the completed reform simulation
-    for 2026 with that elasticity. Each case is a retention-rate elasticity
-    (``e_retention``); the row also says which engine parameter carried it
-    and in which convention (``reform.elasticity_convention``).
+    ``cases`` are ``(id, name, elasticity)``; ``run_case(elasticity)`` must
+    return the completed reform simulation for 2026 with that elasticity.
+    Each case is a retention-rate elasticity (``e_retention``); the row also
+    says which engine parameter carried it and in which convention
+    (``reform.elasticity_convention``), and the income tax the OBR's method
+    would add back for income shifting (never included in the revenue).
     """
     rows = []
-    for name, e in cases.items():
+    for case_id, name, e in cases:
         sim = run_case(e)
         rows.append(
             {
+                "id": case_id,
                 "name": name,
                 "e_retention": e,
                 **elasticity_convention(e),
                 "revenue_2026_bn": (cgt_revenue(sim) - baseline_cgt) / 1e9,
+                "income_shifting_offset_2026_bn": income_shifting_offset(sim) / 1e9,
             }
         )
     return rows
