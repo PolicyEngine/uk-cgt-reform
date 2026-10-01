@@ -231,10 +231,10 @@ external figure with its source, locator, scope, year and basis.
   row reads −£245m and −£253m, and the central estimate for equalisation rose
   by £0.2bn. That record has a weight of 18.9, so it stands for £10.6bn of
   gains and £2.5bn of baseline CGT (8.7%), and it carries about the same share
-  of the yield. Without it, equalisation would raise +£24.0bn static,
-  +£9.6bn at CenTax's 1.0 and +£4.0bn at 1.5 in 2026-27 (−£8.6bn at the
-  official case), against +£26.2bn, +£10.5bn, +£4.4bn and −£9.6bn with it. How many gains that large
-  the build should carry is a question for the data (#9).
+  of the yield. Without it, equalisation would raise +£24.0bn static, +£9.6bn
+  at CenTax's 1.0 and +£4.0bn at 1.5 in 2026-27 (−£8.6bn at the official
+  case), against +£26.2bn, +£10.5bn, +£4.4bn and −£9.6bn with it. How many
+  gains that large the build should carry is a question for the data (#9).
 - **The official elasticity.** HMRC and the OBR use a retention-rate
   elasticity of 3.6 for the main rates ([OBR, January 2025](https://obr.uk/docs/dlm_uploads/CGT-supplementary-release-Jan-2025.pdf),
   para 1.9), and 1.4 for gains qualifying for BADR. Applied in that
