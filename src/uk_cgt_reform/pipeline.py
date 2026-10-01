@@ -144,14 +144,12 @@ def score_ready_reckoner(spec: DatasetSpec, folder: Path, fingerprint: str) -> d
     """Score HMRC's ready-reckoner rows on one dataset through the rate
     explorer's code path (the explorer's scope, the cached baselines, the
     reform in memory), at each elasticity in ``READY_RECKONER_ELASTICITIES``
-    and in each model year the lag names. Each row carries its rates, its
-    treatment of Business Asset Disposal Relief and its own official
-    elasticity (1.4 for the BADR rows), which replaces the explorer's official
-    case for that row. Returns ``{row id: {elasticity id: {model year: change
-    in government balance, £m}}}`` and the same shape for the income-shifting
+    and in each model year the lag names. Each row carries its rates and its
+    treatment of Business Asset Disposal Relief; the official case applies
+    3.6 to main-rate gains and 1.4 to gains qualifying for the relief in
+    every row. Returns ``{row id: {elasticity id: {model year: change in
+    government balance, £m}}}`` and the same shape for the income-shifting
     offset, £m."""
-    from dataclasses import replace
-
     from .explore import engine_context, run_year, validate_request
 
     context = engine_context()
@@ -172,8 +170,6 @@ def score_ready_reckoner(spec: DatasetSpec, folder: Path, fingerprint: str) -> d
                     "elasticity": elasticity,
                 }
             )
-            if elasticity_id == "official":
-                request = replace(request, elasticity=row["official_elasticity"])
             scores[row["id"]][elasticity_id], offsets[row["id"]][elasticity_id] = {}, {}
             for lag in READY_RECKONER["lag"]:
                 year = int(lag["model_year"][:4])

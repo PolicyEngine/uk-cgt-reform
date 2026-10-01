@@ -227,8 +227,9 @@ export default function MethodologyTab({ data, anchor }) {
             ? `CenTax's central ${centax.elasticity.toFixed(1)}`
             : `CenTax's ${centax.elasticity.toFixed(1)} before its adjustments`}{" "}
           and range ({centaxRange.lower.toFixed(1)} to {centaxRange.upper.toFixed(1)}), and the
-          official HMRC/OBR {official.elasticity}. The approach to income shifting chosen above
-          sets which CenTax case is shown and whether the official case adds income tax back; the
+          official HMRC/OBR {official.elasticity} for main-rate gains and{" "}
+          {official.badr_elasticity} for gains qualifying for Business Asset Disposal Relief. The
+          approach to income shifting chosen above sets which CenTax case is shown and whether the official case adds income tax back; the
           central case is the same under both (see{" "}
           <a href="#income-shifting" className="underline decoration-1 underline-offset-2">
             Income shifting: two approaches
@@ -305,15 +306,18 @@ export default function MethodologyTab({ data, anchor }) {
         <ul className="mt-2 list-disc space-y-2 pl-5 text-sm leading-6 text-slate-600">
           <li>
             <strong>The official assumption.</strong> HMRC and the OBR use a retention-rate
-            elasticity of {official.elasticity} for the main CGT rates (
+            elasticity of {official.elasticity} for the main CGT rates and{" "}
+            {official.badr_elasticity} for gains qualifying for Business Asset Disposal Relief (
             <ExternalLink href={`${official.url}#page=3`}>
               OBR, {formatPublished(official.published.slice(0, 7))},{" "}
               {official.locator.toLowerCase()}
             </ExternalLink>
             ; HMRC&apos;s estimate from 1998 to 2018 is 4.0). Over this reform&apos;s rise at the
             higher rate, the central case of {e} behaves like a retention-rate elasticity of{" "}
-            {higher}, so the official assumption is about{" "}
-            {(official.elasticity / Number(higher)).toFixed(1)} times as strong.
+            {higher}, so the official main-rate figure is about{" "}
+            {(official.elasticity / Number(higher)).toFixed(1)} times as strong. The official case
+            applies both: the engine gives gains qualifying for the relief their own elasticity,
+            and both kinds of gain respond to the same change in a person&apos;s marginal rate.
           </li>
           <li>
             <strong>Why they differ.</strong> PolicyEngine&apos;s {e} and CenTax&apos;s range both
@@ -340,7 +344,7 @@ export default function MethodologyTab({ data, anchor }) {
             {atOfficial.revenue >= 0 ? "rises" : "falls"} by {percent(atOfficial.revenue)}, the
             direction HMRC&apos;s row shows. The engine applies the same formulas to each
             person&apos;s own simulated marginal rate on gains, so the aggregate effect depends on
-            where each dataset&apos;s gains sit.
+            where the dataset&apos;s gains sit.
           </li>
           <li>
             <strong>On this dataset.</strong> Equalisation changes CGT revenue in 2026-27 by{" "}
@@ -416,8 +420,8 @@ export default function MethodologyTab({ data, anchor }) {
             <strong>Cases.</strong> No response; PolicyEngine&apos;s {e}, the central case;
             CenTax&apos;s {centaxRange.lower.toFixed(1)}; CenTax&apos;s{" "}
             {unadjusted.elasticity.toFixed(1)} before its adjustments; CenTax&apos;s{" "}
-            {centaxRange.upper.toFixed(1)}; and the official {official.elasticity} with nothing
-            added back.
+            {centaxRange.upper.toFixed(1)}; and the official {official.elasticity} (
+            {official.badr_elasticity} for gains qualifying for the relief) with nothing added back.
           </li>
           <li>
             <strong>Assumptions.</strong> {unadjusted.elasticity.toFixed(1)} removes both of
@@ -449,8 +453,9 @@ export default function MethodologyTab({ data, anchor }) {
           <li>
             <strong>Cases.</strong> No response; PolicyEngine&apos;s {e}, the central case;
             CenTax&apos;s {centaxRange.lower.toFixed(1)}, {centaxCentral.elasticity.toFixed(1)} and{" "}
-            {centaxRange.upper.toFixed(1)}; and the official {official.elasticity} plus the income
-            tax. The same addition goes to the official columns of the ready-reckoner rows.
+            {centaxRange.upper.toFixed(1)}; and the official {official.elasticity} (
+            {official.badr_elasticity} for gains qualifying for the relief) plus the income tax. The
+            same addition goes to the official columns of the ready-reckoner rows.
           </li>
           <li>
             <strong>Assumptions.</strong> The income tax added back is{" "}
@@ -481,13 +486,7 @@ export default function MethodologyTab({ data, anchor }) {
                 reflect the change in CGT alone.
               </li>
               <li>
-                Gains that lose Business Asset Disposal Relief take the official{" "}
-                {official.elasticity}, where the OBR uses 1.4 for the relief, because the engine has
-                one elasticity per run (
-                <ExternalLink href="https://github.com/PolicyEngine/policyengine-uk/issues/1979">
-                  policyengine-uk#1979
-                </ExternalLink>
-                ). The {official.elasticity} itself was set for the October 2024 change; the
+                The official {official.elasticity} was set for the October 2024 change; the
                 OBR&apos;s figure for a rise as large as equalisation is not published.
               </li>
               <li>
@@ -507,15 +506,6 @@ export default function MethodologyTab({ data, anchor }) {
           <li>
             Every case is a medium-term response, applied in full from 2026-27; neither models the
             timing of disposals around the change.
-          </li>
-          <li>
-            The engine measures each person&apos;s marginal rate on gains with limited precision
-            at the largest gains, which lowers each behavioural case&apos;s 2026-27 yield by between
-            about £0.1bn and £0.4bn (
-            <ExternalLink href="https://github.com/PolicyEngine/policyengine-uk/issues/1979">
-              policyengine-uk#1979
-            </ExternalLink>
-            ).
           </li>
           <li>
             <strong>On {dataset.shortLabel}.</strong> Equalisation raises{" "}
@@ -538,8 +528,8 @@ export default function MethodologyTab({ data, anchor }) {
         <ul className="mt-2 list-disc space-y-2 pl-5 text-sm leading-6 text-slate-600">
           <li>
             <strong>Same pipeline, run live.</strong> The Rate explorer tab scores a schedule of
-            CGT rates and a treatment of Business Asset Disposal Relief you choose on the selected
-            dataset for every modelled year. It runs the pipeline&apos;s own code (the same pinned
+            CGT rates and a treatment of Business Asset Disposal Relief you choose on{" "}
+            {dataset.shortLabel} for every modelled year. It runs the pipeline&apos;s own code (the same pinned
             per-year datasets, cached baseline simulations, behavioural response and impact
             calculations) on a Modal backend, or locally through the{" "}
             <span className="font-mono text-xs">uk-cgt-reform-explore</span> command. Nothing

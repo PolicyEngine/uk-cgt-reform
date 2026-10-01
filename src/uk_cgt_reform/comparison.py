@@ -54,8 +54,9 @@ from .uprating_audit import CPI_INDEX, OBR_CGT_RECEIPTS_BN, OBR_CGT_RECEIPTS_SOU
 # in its own convention (``reform.elasticity_assignment``): PolicyEngine's
 # elasticity with respect to the marginal tax rate, the central case; CenTax's
 # central case, its value before CenTax's adjustments and its range, and the
-# official HMRC/OBR assumption for the main rates, all with respect to the
-# retention rate. The approaches below pick six.
+# official HMRC/OBR assumption, keyed by its main-rate 3.6 (gains qualifying
+# for the relief respond at 1.4), all with respect to the retention rate. The
+# approaches below pick six.
 ELASTICITY_CASES = (
     ("static", "Static (no behavioural response)", 0.0),
     (
@@ -71,7 +72,11 @@ ELASTICITY_CASES = (
         CENTAX_UNADJUSTED_ELASTICITY,
     ),
     ("centax_upper", "CenTax upper (retention elasticity 2.0)", CENTAX_UPPER_ELASTICITY),
-    ("official", "HMRC/OBR official (retention elasticity 3.6)", OFFICIAL_ELASTICITY),
+    (
+        "official",
+        "HMRC/OBR official (retention elasticity 3.6; 1.4 for BADR gains)",
+        OFFICIAL_ELASTICITY,
+    ),
 )
 SENSITIVITY_CASES = {label: e for _, label, e in ELASTICITY_CASES}
 
@@ -102,8 +107,8 @@ INCOME_SHIFTING = {
     "tax_rate_note": (
         "The OBR does not say which income it becomes or at what rate. 45% is the "
         "additional rate on earnings. Stacked on each person's other income, the rate on "
-        "the shifted income averages 42.5% on the staged Microcosm UK build (2026-27, "
-        "official elasticity), so 45% overstates the offset by about 6%. Dividends at the "
+        "the shifted income averages 42.4% on the staged Microcosm UK build (2026-27, "
+        "official case), so 45% overstates the offset by about 6%. Dividends at the "
         "additional dividend rate (39.35%) would give about an eighth less, salary with "
         "employee and employer National Insurance about a fifth more."
     ),
@@ -481,9 +486,9 @@ POLICYENGINE_ELASTICITY_SOURCE = {
 }
 
 # The elasticity cases the ready-reckoner rows are scored at: the central
-# case and the official one. "official" is each row's own official
-# assumption (``official_elasticity``): 3.6 for the main-rate rows and 1.4
-# for the BADR rows (OBR, January 2025, para 1.9).
+# case and the official one. The official case is the same in every row: 3.6
+# for main-rate gains and 1.4 for gains qualifying for the relief (OBR,
+# January 2025, para 1.9; ``reform.elasticity_assignment``).
 READY_RECKONER_ELASTICITIES = {
     "policyengine": POLICYENGINE_ELASTICITY,
     "official": OFFICIAL_ELASTICITY,
@@ -497,13 +502,12 @@ def _rates(basic: float, higher: float, additional: float) -> dict:
 _CURRENT_RATES = _rates(0.18, 0.24, 0.24)
 
 
-def _row(row_id, label, rates, hmrc_m, *, badr=BADR_CURRENT_LAW, official=OFFICIAL_ELASTICITY):
+def _row(row_id, label, rates, hmrc_m, *, badr=BADR_CURRENT_LAW):
     return {
         "id": row_id,
         "label": label,
         "rates": rates,
         "badr": badr.to_dict(),
-        "official_elasticity": official,
         "hmrc_m": hmrc_m,
     }
 
@@ -574,7 +578,6 @@ READY_RECKONER = {
             _CURRENT_RATES,
             {"2026-27": 10, "2027-28": 135, "2028-29": 180},
             badr=BadrPolicy(rate=0.19),
-            official=OFFICIAL_BADR_ELASTICITY,
         ),
         _row(
             "badr_plus_5",
@@ -582,7 +585,6 @@ READY_RECKONER = {
             _CURRENT_RATES,
             {"2026-27": 40, "2027-28": 635, "2028-29": 840},
             badr=BadrPolicy(rate=0.23),
-            official=OFFICIAL_BADR_ELASTICITY,
         ),
     ],
     "excluded": [
@@ -708,8 +710,8 @@ def ready_reckoner_block(
         "model_measure": (
             "Change in government balance, £m, on this repo's liabilities in the model "
             "year, with each row's rates and relief (the main and residential rates move "
-            "together; the BADR rows move the relief's rate) and the official case at the "
-            "row's own elasticity (3.6 for the main rates, 1.4 for BADR)"
+            "together; the BADR rows move the relief's rate), the official case applying "
+            "3.6 to main-rate gains and 1.4 to gains qualifying for the relief"
         ),
         "rows": [
             {
@@ -773,6 +775,7 @@ def elasticities_block() -> dict:
         "official": {
             "id": "official",
             "elasticity": OFFICIAL_ELASTICITY,
+            "badr_elasticity": OFFICIAL_BADR_ELASTICITY,
             "applied_as": "retention",
             **OFFICIAL_ELASTICITY_SOURCE,
         },

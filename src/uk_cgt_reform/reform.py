@@ -131,18 +131,19 @@ CENTAX_UNADJUSTED_ELASTICITY = 1.5
 INCOME_SHIFTING_SHARE = 0.125
 # The rate that income is taxed at, which the OBR does not state: 45%, the
 # additional rate on earnings. Two-thirds of the shifted income comes from
-# people with gains of £1m or more, all of it at 45%; stacked on each
-# person's other income, the rate on the whole averages 42.5% on the staged
-# Microcosm build (2026-27, official elasticity), so 45% overstates the
-# offset by about 6%. Dividends at the additional dividend rate (39.35%)
+# people with gains of £1m or more, almost all of it at 45%; stacked on each
+# person's other income, the rate on the whole averages 42.4% on the staged
+# Microcosm build (2026-27, official case), so 45% overstates the offset by
+# about 6%. Dividends at the additional dividend rate (39.35%)
 # would give about an eighth less; salary with employee and employer
 # National Insurance (about 54% of the employer's cost) about a fifth more.
 INCOME_SHIFTING_TAX_RATE = 0.45
 # The official HMRC/OBR assumption for the main CGT rates (OBR, "Costing of
 # changes to the main, BADR and IR rates of CGT", January 2025, para 1.9).
 OFFICIAL_ELASTICITY = 3.6
-# The official assumption for Business Asset Disposal Relief (same source),
-# applied to HMRC's ready-reckoner rows that move the relief's rate.
+# The official assumption for gains qualifying for Business Asset Disposal
+# Relief (same source, para 1.9 and Table 1.1). The official case applies it
+# to those gains and 3.6 to the rest (``elasticity_assignment``).
 OFFICIAL_BADR_ELASTICITY = 1.4
 # The engine's two parameters, which may not both be set: the retention-rate
 # form, realised gains scaled by ((1 - t1) / (1 - t0)) ** e, carries CenTax's
@@ -153,6 +154,20 @@ MTR_ELASTICITY_PARAMETER = "gov.simulation.capital_gains_responses.mtr_elasticit
 # The engine floors each marginal rate at 0.1% before taking its log in the
 # marginal-tax-rate form (``relative_capital_gains_mtr_change``).
 MTR_FLOOR = 0.001
+# policyengine-uk 2.104.0 (PolicyEngine/policyengine-uk#1980): with the switch
+# on, gains qualifying for the relief respond at ``badr_elasticity`` and the
+# rest of a person's gains at the main elasticity, both to the same change in
+# the person's share-weighted marginal rate. With it off (the default) every
+# gain responds at the main elasticity, as CenTax's and PolicyEngine's single
+# elasticities do.
+SEPARATE_BADR_ELASTICITY_PARAMETER = (
+    "gov.simulation.capital_gains_responses.separate_badr_elasticity"
+)
+BADR_ELASTICITY_PARAMETER = "gov.simulation.capital_gains_responses.badr_elasticity"
+#: The cases with their own elasticity for gains qualifying for the relief:
+#: only the official one. CenTax and PolicyEngine state one elasticity
+#: for every gain.
+BADR_ELASTICITY_BY_CASE = {OFFICIAL_ELASTICITY: OFFICIAL_BADR_ELASTICITY}
 
 # Reformed CGT rates, equal to the income tax rates for each band.
 INCOME_TAX_RATES = {
@@ -261,23 +276,34 @@ def elasticity_form(elasticity: float) -> str:
     return "mtr" if elasticity < 0 else "retention"
 
 
-def elasticity_assignment(elasticity: float) -> dict[str, float]:
-    """The engine parameter (and value) that carries a behavioural case,
-    applied as stated in its own convention (:func:`elasticity_form`)."""
+def elasticity_assignment(elasticity: float) -> dict[str, float | bool]:
+    """The engine parameters (and values) that carry a behavioural case,
+    applied as stated in its own convention (:func:`elasticity_form`), and
+    for the official case the separate elasticity for gains qualifying for
+    the relief."""
     if elasticity_form(elasticity) == "mtr":
         return {MTR_ELASTICITY_PARAMETER: elasticity}
-    return {ELASTICITY_PARAMETER: elasticity}
+    assignment: dict[str, float | bool] = {ELASTICITY_PARAMETER: elasticity}
+    badr = BADR_ELASTICITY_BY_CASE.get(elasticity)
+    if badr is not None:
+        assignment[SEPARATE_BADR_ELASTICITY_PARAMETER] = True
+        assignment[BADR_ELASTICITY_PARAMETER] = badr
+    return assignment
 
 
 def elasticity_convention(elasticity: float) -> dict:
     """How a behavioural case is applied: the engine parameter it sets, the
-    convention and the value the engine receives. Every output that reports
-    a case carries these."""
-    [(parameter, value)] = elasticity_assignment(elasticity).items()
+    convention, the value the engine receives and the elasticity gains
+    qualifying for the relief respond at. Every output that reports a case
+    carries these."""
+    form = elasticity_form(elasticity)
+    parameter = MTR_ELASTICITY_PARAMETER if form == "mtr" else ELASTICITY_PARAMETER
+    assignment = elasticity_assignment(elasticity)
     return {
         "elasticity_parameter": parameter,
-        "applied_as": elasticity_form(elasticity),
-        "applied_value": value,
+        "applied_as": form,
+        "applied_value": assignment[parameter],
+        "badr_elasticity": assignment.get(BADR_ELASTICITY_PARAMETER, elasticity),
     }
 
 

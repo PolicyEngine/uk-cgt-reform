@@ -29,16 +29,17 @@ simulation = [
   # policyengine.py 5.0.3 onwards certifies the UK bundle against one pinned
   # policyengine-uk (2.90.2 in 6.0.0) and refuses to import with any other
   # version installed; the asset-type CGT schedules need policyengine-uk 2.99.0.
-  # policyengine-uk is pinned to the release the candidate dataset was built and
-  # calibrated with (2.100.0, microcosm main c5a1cba8), which is also the first
-  # release whose LocalAuthority enum carries the April 2023 unitary authorities
-  # the dataset's local_authority column uses. Later releases move the projection
-  # fingerprint (2.100.1 stops projecting energy consumption), so a fresh install
-  # reproduces the committed results only on this pin; changing it is a deliberate
-  # re-pin that regenerates every results file. (Earlier: 1b0cd0dff144 on
-  # 2.99.1, cd902bb73930 on 2.100.1.)
+  # policyengine-uk 2.104.0 is the first release with the precise marginal rate
+  # on large gains and the separate elasticity for gains qualifying for Business
+  # Asset Disposal Relief (PolicyEngine/policyengine-uk#1980). The dataset was
+  # built with 2.100.0, the first release whose LocalAuthority enum carries the
+  # April 2023 unitary authorities its local_authority column uses. Each release
+  # can move the projection fingerprint, so a fresh install reproduces the
+  # committed results only on this pin; changing it is a deliberate re-pin that
+  # regenerates the results. (Earlier: 1b0cd0dff144 on 2.99.1, 7c469f5300b6 on
+  # 2.100.0, cd902bb73930 on 2.100.1.)
   "policyengine>=4.20.0,<5",
-  "policyengine-uk==2.100.0",
+  "policyengine-uk==2.104.0",
   "microdf-python>=1.0",
   "pyyaml>=6",
 ]

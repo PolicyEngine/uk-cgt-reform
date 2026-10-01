@@ -77,10 +77,18 @@ export function formatElasticityValue(value, digits = 1) {
 
 // How a behavioural case reached the engine, as each source states it:
 // PolicyEngine's elasticity of realised gains with respect to the marginal
-// tax rate, or one with respect to the retention rate (1 − t).
-export function formatElasticity({ applied_as: appliedAs, applied_value: appliedValue }) {
+// tax rate, or one with respect to the retention rate (1 − t). The official
+// case gives gains qualifying for the relief their own 1.4.
+export function formatElasticity({
+  applied_as: appliedAs,
+  applied_value: appliedValue,
+  badr_elasticity: badr,
+}) {
   const value = formatElasticityValue(appliedValue);
-  return appliedAs === "mtr" ? `marginal rate ${value}` : `retention ${value}`;
+  const main = appliedAs === "mtr" ? `marginal rate ${value}` : `retention ${value}`;
+  return badr === undefined || badr === appliedValue
+    ? main
+    : `${main}; ${formatElasticityValue(badr)} for BADR gains`;
 }
 
 const MONTHS = [

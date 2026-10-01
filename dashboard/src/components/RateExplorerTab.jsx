@@ -365,12 +365,11 @@ export default function RateExplorerTab({ data, datasetKey }) {
       setElasticity(approachCentral(approach));
     }
   }, [approach.id]); // eslint-disable-line react-hooks/exhaustive-deps
-  const { run, reset, status, result, error, elapsedSeconds } = useExploration();
+  const { run, status, result, error, elapsedSeconds } = useExploration();
   // The elasticity each run asked for, to catch a backend that answers with
   // another case.
   const requested = useRef(null);
   const autoRan = useRef(false);
-  const lastDataset = useRef(datasetKey);
 
   const dataset = getDatasetInfo(data);
   const rateCheck = validatePercents(percents);
@@ -429,14 +428,6 @@ export default function RateExplorerTab({ data, datasetKey }) {
     autoRan.current = true;
     if (initial && validatePercents(initial.percents).rates) submit();
   }, [initial, submit]);
-
-  // A result belongs to one dataset: switching datasets clears it.
-  useEffect(() => {
-    if (lastDataset.current !== datasetKey) {
-      lastDataset.current = datasetKey;
-      reset();
-    }
-  }, [datasetKey, reset]);
 
   const equalisation = {
     firstYear: getFirstYear(data),

@@ -5,6 +5,7 @@ import pytest
 
 from uk_cgt_reform.reform import (
     BADR_CURRENT_LAW,
+    BADR_ELASTICITY_PARAMETER,
     BADR_LIFETIME_LIMIT_PARAMETER,
     BADR_LIFETIME_LIMITS,
     BADR_RATE_PARAMETER,
@@ -28,6 +29,7 @@ from uk_cgt_reform.reform import (
     RATE_BANDS,
     SCHEDULE_STEPS,
     SCHEDULES,
+    SEPARATE_BADR_ELASTICITY_PARAMETER,
     BadrPolicy,
     centax_1920_reforms,
     centax_1920_rules,
@@ -71,10 +73,13 @@ def test_the_central_case_is_policyengines_elasticity_against_the_marginal_rate(
     )
     assert elasticity_form(ELASTICITY) == "mtr"
     assert elasticity_assignment(ELASTICITY) == {MTR_ELASTICITY_PARAMETER: -0.7}
+    # One elasticity for every gain: the switch for gains qualifying for the
+    # relief stays off.
     assert elasticity_convention(ELASTICITY) == {
         "elasticity_parameter": MTR_ELASTICITY_PARAMETER,
         "applied_as": "mtr",
         "applied_value": -0.7,
+        "badr_elasticity": -0.7,
     }
 
 
@@ -82,13 +87,14 @@ def test_centax_and_official_cases_are_retention_elasticities():
     assert CENTAX_CENTRAL_ELASTICITY == 1.0
     assert (CENTAX_LOWER_ELASTICITY, CENTAX_UPPER_ELASTICITY) == (0.5, 2.0)
     assert OFFICIAL_ELASTICITY == 3.6
-    # The static case keeps the retention parameter at zero, as before.
+    # The static case and CenTax's: one elasticity for every gain, the
+    # engine's default; the static case keeps the retention parameter at zero,
+    # as before.
     for e in (
         0.0,
         CENTAX_LOWER_ELASTICITY,
         CENTAX_CENTRAL_ELASTICITY,
         CENTAX_UPPER_ELASTICITY,
-        3.6,
     ):
         assert elasticity_form(e) == "retention"
         assert elasticity_assignment(e) == {ELASTICITY_PARAMETER: e}
@@ -96,7 +102,21 @@ def test_centax_and_official_cases_are_retention_elasticities():
             "elasticity_parameter": ELASTICITY_PARAMETER,
             "applied_as": "retention",
             "applied_value": e,
+            "badr_elasticity": e,
         }
+    # The official case: 3.6 for main-rate gains, 1.4 for gains qualifying
+    # for the relief (OBR, January 2025), through the engine's switch.
+    assert elasticity_form(OFFICIAL_ELASTICITY) == "retention"
+    assert elasticity_assignment(OFFICIAL_ELASTICITY) == {
+        ELASTICITY_PARAMETER: 3.6,
+        SEPARATE_BADR_ELASTICITY_PARAMETER: True,
+        BADR_ELASTICITY_PARAMETER: 1.4,
+    }
+    assert elasticity_convention(OFFICIAL_ELASTICITY)["badr_elasticity"] == 1.4
+    reform = equalisation_reform(OFFICIAL_ELASTICITY)
+    assert reform[SEPARATE_BADR_ELASTICITY_PARAMETER] == {PERIOD: True}
+    assert reform[BADR_ELASTICITY_PARAMETER] == {PERIOD: 1.4}
+    assert SEPARATE_BADR_ELASTICITY_PARAMETER not in equalisation_reform(ELASTICITY)
 
 
 def test_retention_response_is_the_engines_form():
