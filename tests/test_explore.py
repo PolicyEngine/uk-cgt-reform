@@ -23,6 +23,7 @@ from uk_cgt_reform.explore import (
 from uk_cgt_reform.impacts import fiscal_year_label
 from uk_cgt_reform.reform import (
     BADR_CURRENT_LAW,
+    BADR_ELASTICITY_PARAMETER,
     BADR_LIFETIME_LIMIT_PARAMETER,
     BADR_WITHDRAWN,
     ELASTICITY,
@@ -31,6 +32,7 @@ from uk_cgt_reform.reform import (
     INCOME_TAX_RATES,
     MTR_ELASTICITY_PARAMETER,
     OFFICIAL_ELASTICITY,
+    SEPARATE_BADR_ELASTICITY_PARAMETER,
     YEARS,
     BadrPolicy,
     equalisation_reform,
@@ -169,8 +171,17 @@ def test_every_case_applies_the_retention_parameter():
     central = validate_request({"rates": FLAT_30}).reform()
     assert central[ELASTICITY_PARAMETER] == {"2026-01-01": ELASTICITY}
     assert MTR_ELASTICITY_PARAMETER not in central
+    # The official case also gives gains qualifying for the relief the OBR's
+    # 1.4, through the engine's switch.
+    assert reform[BADR_ELASTICITY_PARAMETER] == {"2026-01-01": 1.4}
+    assert reform[SEPARATE_BADR_ELASTICITY_PARAMETER] == {"2026-01-01": True}
+    assert SEPARATE_BADR_ELASTICITY_PARAMETER not in central
     result = assemble_response(req, context(), year_rows())
-    assert result["metadata"]["elasticity_applied"] == {ELASTICITY_PARAMETER: 3.6}
+    assert result["metadata"]["elasticity_applied"] == {
+        ELASTICITY_PARAMETER: 3.6,
+        SEPARATE_BADR_ELASTICITY_PARAMETER: True,
+        BADR_ELASTICITY_PARAMETER: 1.4,
+    }
     assert result["metadata"]["elasticity_parameter"] == ELASTICITY_PARAMETER
     options = {o["id"]: o for o in api_options()["elasticity_options"]}
     assert options["official"]["elasticity_parameter"] == ELASTICITY_PARAMETER

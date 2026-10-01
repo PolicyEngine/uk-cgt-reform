@@ -371,7 +371,9 @@ export default function ReformTab({ data }) {
             </a>
             , expecting a larger response to rates alone: the upper rows show how
             much of the yield rests on that. The last row is the official HMRC/OBR
-            assumption, {official.e_retention}
+            assumption, {official.e_retention} for main-rate gains and{" "}
+            {official.badr_e_retention} for gains qualifying for Business Asset Disposal
+            Relief
             {netOfShifting
               ? `, plus the income tax the OBR adds back because part of the fall in realised gains is income no longer presented as gains (${Math.round(shifting.share * 1000) / 10}% of the fall, taxed here at ${Math.round(shifting.tax_rate * 100)}%)`
               : ", with nothing added back for income no longer presented as gains"}

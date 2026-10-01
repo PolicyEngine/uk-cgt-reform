@@ -106,8 +106,9 @@ INCOME_SHIFTING_TAX_RATE = 0.45
 # The official HMRC/OBR assumption for the main CGT rates (OBR, "Costing of
 # changes to the main, BADR and IR rates of CGT", January 2025, para 1.9).
 OFFICIAL_ELASTICITY = 3.6
-# The official assumption for Business Asset Disposal Relief (same source),
-# applied to HMRC's ready-reckoner rows that move the relief's rate.
+# The official assumption for gains qualifying for Business Asset Disposal
+# Relief (same source, para 1.9 and Table 1.1). The official case applies it
+# to those gains and 3.6 to the rest (``elasticity_assignment``).
 OFFICIAL_BADR_ELASTICITY = 1.4
 # The engine parameter that carries every case: the retention-rate form,
 # realised gains scaled by ((1 - t1) / (1 - t0)) ** e. The engine's
@@ -115,6 +116,18 @@ OFFICIAL_BADR_ELASTICITY = 1.4
 # both be set.
 ELASTICITY_PARAMETER = "gov.simulation.capital_gains_responses.elasticity"
 MTR_ELASTICITY_PARAMETER = "gov.simulation.capital_gains_responses.mtr_elasticity"
+# policyengine-uk 2.104.0 (PolicyEngine/policyengine-uk#1980): with the switch
+# on, gains qualifying for the relief respond at ``badr_elasticity`` and the
+# rest of a person's gains at the main elasticity, both to the same change in
+# the person's share-weighted marginal rate. With it off (the default) every
+# gain responds at the main elasticity, as CenTax's single elasticity does.
+SEPARATE_BADR_ELASTICITY_PARAMETER = (
+    "gov.simulation.capital_gains_responses.separate_badr_elasticity"
+)
+BADR_ELASTICITY_PARAMETER = "gov.simulation.capital_gains_responses.badr_elasticity"
+#: The cases with their own elasticity for gains qualifying for the relief:
+#: only the official one. CenTax state one elasticity for every gain.
+BADR_ELASTICITY_BY_CASE = {OFFICIAL_ELASTICITY: OFFICIAL_BADR_ELASTICITY}
 
 # Reformed CGT rates, equal to the income tax rates for each band.
 INCOME_TAX_RATES = {
@@ -213,21 +226,29 @@ CENTAX_1920_BADR_RATE = 0.10
 CENTAX_1920_BADR_LIFETIME_LIMIT = 1_000_000
 
 
-def elasticity_assignment(elasticity: float) -> dict[str, float]:
-    """The engine parameter (and value) that carries a behavioural case: the
-    retention-rate elasticity, applied as stated."""
-    return {ELASTICITY_PARAMETER: elasticity}
+def elasticity_assignment(elasticity: float) -> dict[str, float | bool]:
+    """The engine parameters (and values) that carry a behavioural case: the
+    retention-rate elasticity, applied as stated, and for the official case
+    the separate elasticity for gains qualifying for the relief."""
+    assignment: dict[str, float | bool] = {ELASTICITY_PARAMETER: elasticity}
+    badr = BADR_ELASTICITY_BY_CASE.get(elasticity)
+    if badr is not None:
+        assignment[SEPARATE_BADR_ELASTICITY_PARAMETER] = True
+        assignment[BADR_ELASTICITY_PARAMETER] = badr
+    return assignment
 
 
 def elasticity_convention(elasticity: float) -> dict:
     """How a behavioural case is applied: the engine parameter it sets, the
-    convention and the value the engine receives. Every output that reports
-    a case carries these."""
-    [(parameter, value)] = elasticity_assignment(elasticity).items()
+    convention, the value the engine receives and the elasticity gains
+    qualifying for the relief respond at. Every output that reports a case
+    carries these."""
+    assignment = elasticity_assignment(elasticity)
     return {
-        "elasticity_parameter": parameter,
+        "elasticity_parameter": ELASTICITY_PARAMETER,
         "applied_as": "retention",
-        "applied_value": value,
+        "applied_value": assignment[ELASTICITY_PARAMETER],
+        "badr_elasticity": assignment.get(BADR_ELASTICITY_PARAMETER, elasticity),
     }
 
 

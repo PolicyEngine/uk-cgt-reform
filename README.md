@@ -86,8 +86,8 @@ and lifetime limit for the relief, or withdraws it, for every year.
 
 ## Results (2026-27 unless stated)
 
-Engine policyengine-uk 2.100.0, wrapper policyengine.py 4.22.3, projection
-fingerprint `7c469f5300b6`.
+Engine policyengine-uk 2.104.0, wrapper policyengine.py 4.22.3, projection
+fingerprint `e76b2e927c55`.
 
 | | Microcosm UK 2024-25 | External benchmark |
 |---|---:|---|
@@ -105,13 +105,13 @@ fingerprint `7c469f5300b6`.
 | Static yield (e = 0) | +£26.2bn | JRF (2026): about £13bn, static, equalisation alone (see [Benchmarks](#benchmarks)) |
 | of which the relief withdrawn (static) | +£5.0bn | none |
 | Uplift from equalising at 2019/20 rules (static) | +130% | CenTax (2024), Table 3: +139% on 2019/20 data |
-| Yield, CenTax lower (retention 0.5) | +£17.6bn | none |
-| **Yield, CenTax central (retention 1.0)** | **+£10.3bn** | none for equalisation alone; CenTax's £14.3bn (2025-26), £11.3bn (2026-27) and £19.7bn (2029-30) add an investment allowance and base broadening |
+| Yield, CenTax lower (retention 0.5) | +£17.7bn | none |
+| **Yield, CenTax central (retention 1.0)** | **+£10.5bn** | none for equalisation alone; CenTax's £14.3bn (2025-26), £11.3bn (2026-27) and £19.7bn (2029-30) add an investment allowance and base broadening |
 | of which the relief withdrawn (central) | +£2.8bn | none |
-| Yield, CenTax upper (retention 2.0) | −£1.1bn | none |
-| Yield, official HMRC/OBR elasticity (retention 3.6) | −£12.9bn | none |
-| Five-year total, 2026-27 to 2030-31 | +£56.5bn | none |
-| Top income quintile, net income change | −5.3% (−£7,751/household) | none |
+| Yield, CenTax upper (retention 2.0) | −£0.8bn | none |
+| Yield, official HMRC/OBR elasticities (retention 3.6; 1.4 for gains qualifying for BADR) | −£9.6bn | none |
+| Five-year total, 2026-27 to 2030-31 | +£56.8bn | none |
+| Top income quintile, net income change | −5.3% (−£7,707/household) | none |
 | Lowest income quintile, net income change | −0.07% (−£14) | none |
 
 Benchmarks are outturns for the tax year stated (HMRC Capital Gains Tax
@@ -208,37 +208,34 @@ external figure with its source, locator, scope, year and basis.
   rate +1 and +5 points) are scored through the rate explorer's code at the
   central and the official elasticity, comparing HMRC's receipts in 2027-28
   and 2028-29 with this repo's liabilities a year earlier. The official case
-  is a retention elasticity of 3.6 for the rate rows and 1.4 for the relief
-  rows (the OBR's BADR elasticity). For the relief at 19% HMRC shows +£135m
+  applies 3.6 to main-rate gains and 1.4 to gains qualifying for the relief,
+  in every row. For the relief at 19% HMRC shows +£135m
   and +£180m and this repo gives +£158m and +£161m at the official
   elasticity; at 23%, +£635m and +£840m against +£751m and +£767m. For +10
   points on the higher rate HMRC shows −£2,060m and −£3,565m; at the official
-  elasticity this repo gives −£4,709m and −£4,907m, while at the central
-  elasticity the change raises +£5,362m on 2026-27 liabilities.
+  elasticity this repo gives −£4,445m and −£4,616m, while at the central
+  elasticity the change raises +£5,333m on 2026-27 liabilities. The relief
+  rows move only claimants whose gains all qualify: every claimant with
+  main-rate gains as well has already passed the £1m lifetime limit, so their
+  next pound of qualifying gain is taxed at the main rates.
   Lower rate +10 points and the exempt-amount row are not scored (the block
   records why). HMRC deferred its 2026 edition on 6 July 2026 pending a
   review of key assumptions, so the rows are provisional.
-- **The one-point rows and the largest gains.** policyengine-uk 2.100.0
-  measures each person's marginal CGT rate from a £1,000 rise in gains, in
-  single precision, and the error grows with the gain: about 0.2 points at
-  £20m of gains and about 3 points at £500m (for one adult on £200k of
-  earnings the current-law rate reads exactly 24% at £100m of gains, 24.8% at
-  £185m and £300m, and 23.2% from £561m). For those persons the response to
-  a one-point change is mostly noise. In the dataset one person (a £561m
-  gain, weight 18.9) carries £2.5bn of baseline CGT. For higher rate +1 point
-  at the official elasticity their measured response is three times the true
-  one in 2026-27 and zero in 2027-28, so the row reads −£533m and −£173m where
-  the true response for that person gives about −£294m and −£301m. On the
-  equalisation reform the engine reads that person's rate as 20.0% rising to
-  45.6% (true: 24% to 45%), which lowers the 2026-27 estimate by £0.13bn at
-  retention 0.5, £0.21bn at 1.0 (2% of the central +£10.3bn), £0.30bn at 2.0
-  and £0.30bn at 3.6; the static case is untouched. The fix belongs in the
-  engine's `marginal_tax_rate_on_capital_gains`
-  ([PolicyEngine/policyengine-uk#1979](https://github.com/PolicyEngine/policyengine-uk/issues/1979)).
+- **The largest gains.** Until policyengine-uk 2.104.0 the engine measured
+  each person's marginal rate on gains from a £1,000 rise in single
+  precision. At gains in the hundreds of millions that misread the rate by up
+  to about 3 points (PolicyEngine/policyengine-uk#1979). One £561m gain made
+  the higher rate +1 point row read −£533m and −£173m in consecutive years at
+  the official elasticity. The engine now steps by 0.1% of the gain above £1m
+  and divides by the step it stored (PolicyEngine/policyengine-uk#1980). The
+  row reads −£245m and −£253m, and the central estimate for equalisation rose
+  by £0.2bn.
 - **The official elasticity.** HMRC and the OBR use a retention-rate
   elasticity of 3.6 for the main rates ([OBR, January 2025](https://obr.uk/docs/dlm_uploads/CGT-supplementary-release-Jan-2025.pdf),
-  para 1.9). Applied in that convention, equalisation changes 2026-27 CGT
-  revenue by −£12.9bn, against +£10.3bn at the central case.
+  para 1.9), and 1.4 for gains qualifying for BADR. Applied in that
+  convention, equalisation changes 2026-27 CGT revenue by −£9.6bn, against
+  +£10.5bn at the central case. Applying 3.6 to every gain instead would
+  give −£12.6bn: the relief's own elasticity is worth £2.9bn here.
 
 Left out by decision: the Office of Tax Simplification's 2020 static figure
 (2018-19 rules) and a validation run of the Autumn Budget 2024 rate rise.
@@ -303,9 +300,18 @@ across the main, residential and BADR schedules in proportion to the gains on
 each). Every case sets that parameter and leaves `...mtr_elasticity` at zero;
 the sensitivity runs cover 0 (static), CenTax's 0.5, 1.0, 1.5 (before its
 adjustments, below) and 2.0, and the official 3.6. Every sensitivity row,
-explorer option and explorer response
-records the engine parameter it set, the convention (`applied_as`) and the
-value applied (`reform.elasticity_convention`).
+explorer option and explorer response records the engine parameter it set,
+the convention (`applied_as`), the value applied and the elasticity gains
+qualifying for the relief respond at (`reform.elasticity_convention`).
+
+The official case applies both of the OBR's figures. Since policyengine-uk
+2.104.0 (PolicyEngine/policyengine-uk#1980), gains qualifying for Business
+Asset Disposal Relief can respond at their own elasticity
+(`...separate_badr_elasticity` on, `...badr_elasticity` 1.4) while the rest of
+a person's gains respond at the main 3.6. Both respond to the same change in
+the person's share-weighted marginal rate, so only the elasticity differs.
+Qualifying gains keep 1.4 under a reform that withdraws the relief. CenTax
+state one elasticity for every gain, so their cases leave the switch off.
 
 Until this change the pipeline converted CenTax's 1.0 into a
 marginal-tax-rate elasticity of −0.7 (`e_mtr = −e_retention × t/(1 − t)` at
@@ -451,7 +457,7 @@ reading the installed engine's index map and growth parameters:
 | weights (population) | 1.011 | 1.015 | 1.019 | 1.023 | 1.028 | OBR long-term economic determinants, March 2025 EFO (ONS 2022-based projections); see below |
 | CPI (sensitivity, not applied) | 1.058 | 1.079 | 1.100 | 1.123 | 1.145 | OBR EFO March 2026, Table A.1 |
 
-Cumulative factors from the 2024 base on policyengine-uk 2.100.0; the
+Cumulative factors from the 2024 base on policyengine-uk 2.104.0; the
 committed `data/cgt_uprating_audit.json` carries the year-on-year rates,
 the parameter references, the OBR March 2026 CGT receipts path (unbridged:
 receipts are not gains and lag them), the entrant ceilings (the base-year
@@ -679,11 +685,12 @@ engine.
 Without it the wrapper records its bundled default dataset as
 `unverified_data_release_manifest_unavailable`, which does not touch these
 runs: the dataset is pinned explicitly by revision and digest.
-`pyproject.toml` pins policyengine-uk 2.100.0, the release the dataset was
-built and calibrated with (and the first whose local-authority enum carries the
-April 2023 unitary authorities the dataset records); a later release moves the
-projection fingerprint, so changing the pin is a deliberate re-pin that
-regenerates the results. A run needs the per-year builds, twenty-four stored simulations (baseline,
+`pyproject.toml` pins policyengine-uk 2.104.0, the first release with the
+precise marginal rate on large gains and the separate BADR elasticity
+(PolicyEngine/policyengine-uk#1980). The dataset was built with 2.100.0, the
+first release whose local-authority enum carries the April 2023 unitary
+authorities it records. Each release can move the projection fingerprint, so
+changing the pin is a deliberate re-pin that regenerates the results. A run needs the per-year builds, twenty-four stored simulations (baseline,
 central and static reform for every year, three more sensitivity cases, the
 CenTax counterfactual pair and four schedule-split steps) and twenty-eight
 in-memory ready-reckoner runs; a run with the stored outputs in place spends
