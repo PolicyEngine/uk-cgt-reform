@@ -58,7 +58,11 @@ ELASTICITY_CASES = (
         CENTAX_UNADJUSTED_ELASTICITY,
     ),
     ("centax_upper", "CenTax upper (retention elasticity 2.0)", CENTAX_UPPER_ELASTICITY),
-    ("official", "HMRC/OBR official (retention elasticity 3.6)", OFFICIAL_ELASTICITY),
+    (
+        "official",
+        "HMRC/OBR official (retention elasticity 3.6; 1.4 for BADR gains)",
+        OFFICIAL_ELASTICITY,
+    ),
 )
 SENSITIVITY_CASES = {label: e for _, label, e in ELASTICITY_CASES}
 

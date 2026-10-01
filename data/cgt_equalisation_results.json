@@ -900,7 +900,7 @@
     },
     {
       "id": "official",
-      "name": "HMRC/OBR official (retention elasticity 3.6)",
+      "name": "HMRC/OBR official (retention elasticity 3.6; 1.4 for BADR gains)",
       "e_retention": 3.6,
       "elasticity_parameter": "gov.simulation.capital_gains_responses.elasticity",
       "applied_as": "retention",
@@ -1900,7 +1900,7 @@
       },
       {
         "id": "official",
-        "label": "HMRC/OBR official (retention elasticity 3.6)",
+        "label": "HMRC/OBR official (retention elasticity 3.6; 1.4 for BADR gains)",
         "e_retention": 3.6
       }
     ],
