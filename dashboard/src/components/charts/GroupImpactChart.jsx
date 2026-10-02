@@ -5,6 +5,7 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
   ReferenceLine,
   ResponsiveContainer,
   Tooltip,
@@ -39,6 +40,10 @@ export default function GroupImpactChart({ groupsByYear, initialYear }) {
     grouping === "region"
       ? [...groups[grouping]].sort((a, b) => a[metricKey] - b[metricKey])
       : groups[grouping];
+  // Keep signed values intact. For reductions, put zero on the left so bars
+  // extend rightward as the size of the income reduction grows. Mixed-sign
+  // custom results keep a conventional diverging axis.
+  const reductionsOnly = chartData.every((row) => row[metricKey] <= 0);
   const formatMetric = (v) =>
     isRelative ? formatSignedPct(v, 1) : formatSignedCurrency(v);
   const groupNote =
@@ -71,6 +76,7 @@ export default function GroupImpactChart({ groupsByYear, initialYear }) {
       </div>
       <p className="source-note">
         {groupNote} Averages include households with no taxable gains.
+        {reductionsOnly && " Larger reductions extend further to the right."}
       </p>
       <div
         style={{ height: chartData.length * 38 + 55, width: "100%" }}
@@ -91,6 +97,8 @@ export default function GroupImpactChart({ groupsByYear, initialYear }) {
             <XAxis
               type="number"
               domain={["auto", "auto"]}
+              reversed={reductionsOnly}
+              niceTicks="snap125"
               tick={AXIS_STYLE}
               tickFormatter={formatMetric}
               tickLine={false}
@@ -114,10 +122,19 @@ export default function GroupImpactChart({ groupsByYear, initialYear }) {
             <Bar
               dataKey={metricKey}
               name="Average net income change"
-              fill={colors.primary[600]}
+              fill="var(--chart-5)"
               radius={3}
               maxBarSize={23}
-            />
+            >
+              {chartData.map((row) => (
+                <Cell
+                  key={row.group}
+                  fill={
+                    row[metricKey] < 0 ? "var(--chart-5)" : "var(--chart-1)"
+                  }
+                />
+              ))}
+            </Bar>
           </BarChart>
         </ResponsiveContainer>
       </div>

@@ -229,9 +229,8 @@ export default function MethodologyTab({ data, anchor }) {
             <li>
               <strong>Gainers below the exempt amount.</strong> {dataset.notes}{" "}
               At the base year they owe nothing; once the engine uprates gains
-              past the frozen exempt amount they become taxpayers. The baseline
-              view in Evidence reports them as entrants by uprating and shows
-              every figure with and without them.
+              past the frozen exempt amount they become taxpayers. The Baseline
+              tab identifies these entrants separately in the comparison table.
             </li>
             <li>
               <strong>Projection.</strong> Each file is one engine year (
@@ -534,8 +533,8 @@ export default function MethodologyTab({ data, anchor }) {
               in 2026-27 by {formatSignedBn(revenueAt(central.id), 1)} at the
               central elasticity and by{" "}
               {formatSignedBn(cases.official.revenue_2026_bn, 1)} at the
-              official one. The published estimates view in Evidence scores the
-              ready reckoner&apos;s rows at both.
+              official one. The Benchmarks tab scores the ready reckoner&apos;s
+              rows at both.
             </li>
           </ul>
         </div>
@@ -646,7 +645,7 @@ export default function MethodologyTab({ data, anchor }) {
               <strong>Caveats.</strong> It understates total revenue by leaving
               out the income tax and National Insurance on shifted income, which
               both CenTax and the OBR count. HMRC&apos;s ready-reckoner figures
-              include income tax effects, so the comparison in Evidence is not
+              include income tax effects, so the comparison in Benchmarks is not
               like for like. CenTax&apos;s {centaxRange.lower.toFixed(1)} and{" "}
               {centaxRange.upper.toFixed(1)} are measured on the CGT base, like
               the official case, so nothing is added to them here either.

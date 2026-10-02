@@ -100,7 +100,7 @@ export default function CgtGuideTab({ onNavigate }) {
     <ReadingLayout sections={SECTIONS}>
       <section id="current-rates" className="story-section">
         <p className="eyebrow">The starting point · 2026–27</p>
-        <h2>How capital gains tax works</h2>
+        <h2>How CGT works under current law</h2>
         <p className="section-intro">
           CGT taxes the gain when an asset is disposed of, rather than the full
           amount received.

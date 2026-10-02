@@ -54,7 +54,7 @@ modelling the response as a reduction in realised gains, not a bug.
 
 The Overview starts with annual and five-year revenue, then explains the
 behavioural response, sensitivity cases, annual path and household outcomes.
-The How CGT works tab explains current 2026–27 rules and the death, migration,
+The How CGT works under current law tab explains 2026–27 rules and the death, migration,
 deferral and income-shifting routes discussed by Advani, Lonsdale and Summers,
 with direct HMRC, OBR and CenTax sources. It distinguishes the rates reform
 modelled here from CenTax's wider tax-base package.
@@ -67,10 +67,10 @@ once. These are average household income changes, not extra tax paid, wealth
 losses or effects on individual people of a particular age. The aggregate
 income-shifting offset is not allocated to household results.
 
-The Evidence tab groups the HMRC baseline checks and other published estimates.
+The Baseline tab contains the HMRC comparison. Benchmarks is a separate tab
+for the JRF, CenTax and HMRC reform estimates.
 Methodology starts with four plain-language steps, with technical definitions,
-equations and source material in expandable sections. Existing baseline and
-benchmark links redirect to their corresponding Evidence view. The Assumptions
+equations and source material in expandable sections. Links to the former Evidence views still open the appropriate tab. The Assumptions
 control preserves the two income-shifting approaches.
 
 The UI uses Next.js 15, React 19, Tailwind 4 and `@policyengine/ui-kit` 0.4
@@ -220,7 +220,7 @@ taxpayers.
 
 ## Benchmarks
 
-The dashboard's Evidence tab and the results file's `benchmarks` block
+The dashboard's Benchmarks tab and the results file's `benchmarks` block
 set this repo's figures beside published estimates of the same reform or
 the same kind of rate change (issue #7). `comparison.py` holds every
 external figure with its source, locator, scope, year and basis.

@@ -121,10 +121,6 @@ export default function BaselineTab({ data }) {
   const entrants = getEntrants(data);
   const firstYear = getFirstYear(data);
   const entrantShare = entrants.count / validation.cgt_taxpayers;
-  const schedules = [
-    ["Residential property", validation.residential_property_gains_bn],
-    ["Business Asset Disposal Relief", validation.badr_gains_bn],
-  ];
 
   return (
     <div className="space-y-6">
@@ -155,7 +151,7 @@ export default function BaselineTab({ data }) {
           <MetricCard
             label={`Taxpayers · ${firstYear}`}
             value={formatCount(validation.cgt_taxpayers)}
-            note={`${formatPct(100 * entrantShare, 0)} cross the frozen allowance after uprating; see the explanation below.`}
+            note={`${formatPct(100 * entrantShare, 0)} cross the frozen allowance as gains are uprated.`}
           />
         </div>
         <details className="disclosure">
@@ -246,109 +242,6 @@ export default function BaselineTab({ data }) {
           </div>
         </details>
       </section>
-
-      <details className="section-card method-detail">
-        <summary>Why the taxpayer count rises as gains grow</summary>
-        <div>
-          <SectionHeading
-            title="Entrants by uprating"
-            description={`The annual exempt amount is frozen at £${entrants.exempt_amount_gbp.toLocaleString("en-GB")} while the engine uprates gains with GDP per capita, so a person whose base-year gains sit at or below the exempt amount can cross it in a later year and count as a CGT taxpayer with a few hundred pounds of taxable gain. Entrants are persons whose pre-response gains in ${firstYear} exceed the exempt amount but not £${Math.round(entrants.ceiling_gbp).toLocaleString("en-GB")}, the base-year exempt amount carried forward by the uprating, so they were not taxpayers in the base year. Nothing is removed or edited; the figures are reported so a reader can net them out.`}
-          />
-          <div className="table-scroll">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Quantity, {firstYear}</th>
-                  <th>All CGT taxpayers</th>
-                  <th>Entrants by uprating</th>
-                  <th>Excluding entrants</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>Taxpayers</td>
-                  <td>{formatCount(validation.cgt_taxpayers)}</td>
-                  <td>
-                    {formatCount(entrants.count)} (
-                    {formatPct(100 * entrantShare, 0)})
-                  </td>
-                  <td>
-                    {formatCount(validation.cgt_taxpayers_excluding_entrants)}
-                  </td>
-                </tr>
-                <tr>
-                  <td>Taxable gains</td>
-                  <td>{formatBn(validation.total_gains_bn)}</td>
-                  <td>{formatBn(entrants.gains_bn)}</td>
-                  <td>
-                    {formatBn(validation.total_gains_excluding_entrants_bn)}
-                  </td>
-                </tr>
-                <tr>
-                  <td>Baseline CGT liability</td>
-                  <td>{formatBn(validation.baseline_cgt_revenue_bn)}</td>
-                  <td>{formatBn(entrants.cgt_bn)}</td>
-                  <td>
-                    {formatBn(
-                      validation.baseline_cgt_revenue_bn - entrants.cgt_bn,
-                    )}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-          {entrantShare > 0.05 ? (
-            <p className="note-card mt-4 rounded-lg p-4 text-sm leading-6 text-slate-600">
-              <span className="note-eyebrow block text-xs font-semibold uppercase tracking-wide">
-                Read with care
-              </span>
-              On this dataset {formatPct(100 * entrantShare, 0)} of the{" "}
-              {firstYear} CGT taxpayers are entrants by uprating.{" "}
-              {dataset.notes} The share of people the reform touches, and every
-              count in this tab, is dominated by that group; the gains and
-              liability totals are not, because each entrant carries only a few
-              hundred pounds above the exempt amount.
-            </p>
-          ) : (
-            <p className="mt-4 text-sm leading-6 text-slate-600">
-              Entrants are a small share of this dataset&apos;s taxpayers, so
-              the headline counts read as taxpayers in the ordinary sense.
-            </p>
-          )}
-        </div>
-      </details>
-
-      <details className="section-card method-detail">
-        <summary>How gains split across the tax schedules</summary>
-        <div>
-          <SectionHeading
-            title="Schedule components"
-            description={`policyengine-uk charges residential property and Business Asset Disposal Relief gains on their own schedules when a dataset records them; the reform takes residential gains to the income tax rates and withdraws the relief. Carried interest has been taxed as income since April 2026 and is not part of this analysis. Gains recorded on each schedule in ${firstYear}, before any behavioural response.`}
-          />
-          <div className="table-scroll">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Schedule</th>
-                  <th>Gains, {firstYear}</th>
-                  <th>Recorded in {dataset.shortLabel}?</th>
-                </tr>
-              </thead>
-              <tbody>
-                {schedules.map(([name, gains]) => (
-                  <tr key={name}>
-                    <td>{name}</td>
-                    <td>{formatBn(gains)}</td>
-                    <td>
-                      {gains > 0 ? "Yes" : "No: charged on the main schedule"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </details>
     </div>
   );
 }

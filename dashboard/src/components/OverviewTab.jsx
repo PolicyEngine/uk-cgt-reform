@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { MetricCard } from "@policyengine/ui-kit/display";
 import {
   Bar,
   BarChart,
@@ -45,7 +46,10 @@ export function PolicySummary({ data }) {
     >
       {Object.entries(reform).map(([band, rates]) => (
         <div key={band}>
-          <span>{band.replace("_rate", "")} rate</span>
+          <span>
+            {band.charAt(0).toUpperCase() + band.slice(1).replace("_rate", "")}{" "}
+            rate
+          </span>
           <p>
             {Math.round(rates.baseline * 100)}%{" "}
             <span aria-label="changes to">→</span>{" "}
@@ -204,19 +208,23 @@ export default function OverviewTab({ data, onNavigate }) {
           </div>
           <span className="context-tag">From {firstYear}</span>
         </div>
-        <div className="headline-grid mt-6">
-          <div className="headline-card primary">
-            <p>Revenue change in {firstYear}</p>
-            <strong>{formatSignedBn(first.gov_balance_change_bn, 1)}</strong>
-            <span>Compared with current policy</span>
-          </div>
-          <div className="headline-card">
-            <p>Total over five years</p>
-            <strong>{formatSignedBn(getFiveYearTotal(data), 1)}</strong>
-            <span>
-              {firstYear} to {data.budget.at(-1).year} · cash terms
-            </span>
-          </div>
+        <div className="headline-grid mt-4">
+          <MetricCard
+            label={`Revenue change in ${firstYear}`}
+            value={formatSignedBn(first.gov_balance_change_bn, 1)}
+            format="string"
+            trend="neutral"
+            delta="Compared with current policy"
+            className="shadow-none"
+          />
+          <MetricCard
+            label="Five-year revenue change"
+            value={formatSignedBn(getFiveYearTotal(data), 1)}
+            format="string"
+            trend="neutral"
+            delta={`${firstYear} to ${data.budget.at(-1).year} · cash terms`}
+            className="shadow-none"
+          />
         </div>
         <AssumptionSummary
           data={data}
@@ -293,7 +301,7 @@ export default function OverviewTab({ data, onNavigate }) {
           </div>
         </div>
         <p className="source-note">Figures may not sum because of rounding.</p>
-      <h3 className="mt-7">
+        <h3 className="mt-7">
           Other behavioural assumptions give different answers
         </h3>
         <p className="source-note">
