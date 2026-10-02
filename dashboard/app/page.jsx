@@ -9,9 +9,8 @@ import {
   TabsContent,
 } from "@policyengine/ui-kit/primitives";
 import PolicyEngineHeader from "../src/components/PolicyEngineHeader";
-import OverviewTab from "../src/components/OverviewTab";
+import EqualisationTab from "../src/components/EqualisationTab";
 import CgtGuideTab from "../src/components/CgtGuideTab";
-import DistributionTab from "../src/components/DistributionTab";
 import RateExplorerTab from "../src/components/RateExplorerTab";
 import BaselineTab from "../src/components/BaselineTab";
 import BenchmarksTab from "../src/components/BenchmarksTab";
@@ -25,8 +24,7 @@ import {
 import results from "../public/data/cgt_equalisation_results.json";
 
 const TAB_OPTIONS = [
-  { id: "reform", label: "Overview" },
-  { id: "distribution", label: "Distribution" },
+  { id: "reform", label: "Equalisation" },
   { id: "explorer", label: "Rate explorer" },
   { id: "baseline", label: "Baseline" },
   { id: "benchmarks", label: "Benchmarks" },
@@ -127,13 +125,18 @@ function Dashboard() {
             />
           )}
           <TabsContent value="reform">
-            <OverviewTab data={data} onNavigate={navigate} />
+            <EqualisationTab
+              data={data}
+              onNavigate={navigate}
+              anchor={
+                searchParams.get("tab") === "distribution"
+                  ? "who-is-affected"
+                  : anchor
+              }
+            />
           </TabsContent>
           <TabsContent value="cgt">
             <CgtGuideTab onNavigate={navigate} />
-          </TabsContent>
-          <TabsContent value="distribution">
-            <DistributionTab data={data} onNavigate={navigate} />
           </TabsContent>
           <TabsContent value="explorer">
             <RateExplorerTab data={data} datasetKey={dataset.key} />

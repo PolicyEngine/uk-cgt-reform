@@ -321,24 +321,6 @@
     line-height: 1.65;
     margin: 18px 0;
   }
-  .distribution-preview {
-    display: flex;
-    gap: 24px;
-    align-items: center;
-    margin-top: 24px;
-  }
-  .distribution-preview > strong {
-    font-size: 3.25rem;
-    font-weight: 550;
-    letter-spacing: -0.04em;
-    color: var(--primary);
-  }
-  .distribution-preview p {
-    font-size: 0.8rem;
-    color: var(--muted-foreground);
-    line-height: 1.6;
-    margin-top: 6px;
-  }
   .rule-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -692,13 +674,6 @@
     content: "↓";
     left: 50%;
     top: -23px;
-  }
-  .distribution-preview {
-    display: block;
-  }
-  .distribution-preview > strong {
-    display: block;
-    margin-bottom: 12px;
   }
   .data-table th,
   .data-table td {

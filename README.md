@@ -13,7 +13,7 @@ score two things:
   ([Tax Justice UK](https://taxjustice.uk/blog/what-would-bunham-mean-for-britain/));
   CenTax costs it within a wider package that also reforms the CGT base (see
   [Benchmarks](#benchmarks)). This repo models the rate change. The pipeline
-  scores it and commits the results, which the dashboard's Overview tab
+  scores it and commits the results, which the dashboard's Equalisation tab
   shows.
 - **Any schedule of main CGT rates** a reader chooses, scored live by the
   dashboard's Rate explorer tab through the same code, dataset, engine and
@@ -52,20 +52,23 @@ modelling the response as a reduction in realised gains, not a bug.
 
 ## Dashboard experience
 
-The Overview starts with annual and five-year revenue, then explains the
+The Equalisation tab starts with annual and five-year revenue, then explains the
 behavioural response, sensitivity cases, annual path and household outcomes.
 The How CGT works under current law tab explains 2026–27 rules and the death, migration,
 deferral and income-shifting routes discussed by Advani, Lonsdale and Summers,
 with direct HMRC, OBR and CenTax sources. It distinguishes the rates reform
 modelled here from CenTax's wider tax-base package.
 
-Distribution defaults to income deciles, with age, region and household type
+Distribution follows the revenue results within Equalisation, with a jump link
+in the section navigation. Income deciles, age, region and household type are
 available for every forecast year. Deciles rank weighted households by baseline
 net income (including realised gains), without adjusting for household size.
 Age is the oldest member's age in the simulated year; each household counts
 once. These are average household income changes, not extra tax paid, wealth
 losses or effects on individual people of a particular age. The aggregate
-income-shifting offset is not allocated to household results.
+income-shifting offset is not allocated to household results. Quintiles and
+quartiles remain in the underlying data but are not displayed. Older custom
+rate-explorer results that lack deciles show only their other available groups.
 
 The Baseline tab contains the HMRC comparison. Benchmarks is a separate tab
 for the JRF, CenTax and HMRC reform estimates.

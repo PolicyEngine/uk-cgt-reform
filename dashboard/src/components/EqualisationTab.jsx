@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { MetricCard } from "@policyengine/ui-kit/display";
 import {
   Bar,
@@ -19,7 +19,7 @@ import {
   getFiveYearTotal,
   getReform,
 } from "../lib/dataHelpers";
-import { formatSignedBn, formatSignedPct } from "../lib/formatters";
+import { formatSignedBn } from "../lib/formatters";
 import {
   scenarioLabel,
   scenarioConvention,
@@ -29,12 +29,13 @@ import { ReadingLayout } from "./ReadingGuide";
 import { AssumptionSummary } from "./Assumptions";
 import { SourceLink, Toggle } from "./controls";
 import BudgetChart from "./charts/BudgetChart";
+import GroupImpactChart from "./charts/GroupImpactChart";
 
 const SECTIONS = [
   { id: "at-a-glance", label: "At a glance" },
   { id: "behaviour", label: "Why behaviour matters" },
   { id: "each-year", label: "Revenue each year" },
-  { id: "who-is-affected", label: "Who is affected" },
+  { id: "who-is-affected", label: "Distribution" },
 ];
 
 export function PolicySummary({ data }) {
@@ -184,7 +185,11 @@ export function SensitivityChart({ data }) {
   );
 }
 
-export default function OverviewTab({ data, onNavigate }) {
+export default function EqualisationTab({ data, onNavigate, anchor }) {
+  useEffect(() => {
+    const target = anchor ?? window.location.hash.slice(1);
+    if (target) document.getElementById(target)?.scrollIntoView();
+  }, [anchor]);
   const firstYear = getFirstYear(data);
   const first = data.budget[0];
   const central = data.sensitivity.find(
@@ -192,9 +197,6 @@ export default function OverviewTab({ data, onNavigate }) {
   );
   const staticRow = data.benchmarks.static_equalisation.by_year[0];
   const [splitCase, setSplitCase] = useState("central");
-  const groups = data.income_change_groups[firstYear];
-  const topGroup = groups.decile?.at(-1) ?? groups.quintile.at(-1);
-  const topShare = groups.decile ? "10%" : "20%";
   const offset = central.includes_income_shifting_offset
     ? first.income_shifting_offset_bn
     : 0;
@@ -371,28 +373,21 @@ export default function OverviewTab({ data, onNavigate }) {
       </section>
       <section id="who-is-affected" className="story-section">
         <p className="eyebrow">Household outcomes</p>
-        <h2>The largest income change is at the top</h2>
-        <div className="distribution-preview">
-          <strong>{formatSignedPct(topGroup.relative_change_pct, 1)}</strong>
-          <div>
-            <h3>Average net income change for the highest-income {topShare}</h3>
-            <p>
-              Across all households in this group, including those with no
-              taxable gains.
-            </p>
-          </div>
-        </div>
-        <p className="insight-note">
-          This includes gains people stop realising as well as extra tax. It is
-          not a measure of extra tax paid or a loss of wealth; income tax and NI
-          added for shifting are not included.
+        <h2>How the income change is distributed</h2>
+        <p className="section-intro">
+          Explore the average change in household net income by income decile,
+          age, region and household type.
         </p>
-        <button
-          className="text-link mt-5"
-          onClick={() => onNavigate("distribution")}
-        >
-          Explore income, age and region →
-        </button>
+        <p className="insight-note">
+          <strong>Read this as an income measure.</strong> It includes gains
+          people stop realising as well as extra CGT. The income tax and NI
+          addition for shifted income is not included. Averages cover every
+          household in each group.
+        </p>
+        <GroupImpactChart
+          groupsByYear={data.income_change_groups}
+          initialYear={firstYear}
+        />
       </section>
     </ReadingLayout>
   );

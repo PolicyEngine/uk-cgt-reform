@@ -26,8 +26,6 @@ export const GROUP_LABELS = {
   age: "Age",
   region: "Region",
   household_type: "Household type",
-  quintile: "Income quintiles",
-  quartile: "Income quartiles",
 };
 
 export function availableGroupings(groups) {

@@ -27,19 +27,19 @@ describe("analysis presentation", () => {
       expect(groups.decile).toHaveLength(10);
       expect(groups.age).toHaveLength(6);
       expect(groups.region).toHaveLength(12);
-      expect(
-        availableGroupings(groups)
-          .slice(0, 3)
-          .map((option) => option.value),
-      ).toEqual(["decile", "age", "region"]);
+      expect(availableGroupings(groups).map((option) => option.value)).toEqual([
+        "decile",
+        "age",
+        "region",
+        "household_type",
+      ]);
     });
   });
 
   test("older explorer payloads offer only the groups actually returned", () => {
-    expect(availableGroupings({ quintile: [{}], region: [{}] })).toEqual([
-      { value: "region", label: "Region" },
-      { value: "quintile", label: "Income quintiles" },
-    ]);
+    expect(
+      availableGroupings({ quintile: [{}], quartile: [{}], region: [{}] }),
+    ).toEqual([{ value: "region", label: "Region" }]);
   });
 
   test("assumption labels retain the different elasticity definitions and relief response", () => {

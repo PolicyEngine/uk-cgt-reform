@@ -31,9 +31,10 @@ export default function GroupImpactChart({ groupsByYear, initialYear }) {
   const available = choices.map((choice) => choice.value);
   const grouping = available.includes(chosenGrouping)
     ? chosenGrouping
-    : available.includes("quintile")
-      ? "quintile"
-      : available[0];
+    : available[0];
+  if (!grouping) {
+    return <p>No distribution breakdowns are available for this run.</p>;
+  }
   const isRelative = groupMetric === "relative";
   const metricKey = isRelative ? "relative_change_pct" : "avg_change_gbp";
   const chartData =
@@ -51,8 +52,8 @@ export default function GroupImpactChart({ groupsByYear, initialYear }) {
       ? "Age of the oldest household member, measured in the selected year. These are household averages, not effects on individual people of that age."
       : grouping === "region"
         ? "Region where the household lives. Smaller samples make regional estimates less precise. Households without an assigned region are excluded."
-        : ["decile", "quintile", "quartile"].includes(grouping)
-          ? `Households ranked by net income before the reform, including realised gains. Each group represents ${grouping === "decile" ? "10%" : grouping === "quintile" ? "20%" : "25%"} of weighted households. Income is not adjusted for household size.`
+        : grouping === "decile"
+          ? "Households ranked by net income before the reform, including realised gains. Each group represents 10% of weighted households. Income is not adjusted for household size."
           : "Pensioner households have no working-age adults; households with children contain at least one child.";
 
   return (

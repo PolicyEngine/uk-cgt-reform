@@ -268,11 +268,11 @@ export default function MethodologyTab({ data, anchor }) {
               </ExternalLink>{" "}
               {metadata.policyengine_version}, PolicyEngine&apos;s standard
               simulation wrapper: budget and distributional outputs (income
-              deciles/quintiles/quartiles, age of the oldest household member,
-              household type and region) are weighted microdf aggregates over
-              the simulation outputs. The 4.x wrapper series is used because
-              later releases certify one pinned engine version and refuse to
-              import alongside the engine release that carries the schedules.
+              deciles, age of the oldest household member, household type and
+              region) are weighted microdf aggregates over the simulation
+              outputs. The 4.x wrapper series is used because later releases
+              certify one pinned engine version and refuse to import alongside
+              the engine release that carries the schedules.
             </li>
             <li>
               <strong>Behavioural response.</strong> Applied through a policy

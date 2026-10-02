@@ -168,7 +168,7 @@ const badrFormOf = (badr) =>
         rate: String(toPercent(badr.rate)),
         limit: badr.lifetime_limit,
       };
-// The preset that reproduces the Overview tab: 20% / 40% / 45% with the
+// The preset that reproduces the Equalisation tab: 20% / 40% / 45% with the
 // relief withdrawn.
 const EQUALISATION = PRESETS.find((preset) => preset.id === "income_tax");
 const sameBadr = (a, b) =>
@@ -238,7 +238,7 @@ function readUrlState(searchParams, approach) {
   // (PolicyEngine's −0.7 or a legacy key) and no relief fields; links since
   // always carry the relief. Its 20% / 40% / 45% was the "Equalise with income
   // tax" preset, which now withdraws the relief, so it loads that way and
-  // still scores the Overview tab's reform.
+  // still scores the Equalisation tab's reform.
   const relieflessLegacyLink =
     parsed < 0 &&
     ["bw", "br", "bl"].every((key) => searchParams.get(key) === null);
@@ -571,9 +571,7 @@ export default function RateExplorerTab({ data, datasetKey }) {
     firstYear: getFirstYear(data),
     revenue: getBudget(data)[0].gov_balance_change_bn,
     fiveYear: getFiveYearTotal(data),
-    topQuintile: getIncomeChangeGroups(data, getFirstYear(data)).quintile.at(
-      -1,
-    ),
+    topDecile: getIncomeChangeGroups(data, getFirstYear(data)).decile.at(-1),
   };
   const entrants = getEntrants(data);
   const entrantShare = entrants.count / getValidation(data).cgt_taxpayers;
@@ -679,8 +677,8 @@ export default function RateExplorerTab({ data, datasetKey }) {
 
   const firstYear = shown ? shown.budget[0].year : null;
   const firstRow = shown ? shown.budget[0] : null;
-  const topQuintile = shown
-    ? shown.income_change_groups[firstYear].quintile.at(-1)
+  const topDecile = shown
+    ? shown.income_change_groups[firstYear].decile?.at(-1)
     : null;
 
   return (
@@ -912,9 +910,17 @@ export default function RateExplorerTab({ data, datasetKey }) {
                 note="Sum of the annual government balance changes over the five modelled years."
               />
               <MetricCard
-                label="Top quintile net income change"
-                value={formatSignedPct(topQuintile.relative_change_pct)}
-                note={`Average of ${formatSignedCurrency(topQuintile.avg_change_gbp)} per household in the highest-income 20%. Includes the gains taxpayers stop realising under the elasticity, not just tax paid.`}
+                label="Top decile net income change"
+                value={
+                  topDecile
+                    ? formatSignedPct(topDecile.relative_change_pct)
+                    : "Not available"
+                }
+                note={
+                  topDecile
+                    ? `Average of ${formatSignedCurrency(topDecile.avg_change_gbp)} per household in the highest-income 10%. Includes the gains taxpayers stop realising under the elasticity, not just tax paid.`
+                    : "This run does not include income deciles."
+                }
               />
             </div>
             {offsetMissing ? (
@@ -941,7 +947,7 @@ export default function RateExplorerTab({ data, datasetKey }) {
                 <tr>
                   <th>Compared with equalising to income tax</th>
                   <th>This schedule</th>
-                  <th>Equalisation (Overview tab)</th>
+                  <th>Equalisation</th>
                 </tr>
               </thead>
               <tbody>
@@ -956,18 +962,19 @@ export default function RateExplorerTab({ data, datasetKey }) {
                   <td>{formatSignedBn(equalisation.fiveYear, 1)}</td>
                 </tr>
                 <tr>
-                  <td>Top quintile net income change, {firstYear}</td>
+                  <td>Top decile net income change, {firstYear}</td>
                   <td>
-                    {formatSignedPct(topQuintile.relative_change_pct)} (
-                    {formatSignedCurrency(topQuintile.avg_change_gbp)})
+                    {topDecile
+                      ? `${formatSignedPct(topDecile.relative_change_pct)} (${formatSignedCurrency(topDecile.avg_change_gbp)})`
+                      : "Not available"}
                   </td>
                   <td>
                     {formatSignedPct(
-                      equalisation.topQuintile.relative_change_pct,
+                      equalisation.topDecile.relative_change_pct,
                     )}{" "}
                     (
                     {formatSignedCurrency(
-                      equalisation.topQuintile.avg_change_gbp,
+                      equalisation.topDecile.avg_change_gbp,
                     )}
                     )
                   </td>
@@ -1029,7 +1036,7 @@ export default function RateExplorerTab({ data, datasetKey }) {
           <section className="section-card">
             <SectionHeading
               title="Who bears the cost"
-              description="Change in household net income, grouped by the household's position in the baseline income distribution, by household type, or by region. Losses include both the extra tax paid and the gains taxpayers choose not to realise in response."
+              description="Change in household net income, grouped by income decile, age, household type or region where available. Losses include both the extra tax paid and the gains taxpayers choose not to realise in response."
             />
             <GroupImpactChart
               groupsByYear={shown.income_change_groups}
