@@ -31,7 +31,7 @@ const PATHS = [
     explanation:
       "Assets generally pass at their market value on death. The inheritor pays CGT on later growth when they sell, but the gain built up before death falls outside CGT. Inheritance Tax is a separate tax and may still apply.",
     proposal:
-      "CenTax proposes carrying the original cost over to the inheritor, with a deduction for Inheritance Tax paid when the asset is eventually sold.",
+      "CenTax proposes carrying the original cost over to the inheritor, with a credit for Inheritance Tax already paid when the asset is eventually sold.",
     source:
       "https://www.gov.uk/government/publications/death-personal-representatives-and-legatees-hs282-self-assessment-helpsheet/hs282-death-personal-representatives-and-legatees-2026",
     sourceLabel: "HMRC: assets inherited on death",

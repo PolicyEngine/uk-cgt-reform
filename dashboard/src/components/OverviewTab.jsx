@@ -292,7 +292,8 @@ export default function OverviewTab({ data, onNavigate }) {
             <strong>{formatSignedBn(first.gov_balance_change_bn, 1)}</strong>
           </div>
         </div>
-        <h3 className="mt-7">
+        <p className="source-note">Figures may not sum because of rounding.</p>
+      <h3 className="mt-7">
           Other behavioural assumptions give different answers
         </h3>
         <p className="source-note">
