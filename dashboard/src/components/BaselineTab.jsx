@@ -154,93 +154,91 @@ export default function BaselineTab({ data }) {
             note={`${formatPct(100 * entrantShare, 0)} cross the frozen allowance as gains are uprated.`}
           />
         </div>
-        <details className="disclosure">
-          <summary>Compare all baseline measures and sources</summary>
-          <div className="table-scroll">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Quantity</th>
-                  <th>
-                    PolicyEngine ({dataset.shortLabel}, {firstYear})
-                  </th>
-                  <th>HMRC, 2023-24 (revised)</th>
-                  <th>HMRC, 2024-25 (provisional)</th>
-                </tr>
-              </thead>
-              <tbody>
-                <BenchmarkRow
-                  label="Total taxable gains"
-                  model={formatBn(validation.total_gains_bn)}
-                  benchmark={BENCHMARKS.totalGains}
-                />
-                <BenchmarkRow
-                  label="of which held by entrants by uprating"
-                  model={formatBn(entrants.gains_bn)}
-                  benchmark={NO_BENCHMARK}
-                  muted
-                />
-                <BenchmarkRow
-                  label="CGT taxpayers (gains above the exempt amount)"
-                  model={formatCount(validation.cgt_taxpayers)}
-                  benchmark={BENCHMARKS.taxpayers}
-                />
-                <BenchmarkRow
-                  label="of which entrants by uprating"
-                  model={formatCount(entrants.count)}
-                  benchmark={NO_BENCHMARK}
-                  muted
-                />
-                <BenchmarkRow
-                  label="Baseline CGT liability"
-                  model={formatBn(validation.baseline_cgt_revenue_bn)}
-                  benchmark={BENCHMARKS.liability}
-                />
-                <BenchmarkRow
-                  label="of which paid by entrants by uprating"
-                  model={formatBn(entrants.cgt_bn)}
-                  benchmark={NO_BENCHMARK}
-                  muted
-                />
-                <BenchmarkRow
-                  label="Share of gains from gains of £1m or more"
-                  model={formatPct(validation.share_gains_over_1m_pct, 0)}
-                  benchmark={BENCHMARKS.shareOver1m}
-                />
-                <BenchmarkRow
-                  label="Share of gains from gains of £5m or more"
-                  model={formatPct(validation.share_gains_over_5m_pct, 0)}
-                  benchmark={BENCHMARKS.shareOver5m}
-                />
-                <BenchmarkRow
-                  label="Taxpayers with gains over £500k"
-                  model={formatCount(validation.taxpayers_over_500k)}
-                  benchmark={BENCHMARKS.taxpayersOver500k}
-                />
-                <BenchmarkRow
-                  label="Gains held by taxpayers with gains over £500k"
-                  model={formatBn(validation.gains_over_500k_bn)}
-                  benchmark={BENCHMARKS.gainsOver500k}
-                />
-                <BenchmarkRow
-                  label="Gains held in the £5m-and-over band"
-                  model={formatBn(validation.gains_over_5m_bn)}
-                  benchmark={BENCHMARKS.gainsOver5m}
-                />
-                <BenchmarkRow
-                  label="People with gains qualifying for BADR"
-                  model={formatCount(validation.badr_claimants)}
-                  benchmark={BENCHMARKS.badrClaimants}
-                />
-                <BenchmarkRow
-                  label="Gains qualifying for BADR"
-                  model={formatBn(validation.badr_gains_bn)}
-                  benchmark={BENCHMARKS.badrGains}
-                />
-              </tbody>
-            </table>
-          </div>
-        </details>
+        <div className="table-scroll mt-6">
+          <table className="data-table">
+            <caption className="sr-only">Baseline measures and sources</caption>
+            <thead>
+              <tr>
+                <th>Quantity</th>
+                <th>
+                  PolicyEngine ({dataset.shortLabel}, {firstYear})
+                </th>
+                <th>HMRC, 2023-24 (revised)</th>
+                <th>HMRC, 2024-25 (provisional)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <BenchmarkRow
+                label="Total taxable gains"
+                model={formatBn(validation.total_gains_bn)}
+                benchmark={BENCHMARKS.totalGains}
+              />
+              <BenchmarkRow
+                label="of which held by entrants by uprating"
+                model={formatBn(entrants.gains_bn)}
+                benchmark={NO_BENCHMARK}
+                muted
+              />
+              <BenchmarkRow
+                label="CGT taxpayers (gains above the exempt amount)"
+                model={formatCount(validation.cgt_taxpayers)}
+                benchmark={BENCHMARKS.taxpayers}
+              />
+              <BenchmarkRow
+                label="of which entrants by uprating"
+                model={formatCount(entrants.count)}
+                benchmark={NO_BENCHMARK}
+                muted
+              />
+              <BenchmarkRow
+                label="Baseline CGT liability"
+                model={formatBn(validation.baseline_cgt_revenue_bn)}
+                benchmark={BENCHMARKS.liability}
+              />
+              <BenchmarkRow
+                label="of which paid by entrants by uprating"
+                model={formatBn(entrants.cgt_bn)}
+                benchmark={NO_BENCHMARK}
+                muted
+              />
+              <BenchmarkRow
+                label="Share of gains from gains of £1m or more"
+                model={formatPct(validation.share_gains_over_1m_pct, 0)}
+                benchmark={BENCHMARKS.shareOver1m}
+              />
+              <BenchmarkRow
+                label="Share of gains from gains of £5m or more"
+                model={formatPct(validation.share_gains_over_5m_pct, 0)}
+                benchmark={BENCHMARKS.shareOver5m}
+              />
+              <BenchmarkRow
+                label="Taxpayers with gains over £500k"
+                model={formatCount(validation.taxpayers_over_500k)}
+                benchmark={BENCHMARKS.taxpayersOver500k}
+              />
+              <BenchmarkRow
+                label="Gains held by taxpayers with gains over £500k"
+                model={formatBn(validation.gains_over_500k_bn)}
+                benchmark={BENCHMARKS.gainsOver500k}
+              />
+              <BenchmarkRow
+                label="Gains held in the £5m-and-over band"
+                model={formatBn(validation.gains_over_5m_bn)}
+                benchmark={BENCHMARKS.gainsOver5m}
+              />
+              <BenchmarkRow
+                label="People with gains qualifying for BADR"
+                model={formatCount(validation.badr_claimants)}
+                benchmark={BENCHMARKS.badrClaimants}
+              />
+              <BenchmarkRow
+                label="Gains qualifying for BADR"
+                model={formatBn(validation.badr_gains_bn)}
+                benchmark={BENCHMARKS.badrGains}
+              />
+            </tbody>
+          </table>
+        </div>
       </section>
     </div>
   );

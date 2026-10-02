@@ -180,7 +180,7 @@ export default function MethodologyTab({ data, anchor }) {
             </p>
           </li>
         </ol>
-        <div className="insight-note">
+        <div className="analysis-note">
           <strong>What these results mean.</strong> The medium-term response
           applies in full from the first year. Household net income includes
           realised gains, so its change includes gains no longer realised as

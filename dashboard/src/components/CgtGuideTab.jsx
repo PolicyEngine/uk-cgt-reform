@@ -123,16 +123,14 @@ export default function CgtGuideTab({ onNavigate }) {
           <div>
             <span className="step-number">3</span>
             <h3>Apply the rates</h3>
-            <strong className="rule-number">
-              18% <span>/</span> 24%
-            </strong>
+            <strong className="rule-number">18% / 24%</strong>
             <p>
               Gains use any remaining basic-rate band at 18%; amounts above it
               face 24%.
             </p>
           </div>
         </div>
-        <div className="insight-note">
+        <div className="analysis-note">
           <strong>Income fills the band first.</strong> Even a basic-rate income
           taxpayer can pay 24% on part of a gain. Current CGT has no separate
           additional rate.
@@ -196,7 +194,7 @@ export default function CgtGuideTab({ onNavigate }) {
           </TabsList>
           {PATHS.map((item) => (
             <TabsContent key={item.id} value={item.id} className="path-content">
-              <span className="context-tag">{item.category}</span>
+              <span className="context-label">{item.category}</span>
               <h3>{item.title}</h3>
               <ol className="mechanism-path">
                 {item.steps.map((step, index) => (
@@ -207,7 +205,7 @@ export default function CgtGuideTab({ onNavigate }) {
                 ))}
               </ol>
               <p>{item.explanation}</p>
-              <div className="insight-note">{item.proposal}</div>
+              <div className="analysis-note">{item.proposal}</div>
               <p className="source-note">
                 <SourceLink href={item.source}>{item.sourceLabel}</SourceLink> ·{" "}
                 <SourceLink href={`${CENTAX}#page=${item.page}`}>
@@ -228,7 +226,7 @@ export default function CgtGuideTab({ onNavigate }) {
         </p>
         <div className="scope-grid">
           <div className="scope-card">
-            <span className="context-tag">Modelled here</span>
+            <span className="context-label">Modelled here</span>
             <h3>Rates and the business relief</h3>
             <p>
               The headline reform sets rates to 20%, 40% and 45% and withdraws
@@ -242,7 +240,7 @@ export default function CgtGuideTab({ onNavigate }) {
             </button>
           </div>
           <div className="scope-card">
-            <span className="context-tag neutral">Outside this reform</span>
+            <span className="context-label">Outside this reform</span>
             <h3>Changes to the tax base</h3>
             <p>
               Removing the uplift at death, a departure charge, an investment
@@ -254,7 +252,7 @@ export default function CgtGuideTab({ onNavigate }) {
             </SourceLink>
           </div>
         </div>
-        <div className="insight-note">
+        <div className="analysis-note">
           <strong>The behavioural response is an aggregate assumption.</strong>{" "}
           It changes realised gains. The model does not separately simulate or
           estimate the revenue lost through each route above.

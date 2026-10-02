@@ -147,8 +147,8 @@ function CentaxRegions({ block, dataset }) {
           </tbody>
         </table>
       </div>
-      <div className="note-card mt-4 rounded-lg p-4 text-sm leading-6 text-slate-600">
-        <p className="note-eyebrow">Read with care</p>
+      <div className="analysis-note">
+        <p className="analysis-note-title">Read with care</p>
         <p>
           The counterfactual applies 2019/20 CGT rules to 2026-27 incomes,
           income tax thresholds and gains, with the £12,000 exempt amount in
@@ -348,8 +348,8 @@ export default function BenchmarksTab({ data, onNavigate }) {
         dataset={dataset}
         elasticities={benchmarks.elasticities}
       />
-      <section className="note-card rounded-lg p-4 text-sm leading-6 text-slate-600">
-        <p className="note-eyebrow">Why the elasticity matters</p>
+      <section className="analysis-note">
+        <p className="analysis-note-title">Why the elasticity matters</p>
         <p>
           The official HMRC/OBR assumption is a retention-rate elasticity of{" "}
           {elasticities.official.elasticity} for main-rate gains and{" "}

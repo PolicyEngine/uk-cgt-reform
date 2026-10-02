@@ -180,20 +180,11 @@
     margin: 14px 0 22px;
     max-width: 75ch;
   }
-  .context-tag {
+  .context-label {
     display: inline-block;
-    background: var(--color-teal-50);
-    color: var(--color-teal-700);
-    border: 1px solid var(--color-teal-100);
-    border-radius: 4px;
-    padding: 4px 8px;
-    font-size: 0.7rem;
-    white-space: nowrap;
-  }
-  .context-tag.neutral {
-    background: var(--muted);
-    border-color: var(--border);
     color: var(--muted-foreground);
+    font-size: var(--text-xs);
+    line-height: 1.5;
   }
   .policy-strip {
     display: grid;
@@ -312,14 +303,21 @@
     width: 100%;
     margin-top: 20px;
   }
-  .insight-note {
-    border-left: 3px solid var(--color-teal-300);
-    background: var(--color-teal-50);
-    color: var(--color-gray-700);
-    padding: 14px 18px;
-    font-size: 0.85rem;
+  .analysis-note {
+    border-left: 2px solid var(--border);
+    color: var(--muted-foreground);
+    padding-left: 16px;
+    font-size: var(--text-sm);
     line-height: 1.65;
-    margin: 18px 0;
+    margin: 24px 0;
+  }
+  .analysis-note strong,
+  .analysis-note-title {
+    color: var(--foreground);
+    font-weight: 500;
+  }
+  .analysis-note-title {
+    margin-bottom: 4px;
   }
   .rule-grid {
     display: grid;
@@ -332,8 +330,8 @@
     height: 28px;
     align-items: center;
     justify-content: center;
-    border: 1px solid var(--color-teal-200);
-    color: var(--primary);
+    border: 1px solid var(--border);
+    color: var(--muted-foreground);
     border-radius: 50%;
     font-size: 0.75rem;
     margin-bottom: 15px;
@@ -347,13 +345,10 @@
   }
   .rule-number {
     display: block;
-    font-size: 1.8rem;
+    font-size: var(--text-2xl);
     font-weight: 600;
     margin-top: 12px;
-    color: var(--color-teal-700);
-  }
-  .rule-number span {
-    color: var(--color-teal-300);
+    color: var(--foreground);
   }
   .path-tabs {
     width: 100%;
@@ -397,12 +392,12 @@
     position: absolute;
     left: -17px;
     top: 33%;
-    color: var(--primary);
+    color: var(--muted-foreground);
   }
   .mechanism-path li > span {
     display: block;
     font-size: 0.7rem;
-    color: var(--primary);
+    color: var(--muted-foreground);
     margin-bottom: 6px;
   }
   .scope-grid {
@@ -442,8 +437,8 @@
     width: 28px;
     height: 28px;
     border-radius: 50%;
-    background: var(--color-teal-50);
-    color: var(--primary);
+    border: 1px solid var(--border);
+    color: var(--muted-foreground);
     font-size: 0.8rem;
   }
   .method-steps p {
@@ -517,16 +512,6 @@
     background: var(--primary);
     color: var(--primary-foreground);
     border-color: var(--primary);
-  }
-  .note-card {
-    border-left: 3px solid var(--border);
-    background: var(--muted);
-  }
-  .note-eyebrow {
-    color: var(--muted-foreground);
-  }
-  .note-body {
-    color: var(--foreground);
   }
   .table-scroll {
     overflow-x: auto;
@@ -630,7 +615,7 @@
   .section-heading-row {
     display: block;
   }
-  .section-heading-row > .context-tag {
+  .section-heading-row > .context-label {
     margin-top: 12px;
   }
   .policy-strip {

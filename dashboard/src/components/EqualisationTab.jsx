@@ -208,7 +208,7 @@ export default function EqualisationTab({ data, onNavigate, anchor }) {
             <p className="eyebrow">Revenue at a glance</p>
             <h2>Equalising CGT with income tax</h2>
           </div>
-          <span className="context-tag">From {firstYear}</span>
+          <span className="context-label">From {firstYear}</span>
         </div>
         <div className="headline-grid mt-4">
           <MetricCard
@@ -378,7 +378,7 @@ export default function EqualisationTab({ data, onNavigate, anchor }) {
           Explore the average change in household net income by income decile,
           age, region and household type.
         </p>
-        <p className="insight-note">
+        <p className="analysis-note">
           <strong>Read this as an income measure.</strong> It includes gains
           people stop realising as well as extra CGT. The income tax and NI
           addition for shifted income is not included. Averages cover every
