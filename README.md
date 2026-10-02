@@ -13,7 +13,7 @@ score two things:
   ([Tax Justice UK](https://taxjustice.uk/blog/what-would-bunham-mean-for-britain/));
   CenTax costs it within a wider package that also reforms the CGT base (see
   [Benchmarks](#benchmarks)). This repo models the rate change. The pipeline
-  scores it and commits the results, which the dashboard's Reform impacts tab
+  scores it and commits the results, which the dashboard's Overview tab
   shows.
 - **Any schedule of main CGT rates** a reader chooses, scored live by the
   dashboard's Rate explorer tab through the same code, dataset, engine and
@@ -49,6 +49,51 @@ tables include both the extra tax paid and the gains taxpayers choose not to
 realise under the behavioural response, so they are roughly an order of
 magnitude larger than the net revenue raised. This is a mechanical property of
 modelling the response as a reduction in realised gains, not a bug.
+
+## Dashboard experience
+
+The Overview starts with annual and five-year revenue, then explains the
+behavioural response, sensitivity cases, annual path and household outcomes.
+The How CGT works tab explains current 2026–27 rules and the death, migration,
+deferral and income-shifting routes discussed by Advani, Lonsdale and Summers,
+with direct HMRC, OBR and CenTax sources. It distinguishes the rates reform
+modelled here from CenTax's wider tax-base package.
+
+Distribution defaults to income deciles, with age, region and household type
+available for every forecast year. Deciles rank weighted households by baseline
+net income (including realised gains), without adjusting for household size.
+Age is the oldest member's age in the simulated year; each household counts
+once. These are average household income changes, not extra tax paid, wealth
+losses or effects on individual people of a particular age. The aggregate
+income-shifting offset is not allocated to household results.
+
+The Evidence tab groups the HMRC baseline checks and other published estimates.
+Methodology starts with four plain-language steps, with technical definitions,
+equations and source material in expandable sections. Existing baseline and
+benchmark links redirect to their corresponding Evidence view. The Assumptions
+control preserves the two income-shifting approaches.
+
+The UI uses Next.js 15, React 19, Tailwind 4 and `@policyengine/ui-kit` 0.4
+(including its shared header, keyboard-accessible tabs and colour tokens).
+The Inter font is served locally. From `dashboard/`:
+
+```bash
+bun install --frozen-lockfile
+bun run dev             # http://localhost:3000/uk/cgt-reform
+bun run lint
+bun test
+bun run build
+```
+
+`uv run --no-sync python scripts/refresh_distribution.py` adds decile and age
+outputs to an existing scored analysis. First install the exact wrapper and
+engine versions recorded in its metadata, plus the simulation dependencies.
+The script checks the dataset, reform and projection fingerprints and
+reproduces existing groups and CGT totals before writing either JSON copy.
+Full pipeline runs and new explorer runs include the groups automatically.
+Older deployed explorer caches remain usable and show only available groups;
+redeploy both explorer workers and gateway from this source to offer age and
+deciles for custom runs (the source fingerprint invalidates older results).
 
 ## The equalisation reform (from 2026-27)
 
@@ -175,7 +220,7 @@ taxpayers.
 
 ## Benchmarks
 
-The dashboard's Benchmarks tab and the results file's `benchmarks` block
+The dashboard's Evidence tab and the results file's `benchmarks` block
 set this repo's figures beside published estimates of the same reform or
 the same kind of rate change (issue #7). `comparison.py` holds every
 external figure with its source, locator, scope, year and basis.

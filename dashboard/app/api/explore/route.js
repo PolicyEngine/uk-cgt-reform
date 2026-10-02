@@ -36,7 +36,9 @@ const LIMIT_PER_WINDOW = 20;
 const hits = new Map();
 
 function rateLimited(request) {
-  const ip = (request.headers.get("x-forwarded-for") || "").split(",")[0].trim() || "unknown";
+  const ip =
+    (request.headers.get("x-forwarded-for") || "").split(",")[0].trim() ||
+    "unknown";
   const now = Date.now();
   const recent = (hits.get(ip) || []).filter((t) => now - t < WINDOW_MS);
   if (recent.length >= LIMIT_PER_WINDOW) {
@@ -54,10 +56,14 @@ function cliArgs(body) {
   const rates = body?.rates ?? {};
   const values = BANDS.map((band) => rates[band]);
   if (!values.every((v) => typeof v === "number" && Number.isFinite(v))) {
-    return { error: "rates must give basic_rate, higher_rate and additional_rate as numbers." };
+    return {
+      error:
+        "rates must give basic_rate, higher_rate and additional_rate as numbers.",
+    };
   }
   const dataset = body.dataset ?? "";
-  if (dataset && !DATASET_KEY.test(dataset)) return { error: "Unknown dataset." };
+  if (dataset && !DATASET_KEY.test(dataset))
+    return { error: "Unknown dataset." };
   // Absent, the CLI applies its own default (PolicyEngine's elasticity).
   const elasticity = body.elasticity;
   if (
@@ -98,7 +104,9 @@ function cliArgs(body) {
     }
     if (badr.lifetime_limit !== undefined && badr.lifetime_limit !== null) {
       if (!Number.isInteger(badr.lifetime_limit)) {
-        return { error: "badr.lifetime_limit must be a whole number of pounds." };
+        return {
+          error: "badr.lifetime_limit must be a whole number of pounds.",
+        };
       }
       args.push("--badr-limit", String(badr.lifetime_limit));
     }
@@ -107,7 +115,8 @@ function cliArgs(body) {
 }
 
 async function runLocally(args) {
-  const python = process.env.PYTHON || path.join(REPO_ROOT, ".venv", "bin", "python");
+  const python =
+    process.env.PYTHON || path.join(REPO_ROOT, ".venv", "bin", "python");
   const { stdout } = await execFileAsync(python, args, {
     cwd: REPO_ROOT,
     timeout: 10 * 60 * 1000,
@@ -124,7 +133,13 @@ export async function POST(request) {
     return json({ detail: "The request body must be JSON." }, 400);
   }
   if (rateLimited(request)) {
-    return json({ detail: "Too many schedules from this address; try again in a few minutes." }, 429);
+    return json(
+      {
+        detail:
+          "Too many schedules from this address; try again in a few minutes.",
+      },
+      429,
+    );
   }
   const config = backendConfig();
   if (config) {
@@ -145,9 +160,15 @@ export async function POST(request) {
     return json({ status: "done", result });
   } catch (err) {
     const stderr = (err.stderr || "").trim();
-    if (err.code === 2) return json({ detail: stderr.replace(/^error:\s*/, "") }, 400);
+    if (err.code === 2)
+      return json({ detail: stderr.replace(/^error:\s*/, "") }, 400);
     return json(
-      { detail: stderr.split("\n").slice(-3).join(" ") || err.message || "Local run failed." },
+      {
+        detail:
+          stderr.split("\n").slice(-3).join(" ") ||
+          err.message ||
+          "Local run failed.",
+      },
       500,
     );
   }

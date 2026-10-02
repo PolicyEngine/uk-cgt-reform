@@ -6,7 +6,7 @@ const FORMER_BASE_PATH = "/uk/equalising-cgt";
 
 const nextConfig = {
   reactStrictMode: true,
-  transpilePackages: ["@policyengine/design-system"],
+  transpilePackages: ["@policyengine/ui-kit"],
   // Mounted as a Next.js multizone under policyengine.org/uk/cgt-reform,
   // so pages and /_next assets must resolve under that path prefix.
   basePath: BASE_PATH,

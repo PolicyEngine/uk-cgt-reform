@@ -85,7 +85,8 @@ export function formatElasticity({
   badr_elasticity: badr,
 }) {
   const value = formatElasticityValue(appliedValue);
-  const main = appliedAs === "mtr" ? `marginal rate ${value}` : `retention ${value}`;
+  const main =
+    appliedAs === "mtr" ? `marginal rate ${value}` : `retention ${value}`;
   return badr === undefined || badr === appliedValue
     ? main
     : `${main}; ${formatElasticityValue(badr)} for BADR gains`;
@@ -109,5 +110,7 @@ const MONTHS = [
 // A source's publication date ("2026-06-29" or "2024-10") as prose.
 export function formatPublished(isoDate) {
   const [year, month, day] = isoDate.split("-").map(Number);
-  return day ? `${day} ${MONTHS[month - 1]} ${year}` : `${MONTHS[month - 1]} ${year}`;
+  return day
+    ? `${day} ${MONTHS[month - 1]} ${year}`
+    : `${MONTHS[month - 1]} ${year}`;
 }

@@ -9,7 +9,9 @@ export default function SectionHeading({ title, description, size = "base" }) {
         {title}
       </h2>
       {description ? (
-        <div className="mt-2 text-sm leading-6 text-slate-600">{description}</div>
+        <div className="mt-2 text-sm leading-6 text-slate-600">
+          {description}
+        </div>
       ) : null}
     </div>
   );

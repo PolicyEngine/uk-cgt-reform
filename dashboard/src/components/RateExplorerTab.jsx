@@ -19,6 +19,7 @@ import {
 } from "../lib/dataHelpers";
 import { useExploration } from "../lib/exploreApi";
 import {
+  formatElasticityValue,
   formatPct,
   formatSignedBn,
   formatSignedCurrency,
@@ -70,16 +71,21 @@ const INCOME_SHIFTING = options.approaches.income_shifting;
 // and says so when the approach adds the OBR's income tax and National
 // Insurance on shifted income.
 function elasticityLabel(option, approach) {
-  return approach?.offset_case_ids.includes(option.id) ? withOffsetLabel(option.label) : option.label;
+  return approach?.offset_case_ids.includes(option.id)
+    ? withOffsetLabel(option.label)
+    : option.label;
 }
 
 // The options an approach to income shifting offers, and its central case.
 function approachOptions(approach) {
-  return approach.case_ids.map((id) => ELASTICITIES.find((option) => option.id === id));
+  return approach.case_ids.map((id) =>
+    ELASTICITIES.find((option) => option.id === id),
+  );
 }
 
 function approachCentral(approach) {
-  return ELASTICITIES.find((option) => option.id === approach.central_id).elasticity;
+  return ELASTICITIES.find((option) => option.id === approach.central_id)
+    .elasticity;
 }
 
 // Links shared before CenTax's and the official cases took the retention form
@@ -97,22 +103,36 @@ const MTR_FLOOR = 0.001;
 const toPercent = (fraction) => Math.round(fraction * 10000) / 100;
 const toFraction = (percent) => Math.round(Number(percent) * 100) / 10000;
 const percentsOf = (rates) =>
-  Object.fromEntries(BANDS.map((band) => [band.key, String(toPercent(rates[band.key]))]));
-const sameRates = (a, b) => BANDS.every((band) => Math.abs(a[band.key] - b[band.key]) < 1e-9);
+  Object.fromEntries(
+    BANDS.map((band) => [band.key, String(toPercent(rates[band.key]))]),
+  );
+const sameRates = (a, b) =>
+  BANDS.every((band) => Math.abs(a[band.key] - b[band.key]) < 1e-9);
 
 function validatePercents(percents) {
   const numbers = {};
   for (const band of BANDS) {
     const raw = percents[band.key];
     const value = Number(raw);
-    if (raw === "" || raw === null || raw === undefined || !Number.isFinite(value)) {
-      return { error: `Enter a ${band.label.toLowerCase()} between ${PCT_MIN}% and ${PCT_MAX}%.` };
+    if (
+      raw === "" ||
+      raw === null ||
+      raw === undefined ||
+      !Number.isFinite(value)
+    ) {
+      return {
+        error: `Enter a ${band.label.toLowerCase()} between ${PCT_MIN}% and ${PCT_MAX}%.`,
+      };
     }
     if (value < PCT_MIN || value > PCT_MAX) {
-      return { error: `The ${band.label.toLowerCase()} must be between ${PCT_MIN}% and ${PCT_MAX}%.` };
+      return {
+        error: `The ${band.label.toLowerCase()} must be between ${PCT_MIN}% and ${PCT_MAX}%.`,
+      };
     }
     if (Math.abs(value / STEP_PCT - Math.round(value / STEP_PCT)) > 1e-6) {
-      return { error: `Rates are whole percentage points; ${value}% for the ${band.label.toLowerCase()} is not.` };
+      return {
+        error: `Rates are whole percentage points; ${value}% for the ${band.label.toLowerCase()} is not.`,
+      };
     }
     numbers[band.key] = value;
   }
@@ -125,7 +145,11 @@ function validatePercents(percents) {
         "The additional rate must be at least the higher rate. Set them equal for a single rate above the basic rate band, as in current law.",
     };
   }
-  return { rates: Object.fromEntries(BANDS.map((band) => [band.key, toFraction(numbers[band.key])])) };
+  return {
+    rates: Object.fromEntries(
+      BANDS.map((band) => [band.key, toFraction(numbers[band.key])]),
+    ),
+  };
 }
 
 // Business Asset Disposal Relief: kept at a rate and lifetime limit, or
@@ -134,24 +158,39 @@ const BADR_CURRENT_LAW = options.badr.current_law;
 const BADR_LIMITS = options.badr.lifetime_limits;
 const badrFormOf = (badr) =>
   badr.withdrawn
-    ? { mode: "withdraw", rate: String(toPercent(BADR_CURRENT_LAW.rate)), limit: BADR_CURRENT_LAW.lifetime_limit }
-    : { mode: "keep", rate: String(toPercent(badr.rate)), limit: badr.lifetime_limit };
-// The preset that reproduces the Reform impacts tab: 20% / 40% / 45% with the
+    ? {
+        mode: "withdraw",
+        rate: String(toPercent(BADR_CURRENT_LAW.rate)),
+        limit: BADR_CURRENT_LAW.lifetime_limit,
+      }
+    : {
+        mode: "keep",
+        rate: String(toPercent(badr.rate)),
+        limit: badr.lifetime_limit,
+      };
+// The preset that reproduces the Overview tab: 20% / 40% / 45% with the
 // relief withdrawn.
 const EQUALISATION = PRESETS.find((preset) => preset.id === "income_tax");
 const sameBadr = (a, b) =>
   a.withdrawn === b.withdrawn &&
-  (a.withdrawn || (Math.abs(a.rate - b.rate) < 1e-9 && a.lifetime_limit === b.lifetime_limit));
-
+  (a.withdrawn ||
+    (Math.abs(a.rate - b.rate) < 1e-9 &&
+      a.lifetime_limit === b.lifetime_limit));
 
 function validateBadr(form, rates) {
-  if (form.mode === "withdraw") return { badr: { withdrawn: true, rate: null, lifetime_limit: null } };
+  if (form.mode === "withdraw")
+    return { badr: { withdrawn: true, rate: null, lifetime_limit: null } };
   const value = Number(form.rate);
   if (form.rate === "" || !Number.isFinite(value) || value < 0) {
-    return { error: "Enter a rate for Business Asset Disposal Relief, or withdraw the relief." };
+    return {
+      error:
+        "Enter a rate for Business Asset Disposal Relief, or withdraw the relief.",
+    };
   }
   if (Math.abs(value / STEP_PCT - Math.round(value / STEP_PCT)) > 1e-6) {
-    return { error: `The relief's rate is a whole percentage point; ${value}% is not.` };
+    return {
+      error: `The relief's rate is a whole percentage point; ${value}% is not.`,
+    };
   }
   if (rates && value / 100 > rates.additional_rate + 1e-9) {
     return {
@@ -159,21 +198,33 @@ function validateBadr(form, rates) {
         "The relief's rate may not exceed the additional rate: the relief would then raise the tax on qualifying gains.",
     };
   }
-  return { badr: { withdrawn: false, rate: toFraction(value), lifetime_limit: Number(form.limit) } };
+  return {
+    badr: {
+      withdrawn: false,
+      rate: toFraction(value),
+      lifetime_limit: Number(form.limit),
+    },
+  };
 }
 
 function readUrlState(searchParams, approach) {
   const values = BANDS.map((band) => searchParams.get(band.param));
   if (values.some((value) => value === null || value === "")) return null;
-  const percents = Object.fromEntries(BANDS.map((band, i) => [band.key, values[i]]));
+  const percents = Object.fromEntries(
+    BANDS.map((band, i) => [band.key, values[i]]),
+  );
   // An absent or empty `e` means the approach's central case; Number(null)
   // would be 0, the static case. A case the approach does not offer falls
   // back to its central case too.
   const rawE = searchParams.get("e");
   const parsed = rawE === null || rawE.trim() === "" ? NaN : Number(rawE);
-  const legacy = [...LEGACY_MTR_ELASTICITIES].find(([mtr]) => sameElasticity(mtr, parsed));
+  const legacy = [...LEGACY_MTR_ELASTICITIES].find(([mtr]) =>
+    sameElasticity(mtr, parsed),
+  );
   const e = legacy ? legacy[1] : parsed;
-  const elasticity = approachOptions(approach).some((option) => sameElasticity(option.elasticity, e))
+  const elasticity = approachOptions(approach).some((option) =>
+    sameElasticity(option.elasticity, e),
+  )
     ? e
     : approachCentral(approach);
   // The relief: `bw=1` withdraws it; `br` (percent) and `bl` (£) keep it at
@@ -187,11 +238,13 @@ function readUrlState(searchParams, approach) {
   // (PolicyEngine's −0.7 or a legacy key) and no relief fields; links since
   // always carry the relief. Its 20% / 40% / 45% was the "Equalise with income
   // tax" preset, which now withdraws the relief, so it loads that way and
-  // still scores the Reform impacts tab's reform.
+  // still scores the Overview tab's reform.
   const relieflessLegacyLink =
-    parsed < 0 && ["bw", "br", "bl"].every((key) => searchParams.get(key) === null);
+    parsed < 0 &&
+    ["bw", "br", "bl"].every((key) => searchParams.get(key) === null);
   const equalisationRates = BANDS.every(
-    (band) => Number(percents[band.key]) === toPercent(EQUALISATION.rates[band.key]),
+    (band) =>
+      Number(percents[band.key]) === toPercent(EQUALISATION.rates[band.key]),
   );
   if (relieflessLegacyLink && equalisationRates) badrForm.mode = "withdraw";
   return { percents, elasticity, badrForm };
@@ -214,7 +267,9 @@ function RateInput({ band, value, onChange }) {
         />
         <span>%</span>
       </span>
-      <span className="mt-1 block text-xs leading-5 text-slate-500">{band.note}</span>
+      <span className="mt-1 block text-xs leading-5 text-slate-500">
+        {band.note}
+      </span>
     </label>
   );
 }
@@ -223,8 +278,9 @@ function StatusLine({ status, elapsedSeconds, error, result, datasetLabel }) {
   if (status === "running") {
     return (
       <p className="mt-4 text-sm leading-6 text-slate-600" role="status">
-        Running the five fiscal years on {datasetLabel}… {elapsedSeconds}s. A schedule nobody has
-        run before takes about half a minute; one that has been run before returns at once.
+        Running the five fiscal years on {datasetLabel}… {elapsedSeconds}s. A
+        schedule nobody has run before takes about half a minute; one that has
+        been run before returns at once.
       </p>
     );
   }
@@ -269,7 +325,9 @@ function SpecTable({ metadata }) {
           <tr key={band.key}>
             <td>{band.label.replace(" rate", " CGT rate")}</td>
             <td>{pct(baseline[band.key])}</td>
-            <td className={changed(band.key) ? "font-semibold" : ""}>{pct(reform[band.key])}</td>
+            <td className={changed(band.key) ? "font-semibold" : ""}>
+              {pct(reform[band.key])}
+            </td>
             <td>{band.note}</td>
           </tr>
         ))}
@@ -280,17 +338,30 @@ function SpecTable({ metadata }) {
             {pct(BASELINE_SCHEDULE_RATES.residential_property.higher_rate)}
           </td>
           <td className="font-semibold">
-            {pct(reform.basic_rate)} / {pct(reform.higher_rate)} / {pct(reform.additional_rate)}
+            {pct(reform.basic_rate)} / {pct(reform.higher_rate)} /{" "}
+            {pct(reform.additional_rate)}
           </td>
           <td>
-            Gains on UK residential property, charged on their own schedule, take the same rates;
-            the two schedules have charged the same rates since 30 October 2024.
+            Gains on UK residential property, charged on their own schedule,
+            take the same rates; the two schedules have charged the same rates
+            since 30 October 2024.
           </td>
         </tr>
         <tr>
           <td>Business Asset Disposal Relief</td>
-          <td>{describeBadr(metadata.baseline_badr ?? BASELINE_SCHEDULE_RATES.badr)}</td>
-          <td className={metadata.reform_badr && !sameBadr(metadata.reform_badr, BADR_CURRENT_LAW) ? "font-semibold" : ""}>
+          <td>
+            {describeBadr(
+              metadata.baseline_badr ?? BASELINE_SCHEDULE_RATES.badr,
+            )}
+          </td>
+          <td
+            className={
+              metadata.reform_badr &&
+              !sameBadr(metadata.reform_badr, BADR_CURRENT_LAW)
+                ? "font-semibold"
+                : ""
+            }
+          >
             {describeBadr(metadata.reform_badr ?? BASELINE_SCHEDULE_RATES.badr)}
           </td>
           <td>
@@ -303,13 +374,18 @@ function SpecTable({ metadata }) {
           <td>Carried interest</td>
           <td>Taxed as income since April 2026</td>
           <td>Unchanged</td>
-          <td>Carried interest moved into the income tax framework on 6 April 2026.</td>
+          <td>
+            Carried interest moved into the income tax framework on 6 April
+            2026.
+          </td>
         </tr>
         <tr>
           <td>Annual exempt amount</td>
           <td>£3,000</td>
           <td>£3,000</td>
-          <td>Unchanged: the first £3,000 of gains each year stays tax-free.</td>
+          <td>
+            Unchanged: the first £3,000 of gains each year stays tax-free.
+          </td>
         </tr>
       </tbody>
     </table>
@@ -321,7 +397,9 @@ function SpecTable({ metadata }) {
 // sits beside the run's liability a year earlier.
 function ReadyReckonerPanel({ row, result }) {
   const liability = (year) =>
-    1000 * result.budget.find((budgetRow) => budgetRow.year === year).gov_balance_change_bn;
+    1000 *
+    result.budget.find((budgetRow) => budgetRow.year === year)
+      .gov_balance_change_bn;
   const [contextYear] = READY_RECKONER.hmrc_years;
   return (
     <div className="mt-6">
@@ -338,26 +416,32 @@ function ReadyReckonerPanel({ row, result }) {
         </thead>
         <tbody>
           <tr className="text-slate-500">
-            <td>HMRC {contextYear} (receipts in the reform&apos;s first year)</td>
+            <td>
+              HMRC {contextYear} (receipts in the reform&apos;s first year)
+            </td>
             <td>{formatSignedMn(row.hmrc_m[contextYear])}</td>
             <td>—</td>
           </tr>
           {READY_RECKONER.lag.map((lag) => (
             <tr key={lag.hmrc_year}>
               <td>
-                HMRC {lag.hmrc_year} against this run&apos;s {lag.model_year} liabilities
+                HMRC {lag.hmrc_year} against this run&apos;s {lag.model_year}{" "}
+                liabilities
               </td>
-              <td className="font-semibold">{formatSignedMn(row.hmrc_m[lag.hmrc_year])}</td>
+              <td className="font-semibold">
+                {formatSignedMn(row.hmrc_m[lag.hmrc_year])}
+              </td>
               <td>{formatSignedMn(liability(lag.model_year))}</td>
             </tr>
           ))}
         </tbody>
       </table>
       <p className="mt-3 text-xs leading-5 text-slate-500">
-        HMRC&apos;s figures ({READY_RECKONER.source}) are {READY_RECKONER.measure[0].toLowerCase()}
-        {READY_RECKONER.measure.slice(1)}, after behavioural responses; HMRC has deferred its 2026
-        edition, so they are provisional. The Benchmarks tab scores every
-        row at the central and the official elasticity.
+        HMRC&apos;s figures ({READY_RECKONER.source}) are{" "}
+        {READY_RECKONER.measure[0].toLowerCase()}
+        {READY_RECKONER.measure.slice(1)}, after behavioural responses; HMRC has
+        deferred its 2026 edition, so they are provisional. The Benchmarks tab
+        scores every row at the central and the official elasticity.
       </p>
     </div>
   );
@@ -369,8 +453,12 @@ export default function RateExplorerTab({ data, datasetKey }) {
   const { approach } = data;
   // Read once: a shared link arrives with a full schedule in the URL.
   const initial = useMemo(() => readUrlState(searchParams, approach), []); // eslint-disable-line react-hooks/exhaustive-deps
-  const [percents, setPercents] = useState(() => initial?.percents ?? percentsOf(CURRENT_LAW));
-  const [badrForm, setBadrForm] = useState(() => initial?.badrForm ?? badrFormOf(BADR_CURRENT_LAW));
+  const [percents, setPercents] = useState(
+    () => initial?.percents ?? percentsOf(CURRENT_LAW),
+  );
+  const [badrForm, setBadrForm] = useState(
+    () => initial?.badrForm ?? badrFormOf(BADR_CURRENT_LAW),
+  );
   const [elasticity, setElasticity] = useState(
     () => initial?.elasticity ?? approachCentral(approach),
   );
@@ -378,12 +466,15 @@ export default function RateExplorerTab({ data, datasetKey }) {
   // The chosen case takes the OBR's addition under this approach; it fits a
   // schedule that narrows the gap with income tax (20% / 40% / 45%).
   const addsOffset = approach.offset_case_ids.includes(
-    ELASTICITIES.find((option) => sameElasticity(option.elasticity, elasticity))?.id,
+    ELASTICITIES.find((option) => sameElasticity(option.elasticity, elasticity))
+      ?.id,
   );
   // Switching approach keeps a case both offer and otherwise moves to the
   // new approach's central case.
   useEffect(() => {
-    if (!offered.some((option) => sameElasticity(option.elasticity, elasticity))) {
+    if (
+      !offered.some((option) => sameElasticity(option.elasticity, elasticity))
+    ) {
       setElasticity(approachCentral(approach));
     }
   }, [approach.id]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -410,12 +501,16 @@ export default function RateExplorerTab({ data, datasetKey }) {
   };
   const aboveIncomeTax = Boolean(
     validation.rates &&
-      BANDS.some((band) => validation.rates[band.key] > EQUALISATION.rates[band.key] + 1e-9),
+    BANDS.some(
+      (band) =>
+        validation.rates[band.key] > EQUALISATION.rates[band.key] + 1e-9,
+    ),
   );
   const preset = validation.rates
     ? (PRESETS.find(
         (candidate) =>
-          sameRates(candidate.rates, validation.rates) && sameBadr(candidate.badr, validation.badr),
+          sameRates(candidate.rates, validation.rates) &&
+          sameBadr(candidate.badr, validation.badr),
       )?.id ?? "custom")
     : "custom";
   // HMRC's rows move rates only: they match with the relief at current law.
@@ -423,7 +518,9 @@ export default function RateExplorerTab({ data, datasetKey }) {
   // move the relief's rate; the rest leave it at current law).
   const rowFor = (rates, badr) =>
     READY_RECKONER.rows.find(
-      (row) => sameRates(row.rates, rates) && sameBadr(row.badr ?? BADR_CURRENT_LAW, badr),
+      (row) =>
+        sameRates(row.rates, rates) &&
+        sameBadr(row.badr ?? BADR_CURRENT_LAW, badr),
     );
   const readyReckonerRow = validation.rates
     ? (rowFor(validation.rates, validation.badr)?.id ?? "none")
@@ -433,7 +530,9 @@ export default function RateExplorerTab({ data, datasetKey }) {
     (rates, badr, e) => {
       const params = new URLSearchParams(searchParams.toString());
       params.set("tab", "explorer");
-      BANDS.forEach((band) => params.set(band.param, String(toPercent(rates[band.key]))));
+      BANDS.forEach((band) =>
+        params.set(band.param, String(toPercent(rates[band.key]))),
+      );
       ["bw", "br", "bl"].forEach((key) => params.delete(key));
       // The relief is always written, so a link from before the relief lever
       // (no relief fields) stays distinguishable from one at PolicyEngine's
@@ -455,7 +554,10 @@ export default function RateExplorerTab({ data, datasetKey }) {
     requested.current = elasticity;
     const badr = validation.badr.withdrawn
       ? { withdrawn: true }
-      : { rate: validation.badr.rate, lifetime_limit: validation.badr.lifetime_limit };
+      : {
+          rate: validation.badr.rate,
+          lifetime_limit: validation.badr.lifetime_limit,
+        };
     run({ dataset: datasetKey, rates: validation.rates, badr, elasticity });
   }, [validation.rates, validation.badr, elasticity, datasetKey, run, syncUrl]);
 
@@ -469,34 +571,49 @@ export default function RateExplorerTab({ data, datasetKey }) {
     firstYear: getFirstYear(data),
     revenue: getBudget(data)[0].gov_balance_change_bn,
     fiveYear: getFiveYearTotal(data),
-    topQuintile: getIncomeChangeGroups(data, getFirstYear(data)).quintile.at(-1),
+    topQuintile: getIncomeChangeGroups(data, getFirstYear(data)).quintile.at(
+      -1,
+    ),
   };
   const entrants = getEntrants(data);
   const entrantShare = entrants.count / getValidation(data).cgt_taxpayers;
   const resultElasticity = result
-    ? ELASTICITIES.find((option) => sameElasticity(option.elasticity, result.metadata.elasticity))
+    ? ELASTICITIES.find((option) =>
+        sameElasticity(option.elasticity, result.metadata.elasticity),
+      )
     : null;
   // A backend deployed before PolicyEngine's elasticity was a case of its own
   // reads -0.7 as an older key and runs another case; the figures are then
   // that case's, and the tab says so.
   const requestedOption =
     result && requested.current !== null
-      ? ELASTICITIES.find((option) => sameElasticity(option.elasticity, requested.current))
+      ? ELASTICITIES.find((option) =>
+          sameElasticity(option.elasticity, requested.current),
+        )
       : null;
   const ranOtherCase = Boolean(
-    requestedOption && !sameElasticity(requestedOption.elasticity, result.metadata.elasticity),
+    requestedOption &&
+    !sameElasticity(requestedOption.elasticity, result.metadata.elasticity),
   );
   const matchedRow = result
-    ? rowFor(result.metadata.reform, result.metadata.reform_badr ?? BADR_CURRENT_LAW)
+    ? rowFor(
+        result.metadata.reform,
+        result.metadata.reform_badr ?? BADR_CURRENT_LAW,
+      )
     : null;
-  const centralOption = ELASTICITIES.find((option) => option.id === approach.central_id);
+  const centralOption = ELASTICITIES.find(
+    (option) => option.id === approach.central_id,
+  );
   // The chosen case, and the deepest cut the schedule makes under PolicyEngine's
   // elasticity, whose response to a cut grows steeply as a rate nears zero:
   // the factor (t1 / t0) ** e on the gains a cut reaches, each rate floored as
   // the engine floors it.
-  const chosenOption = ELASTICITIES.find((option) => sameElasticity(option.elasticity, elasticity));
+  const chosenOption = ELASTICITIES.find((option) =>
+    sameElasticity(option.elasticity, elasticity),
+  );
   const cutFactor = (from, to) =>
-    (Math.max(to, MTR_FLOOR) / Math.max(from, MTR_FLOOR)) ** chosenOption.elasticity;
+    (Math.max(to, MTR_FLOOR) / Math.max(from, MTR_FLOOR)) **
+    chosenOption.elasticity;
   const deepestCut =
     chosenOption?.applied_as === "mtr" && validation.rates
       ? [
@@ -506,14 +623,29 @@ export default function RateExplorerTab({ data, datasetKey }) {
             to: validation.rates[band.key],
           })),
           ...(validation.badr && !validation.badr.withdrawn
-            ? [{ label: "relief's rate", from: BADR_CURRENT_LAW.rate, to: validation.badr.rate }]
+            ? [
+                {
+                  label: "relief's rate",
+                  from: BADR_CURRENT_LAW.rate,
+                  to: validation.badr.rate,
+                },
+              ]
             : []),
         ]
           .filter((cut) => cut.to < cut.from - 1e-9)
-          .map((cut) => ({ ...cut, factor: cutFactor(cut.from, cut.to), toZero: cutFactor(cut.from, 0) }))
-          .reduce((deepest, cut) => (deepest && deepest.factor >= cut.factor ? deepest : cut), null)
+          .map((cut) => ({
+            ...cut,
+            factor: cutFactor(cut.from, cut.to),
+            toZero: cutFactor(cut.from, 0),
+          }))
+          .reduce(
+            (deepest, cut) =>
+              deepest && deepest.factor >= cut.factor ? deepest : cut,
+            null,
+          )
       : null;
-  const formatFactor = (factor) => (factor >= 10 ? factor.toFixed(0) : factor.toFixed(1));
+  const formatFactor = (factor) =>
+    factor >= 10 ? factor.toFixed(0) : factor.toFixed(1);
   // The run as the approach shows it: under the approach net of income
   // shifting, the cases measured on the CGT base (PolicyEngine's, CenTax's
   // bounds and the official case) add the OBR's income tax and National
@@ -524,7 +656,10 @@ export default function RateExplorerTab({ data, datasetKey }) {
     resultElasticity && approach.offset_case_ids.includes(resultElasticity.id),
   );
   const offsetMissing =
-    wantsOffset && result.budget.some((row) => typeof row.income_shifting_offset_bn !== "number");
+    wantsOffset &&
+    result.budget.some(
+      (row) => typeof row.income_shifting_offset_bn !== "number",
+    );
   const withOffset = wantsOffset && !offsetMissing;
   const shown = result
     ? (() => {
@@ -534,14 +669,19 @@ export default function RateExplorerTab({ data, datasetKey }) {
         return {
           ...result,
           budget,
-          five_year_total_bn: budget.reduce((sum, row) => sum + row.gov_balance_change_bn, 0),
+          five_year_total_bn: budget.reduce(
+            (sum, row) => sum + row.gov_balance_change_bn,
+            0,
+          ),
         };
       })()
     : null;
 
   const firstYear = shown ? shown.budget[0].year : null;
   const firstRow = shown ? shown.budget[0] : null;
-  const topQuintile = shown ? shown.income_change_groups[firstYear].quintile.at(-1) : null;
+  const topQuintile = shown
+    ? shown.income_change_groups[firstYear].quintile.at(-1)
+    : null;
 
   return (
     <div className="space-y-6">
@@ -549,32 +689,43 @@ export default function RateExplorerTab({ data, datasetKey }) {
         <SectionHeading
           size="lg"
           title="Choose the CGT rates"
-          description={
-            <>
-              Set a rate for each band and run it: the same pipeline as the Reform impacts tab
-              scores the schedule on {dataset.shortLabel} for 2026-27 to 2030-31, with the same
-              behavioural response. The chosen rates apply to the main schedule and to residential
-              property gains. Business Asset Disposal Relief can be kept, at a rate and lifetime limit
-              you choose, or withdrawn; carried interest has been taxed as income since April 2026
-              and is left alone. Every completed run is cached, so a schedule anyone
-              has run before is served at once.
-            </>
-          }
+          description="Choose a starting point, adjust the rates and run the reform. Rates apply to main and residential property gains; the business relief is a separate choice."
         />
       </div>
 
       <section className="section-card">
         <SectionHeading
-          title="Rate schedule"
-          description="Rates in percent. Current law charges 18% within the basic rate band and 24% above it; equalising with income tax means 20% / 40% / 45%, and the equalisation on the Reform impacts tab also withdraws Business Asset Disposal Relief."
+          title="Build your reform"
+          description="Rates are percentages. The additional band lets you set a separate rate for those above the additional-rate income tax threshold."
         />
+        <div className="mb-6">
+          <LabelledSelect
+            label="Start from"
+            options={[
+              ...PRESETS.map((candidate) => ({
+                value: candidate.id,
+                label: candidate.label,
+              })),
+              { value: "custom", label: "Custom" },
+            ]}
+            value={preset}
+            onChange={(id) => {
+              const chosen = PRESETS.find((candidate) => candidate.id === id);
+              if (!chosen) return;
+              setPercents(percentsOf(chosen.rates));
+              setBadrForm(badrFormOf(chosen.badr ?? BADR_CURRENT_LAW));
+            }}
+          />
+        </div>
         <div className="grid gap-4 md:grid-cols-3">
           {BANDS.map((band) => (
             <RateInput
               key={band.key}
               band={band}
               value={percents[band.key]}
-              onChange={(value) => setPercents((current) => ({ ...current, [band.key]: value }))}
+              onChange={(value) =>
+                setPercents((current) => ({ ...current, [band.key]: value }))
+              }
             />
           ))}
         </div>
@@ -589,7 +740,9 @@ export default function RateExplorerTab({ data, datasetKey }) {
                 { value: "withdraw", label: "Withdraw it" },
               ]}
               value={badrForm.mode}
-              onChange={(mode) => setBadrForm((current) => ({ ...current, mode }))}
+              onChange={(mode) =>
+                setBadrForm((current) => ({ ...current, mode }))
+              }
             />
             {badrForm.mode === "keep" ? (
               <>
@@ -603,7 +756,10 @@ export default function RateExplorerTab({ data, datasetKey }) {
                     step={STEP_PCT}
                     value={badrForm.rate}
                     onChange={(event) =>
-                      setBadrForm((current) => ({ ...current, rate: event.target.value }))
+                      setBadrForm((current) => ({
+                        ...current,
+                        rate: event.target.value,
+                      }))
                     }
                     className="w-20 rounded-md border border-slate-300 bg-white px-2 py-1 text-base font-semibold text-slate-800"
                   />
@@ -617,53 +773,32 @@ export default function RateExplorerTab({ data, datasetKey }) {
                   }))}
                   value={String(badrForm.limit)}
                   onChange={(value) =>
-                    setBadrForm((current) => ({ ...current, limit: Number(value) }))
+                    setBadrForm((current) => ({
+                      ...current,
+                      limit: Number(value),
+                    }))
                   }
                 />
               </>
             ) : null}
           </div>
           <p className="mt-2 text-xs leading-5 text-slate-500">
-            Gains on qualifying business disposals, Investors&apos; Relief included. Current law
-            charges {describeBadr(BADR_CURRENT_LAW)}; withdrawn, those gains take the main rates
-            above. The relief&apos;s rate may not exceed the additional rate. The model charges
-            it on every qualifying gain, without the claim a taxpayer makes in law.
+            Gains on qualifying business disposals, Investors&apos; Relief
+            included. Current law charges {describeBadr(BADR_CURRENT_LAW)};
+            withdrawn, those gains take the main rates above. The relief&apos;s
+            rate may not exceed the additional rate. The model charges it on
+            every qualifying gain, without the claim a taxpayer makes in law.
           </p>
         </fieldset>
         <div className="mt-5 flex flex-wrap items-center gap-4">
           <LabelledSelect
-            label="Preset"
-            options={[
-              ...PRESETS.map((candidate) => ({ value: candidate.id, label: candidate.label })),
-              { value: "custom", label: "Custom" },
-            ]}
-            value={preset}
-            onChange={(id) => {
-              const chosen = PRESETS.find((candidate) => candidate.id === id);
-              if (!chosen) return;
-              setPercents(percentsOf(chosen.rates));
-              setBadrForm(badrFormOf(chosen.badr ?? BADR_CURRENT_LAW));
-            }}
-          />
-          <LabelledSelect
-            label="HMRC ready-reckoner row"
-            options={[
-              { value: "none", label: "None" },
-              ...READY_RECKONER.rows.map((row) => ({ value: row.id, label: row.label })),
-            ]}
-            value={readyReckonerRow}
-            onChange={(id) => {
-              const chosen = READY_RECKONER.rows.find((row) => row.id === id);
-              if (!chosen) return;
-              setPercents(percentsOf(chosen.rates));
-              setBadrForm(badrFormOf(chosen.badr ?? BADR_CURRENT_LAW));
-            }}
-          />
-          <LabelledSelect
             label="Behavioural response"
             options={offered.map((option) => ({
               value: String(option.elasticity),
-              label: elasticityLabel(option, approach),
+              label:
+                option.id === "static"
+                  ? "No behavioural response"
+                  : `${option.id === "policyengine" ? "PolicyEngine" : option.id === "official" ? "HMRC / OBR" : "CenTax"} · ${formatElasticityValue(option.elasticity)} ${option.applied_as === "mtr" ? "tax-rate" : "retention-rate"}`,
             }))}
             value={String(elasticity)}
             onChange={(value) => setElasticity(Number(value))}
@@ -672,34 +807,41 @@ export default function RateExplorerTab({ data, datasetKey }) {
             type="button"
             onClick={submit}
             disabled={!validation.rates || status === "running"}
-            className="rounded-md bg-[color:var(--pe-color-primary-600)] px-5 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-md bg-[color:var(--primary)] px-5 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {status === "running" ? "Running…" : "Run this schedule"}
+            {status === "running" ? "Running…" : "Run this reform"}
           </button>
         </div>
         {validation.error ? (
-          <p className="mt-3 text-sm leading-6 text-red-700">{validation.error}</p>
+          <p className="mt-3 text-sm leading-6 text-red-700">
+            {validation.error}
+          </p>
         ) : null}
         {deepestCut ? (
           <p className="mt-3 text-sm leading-6 text-amber-800">
-            PolicyEngine&apos;s elasticity works on the marginal tax rate itself, so the response
-            to a cut grows steeply as a rate nears zero. This schedule&apos;s deepest cut, the{" "}
-            {deepestCut.label} from {formatPct(deepestCut.from * 100, 0)} to{" "}
-            {formatPct(deepestCut.to * 100, 0)}, multiplies the realised gains it reaches by about{" "}
-            {formatFactor(deepestCut.factor)}
-            {deepestCut.to > 0 ? `; a cut to 0% would multiply them by about ${formatFactor(deepestCut.toZero)}` : ""}
-            . The retention-rate cases respond less to cuts; the Methodology tab compares the two
-            forms.
+            PolicyEngine&apos;s elasticity works on the marginal tax rate
+            itself, so the response to a cut grows steeply as a rate nears zero.
+            This schedule&apos;s deepest cut, the {deepestCut.label} from{" "}
+            {formatPct(deepestCut.from * 100, 0)} to{" "}
+            {formatPct(deepestCut.to * 100, 0)}, multiplies the realised gains
+            it reaches by about {formatFactor(deepestCut.factor)}
+            {deepestCut.to > 0
+              ? `; a cut to 0% would multiply them by about ${formatFactor(deepestCut.toZero)}`
+              : ""}
+            . The retention-rate cases respond less to cuts; the Methodology tab
+            compares the two forms.
           </p>
         ) : null}
         {addsOffset ? (
           <p
             className={`mt-3 text-sm leading-6 ${aboveIncomeTax ? "text-amber-800" : "text-slate-600"}`}
           >
-            Net of income shifting, this case adds the OBR&apos;s income tax and National Insurance
-            on {Math.round(INCOME_SHIFTING.share * 1000) / 10}% of the fall in realised gains outside
-            residential property, for the whole response. That fits a schedule that narrows the gap
-            between CGT and income tax, as equalisation does.
+            Net of income shifting, this case adds the OBR&apos;s income tax and
+            National Insurance on{" "}
+            {Math.round(INCOME_SHIFTING.share * 1000) / 10}% of the fall in
+            realised gains outside residential property, for the whole response.
+            That fits a schedule that narrows the gap between CGT and income
+            tax, as equalisation does.
             {aboveIncomeTax
               ? " This schedule sets CGT above income tax in at least one band, where the gap widens instead, so the addition does not fit it."
               : ""}
@@ -707,13 +849,37 @@ export default function RateExplorerTab({ data, datasetKey }) {
         ) : null}
         {validation.reliefAboveBasic ? (
           <p className="mt-3 text-sm leading-6 text-amber-800">
-            The relief&apos;s {formatPct(validation.badr.rate * 100, 0)} is above the basic rate of{" "}
-            {formatPct(validation.rates.basic_rate * 100, 0)}. The model charges the relief&apos;s
-            rate on every qualifying gain, but in law the relief is claimed, and a taxpayer whose
-            qualifying gains fall in the basic rate band would not claim it, so the model overstates
-            the tax on those gains.
+            The relief&apos;s {formatPct(validation.badr.rate * 100, 0)} is
+            above the basic rate of{" "}
+            {formatPct(validation.rates.basic_rate * 100, 0)}. The model charges
+            the relief&apos;s rate on every qualifying gain, but in law the
+            relief is claimed, and a taxpayer whose qualifying gains fall in the
+            basic rate band would not claim it, so the model overstates the tax
+            on those gains.
           </p>
         ) : null}
+        <details className="disclosure">
+          <summary>Load a rate change from HMRC’s ready reckoner</summary>
+          <div>
+            <LabelledSelect
+              label="HMRC ready-reckoner row"
+              options={[
+                { value: "none", label: "None" },
+                ...READY_RECKONER.rows.map((row) => ({
+                  value: row.id,
+                  label: row.label,
+                })),
+              ]}
+              value={readyReckonerRow}
+              onChange={(id) => {
+                const chosen = READY_RECKONER.rows.find((row) => row.id === id);
+                if (!chosen) return;
+                setPercents(percentsOf(chosen.rates));
+                setBadrForm(badrFormOf(chosen.badr ?? BADR_CURRENT_LAW));
+              }}
+            />
+          </div>
+        </details>
         <StatusLine
           status={status}
           elapsedSeconds={elapsedSeconds}
@@ -753,17 +919,21 @@ export default function RateExplorerTab({ data, datasetKey }) {
             </div>
             {offsetMissing ? (
               <p className="mt-3 text-sm leading-6 text-amber-800">
-                The explorer&apos;s backend did not report the income tax and National Insurance on shifted income for this
-                run, so these figures count CGT alone, not the total revenue this approach shows
-                elsewhere.
+                The explorer&apos;s backend did not report the income tax and
+                National Insurance on shifted income for this run, so these
+                figures count CGT alone, not the total revenue this approach
+                shows elsewhere.
               </p>
             ) : null}
             {ranOtherCase ? (
               <p className="mt-3 text-sm leading-6 text-amber-800">
-                This run asked for {requestedOption.label}, but the explorer&apos;s backend ran{" "}
-                {resultElasticity ? resultElasticity.label : `elasticity ${shown.metadata.elasticity}`}:
-                it predates PolicyEngine&apos;s elasticity as a case of its own. The figures are for
-                the case it ran.
+                This run asked for {requestedOption.label}, but the
+                explorer&apos;s backend ran{" "}
+                {resultElasticity
+                  ? resultElasticity.label
+                  : `elasticity ${shown.metadata.elasticity}`}
+                : it predates PolicyEngine&apos;s elasticity as a case of its
+                own. The figures are for the case it ran.
               </p>
             ) : null}
             <table className="data-table mt-5">
@@ -771,7 +941,7 @@ export default function RateExplorerTab({ data, datasetKey }) {
                 <tr>
                   <th>Compared with equalising to income tax</th>
                   <th>This schedule</th>
-                  <th>Equalisation (Reform impacts tab)</th>
+                  <th>Equalisation (Overview tab)</th>
                 </tr>
               </thead>
               <tbody>
@@ -792,26 +962,35 @@ export default function RateExplorerTab({ data, datasetKey }) {
                     {formatSignedCurrency(topQuintile.avg_change_gbp)})
                   </td>
                   <td>
-                    {formatSignedPct(equalisation.topQuintile.relative_change_pct)} (
-                    {formatSignedCurrency(equalisation.topQuintile.avg_change_gbp)})
+                    {formatSignedPct(
+                      equalisation.topQuintile.relative_change_pct,
+                    )}{" "}
+                    (
+                    {formatSignedCurrency(
+                      equalisation.topQuintile.avg_change_gbp,
+                    )}
+                    )
                   </td>
                 </tr>
               </tbody>
             </table>
             <p className="mt-3 text-xs leading-5 text-slate-500">
-              The equalisation column is the committed result for {dataset.shortLabel}: 20% / 40% /
-              45% with Business Asset Disposal Relief withdrawn, at this approach&apos;s central case
-              ({centralOption.label})
+              The equalisation column is the committed result for{" "}
+              {dataset.shortLabel}: 20% / 40% / 45% with Business Asset Disposal
+              Relief withdrawn, at this approach&apos;s central case (
+              {centralOption.label})
               {resultElasticity && resultElasticity.id !== centralOption.id
                 ? "; this schedule ran with a different elasticity, so the two are not like for like"
                 : ""}
               .
             </p>
-            {matchedRow ? <ReadyReckonerPanel row={matchedRow} result={shown} /> : null}
+            {matchedRow ? (
+              <ReadyReckonerPanel row={matchedRow} result={shown} />
+            ) : null}
           </section>
 
           <details className="section-card group">
-            <summary className="cursor-pointer select-none font-semibold text-slate-800 marker:text-[color:var(--pe-color-primary-600)]">
+            <summary className="cursor-pointer select-none font-semibold text-slate-800 marker:text-[color:var(--primary)]">
               What exactly does this schedule change?
               <span className="ml-2 text-sm font-normal text-slate-500 group-open:hidden">
                 (expand for the full specification)
@@ -819,8 +998,9 @@ export default function RateExplorerTab({ data, datasetKey }) {
             </summary>
             <div className="mt-4 space-y-3">
               <p className="text-sm leading-6 text-slate-600">
-                Effective from the 2026-27 fiscal year and held in place through 2030-31. Current
-                law is read from the installed engine for 2026-27.
+                Effective from the 2026-27 fiscal year and held in place through
+                2030-31. Current law is read from the installed engine for
+                2026-27.
               </p>
               <SpecTable metadata={result.metadata} />
             </div>
@@ -834,12 +1014,14 @@ export default function RateExplorerTab({ data, datasetKey }) {
             <BudgetChart budget={shown.budget} />
             {entrantShare > 0.05 ? (
               <p className="mt-4 text-sm leading-6 text-slate-600">
-                {formatPct(100 * entrantShare, 0)} of this dataset&apos;s {firstYear} CGT taxpayers
-                are entrants by uprating (see the Baseline tab): people whose base-year gains sit at
-                or below the frozen £3,000 exempt amount and cross it once the engine uprates gains.
-                They contribute {formatSignedBn(firstRow.cgt_change_from_entrants_bn, 2)} of the{" "}
-                {firstYear} change, so the revenue figures are little affected; the share of people
-                affected is.
+                {formatPct(100 * entrantShare, 0)} of this dataset&apos;s{" "}
+                {firstYear} CGT taxpayers are entrants by uprating (see the
+                Baseline tab): people whose base-year gains sit at or below the
+                frozen £3,000 exempt amount and cross it once the engine uprates
+                gains. They contribute{" "}
+                {formatSignedBn(firstRow.cgt_change_from_entrants_bn, 2)} of the{" "}
+                {firstYear} change, so the revenue figures are little affected;
+                the share of people affected is.
               </p>
             ) : null}
           </section>
@@ -849,20 +1031,30 @@ export default function RateExplorerTab({ data, datasetKey }) {
               title="Who bears the cost"
               description="Change in household net income, grouped by the household's position in the baseline income distribution, by household type, or by region. Losses include both the extra tax paid and the gains taxpayers choose not to realise in response."
             />
-            <GroupImpactChart groupsByYear={shown.income_change_groups} initialYear={firstYear} />
+            <GroupImpactChart
+              groupsByYear={shown.income_change_groups}
+              initialYear={firstYear}
+            />
             {withOffset ? (
               <p className="mt-3 text-xs leading-5 text-slate-500">
-                The income tax and National Insurance added back for shifted income are in the revenue figures above but not
-                in these household figures, which reflect the CGT change alone.
+                The income tax and National Insurance added back for shifted
+                income are in the revenue figures above but not in these
+                household figures, which reflect the CGT change alone.
               </p>
             ) : null}
           </section>
 
           <p className="text-xs leading-5 text-slate-500">
-            Run on policyengine.py {result.metadata.policyengine_version} with policyengine-uk{" "}
-            {result.metadata.policyengine_uk_version}; reform fingerprint{" "}
-            <span className="font-mono">{result.metadata.reform_fingerprint}</span>, projection{" "}
-            <span className="font-mono">{result.metadata.projection.fingerprint}</span>
+            Run on policyengine.py {result.metadata.policyengine_version} with
+            policyengine-uk {result.metadata.policyengine_uk_version}; reform
+            fingerprint{" "}
+            <span className="font-mono">
+              {result.metadata.reform_fingerprint}
+            </span>
+            , projection{" "}
+            <span className="font-mono">
+              {result.metadata.projection.fingerprint}
+            </span>
             {result.metadata.timing?.total_seconds
               ? `; ${result.metadata.timing.total_seconds}s of simulation`
               : ""}
