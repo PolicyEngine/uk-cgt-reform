@@ -45,7 +45,11 @@ export function getBenchmarks(data) {
   return data.benchmarks;
 }
 
-const BASELINE_CGT_RATES = { basic_rate: 0.18, higher_rate: 0.24, additional_rate: 0.24 };
+const BASELINE_CGT_RATES = {
+  basic_rate: 0.18,
+  higher_rate: 0.24,
+  additional_rate: 0.24,
+};
 
 export function getReform(data) {
   // The pipeline emits flat reform rates ({basic_rate: 0.2, ...}); normalise to
@@ -54,7 +58,10 @@ export function getReform(data) {
   return Object.fromEntries(
     Object.entries(BASELINE_CGT_RATES).map(([band, baseline]) => {
       const value = reform[band];
-      return [band, typeof value === "number" ? { baseline, reform: value } : value];
+      return [
+        band,
+        typeof value === "number" ? { baseline, reform: value } : value,
+      ];
     }),
   );
 }
@@ -64,7 +71,11 @@ export function getReform(data) {
 // Business Asset Disposal Relief charges 18% up to a £1m lifetime limit.
 // Carried interest has been taxed as income since April 2026.
 export const BASELINE_SCHEDULE_RATES = {
-  residential_property: { basic_rate: 0.18, higher_rate: 0.24, additional_rate: 0.24 },
+  residential_property: {
+    basic_rate: 0.18,
+    higher_rate: 0.24,
+    additional_rate: 0.24,
+  },
   badr: { withdrawn: false, rate: 0.18, lifetime_limit: 1_000_000 },
 };
 
@@ -168,7 +179,9 @@ export function withOffsetLabel(name) {
 }
 
 function addByYear(values, offsets) {
-  return Object.fromEntries(Object.entries(values).map(([year, v]) => [year, v + offsets[year]]));
+  return Object.fromEntries(
+    Object.entries(values).map(([year, v]) => [year, v + offsets[year]]),
+  );
 }
 
 // A ready-reckoner row's figures for one case as an approach shows them.
@@ -185,7 +198,8 @@ export function applyApproach(data, approachId) {
   const byId = Object.fromEntries(data.sensitivity.map((row) => [row.id, row]));
   const sensitivity = approach.case_ids.map((id) => {
     const row = byId[id];
-    if (!offsetIds.has(id)) return { ...row, includes_income_shifting_offset: false };
+    if (!offsetIds.has(id))
+      return { ...row, includes_income_shifting_offset: false };
     return {
       ...row,
       name: withOffsetLabel(row.name),
@@ -197,7 +211,11 @@ export function applyApproach(data, approachId) {
   const rr = data.benchmarks.ready_reckoner;
   // The central case's budget: the committed one, plus the income-shifting
   // offset under the approach net of income shifting.
-  const budget = applyApproachToBudget(data.budget, approach, approach.central_id);
+  const budget = applyApproachToBudget(
+    data.budget,
+    approach,
+    approach.central_id,
+  );
   return {
     ...data,
     approach,
@@ -244,6 +262,7 @@ export function applyApproachToBudget(rows, approach, elasticityId) {
   if (!approach.offset_case_ids.includes(elasticityId)) return rows;
   return rows.map((row) => ({
     ...row,
-    gov_balance_change_bn: row.gov_balance_change_bn + row.income_shifting_offset_bn,
+    gov_balance_change_bn:
+      row.gov_balance_change_bn + row.income_shifting_offset_bn,
   }));
 }

@@ -64,6 +64,7 @@ REGION_NAMES = {
 }
 
 QUANTILE_LABELS = {
+    10: ["Lowest 10%", *[f"{n}–{n + 10}%" for n in range(10, 90, 10)], "Highest 10%"],
     4: ["Lowest 25%", "25–50%", "50–75%", "Highest 25%"],
     5: ["Lowest 20%", "20–40%", "40–60%", "60–80%", "Highest 20%"],
 }
@@ -317,13 +318,15 @@ def _group_rows(gain, base_income, labels, order) -> list[dict]:
 
 def income_change_groups(baseline, reformed) -> dict:
     """Change in household net income by weighted baseline-income quantile
-    (quintiles and quartiles), by household type, and by region."""
+    (deciles, quintiles and quartiles), household type, oldest member's age,
+    and region. Age groups describe households, not individual taxpayers."""
     base_hh, ref_hh = _household(baseline), _household(reformed)
     gain = ref_hh["household_net_income"] - base_hh["household_net_income"]
     base_income = base_hh["household_net_income"]
 
     result = {}
     for n, key, rank in (
+        (10, "decile", base_income.decile_rank()),
         (5, "quintile", base_income.quintile_rank()),
         (4, "quartile", base_income.quartile_rank()),
     ):
@@ -339,6 +342,7 @@ def income_change_groups(baseline, reformed) -> dict:
     members = pd.DataFrame(
         {
             "household_id": person["household_id"].values,
+            "age": person["age"].values,
             "is_child": person["is_child"].values.astype(bool),
             "working_age_adult": (
                 person["is_adult"].values.astype(bool) & ~person["is_SP_age"].values.astype(bool)
@@ -353,6 +357,17 @@ def income_change_groups(baseline, reformed) -> dict:
     type_order = ["With children", "Pensioner", "Working-age, no children"]
     type_labels = np.where(child, type_order[0], np.where(pensioner, type_order[1], type_order[2]))
     result["household_type"] = _group_rows(gain, base_income, type_labels, type_order)
+
+    # Age of the oldest member gives every household one group and avoids
+    # counting a household's income once for each of its members.
+    oldest = members["age"].max().reindex(hh_ids)
+    if oldest.isna().any():
+        raise ValueError("Cannot assign an age group to a household without members.")
+    age_order = ["Under 35", "35–44", "45–54", "55–64", "65–74", "75+"]
+    age_labels = np.array(age_order, dtype=object)[
+        np.searchsorted([35, 45, 55, 65, 75], oldest.to_numpy(), side="right")
+    ]
+    result["age"] = _group_rows(gain, base_income, age_labels, age_order)
 
     region_labels = np.array(
         [REGION_NAMES.get(str(name), "") for name in base_hh["region"].values], dtype=object

@@ -31,7 +31,8 @@ export function getNiceTicks(domain, count = 5) {
   }
 
   if (ticks.length >= 2 && ticks[ticks.length - 1] < domainMax) {
-    const lastTick = Math.round((ticks[ticks.length - 1] + step) * 1e10) / 1e10 || 0;
+    const lastTick =
+      Math.round((ticks[ticks.length - 1] + step) * 1e10) / 1e10 || 0;
     ticks.push(lastTick);
   }
 

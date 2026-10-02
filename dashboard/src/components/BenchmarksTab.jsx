@@ -1,6 +1,10 @@
 "use client";
 
-import { getBenchmarks, getDatasetInfo, getSensitivity } from "../lib/dataHelpers";
+import {
+  getBenchmarks,
+  getDatasetInfo,
+  getSensitivity,
+} from "../lib/dataHelpers";
 import {
   formatBn,
   formatElasticityValue,
@@ -74,7 +78,11 @@ function StaticEqualisation({ block, dataset }) {
                   )}
                 </td>
                 <td className="font-semibold">
-                  {jrf[row.year] ? `about ${formatBn(jrf[row.year].value, 0)}` : <Dash />}
+                  {jrf[row.year] ? (
+                    `about ${formatBn(jrf[row.year].value, 0)}`
+                  ) : (
+                    <Dash />
+                  )}
                 </td>
               </tr>
             ))}
@@ -83,10 +91,11 @@ function StaticEqualisation({ block, dataset }) {
       </div>
       <p className="mt-3 text-xs leading-5 text-slate-500">
         Source: <SourceLink href={source.url}>{source.source}</SourceLink>,{" "}
-        {formatPublished(source.published)}, {source.locator.toLowerCase()}. JRF uses grouped
-        statistics rather than microdata and does not state its deflator; this table deflates with
-        the CPI path in {block.price_index_source}. Model figures are liabilities in the year; the
-        OBR figures are cash receipts.
+        {formatPublished(source.published)}, {source.locator.toLowerCase()}. JRF
+        uses grouped statistics rather than microdata and does not state its
+        deflator; this table deflates with the CPI path in{" "}
+        {block.price_index_source}. Model figures are liabilities in the year;
+        the OBR figures are cash receipts.
       </p>
     </section>
   );
@@ -138,18 +147,21 @@ function CentaxRegions({ block, dataset }) {
           </tbody>
         </table>
       </div>
-      <div className="note-card mt-4 rounded-lg p-4 text-sm leading-6 text-slate-600">
-        <p className="note-eyebrow">Read with care</p>
+      <div className="analysis-note">
+        <p className="analysis-note-title">Read with care</p>
         <p>
-          The counterfactual applies 2019/20 CGT rules to 2026-27 incomes, income tax thresholds and
-          gains, with the £12,000 exempt amount in 2026 money. CenTax covers resident individuals
-          only (it puts the omitted trusts and non-residents at about 5% of revenue) and counts CGT
-          and income tax together. Its regions are taxpayers&apos; regions of residence; these are
-          households&apos; regions. A dataset that records no residential property gains charges
-          every gain at the main rates in both runs. {block.rules.not_modelled}
+          The counterfactual applies 2019/20 CGT rules to 2026-27 incomes,
+          income tax thresholds and gains, with the £12,000 exempt amount in
+          2026 money. CenTax covers resident individuals only (it puts the
+          omitted trusts and non-residents at about 5% of revenue) and counts
+          CGT and income tax together. Its regions are taxpayers&apos; regions
+          of residence; these are households&apos; regions. A dataset that
+          records no residential property gains charges every gain at the main
+          rates in both runs. {block.rules.not_modelled}
         </p>
         <p className="mt-2">
-          Sources: <SourceLink href={external.url}>{external.source}</SourceLink>,{" "}
+          Sources:{" "}
+          <SourceLink href={external.url}>{external.source}</SourceLink>,{" "}
           {external.locator} and {block.external_regions.locator}.
         </p>
       </div>
@@ -160,7 +172,10 @@ function CentaxRegions({ block, dataset }) {
 function packageValue(row) {
   if (row.id === "centax_2024_table6_package_range") {
     return row.details.by_retention_elasticity
-      .map((entry) => `${formatBn(entry.value, 1)} at ${entry.retention_elasticity.toFixed(1)}`)
+      .map(
+        (entry) =>
+          `${formatBn(entry.value, 1)} at ${entry.retention_elasticity.toFixed(1)}`,
+      )
       .join(", ");
   }
   if (row.details?.uplift_pct) {
@@ -194,7 +209,9 @@ function CentaxPackage({ rows }) {
               <tr key={row.id}>
                 <td>
                   <SourceLink href={row.url}>{row.source}</SourceLink>
-                  <span className="block text-xs text-slate-500">{row.locator}</span>
+                  <span className="block text-xs text-slate-500">
+                    {row.locator}
+                  </span>
                 </td>
                 <td>{row.year}</td>
                 <td className="whitespace-nowrap">{packageValue(row)}</td>
@@ -247,23 +264,38 @@ function ReadyReckoner({ block, dataset, elasticities }) {
             {block.rows.map((row) => (
               <tr key={row.id}>
                 <td>{row.label}</td>
-                <td className="text-slate-500">{formatSignedMn(row.hmrc_m[block.hmrc_years[0]])}</td>
-                <td className="font-semibold">{formatSignedMn(row.hmrc_m[first.hmrc_year])}</td>
-                <td>{formatSignedMn(model(row, "central", first.model_year))}</td>
-                <td>{formatSignedMn(model(row, "official", first.model_year))}</td>
-                <td className="font-semibold">{formatSignedMn(row.hmrc_m[second.hmrc_year])}</td>
-                <td>{formatSignedMn(model(row, "central", second.model_year))}</td>
-                <td>{formatSignedMn(model(row, "official", second.model_year))}</td>
+                <td className="text-slate-500">
+                  {formatSignedMn(row.hmrc_m[block.hmrc_years[0]])}
+                </td>
+                <td className="font-semibold">
+                  {formatSignedMn(row.hmrc_m[first.hmrc_year])}
+                </td>
+                <td>
+                  {formatSignedMn(model(row, "central", first.model_year))}
+                </td>
+                <td>
+                  {formatSignedMn(model(row, "official", first.model_year))}
+                </td>
+                <td className="font-semibold">
+                  {formatSignedMn(row.hmrc_m[second.hmrc_year])}
+                </td>
+                <td>
+                  {formatSignedMn(model(row, "central", second.model_year))}
+                </td>
+                <td>
+                  {formatSignedMn(model(row, "official", second.model_year))}
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
       <p className="mt-3 text-xs leading-5 text-slate-500">
-        Source: <SourceLink href={block.url}>{block.source}</SourceLink>, {block.locator}. {block.note}{" "}
-        HMRC&apos;s figures are {lowerFirst(block.measure)}; the model figures are the change in
-        government balance on its own data, in the Rate explorer&apos;s scope (main and residential
-        rates and the relief)
+        Source: <SourceLink href={block.url}>{block.source}</SourceLink>,{" "}
+        {block.locator}. {block.note} HMRC&apos;s figures are{" "}
+        {lowerFirst(block.measure)}; the model figures are the change in
+        government balance on its own data, in the Rate explorer&apos;s scope
+        (main and residential rates and the relief)
         {withOffset
           ? `, and the ${centralOffset ? "central and official columns add" : "official columns add"} the income tax and National Insurance the OBR's method attributes to income no longer presented as gains, as HMRC's own figures include income tax effects`
           : ", counting CGT alone: unlike HMRC's figures they include no income tax or National Insurance on income no longer presented as gains"}
@@ -284,8 +316,12 @@ export default function BenchmarksTab({ data, onNavigate }) {
   const benchmarks = getBenchmarks(data);
   const dataset = getDatasetInfo(data);
   const { elasticities } = benchmarks;
-  const official = getSensitivity(data).find((row) => row.id === elasticities.official.id);
-  const central = getSensitivity(data).find((row) => row.id === elasticities.central.id);
+  const official = getSensitivity(data).find(
+    (row) => row.id === elasticities.official.id,
+  );
+  const central = getSensitivity(data).find(
+    (row) => row.id === elasticities.central.id,
+  );
   // The retention elasticity the central case behaves like for gains moving
   // from 24% to 45% and from 24% to 40%.
   const [, higher, additional] = elasticities.central.retention_equivalents;
@@ -298,28 +334,38 @@ export default function BenchmarksTab({ data, onNavigate }) {
           description="Published estimates that score the same reform, or the same kind of rate change, next to this dataset's own figures on the same basis. Estimates that cover a wider package are listed separately as context."
         />
       </section>
-      <StaticEqualisation block={benchmarks.static_equalisation} dataset={dataset} />
-      <CentaxRegions block={benchmarks.centax_2019_20_rules} dataset={dataset} />
+      <StaticEqualisation
+        block={benchmarks.static_equalisation}
+        dataset={dataset}
+      />
+      <CentaxRegions
+        block={benchmarks.centax_2019_20_rules}
+        dataset={dataset}
+      />
       <CentaxPackage rows={benchmarks.centax_package_context} />
       <ReadyReckoner
         block={benchmarks.ready_reckoner}
         dataset={dataset}
         elasticities={benchmarks.elasticities}
       />
-      <section className="note-card rounded-lg p-4 text-sm leading-6 text-slate-600">
-        <p className="note-eyebrow">Why the elasticity matters</p>
+      <section className="analysis-note">
+        <p className="analysis-note-title">Why the elasticity matters</p>
         <p>
           The official HMRC/OBR assumption is a retention-rate elasticity of{" "}
           {elasticities.official.elasticity} for main-rate gains and{" "}
-          {elasticities.official.badr_elasticity} for gains qualifying for Business Asset
-          Disposal Relief. This dashboard&apos;s central case is PolicyEngine&apos;s{" "}
-          {formatElasticityValue(elasticities.central.elasticity)} with respect to the marginal tax
-          rate, which over this reform&apos;s rises at the higher and additional rates behaves like a
-          retention-rate elasticity of about {additional.e_retention.toFixed(1)} to{" "}
-          {higher.e_retention.toFixed(1)}. On {dataset.shortLabel}, equalisation changes{" "}
-          {data.approach.id === "total_revenue" ? "revenue" : "CGT revenue"} in 2026-27 by{" "}
-          {formatSignedBn(central.revenue_2026_bn, 1)} at the central elasticity and by{" "}
-          {formatSignedBn(official.revenue_2026_bn, 1)} at the official one
+          {elasticities.official.badr_elasticity} for gains qualifying for
+          Business Asset Disposal Relief. This dashboard&apos;s central case is
+          PolicyEngine&apos;s{" "}
+          {formatElasticityValue(elasticities.central.elasticity)} with respect
+          to the marginal tax rate, which over this reform&apos;s rises at the
+          higher and additional rates behaves like a retention-rate elasticity
+          of about {additional.e_retention.toFixed(1)} to{" "}
+          {higher.e_retention.toFixed(1)}. On {dataset.shortLabel}, equalisation
+          changes{" "}
+          {data.approach.id === "total_revenue" ? "revenue" : "CGT revenue"} in
+          2026-27 by {formatSignedBn(central.revenue_2026_bn, 1)} at the central
+          elasticity and by {formatSignedBn(official.revenue_2026_bn, 1)} at the
+          official one
           {data.approach.id === "total_revenue"
             ? ", both including the income tax and National Insurance the OBR's method adds back for income no longer presented as gains"
             : ""}
@@ -327,7 +373,7 @@ export default function BenchmarksTab({ data, onNavigate }) {
           <button
             type="button"
             onClick={() => onNavigate("methodology", "elasticity-gap")}
-            className="font-semibold text-[color:var(--pe-color-primary-600)] underline decoration-1 underline-offset-2 hover:opacity-80"
+            className="font-semibold text-[color:var(--primary)] underline decoration-1 underline-offset-2 hover:opacity-80"
           >
             The Methodology tab explains the difference.
           </button>

@@ -320,6 +320,90 @@
           "avg_change_gbp": -1007.8162057185477,
           "relative_change_pct": -1.6967248828041017
         }
+      ],
+      "decile": [
+        {
+          "group": "Lowest 10%",
+          "avg_change_gbp": -32.308900455143636,
+          "relative_change_pct": -0.2211006310022499
+        },
+        {
+          "group": "10\u201320%",
+          "avg_change_gbp": -2.3056822115182976,
+          "relative_change_pct": -0.008888933073445017
+        },
+        {
+          "group": "20\u201330%",
+          "avg_change_gbp": -12.667379967966612,
+          "relative_change_pct": -0.03765908278547878
+        },
+        {
+          "group": "30\u201340%",
+          "avg_change_gbp": -8.651297123985575,
+          "relative_change_pct": -0.02087781739125018
+        },
+        {
+          "group": "40\u201350%",
+          "avg_change_gbp": -15.28342184316829,
+          "relative_change_pct": -0.03099470331518097
+        },
+        {
+          "group": "50\u201360%",
+          "avg_change_gbp": -27.832742555327336,
+          "relative_change_pct": -0.04804869136886174
+        },
+        {
+          "group": "60\u201370%",
+          "avg_change_gbp": -42.953009737572835,
+          "relative_change_pct": -0.06435063214642846
+        },
+        {
+          "group": "70\u201380%",
+          "avg_change_gbp": -79.66527638366402,
+          "relative_change_pct": -0.10224536545477877
+        },
+        {
+          "group": "80\u201390%",
+          "avg_change_gbp": -237.7328640156074,
+          "relative_change_pct": -0.247982198612278
+        },
+        {
+          "group": "Highest 10%",
+          "avg_change_gbp": -17225.99499457678,
+          "relative_change_pct": -8.84429383119979
+        }
+      ],
+      "age": [
+        {
+          "group": "Under 35",
+          "avg_change_gbp": -286.874403490162,
+          "relative_change_pct": -0.5199180478841238
+        },
+        {
+          "group": "35\u201344",
+          "avg_change_gbp": -1030.7033009105442,
+          "relative_change_pct": -1.3937297643205413
+        },
+        {
+          "group": "45\u201354",
+          "avg_change_gbp": -2649.4020723914323,
+          "relative_change_pct": -3.145546938162299
+        },
+        {
+          "group": "55\u201364",
+          "avg_change_gbp": -2818.214721380139,
+          "relative_change_pct": -4.059068273882098
+        },
+        {
+          "group": "65\u201374",
+          "avg_change_gbp": -2268.6657019965014,
+          "relative_change_pct": -3.985145767901712
+        },
+        {
+          "group": "75+",
+          "avg_change_gbp": -1182.396254791728,
+          "relative_change_pct": -2.244301120546288
+        }
       ]
     },
     "2027-28": {
@@ -449,6 +533,90 @@
           "group": "Northern Ireland",
           "avg_change_gbp": -1041.241630661089,
           "relative_change_pct": -1.7219850270220745
+        }
+      ],
+      "decile": [
+        {
+          "group": "Lowest 10%",
+          "avg_change_gbp": -33.57819256206772,
+          "relative_change_pct": -0.22826017849896707
+        },
+        {
+          "group": "10\u201320%",
+          "avg_change_gbp": -2.2907348258308735,
+          "relative_change_pct": -0.008698870073058352
+        },
+        {
+          "group": "20\u201330%",
+          "avg_change_gbp": -13.151423492144218,
+          "relative_change_pct": -0.0384757029865886
+        },
+        {
+          "group": "30\u201340%",
+          "avg_change_gbp": -10.052327047463496,
+          "relative_change_pct": -0.023883593591326302
+        },
+        {
+          "group": "40\u201350%",
+          "avg_change_gbp": -13.462795069076018,
+          "relative_change_pct": -0.026873920761417973
+        },
+        {
+          "group": "50\u201360%",
+          "avg_change_gbp": -32.453098105922734,
+          "relative_change_pct": -0.055122871445920464
+        },
+        {
+          "group": "60\u201370%",
+          "avg_change_gbp": -45.910274624402184,
+          "relative_change_pct": -0.06769328410332458
+        },
+        {
+          "group": "70\u201380%",
+          "avg_change_gbp": -79.98102751541833,
+          "relative_change_pct": -0.10102109918509655
+        },
+        {
+          "group": "80\u201390%",
+          "avg_change_gbp": -238.91284748109595,
+          "relative_change_pct": -0.24521971395879563
+        },
+        {
+          "group": "Highest 10%",
+          "avg_change_gbp": -17823.785225994307,
+          "relative_change_pct": -8.96608356053452
+        }
+      ],
+      "age": [
+        {
+          "group": "Under 35",
+          "avg_change_gbp": -297.3364825737771,
+          "relative_change_pct": -0.5302785925774844
+        },
+        {
+          "group": "35\u201344",
+          "avg_change_gbp": -1065.246683433557,
+          "relative_change_pct": -1.4180819768766586
+        },
+        {
+          "group": "45\u201354",
+          "avg_change_gbp": -2737.256995637665,
+          "relative_change_pct": -3.195185185678905
+        },
+        {
+          "group": "55\u201364",
+          "avg_change_gbp": -2910.826976040371,
+          "relative_change_pct": -4.115384369580255
+        },
+        {
+          "group": "65\u201374",
+          "avg_change_gbp": -2345.1972326317527,
+          "relative_change_pct": -4.046318216722746
+        },
+        {
+          "group": "75+",
+          "avg_change_gbp": -1222.0671262917872,
+          "relative_change_pct": -2.2840957351488433
         }
       ]
     },
@@ -580,6 +748,90 @@
           "avg_change_gbp": -1074.3014838184858,
           "relative_change_pct": -1.7474764930854287
         }
+      ],
+      "decile": [
+        {
+          "group": "Lowest 10%",
+          "avg_change_gbp": -34.73855382882322,
+          "relative_change_pct": -0.2343249360355935
+        },
+        {
+          "group": "10\u201320%",
+          "avg_change_gbp": -2.4179115695882496,
+          "relative_change_pct": -0.009044777719042834
+        },
+        {
+          "group": "20\u201330%",
+          "avg_change_gbp": -13.557280737763335,
+          "relative_change_pct": -0.03907678256626064
+        },
+        {
+          "group": "30\u201340%",
+          "avg_change_gbp": -12.580029688793076,
+          "relative_change_pct": -0.029456437912147346
+        },
+        {
+          "group": "40\u201350%",
+          "avg_change_gbp": -16.77138835691808,
+          "relative_change_pct": -0.032989007696411145
+        },
+        {
+          "group": "50\u201360%",
+          "avg_change_gbp": -28.90343108681321,
+          "relative_change_pct": -0.048335939918549745
+        },
+        {
+          "group": "60\u201370%",
+          "avg_change_gbp": -52.21436765978361,
+          "relative_change_pct": -0.07583841464582756
+        },
+        {
+          "group": "70\u201380%",
+          "avg_change_gbp": -81.94598198099078,
+          "relative_change_pct": -0.10194293164138969
+        },
+        {
+          "group": "80\u201390%",
+          "avg_change_gbp": -217.89244626070257,
+          "relative_change_pct": -0.22040249450626392
+        },
+        {
+          "group": "Highest 10%",
+          "avg_change_gbp": -18358.09047725033,
+          "relative_change_pct": -9.068523431529282
+        }
+      ],
+      "age": [
+        {
+          "group": "Under 35",
+          "avg_change_gbp": -307.3957899832077,
+          "relative_change_pct": -0.5403230919270985
+        },
+        {
+          "group": "35\u201344",
+          "avg_change_gbp": -1099.3799450442023,
+          "relative_change_pct": -1.4424300399805376
+        },
+        {
+          "group": "45\u201354",
+          "avg_change_gbp": -2808.667156292541,
+          "relative_change_pct": -3.2267849719895234
+        },
+        {
+          "group": "55\u201364",
+          "avg_change_gbp": -3002.646793978961,
+          "relative_change_pct": -4.17019615565329
+        },
+        {
+          "group": "65\u201374",
+          "avg_change_gbp": -2421.745697492238,
+          "relative_change_pct": -4.104370972359121
+        },
+        {
+          "group": "75+",
+          "avg_change_gbp": -1262.518905063515,
+          "relative_change_pct": -2.3236168758823244
+        }
       ]
     },
     "2029-30": {
@@ -710,6 +962,90 @@
           "avg_change_gbp": -1107.0077585597994,
           "relative_change_pct": -1.7721910922419786
         }
+      ],
+      "decile": [
+        {
+          "group": "Lowest 10%",
+          "avg_change_gbp": -35.88951302837688,
+          "relative_change_pct": -0.24011288765124056
+        },
+        {
+          "group": "10\u201320%",
+          "avg_change_gbp": -2.3522312372042635,
+          "relative_change_pct": -0.008672153428349474
+        },
+        {
+          "group": "20\u201330%",
+          "avg_change_gbp": -14.663345988078941,
+          "relative_change_pct": -0.041652724648854195
+        },
+        {
+          "group": "30\u201340%",
+          "avg_change_gbp": -7.52573968455693,
+          "relative_change_pct": -0.017362453087619335
+        },
+        {
+          "group": "40\u201350%",
+          "avg_change_gbp": -20.158430872287262,
+          "relative_change_pct": -0.03905613281241152
+        },
+        {
+          "group": "50\u201360%",
+          "avg_change_gbp": -32.52687139870095,
+          "relative_change_pct": -0.05357088992041501
+        },
+        {
+          "group": "60\u201370%",
+          "avg_change_gbp": -55.01917314990503,
+          "relative_change_pct": -0.07874921873935219
+        },
+        {
+          "group": "70\u201380%",
+          "avg_change_gbp": -82.83311558019919,
+          "relative_change_pct": -0.10158417534936358
+        },
+        {
+          "group": "80\u201390%",
+          "avg_change_gbp": -227.72191872735144,
+          "relative_change_pct": -0.2270322872990992
+        },
+        {
+          "group": "Highest 10%",
+          "avg_change_gbp": -18950.00921526473,
+          "relative_change_pct": -9.18479251625692
+        }
+      ],
+      "age": [
+        {
+          "group": "Under 35",
+          "avg_change_gbp": -316.93096041947894,
+          "relative_change_pct": -0.5493253232346474
+        },
+        {
+          "group": "35\u201344",
+          "avg_change_gbp": -1132.3642824802575,
+          "relative_change_pct": -1.4654852149138236
+        },
+        {
+          "group": "45\u201354",
+          "avg_change_gbp": -2891.43580255047,
+          "relative_change_pct": -3.2719382574533156
+        },
+        {
+          "group": "55\u201364",
+          "avg_change_gbp": -3091.8525024263595,
+          "relative_change_pct": -4.221912696141267
+        },
+        {
+          "group": "65\u201374",
+          "avg_change_gbp": -2497.1582347055587,
+          "relative_change_pct": -4.159108114990551
+        },
+        {
+          "group": "75+",
+          "avg_change_gbp": -1302.2997464752655,
+          "relative_change_pct": -2.360567722446629
+        }
       ]
     },
     "2030-31": {
@@ -839,6 +1175,90 @@
           "group": "Northern Ireland",
           "avg_change_gbp": -1142.881952934301,
           "relative_change_pct": -1.8034655097826804
+        }
+      ],
+      "decile": [
+        {
+          "group": "Lowest 10%",
+          "avg_change_gbp": -36.9870491197043,
+          "relative_change_pct": -0.24677999309423143
+        },
+        {
+          "group": "10\u201320%",
+          "avg_change_gbp": -2.535965603314571,
+          "relative_change_pct": -0.009325002127863755
+        },
+        {
+          "group": "20\u201330%",
+          "avg_change_gbp": -14.959864446989771,
+          "relative_change_pct": -0.04206080930237663
+        },
+        {
+          "group": "30\u201340%",
+          "avg_change_gbp": -8.552437044348258,
+          "relative_change_pct": -0.019472286000329405
+        },
+        {
+          "group": "40\u201350%",
+          "avg_change_gbp": -21.50172672146515,
+          "relative_change_pct": -0.04105176850451168
+        },
+        {
+          "group": "50\u201360%",
+          "avg_change_gbp": -31.92329340488422,
+          "relative_change_pct": -0.05175839826272929
+        },
+        {
+          "group": "60\u201370%",
+          "avg_change_gbp": -59.03361075351167,
+          "relative_change_pct": -0.08323145397283896
+        },
+        {
+          "group": "70\u201380%",
+          "avg_change_gbp": -79.3837346262669,
+          "relative_change_pct": -0.09592859094876062
+        },
+        {
+          "group": "80\u201390%",
+          "avg_change_gbp": -231.85115357500658,
+          "relative_change_pct": -0.22765976660982623
+        },
+        {
+          "group": "Highest 10%",
+          "avg_change_gbp": -19562.805412378137,
+          "relative_change_pct": -9.28745195037246
+        }
+      ],
+      "age": [
+        {
+          "group": "Under 35",
+          "avg_change_gbp": -327.1714629223612,
+          "relative_change_pct": -0.5592263908467934
+        },
+        {
+          "group": "35\u201344",
+          "avg_change_gbp": -1168.3497938272158,
+          "relative_change_pct": -1.4909242105742662
+        },
+        {
+          "group": "45\u201354",
+          "avg_change_gbp": -2983.6801278230537,
+          "relative_change_pct": -3.324380826933502
+        },
+        {
+          "group": "55\u201364",
+          "avg_change_gbp": -3190.437304369485,
+          "relative_change_pct": -4.285904642146127
+        },
+        {
+          "group": "65\u201374",
+          "avg_change_gbp": -2578.0153667439554,
+          "relative_change_pct": -4.216205051992186
+        },
+        {
+          "group": "75+",
+          "avg_change_gbp": -1344.8305423984605,
+          "relative_change_pct": -2.399424117216733
         }
       ]
     }

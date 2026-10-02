@@ -7,12 +7,13 @@ import {
   CartesianGrid,
   Legend,
   ResponsiveContainer,
+  ReferenceLine,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
 import { colors } from "../../lib/colors";
-import { formatBn } from "../../lib/formatters";
+import { formatBn, formatSignedBn } from "../../lib/formatters";
 import ChartLogo from "../ChartLogo";
 import { Toggle } from "../controls";
 
@@ -27,16 +28,24 @@ export default function BudgetChart({ budget }) {
       <div className="mb-3 flex flex-wrap items-center gap-4">
         <Toggle
           options={[
-            { value: "levels", label: "Revenue levels" },
-            { value: "change", label: "Change vs baseline" },
+            { value: "change", label: "Revenue change" },
+            { value: "levels", label: "CGT revenue levels" },
           ]}
           value={budgetView}
           onChange={setBudgetView}
         />
       </div>
-      <div className="h-[380px] w-full">
+      <p className="source-note">
+        {budgetView === "levels"
+          ? "CGT liability only. Income tax and National Insurance from shifting are excluded from these levels."
+          : "Change in government revenue under the selected income-shifting approach."}
+      </p>
+      <div className="h-[340px] w-full">
         <ResponsiveContainer>
-          <BarChart data={budget} margin={{ top: 10, right: 20, bottom: 5, left: 10 }}>
+          <BarChart
+            data={budget}
+            margin={{ top: 10, right: 20, bottom: 5, left: 10 }}
+          >
             <CartesianGrid strokeDasharray="3 3" stroke={colors.border.light} />
             <XAxis dataKey="year" tick={AXIS_STYLE} />
             <YAxis
@@ -45,6 +54,7 @@ export default function BudgetChart({ budget }) {
               tickLine={false}
               axisLine={false}
             />
+            <ReferenceLine y={0} stroke={colors.gray[400]} />
             <Tooltip formatter={(v) => formatBn(v)} />
             <Legend />
             {budgetView === "levels" ? (
@@ -65,7 +75,7 @@ export default function BudgetChart({ budget }) {
             ) : (
               <Bar
                 dataKey="gov_balance_change_bn"
-                name="Government balance change"
+                name="Revenue change"
                 fill={colors.primary[600]}
                 radius={[6, 6, 0, 0]}
               />
@@ -74,6 +84,32 @@ export default function BudgetChart({ budget }) {
         </ResponsiveContainer>
       </div>
       <ChartLogo />
+      <details className="disclosure">
+        <summary>View annual figures</summary>
+        <div className="table-scroll">
+          <table className="data-table">
+            <caption>Revenue, £ billion in cash terms</caption>
+            <thead>
+              <tr>
+                <th scope="col">Year</th>
+                <th scope="col">Current policy CGT</th>
+                <th scope="col">Reform CGT</th>
+                <th scope="col">Revenue change, selected approach</th>
+              </tr>
+            </thead>
+            <tbody>
+              {budget.map((row) => (
+                <tr key={row.year}>
+                  <th scope="row">{row.year}</th>
+                  <td>{formatBn(row.baseline_cgt_bn, 1)}</td>
+                  <td>{formatBn(row.reform_cgt_bn, 1)}</td>
+                  <td>{formatSignedBn(row.gov_balance_change_bn, 1)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </details>
     </>
   );
 }

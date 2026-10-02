@@ -24,7 +24,9 @@ export async function passThrough(upstream) {
   try {
     JSON.parse(text);
   } catch {
-    body = JSON.stringify({ detail: text.trim().slice(0, 300) || `HTTP ${upstream.status}` });
+    body = JSON.stringify({
+      detail: text.trim().slice(0, 300) || `HTTP ${upstream.status}`,
+    });
   }
   return new Response(body, {
     status: upstream.status,

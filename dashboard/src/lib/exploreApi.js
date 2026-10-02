@@ -18,7 +18,10 @@ async function parse(response) {
   }
   if (!response.ok) {
     // The Vercel firewall's rate limit answers 403 (or 429) with a non-JSON body.
-    if ((response.status === 403 || response.status === 429) && !body.detail?.startsWith("{")) {
+    if (
+      (response.status === 403 || response.status === 429) &&
+      !body.detail?.startsWith("{")
+    ) {
       throw new Error(
         body.detail && body.detail.length < 200 && !body.detail.includes("<")
           ? body.detail
@@ -27,7 +30,10 @@ async function parse(response) {
     }
     // A backend deployed before a new behavioural option refuses it by name;
     // say so plainly instead of showing the validator's list of values.
-    if (response.status === 400 && body.detail?.startsWith("elasticity must be one of")) {
+    if (
+      response.status === 400 &&
+      body.detail?.startsWith("elasticity must be one of")
+    ) {
       throw new Error(
         "The explorer's backend does not offer this behavioural response yet: it arrives with the backend update that accompanies this dashboard. Choose another response for now.",
       );
@@ -91,10 +97,17 @@ export function useExploration() {
         if (id !== runId.current) return;
         await new Promise((resolve) => setTimeout(resolve, POLL_MS));
         const jobId = body.job_id ?? body.jobId;
-        body = { ...(await parse(await fetch(`${BASE_PATH}/api/explore/status?job=${jobId}`))), job_id: jobId };
+        body = {
+          ...(await parse(
+            await fetch(`${BASE_PATH}/api/explore/status?job=${jobId}`),
+          )),
+          job_id: jobId,
+        };
       }
-      if (body.status === "failed") throw new Error(body.detail || "The run failed.");
-      if (body.status !== "done" || !body.result) throw new Error("Unexpected response from the explorer backend.");
+      if (body.status === "failed")
+        throw new Error(body.detail || "The run failed.");
+      if (body.status !== "done" || !body.result)
+        throw new Error("Unexpected response from the explorer backend.");
       finish(() => {
         setResult(body.result);
         setStatus("done");
