@@ -116,6 +116,7 @@ export function getDatasetInfo(data) {
     producer: md.dataset_producer,
     observation: md.dataset_observation,
     notes: md.dataset_notes,
+    columns: md.dataset_columns,
   };
 }
 

@@ -1,7 +1,10 @@
 """The rate explorer's gateway: a cheap, always-available FastAPI app.
 
 - ``GET  /metadata``      what the Volume was warmed with plus the request options
-- ``POST /submit``        validate; serve a cached result at once, else spawn a job
+- ``POST /submit``        validate; serve a cached result at once, else spawn a job;
+                          with ``"cache_only": true`` (a link opened on page load)
+                          answer ``not_cached`` instead of spawning, so links never
+                          spend the compute budget
 - ``GET  /status/{job}``  poll a spawned job
 
 It never runs the engine. Cached results come from the ``modal.Dict`` first
@@ -124,6 +127,10 @@ def build_web_app():
                 {"status": "queued", "job_id": in_flight[key]["job_id"], "cache_key": key},
                 headers=no_store,
             )
+        # A link opened on page load is served from the cache or a job
+        # already running, never a new one: computing takes a click.
+        if payload.get("cache_only") is True:
+            return JSONResponse({"status": "not_cached", "cache_key": key}, headers=no_store)
         if len(in_flight) >= MAX_IN_FLIGHT:
             return error(
                 f"The explorer is already computing {len(in_flight)} schedules; "

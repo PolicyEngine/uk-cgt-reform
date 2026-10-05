@@ -19,6 +19,7 @@ import { useExploration } from "../lib/exploreApi";
 import {
   formatPct,
   formatSignedBn,
+  formatSmallBn,
   formatSignedCurrency,
   formatSignedMn,
   formatSignedPct,
@@ -199,6 +200,21 @@ function RateInput({ band, value, onChange }) {
 }
 
 function StatusLine({ status, elapsedSeconds, error, result, datasetLabel }) {
+  if (status === "checking") {
+    return (
+      <p className="mt-4 text-sm leading-6 text-slate-600" role="status">
+        Looking for a stored result for this schedule…
+      </p>
+    );
+  }
+  if (status === "not_cached") {
+    return (
+      <p className="mt-4 text-sm leading-6 text-slate-600" role="status">
+        Nobody has run this schedule yet, and a link does not start a computation on its own.
+        Press Run this schedule to compute it; it takes about half a minute.
+      </p>
+    );
+  }
   if (status === "running") {
     return (
       <p className="mt-4 text-sm leading-6 text-slate-600" role="status">
@@ -402,19 +418,25 @@ export default function RateExplorerTab({ data, datasetKey }) {
     [router, searchParams],
   );
 
-  const submit = useCallback(() => {
-    if (!validation.rates) return;
-    syncUrl(validation.rates, validation.badr, elasticity);
-    const badr = validation.badr.withdrawn
-      ? { withdrawn: true }
-      : { rate: validation.badr.rate, lifetime_limit: validation.badr.lifetime_limit };
-    run({ dataset: datasetKey, rates: validation.rates, badr, elasticity });
-  }, [validation.rates, validation.badr, elasticity, datasetKey, run, syncUrl]);
+  const submit = useCallback(
+    (options = {}) => {
+      if (!validation.rates) return;
+      syncUrl(validation.rates, validation.badr, elasticity);
+      const badr = validation.badr.withdrawn
+        ? { withdrawn: true }
+        : { rate: validation.badr.rate, lifetime_limit: validation.badr.lifetime_limit };
+      run({ dataset: datasetKey, rates: validation.rates, badr, elasticity }, options);
+    },
+    [validation.rates, validation.badr, elasticity, datasetKey, run, syncUrl],
+  );
 
+  // A shared link shows its schedule's result if one is stored (or already
+  // computing), but never starts a computation on page load: a crawler or a
+  // scripted link could otherwise spend the daily budget without a click.
   useEffect(() => {
     if (autoRan.current) return;
     autoRan.current = true;
-    if (initial && validatePercents(initial.percents).rates) submit();
+    if (initial && validatePercents(initial.percents).rates) submit({ cacheOnly: true });
   }, [initial, submit]);
 
   const equalisation = {
@@ -564,7 +586,7 @@ export default function RateExplorerTab({ data, datasetKey }) {
           />
           <button
             type="button"
-            onClick={submit}
+            onClick={() => submit()}
             disabled={!validation.rates || status === "running"}
             className="rounded-md bg-[color:var(--pe-color-primary-600)] px-5 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
           >
@@ -687,7 +709,7 @@ export default function RateExplorerTab({ data, datasetKey }) {
                 {formatPct(100 * entrantShare, 0)} of this dataset&apos;s {firstYear} CGT taxpayers
                 are entrants by uprating (see the Baseline tab): people whose base-year gains sit at
                 or below the frozen £3,000 exempt amount and cross it once the engine uprates gains.
-                They contribute {formatSignedBn(firstRow.cgt_change_from_entrants_bn, 2)} of the{" "}
+                They contribute {formatSmallBn(firstRow.cgt_change_from_entrants_bn, { signed: true })} of the{" "}
                 {firstYear} change, so the revenue figures are little affected; the share of people
                 affected is.
               </p>

@@ -5,6 +5,8 @@ year, on this machine, through the same code the Modal workers run. Results
 are served from and written to the local cache (``data/explore_results``);
 ``--json`` prints the full result on stdout (progress goes to stderr), which
 is how the dashboard's Next route uses it when no backend is configured.
+``--cache-only`` serves a stored result or exits with :data:`NOT_CACHED_EXIT`,
+never computing: the route uses it for links opened on page load.
 """
 
 from __future__ import annotations
@@ -19,10 +21,15 @@ from .explore import (
     ELASTICITY_OPTIONS,
     ExploreValidationError,
     api_options,
+    cached_locally,
     run_locally,
     validate_request,
 )
 from .simulations import DATASETS, DEFAULT_DATASET_KEY
+
+#: The exit status of a ``--cache-only`` run with nothing stored (2 is a
+#: validation error).
+NOT_CACHED_EXIT = 3
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -89,6 +96,14 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--no-cache", action="store_true", help="Recompute even if a result is cached."
+    )
+    parser.add_argument(
+        "--cache-only",
+        action="store_true",
+        help=(
+            "Serve a stored result only, and exit with status 3 without computing when "
+            "there is none (the dashboard's links opened on page load)."
+        ),
     )
     parser.add_argument(
         "--json", action="store_true", help="Print the full result as JSON on stdout."
@@ -159,10 +174,18 @@ def main(argv: list[str] | None = None) -> int:
     except ExploreValidationError as error:
         print(f"error: {error}", file=sys.stderr)
         return 2
+    if args.cache_only and args.no_cache:
+        parser.error("--cache-only cannot be combined with --no-cache")
     log = None if args.quiet else (lambda message: print(message, file=sys.stderr, flush=True))
-    result = run_locally(
-        request, data_folder=args.data_folder, use_cache=not args.no_cache, log=log
-    )
+    if args.cache_only:
+        result = cached_locally(request)
+        if result is None:
+            print("not cached: this schedule has not been computed yet", file=sys.stderr)
+            return NOT_CACHED_EXIT
+    else:
+        result = run_locally(
+            request, data_folder=args.data_folder, use_cache=not args.no_cache, log=log
+        )
     if args.json:
         json.dump(result, sys.stdout)
         sys.stdout.write("\n")
