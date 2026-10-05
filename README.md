@@ -646,6 +646,14 @@ different fingerprint from the workers never finds what they store, so
 every request would spawn. Re-run `backend/warm.py` too when the projection
 fingerprint or a manifest field changes (`run_year` and the gateway say so).
 
+Deploy order: the gateway must run this code before, or together with, the
+dashboard that sends `"cache_only": true` for links opened on page load. A
+gateway older than the flag ignores it and treats the link as a normal
+submission, spawning a job against the daily budget. Vercel ships the
+dashboard as soon as a change reaches `main`, so deploy the workers, re-warm
+and deploy the gateway from the merged `main` straight away, or from the
+branch just before merging.
+
 Create a proxy token for the gateway and, because the PolicyEngine workspace
 scopes proxy tokens to environments, allow it into the environment the apps
 were deployed to (a scoped token with no environment answers 401 "invalid
