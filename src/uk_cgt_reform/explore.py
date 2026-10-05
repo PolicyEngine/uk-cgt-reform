@@ -544,6 +544,7 @@ def dataset_metadata(spec: DatasetSpec) -> dict:
         "dataset_producer": spec.producer,
         "dataset_observation": spec.observation,
         "dataset_notes": spec.notes,
+        "dataset_columns": spec.columns,
     }
 
 
@@ -680,6 +681,23 @@ def mark_cache_hit(result: dict) -> dict:
     cache = copy.setdefault("metadata", {}).setdefault("cache", {})
     cache["hit"] = True
     return copy
+
+
+def cached_locally(
+    req: ExploreRequest,
+    *,
+    store: ResultStore | None = None,
+    context: dict | None = None,
+) -> dict | None:
+    """The stored result for ``req``, flagged as a cache hit, or None. This is
+    what a link opened on page load may be served: it never computes, so
+    links cannot spend the compute budget (``cache_only`` requests)."""
+    from .pipeline import DATA_DIR
+
+    context = context or engine_context()
+    store = store or ResultStore(DATA_DIR / LOCAL_RESULT_DIR_NAME)
+    cached = store.get(cache_key(req, context))
+    return None if cached is None else mark_cache_hit(cached)
 
 
 def run_locally(

@@ -27,6 +27,19 @@ export function formatSignedBn(value, digits = 2) {
   return `${getSignedPrefix(amount)}\u00A3${Math.abs(amount).toFixed(digits)}bn`;
 }
 
+// An amount in £bn that can be tiny, such as the CGT the entrants by uprating
+// pay (tens of thousands of pounds): £bn to two places while that shows a
+// figure, then £m, then £k, rather than "£0.00bn".
+export function formatSmallBn(value, { signed = false } = {}) {
+  const amount = Number(value);
+  const sign = signed ? getSignedPrefix(amount) : amount < 0 ? "\u2212" : "";
+  const abs = Math.abs(amount);
+  if (abs >= 0.005) return `${sign}\u00A3${abs.toFixed(2)}bn`;
+  if (abs >= 0.0005) return `${sign}\u00A3${(abs * 1000).toFixed(1)}m`;
+  if (abs === 0) return "\u00A30";
+  return `${sign}\u00A3${Math.round(abs * 1e6).toLocaleString("en-GB")}k`;
+}
+
 export function formatMn(value) {
   return `\u00A3${Math.round(Number(value)).toLocaleString("en-GB")}m`;
 }
@@ -84,6 +97,8 @@ export function formatElasticity({
   applied_value: appliedValue,
   badr_elasticity: badr,
 }) {
+  // The static case applies no elasticity at all.
+  if (Number(appliedValue) === 0 && (badr === undefined || Number(badr) === 0)) return "none";
   const value = formatElasticityValue(appliedValue);
   const main = appliedAs === "mtr" ? `marginal rate ${value}` : `retention ${value}`;
   return badr === undefined || badr === appliedValue

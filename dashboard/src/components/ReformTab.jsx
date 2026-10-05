@@ -10,6 +10,7 @@ import {
   formatSignedBn,
   formatSignedCurrency,
   formatSignedPct,
+  formatSmallBn,
 } from "../lib/formatters";
 import {
   BASELINE_SCHEDULE_RATES,
@@ -367,7 +368,7 @@ export default function ReformTab({ data, onNavigate }) {
             {formatPct(100 * entrantShare, 0)} of this dataset&apos;s {firstYear} CGT taxpayers
             are entrants by uprating (see the Baseline tab): people whose base-year gains sit at
             or below the frozen £3,000 exempt amount and cross it once the engine uprates gains.
-            They contribute {formatSignedBn(firstYearRow.cgt_change_from_entrants_bn, 2)} of the{" "}
+            They contribute {formatSmallBn(firstYearRow.cgt_change_from_entrants_bn, { signed: true })} of the{" "}
             {firstYear} change ({formatPct(100 * entrantShareOfChange, 0)}), so the revenue
             figures are little affected; the share of people affected is.
           </p>

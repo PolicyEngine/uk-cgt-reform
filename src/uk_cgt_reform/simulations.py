@@ -136,6 +136,7 @@ class DatasetSpec:
     producer: str
     observation: str
     notes: str = ""
+    columns: str = ""
 
     @property
     def digest(self) -> str:
@@ -186,11 +187,15 @@ CANDIDATE = DatasetSpec(
         "age, region, gains by taxable income band (Table 3) and the BADR bands (Table 4)"
     ),
     notes=(
-        "Carries capital_gains, capital_gains_residential_property (the residential "
+        "The build's projection gate (uk_cgt_projection_entrants, run on policyengine-uk "
+        "2.100.0) counts 6.7k gainers that uprating carries over the frozen exempt amount "
+        "by 2030, against HMRC's 73k taxpayers with gains of £3,000 to £5,999 in 2024-25 "
+        "(Table 2.1a); this repo's uprating audit counts 6.9k on policyengine-uk 2.104.0."
+    ),
+    columns=(
+        "It carries capital_gains, capital_gains_residential_property (the residential "
         "schedule) and capital_gains_badr (gains qualifying for Business Asset Disposal "
-        "Relief or Investors' Relief); no carried-interest column. The build's projection "
-        "fence bounds the gainers that uprating carries over the frozen exempt amount by "
-        "2030 at 6.7k, against HMRC's 73k in the GBP 3,000 to 5,999 band."
+        "Relief or Investors' Relief), and no carried-interest column."
     ),
 )
 

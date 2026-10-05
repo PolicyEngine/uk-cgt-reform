@@ -17,6 +17,7 @@ from uk_cgt_reform.explore import (
     api_options,
     assemble_response,
     cache_key,
+    cached_locally,
     mark_cache_hit,
     validate_request,
 )
@@ -373,6 +374,39 @@ def test_result_store_round_trips_and_is_atomic(tmp_path):
     assert not list(path.parent.glob("*.tmp"))
     store.put("a__b", {"x": 2})
     assert store.get("a__b") == {"x": 2}
+
+
+def test_cached_locally_serves_a_stored_result_and_never_computes(tmp_path):
+    # A link opened on page load asks for a stored result only.
+    store = ResultStore(tmp_path / "explore_results")
+    req = validate_request({"rates": FLAT_30})
+    ctx = context()
+    assert cached_locally(req, store=store, context=ctx) is None
+    result = assemble_response(req, ctx, year_rows())
+    store.put(cache_key(req, ctx), result)
+    hit = cached_locally(req, store=store, context=ctx)
+    assert hit["metadata"]["cache"]["hit"] is True
+    assert hit["budget"] == result["budget"]
+    # Another schedule is still not stored.
+    other = validate_request({"rates": FLAT_30, "badr": {"withdrawn": True}})
+    assert cached_locally(other, store=store, context=ctx) is None
+
+
+def test_cli_cache_only_exits_3_without_computing(monkeypatch, capsys):
+    from uk_cgt_reform import explore_cli
+
+    def refuse(*args, **kwargs):
+        raise AssertionError("--cache-only must not compute")
+
+    monkeypatch.setattr(explore_cli, "run_locally", refuse)
+    monkeypatch.setattr(explore_cli, "cached_locally", lambda req: None)
+    argv = ["--basic", "0.18", "--higher", "0.3", "--additional", "0.3", "--cache-only", "--json"]
+    assert explore_cli.main(argv) == explore_cli.NOT_CACHED_EXIT == 3
+    assert capsys.readouterr().out == ""
+    stored = {"metadata": {"cache": {"hit": True}}, "budget": []}
+    monkeypatch.setattr(explore_cli, "cached_locally", lambda req: stored)
+    assert explore_cli.main(argv) == 0
+    assert '"hit": true' in capsys.readouterr().out
 
 
 # --- response shape -----------------------------------------------------------

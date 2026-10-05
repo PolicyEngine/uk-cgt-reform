@@ -473,6 +473,7 @@ def run_dataset(
             "dataset_producer": spec.producer,
             "dataset_observation": spec.observation,
             "dataset_notes": spec.notes,
+            "dataset_columns": spec.columns,
             "datasets": [s.to_metadata() for s in DATASETS.values()],
             "default_dataset_key": DEFAULT_DATASET_KEY,
             "calibrated": False,

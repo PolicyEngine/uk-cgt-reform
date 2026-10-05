@@ -1,6 +1,6 @@
 "use client";
 
-import { formatBn, formatCount, formatPct } from "../lib/formatters";
+import { formatBn, formatCount, formatPct, formatSmallBn } from "../lib/formatters";
 import { getDatasetInfo, getEntrants, getFirstYear, getValidation } from "../lib/dataHelpers";
 import SectionHeading from "./SectionHeading";
 
@@ -128,7 +128,7 @@ export default function BaselineTab({ data }) {
       <section className="section-card">
         <SectionHeading
           title="Model versus external benchmarks"
-          description={`PolicyEngine's baseline for ${firstYear} on ${dataset.shortLabel}, alongside HMRC's statistics for the 2023-24 tax year (revised) and the provisional 2024-25 tax year, both from the 2026 release. The dataset calibrates its base year to one HMRC year (${dataset.observation}) and the engine uprates it to the simulated years. HMRC's 2024-25 figures are far above 2023-24 because the rate rises announced in October 2024 brought disposals forward.`}
+          description={`PolicyEngine's baseline for ${firstYear} on ${dataset.shortLabel}, alongside HMRC's statistics for the 2023-24 tax year (revised) and the provisional 2024-25 tax year, both from the 2026 release. The dataset calibrates its base year to one HMRC year (${dataset.observation}) and the engine uprates it to the simulated years. HMRC's 2024-25 figures are far above 2023-24 because the rate rises announced in October 2024 brought disposals forward. The ${firstYear} liability sits further above HMRC's 2024-25 figure than the gains do because 2024-25 charged most gains at 10% and 20% until 30 October 2024, and the relief at 10%, while ${firstYear} charges 18% and 24% all year and the relief at 18%.`}
         />
         <table className="data-table">
           <thead>
@@ -147,7 +147,7 @@ export default function BaselineTab({ data }) {
             />
             <BenchmarkRow
               label="of which held by entrants by uprating"
-              model={formatBn(entrants.gains_bn)}
+              model={formatSmallBn(entrants.gains_bn)}
               benchmark={NO_BENCHMARK}
               muted
             />
@@ -169,7 +169,7 @@ export default function BaselineTab({ data }) {
             />
             <BenchmarkRow
               label="of which paid by entrants by uprating"
-              model={formatBn(entrants.cgt_bn)}
+              model={formatSmallBn(entrants.cgt_bn)}
               benchmark={NO_BENCHMARK}
               muted
             />
@@ -238,13 +238,13 @@ export default function BaselineTab({ data }) {
             <tr>
               <td>Taxable gains</td>
               <td>{formatBn(validation.total_gains_bn)}</td>
-              <td>{formatBn(entrants.gains_bn)}</td>
+              <td>{formatSmallBn(entrants.gains_bn)}</td>
               <td>{formatBn(validation.total_gains_excluding_entrants_bn)}</td>
             </tr>
             <tr>
               <td>Baseline CGT liability</td>
               <td>{formatBn(validation.baseline_cgt_revenue_bn)}</td>
-              <td>{formatBn(entrants.cgt_bn)}</td>
+              <td>{formatSmallBn(entrants.cgt_bn)}</td>
               <td>{formatBn(validation.baseline_cgt_revenue_bn - entrants.cgt_bn)}</td>
             </tr>
           </tbody>

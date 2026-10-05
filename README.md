@@ -147,7 +147,9 @@ Two features of the baseline matter before the reform is applied:
    fences it: microcosm's `uk_cgt_projection_entrants` gate (from
    microcosm#979) bounds the stock of crossers by 2030 (6.7k on this build,
    68.5k on the microcosm#979 build it replaced) by HMRC's count of
-   taxpayers in the £3,000 to £5,999 band (73k in 2024-25). An earlier
+   taxpayers in the £3,000 to £5,999 band (73k in 2024-25). The gate ran on
+   policyengine-uk 2.100.0; this repo's uprating audit counts 6.9k entrants
+   in 2030-31 on 2.104.0 (`baseline_by_year` in `data/cgt_uprating_audit.json`). An earlier
    build, spine assessment v20, built every gainer beyond HMRC's taxpayer
    count with gains capped at exactly £3,000 (microcosm's `cgt_imputation`
    stage, approximation 4), so 10.8 million people entered in 2026 holding
@@ -601,6 +603,13 @@ links since carry the relief whenever it is kept, so one with a
 marginal-rate elasticity, no relief fields and 20/40/45 loads with the
 relief withdrawn, as the equalisation preset now does, and still scores the
 Reform impacts tab's reform.
+
+A link opened on page load is served only from the result cache, or joins
+a computation already running: the dashboard sends it with
+`"cache_only": true`, and the gateway (or, locally, `uk-cgt-reform-explore
+--cache-only`) answers `not_cached` instead of starting a job. Computing a
+schedule nobody has run takes a click, so links, crawlers included, cannot
+spend the daily budget.
 
 The relief's rate may exceed the basic rate, as it does in HMRC's
 ready-reckoner rows for the relief (19% and 23% against 18%). The engine
