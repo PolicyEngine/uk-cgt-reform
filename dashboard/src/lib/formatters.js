@@ -31,7 +31,9 @@ export function formatSignedBn(value, digits = 2) {
 // pay (tens of thousands of pounds): £bn to two places while that shows a
 // figure, then £m, then £k, rather than "£0.00bn".
 export function formatSmallBn(value, { signed = false } = {}) {
-  const amount = Number(value);
+  const amount = value === null || value === undefined ? NaN : Number(value);
+  // A missing value shows as a dash rather than "£NaNk" or "£0".
+  if (!Number.isFinite(amount)) return "\u2014";
   const sign = signed ? getSignedPrefix(amount) : amount < 0 ? "\u2212" : "";
   const abs = Math.abs(amount);
   if (abs >= 0.005) return `${sign}\u00A3${abs.toFixed(2)}bn`;
