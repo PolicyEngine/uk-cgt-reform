@@ -4,9 +4,13 @@ against a fake results dict (no simulation)."""
 import pytest
 
 from uk_cgt_reform.comparison import (
+    APPROACHES,
+    DEFAULT_APPROACH,
+    ELASTICITY_CASES,
+    INCOME_SHIFTING,
     READY_RECKONER,
     READY_RECKONER_ELASTICITIES,
-    SENSITIVITY_CASES,
+    approaches_block,
     benchmarks_block,
     centax_1920_block,
     ready_reckoner_block,
@@ -32,6 +36,8 @@ TOP_LEVEL_KEYS = {
     "sensitivity",
     "benchmarks",
     "schedule_split",
+    "approaches",
+    "approach_results",
 }
 
 
@@ -88,7 +94,15 @@ def fake_benchmarks(scale: float = 1.0) -> dict:
             centax_1920_rules(),
             {"baseline": "a2eab6466ee5", "reform": "2367c58b5ba5"},
         ),
-        ready_reckoner=ready_reckoner_block(model_m),
+        ready_reckoner=ready_reckoner_block(
+            model_m,
+            {
+                row_id: {
+                    e_id: {y: 10.0 * scale for y in by_year} for e_id, by_year in cells.items()
+                }
+                for row_id, cells in model_m.items()
+            },
+        ),
     )
 
 
@@ -111,13 +125,16 @@ def fake_schedule_split(scale: float = 1.0) -> dict:
             "residential": base + 3.5e9,
             "badr_withdrawn": base + 4e9,
         },
+        "unadjusted": {
+            "main_rates": base + 1e9,
+            "residential": base + 1.2e9,
+            "badr_withdrawn": base + 1.5e9,
+        },
     }
     return {
         "year": "2026-27",
-        "elasticities": {"static": 0.0, "central": 1.0},
-        "reform_fingerprints": {
-            case: {step: "0" * 12 for step, _ in steps} for case in ("static", "central")
-        },
+        "elasticities": {"static": 0.0, "central": 1.0, "unadjusted": 1.5},
+        "reform_fingerprints": {case: {step: "0" * 12 for step, _ in steps} for case in revenues},
         "steps": schedule_split(base, steps, revenues),
     }
 
@@ -196,6 +213,7 @@ def fake_results(spec=CANDIDATE, scale: float = 1.0) -> dict:
                 "cgt_change_bn": 2.3 * scale,
                 "total_tax_change_bn": 2.3 * scale,
                 "gov_balance_change_bn": 2.3 * scale,
+                "income_shifting_offset_bn": 0.4 * scale,
                 "cgt_change_from_entrants_bn": 0.01 * scale,
             }
             for label in labels
@@ -219,11 +237,58 @@ def fake_results(spec=CANDIDATE, scale: float = 1.0) -> dict:
             for label in YEAR_LABELS
         },
         "sensitivity": [
-            {"name": name, "e_retention": e, **elasticity_convention(e), "revenue_2026_bn": 1.0}
-            for name, e in SENSITIVITY_CASES.items()
+            {
+                "id": case_id,
+                "name": name,
+                "e_retention": e,
+                **elasticity_convention(e),
+                "revenue_2026_bn": 1.0,
+                "income_shifting_offset_2026_bn": 0.1 * e,
+            }
+            for case_id, name, e in ELASTICITY_CASES
         ],
         "benchmarks": fake_benchmarks(scale),
         "schedule_split": fake_schedule_split(scale),
+        "approaches": approaches_block(),
+        "approach_results": {
+            "cgt_only": {
+                "central_id": "centax_unadjusted",
+                "elasticity": 1.5,
+                "reform_fingerprint": "0" * 12,
+                "budget": [
+                    {
+                        "year": label,
+                        "baseline_cgt_bn": 17.2 * scale,
+                        "reform_cgt_bn": 18.5 * scale,
+                        "cgt_change_bn": 1.3 * scale,
+                        "total_tax_change_bn": 1.3 * scale,
+                        "gov_balance_change_bn": 1.3 * scale,
+                        "income_shifting_offset_bn": 0.6 * scale,
+                        "cgt_change_from_entrants_bn": 0.01 * scale,
+                    }
+                    for label in labels
+                ],
+                "income_change_groups": {
+                    label: {
+                        "quintile": [
+                            {"group": g, "avg_change_gbp": -1.0, "relative_change_pct": -0.1}
+                            for g in ["Lowest 20%", "20–40%", "40–60%", "60–80%", "Highest 20%"]
+                        ],
+                        "household_type": [
+                            {
+                                "group": "Pensioner",
+                                "avg_change_gbp": -1.0,
+                                "relative_change_pct": 0.0,
+                            }
+                        ],
+                        "region": [
+                            {"group": "London", "avg_change_gbp": -1.0, "relative_change_pct": 0.0}
+                        ],
+                    }
+                    for label in YEAR_LABELS
+                },
+            }
+        },
     }
 
 
@@ -272,6 +337,7 @@ def test_budget_rows_use_fiscal_year_labels():
         "cgt_change_bn",
         "total_tax_change_bn",
         "gov_balance_change_bn",
+        "income_shifting_offset_bn",
         "cgt_change_from_entrants_bn",
     }
 
@@ -298,7 +364,8 @@ def test_calibration_block_is_explicitly_empty():
 
 def test_sensitivity_cases():
     rows = fake_results()["sensitivity"]
-    assert [r["e_retention"] for r in rows] == [0.0, 0.5, 1.0, 2.0, 3.6]
+    assert [r["e_retention"] for r in rows] == [0.0, 0.5, 1.0, 1.5, 2.0, 3.6]
+    assert [r["id"] for r in rows] == [case_id for case_id, _, _ in ELASTICITY_CASES]
     assert rows[0]["name"] == "Static (no behavioural response)"
     # Every row says how its case reached the engine: a retention-rate
     # elasticity, applied as stated.
@@ -306,6 +373,7 @@ def test_sensitivity_cases():
         ("retention", 0.0),
         ("retention", 0.5),
         ("retention", 1.0),
+        ("retention", 1.5),
         ("retention", 2.0),
         ("retention", 3.6),
     ]
@@ -327,6 +395,7 @@ def test_benchmarks_block_shape():
     assert bench["elasticities"]["official"]["e_retention"] == 3.6
     assert bench["elasticities"]["central"]["applied_as"] == "retention"
     assert bench["elasticities"]["central"]["e_retention"] == 1.0
+    assert bench["elasticities"]["unadjusted"]["e_retention"] == 1.5
     assert bench["elasticities"]["centax_range"] == {"lower": 0.5, "upper": 2.0}
     static = bench["static_equalisation"]
     assert [row["year"] for row in static["by_year"]] == YEAR_LABELS
@@ -343,13 +412,16 @@ def test_benchmarks_block_shape():
     rows = bench["ready_reckoner"]["rows"]
     assert [row["id"] for row in rows] == [row["id"] for row in READY_RECKONER["rows"]]
     assert set(rows[0]["model_m"]) == set(READY_RECKONER_ELASTICITIES)
+    assert set(rows[0]["model_m"]) == {"centax_central", "centax_unadjusted", "official"}
     assert set(rows[0]["model_m"]["official"]) == {"2026-27", "2027-28"}
+    assert set(rows[0]["income_shifting_offset_m"]) == set(READY_RECKONER_ELASTICITIES)
+    assert set(rows[0]["income_shifting_offset_m"]["official"]) == {"2026-27", "2027-28"}
 
 
 def test_schedule_split_builds_the_yield_up_step_by_step():
     split = fake_results()["schedule_split"]
     assert split["year"] == "2026-27"
-    assert split["elasticities"] == {"static": 0.0, "central": 1.0}
+    assert split["elasticities"] == {"static": 0.0, "central": 1.0, "unadjusted": 1.5}
     steps = split["steps"]
     assert [row["step"] for row in steps] == ["main_rates", "residential", "badr_withdrawn"]
     # Cumulative changes from current law, and each step's own increment.
@@ -359,3 +431,42 @@ def test_schedule_split_builds_the_yield_up_step_by_step():
     assert sum(row["central_increment_bn"] for row in steps) == pytest.approx(
         steps[-1]["central_cgt_change_bn"]
     )
+
+
+def test_two_approaches_to_income_shifting():
+    block = fake_results()["approaches"]
+    assert block["default"] == DEFAULT_APPROACH == "total_revenue"
+    assert [a["id"] for a in block["approaches"]] == ["total_revenue", "cgt_only"]
+    case_ids = [case_id for case_id, _, _ in ELASTICITY_CASES]
+    assert [c["id"] for c in block["cases"]] == case_ids
+    for approach in APPROACHES.values():
+        # Five cases each, every one a known case, the central among them.
+        assert len(approach["case_ids"]) == 5
+        assert set(approach["case_ids"]) <= set(case_ids)
+        assert approach["central_id"] in approach["case_ids"]
+        assert set(approach["offset_case_ids"]) <= set(approach["case_ids"])
+    # Net of income shifting: CenTax's central case as published, and the
+    # cases measured on the CGT base (CenTax's bounds and the official case)
+    # plus the OBR's income tax and National Insurance. Gross: CenTax before
+    # its adjustments, no offset.
+    net, gross = APPROACHES["total_revenue"], APPROACHES["cgt_only"]
+    assert net["central_id"] == "centax_central"
+    assert net["offset_case_ids"] == ["centax_lower", "centax_upper", "official"]
+    assert gross["central_id"] == "centax_unadjusted" and gross["offset_case_ids"] == []
+    # The CenTax cases that never carry an offset: CenTax's elasticities are
+    # either net already (1.0) or counted as CGT only (1.5).
+    assert "centax_central" not in net["offset_case_ids"]
+    shifting = block["income_shifting"]
+    assert shifting["share"] == 0.125
+    assert shifting["tax_rate"] == pytest.approx(0.62 / 1.15)
+    assert shifting == INCOME_SHIFTING
+    assert shifting["url"].startswith("https://obr.uk/")
+
+
+def test_approach_results_hold_the_gross_central_case():
+    results = fake_results()
+    gross = results["approach_results"]["cgt_only"]
+    assert gross["central_id"] == APPROACHES["cgt_only"]["central_id"]
+    assert gross["elasticity"] == 1.5
+    assert [row["year"] for row in gross["budget"]] == [row["year"] for row in results["budget"]]
+    assert set(gross["income_change_groups"]) == set(results["income_change_groups"])

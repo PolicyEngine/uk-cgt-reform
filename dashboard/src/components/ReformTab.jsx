@@ -21,6 +21,7 @@ import {
   getFiveYearTotal,
   getIncomeChangeGroups,
   getIncomeChangeGroupsByYear,
+  getIncomeShifting,
   getReformSchedules,
   getScheduleSplit,
   getSensitivity,
@@ -74,6 +75,9 @@ export default function ReformTab({ data }) {
   const headlineGroups = getIncomeChangeGroups(data, firstYear);
   const sensitivity = getSensitivity(data);
   const { central, official, centax_range: centaxRange } = getBenchmarks(data).elasticities;
+  const { approach } = data;
+  const netOfShifting = approach.id === "total_revenue";
+  const shifting = getIncomeShifting(data);
   const reform = getReform(data);
   const schedules = getReformSchedules(data);
   const validation = getValidation(data);
@@ -112,15 +116,21 @@ export default function ReformTab({ data }) {
               the table below splits the yield by schedule. Taxpayers
               respond by realising fewer gains, modelled with{" "}
               <a
-                href="https://centax.org.uk/wp-content/uploads/2024/10/AdvaniLonsdaleSummers2024_CGTReform.pdf#page=38"
+                href={central.url}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="underline decoration-1 underline-offset-2 hover:opacity-80"
               >
-                CenTax&apos;s central elasticity of 1.0
+                {netOfShifting
+                  ? `CenTax's central elasticity of ${central.e_retention.toFixed(1)}`
+                  : `CenTax's elasticity before its adjustments, ${central.e_retention.toFixed(1)}`}
               </a>{" "}
               with respect to the share of each gain they keep, applied in that
-              form. CenTax&apos;s elasticity comes from a package that also reforms
+              form.{" "}
+              {netOfShifting
+                ? "CenTax lower their figure from 1.5 partly because income that stops being presented as gains is taxed as income instead, so these estimates are total revenue across CGT and income tax."
+                : "That is CenTax's starting point before they lower it to 1.0 for income shifting and for the uplift at death their package removes, so every gain not realised counts as lost revenue: these estimates are the change in CGT alone."}{" "}
+              CenTax&apos;s elasticity comes from a package that also reforms
               the tax base; for a rate rise alone CenTax expect a larger response,
               which the sensitivity table below explores.
             </>
@@ -342,11 +352,17 @@ export default function ReformTab({ data }) {
             rate, the share (1 − t) of each marginal pound of gain a taxpayer
             keeps: the model scales each person&apos;s realised gains by
             ((1 − t₁) / (1 − t₀))<sup>e</sup>, the form CenTax and the OBR state
-            their elasticities in. The bold row is this dashboard&apos;s central
-            assumption, CenTax&apos;s central {central.e_retention.toFixed(1)}; the
-            rows either side are CenTax&apos;s range,{" "}
-            {centaxRange.lower.toFixed(1)} to {centaxRange.upper.toFixed(1)}.
-            CenTax estimate their elasticity for a package that also removes the
+            their elasticities in. The bold row is this approach&apos;s central
+            assumption,{" "}
+            {netOfShifting
+              ? `CenTax's central ${central.e_retention.toFixed(1)}`
+              : `CenTax's ${central.e_retention.toFixed(1)} before its adjustments`}
+            ; the rows either side are CenTax&apos;s range,{" "}
+            {centaxRange.lower.toFixed(1)} to {centaxRange.upper.toFixed(1)}
+            {netOfShifting
+              ? ", from estimates that measure the CGT base only, so they take the same addition as the official case"
+              : ""}
+            . CenTax estimate their elasticity for a package that also removes the
             uplift at death and charges gains on departure, and{" "}
             <a
               href="https://www.nuffieldfoundation.org/wp-content/uploads/2023/03/Taxes-at-the-top-Understanding-what-high-earners-pay-and-options-for-reform.pdf#page=20"
@@ -360,8 +376,12 @@ export default function ReformTab({ data }) {
             much of the yield rests on that. The last row is the official HMRC/OBR
             assumption, {official.e_retention} for main-rate gains and{" "}
             {official.badr_e_retention} for gains qualifying for Business Asset Disposal
-            Relief; the Methodology tab explains why it
-            turns the reform&apos;s yield so far down. CenTax&apos;s range is
+            Relief
+            {netOfShifting
+              ? `, plus the income tax and National Insurance the OBR's method adds back because part of the fall in realised gains is income no longer presented as gains (${Math.round(shifting.share * 1000) / 10}% of the fall outside residential property, taxed as salary at ${(shifting.tax_rate * 100).toFixed(1)}%)`
+              : ", with nothing added back for income no longer presented as gains"}
+            ; the Methodology tab explains why it turns the reform&apos;s yield so
+            far down. CenTax&apos;s range is
             anchored on{" "}
             <a
               href="https://www.aeaweb.org/articles?id=10.1257/aeri.20200535"
@@ -391,8 +411,12 @@ export default function ReformTab({ data }) {
                 tip="The elasticity of realised gains with respect to the retention rate (1 − t) that the engine applies, as each source states it: realised gains scale by ((1 − t₁) / (1 − t₀)) to the power e, with t the marginal rate on gains."
               />
               <TipHeader
-                label={`CGT revenue, ${firstYear}`}
-                tip="Change in capital gains tax revenue in the first year of the reform under this elasticity."
+                label={netOfShifting ? `Revenue, ${firstYear}` : `CGT revenue, ${firstYear}`}
+                tip={
+                  netOfShifting
+                    ? "Change in revenue in the first year of the reform under this elasticity: capital gains tax, plus, for CenTax's 0.5 and 2.0 and the official case, the income tax and National Insurance the OBR's method adds back for income no longer presented as gains."
+                    : "Change in capital gains tax revenue in the first year of the reform under this elasticity."
+                }
               />
               <th>Source</th>
             </tr>

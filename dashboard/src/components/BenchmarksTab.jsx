@@ -210,7 +210,8 @@ function CentaxPackage({ rows }) {
 function ReadyReckoner({ block, dataset, elasticities }) {
   const [first, second] = block.lag;
   const centralLabel = `Central (retention ${elasticities.central.e_retention.toFixed(1)})`;
-  const officialLabel = `Official (retention ${elasticities.official.e_retention}; ${elasticities.official.badr_e_retention} for BADR gains)`;
+  const withOffset = elasticities.official.includes_income_shifting_offset;
+  const officialLabel = `Official (retention ${elasticities.official.e_retention}; ${elasticities.official.badr_e_retention} for BADR gains${withOffset ? "; plus income tax and NI on shifted income" : ""})`;
   const model = (row, elasticityId, year) => row.model_m[elasticityId][year];
   return (
     <section className="section-card">
@@ -260,7 +261,11 @@ function ReadyReckoner({ block, dataset, elasticities }) {
         Source: <SourceLink href={block.url}>{block.source}</SourceLink>, {block.locator}. {block.note}{" "}
         HMRC&apos;s figures are {lowerFirst(block.measure)}; the model figures are the change in
         government balance on its own data, in the Rate explorer&apos;s scope (main and residential
-        rates and the relief). Not scored:{" "}
+        rates and the relief)
+        {withOffset
+          ? ", and the official columns add the income tax and National Insurance the OBR's method attributes to income no longer presented as gains, as HMRC's own figures include income tax effects"
+          : ", counting CGT alone: unlike HMRC's figures they include no income tax or National Insurance on income no longer presented as gains"}
+        . Not scored:{" "}
         {block.excluded
           .map((row) => {
             const reason = row.reason.replace(/\.$/, "");
@@ -305,11 +310,18 @@ export default function BenchmarksTab({ data, onNavigate }) {
           The official HMRC/OBR assumption is a retention-rate elasticity of{" "}
           {benchmarks.elasticities.official.e_retention} for main-rate gains and{" "}
           {benchmarks.elasticities.official.badr_e_retention} for gains qualifying for Business
-          Asset Disposal Relief, against CenTax&apos;s central{" "}
-          {benchmarks.elasticities.central.e_retention.toFixed(1)} behind this dashboard&apos;s central
-          case. On {dataset.shortLabel}, equalisation changes CGT revenue in 2026-27 by{" "}
+          Asset Disposal Relief, against{" "}
+          {data.approach.id === "total_revenue"
+            ? `CenTax's central ${benchmarks.elasticities.central.e_retention.toFixed(1)}`
+            : `CenTax's ${benchmarks.elasticities.central.e_retention.toFixed(1)} before its adjustments`}{" "}
+          behind this approach&apos;s central case. On {dataset.shortLabel}, equalisation changes{" "}
+          {data.approach.id === "total_revenue" ? "revenue" : "CGT revenue"} in 2026-27 by{" "}
           {formatSignedBn(central.revenue_2026_bn, 1)} at the central elasticity and by{" "}
-          {formatSignedBn(official.revenue_2026_bn, 1)} at the official one.{" "}
+          {formatSignedBn(official.revenue_2026_bn, 1)} at the official one
+          {data.approach.id === "total_revenue"
+            ? ", including the income tax and National Insurance the OBR's method adds back for income no longer presented as gains"
+            : ""}
+          .{" "}
           <button
             type="button"
             onClick={() => onNavigate("methodology", "elasticity-gap")}

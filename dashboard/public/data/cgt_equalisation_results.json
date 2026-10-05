@@ -148,6 +148,7 @@
       "cgt_change_bn": 10.516542748106842,
       "total_tax_change_bn": 10.516542591644287,
       "gov_balance_change_bn": 10.516542476698975,
+      "income_shifting_offset_bn": 2.1531541944800243,
       "cgt_change_from_entrants_bn": -6.0041711750609625e-05
     },
     {
@@ -157,6 +158,7 @@
       "cgt_change_bn": 10.91843558380072,
       "total_tax_change_bn": 10.918435425064942,
       "gov_balance_change_bn": 10.918435445062439,
+      "income_shifting_offset_bn": 2.232830255804627,
       "cgt_change_from_entrants_bn": -0.00010851167826360528
     },
     {
@@ -166,6 +168,7 @@
       "cgt_change_bn": 11.35059389990184,
       "total_tax_change_bn": 11.350594078370971,
       "gov_balance_change_bn": 11.350594073835206,
+      "income_shifting_offset_bn": 2.309041943465639,
       "cgt_change_from_entrants_bn": -0.00016829270624645708
     },
     {
@@ -175,6 +178,7 @@
       "cgt_change_bn": 11.76344566624768,
       "total_tax_change_bn": 11.76344562081067,
       "gov_balance_change_bn": 11.763445670829833,
+      "income_shifting_offset_bn": 2.3887728213492125,
       "cgt_change_from_entrants_bn": -0.00024433092080087735
     },
     {
@@ -184,6 +188,7 @@
       "cgt_change_bn": 12.217693620784829,
       "total_tax_change_bn": 12.217693803159667,
       "gov_balance_change_bn": 12.217693646701905,
+      "income_shifting_offset_bn": 2.4751519625444645,
       "cgt_change_from_entrants_bn": -0.00035102609506301334
     }
   ],
@@ -841,56 +846,78 @@
   },
   "sensitivity": [
     {
+      "id": "static",
       "name": "Static (no behavioural response)",
       "e_retention": 0.0,
       "elasticity_parameter": "gov.simulation.capital_gains_responses.elasticity",
       "applied_as": "retention",
       "applied_value": 0.0,
       "badr_elasticity": 0.0,
-      "revenue_2026_bn": 26.219449784630523
+      "revenue_2026_bn": 26.219449784630523,
+      "income_shifting_offset_2026_bn": 0.0
     },
     {
+      "id": "centax_lower",
       "name": "CenTax lower (retention elasticity 0.5)",
       "e_retention": 0.5,
       "elasticity_parameter": "gov.simulation.capital_gains_responses.elasticity",
       "applied_as": "retention",
       "applied_value": 0.5,
       "badr_elasticity": 0.5,
-      "revenue_2026_bn": 17.71944490490391
+      "revenue_2026_bn": 17.71944490490391,
+      "income_shifting_offset_2026_bn": 1.1646764470766449
     },
     {
+      "id": "centax_central",
       "name": "CenTax central (retention elasticity 1.0)",
       "e_retention": 1.0,
       "elasticity_parameter": "gov.simulation.capital_gains_responses.elasticity",
       "applied_as": "retention",
       "applied_value": 1.0,
       "badr_elasticity": 1.0,
-      "revenue_2026_bn": 10.516542748106842
+      "revenue_2026_bn": 10.516542748106842,
+      "income_shifting_offset_2026_bn": 2.1531541944800243
     },
     {
+      "id": "centax_unadjusted",
+      "name": "CenTax before its adjustments (retention elasticity 1.5)",
+      "e_retention": 1.5,
+      "elasticity_parameter": "gov.simulation.capital_gains_responses.elasticity",
+      "applied_as": "retention",
+      "applied_value": 1.5,
+      "badr_elasticity": 1.5,
+      "revenue_2026_bn": 4.410098097404892,
+      "income_shifting_offset_2026_bn": 2.99229777758313
+    },
+    {
+      "id": "centax_upper",
       "name": "CenTax upper (retention elasticity 2.0)",
       "e_retention": 2.0,
       "elasticity_parameter": "gov.simulation.capital_gains_responses.elasticity",
       "applied_as": "retention",
       "applied_value": 2.0,
       "badr_elasticity": 2.0,
-      "revenue_2026_bn": -0.7591335686566276
+      "revenue_2026_bn": -0.7591335686566276,
+      "income_shifting_offset_2026_bn": 3.7048462984342896
     },
     {
+      "id": "official",
       "name": "HMRC/OBR official (retention elasticity 3.6; 1.4 for BADR gains)",
       "e_retention": 3.6,
       "elasticity_parameter": "gov.simulation.capital_gains_responses.elasticity",
       "applied_as": "retention",
       "applied_value": 3.6,
       "badr_elasticity": 1.4,
-      "revenue_2026_bn": -9.631687735543563
+      "revenue_2026_bn": -9.631687735543563,
+      "income_shifting_offset_2026_bn": 4.89281414414603
     }
   ],
   "schedule_split": {
     "year": "2026-27",
     "elasticities": {
       "static": 0.0,
-      "central": 1.0
+      "central": 1.0,
+      "unadjusted": 1.5
     },
     "reform_fingerprints": {
       "static": {
@@ -902,6 +929,11 @@
         "main_rates": "b6104c1f31ec",
         "residential": "a35352e11262",
         "badr_withdrawn": "0dd9416217c3"
+      },
+      "unadjusted": {
+        "main_rates": "395a3f0f2014",
+        "residential": "251d17ef36c7",
+        "badr_withdrawn": "9f31ab05a187"
       }
     },
     "steps": [
@@ -911,7 +943,9 @@
         "static_cgt_change_bn": 19.011861732322526,
         "static_increment_bn": 19.011861732322526,
         "central_cgt_change_bn": 6.911789769571396,
-        "central_increment_bn": 6.911789769571396
+        "central_increment_bn": 6.911789769571396,
+        "unadjusted_cgt_change_bn": 2.237985552296944,
+        "unadjusted_increment_bn": 2.237985552296944
       },
       {
         "step": "residential",
@@ -919,7 +953,9 @@
         "static_cgt_change_bn": 21.235780548797266,
         "static_increment_bn": 2.223918816474739,
         "central_cgt_change_bn": 7.698589116422729,
-        "central_increment_bn": 0.7867993468513336
+        "central_increment_bn": 0.7867993468513336,
+        "unadjusted_cgt_change_bn": 2.4601549844388884,
+        "unadjusted_increment_bn": 0.22216943214194487
       },
       {
         "step": "badr_withdrawn",
@@ -927,7 +963,9 @@
         "static_cgt_change_bn": 26.219449784630523,
         "static_increment_bn": 4.9836692358332595,
         "central_cgt_change_bn": 10.516542748106842,
-        "central_increment_bn": 2.8179536316841127
+        "central_increment_bn": 2.8179536316841127,
+        "unadjusted_cgt_change_bn": 4.410098097404892,
+        "unadjusted_increment_bn": 1.9499431129660034
       }
     ]
   },
@@ -939,6 +977,13 @@
         "applied_as": "retention",
         "source": "CenTax, Reforming Capital Gains Tax: revenue and distributional effects (Advani, Lonsdale and Summers)",
         "url": "https://centax.org.uk/wp-content/uploads/2024/10/AdvaniLonsdaleSummers2024_CGTReform.pdf#page=38"
+      },
+      "unadjusted": {
+        "id": "centax_unadjusted",
+        "e_retention": 1.5,
+        "applied_as": "retention",
+        "source": "CenTax, Reforming Capital Gains Tax: revenue and distributional effects (Advani, Lonsdale and Summers)",
+        "url": "https://centax.org.uk/wp-content/uploads/2024/10/AdvaniLonsdaleSummers2024_CGTReform.pdf#page=37"
       },
       "centax_range": {
         "lower": 0.5,
@@ -1458,6 +1503,7 @@
       ],
       "elasticity_ids": [
         "centax_central",
+        "centax_unadjusted",
         "official"
       ],
       "model_measure": "Change in government balance, \u00a3m, on this repo's liabilities in the model year, with each row's rates and relief (the main and residential rates move together; the BADR rows move the relief's rate), the official case applying 3.6 to main-rate gains and 1.4 to gains qualifying for the relief",
@@ -1485,9 +1531,27 @@
               "2026-27": 661.6582742230224,
               "2027-28": 689.244410304016
             },
+            "centax_unadjusted": {
+              "2026-27": 473.0721778824463,
+              "2027-28": 493.2255771763916
+            },
             "official": {
               "2026-27": -245.3915113484497,
               "2027-28": -252.56397855047607
+            }
+          },
+          "income_shifting_offset_m": {
+            "centax_central": {
+              "2026-27": 91.49464430185769,
+              "2027-28": 95.04713433250313
+            },
+            "centax_unadjusted": {
+              "2026-27": 136.79020338113708,
+              "2027-28": 142.10073297946604
+            },
+            "official": {
+              "2026-27": 307.4371268884519,
+              "2027-28": 319.23849836633696
             }
           }
         },
@@ -1514,9 +1578,27 @@
               "2026-27": 3004.692318317566,
               "2027-28": 3131.42562489624
             },
+            "centax_unadjusted": {
+              "2026-27": 1980.5967458341065,
+              "2027-28": 2044.2901386416015
+            },
             "official": {
               "2026-27": -1749.5644239556275,
               "2027-28": -1818.8168291888426
+            }
+          },
+          "income_shifting_offset_m": {
+            "centax_central": {
+              "2026-27": 458.03644140335564,
+              "2027-28": 475.2328709946196
+            },
+            "centax_unadjusted": {
+              "2026-27": 675.6299345160139,
+              "2027-28": 700.9955966496392
+            },
+            "official": {
+              "2026-27": 1439.5226088608565,
+              "2027-28": 1492.8894160720438
             }
           }
         },
@@ -1543,9 +1625,27 @@
               "2026-27": 5332.584141499694,
               "2027-28": 5525.2327010110475
             },
+            "centax_unadjusted": {
+              "2026-27": 3084.8106914613645,
+              "2027-28": 3193.4545672363283
+            },
             "official": {
               "2026-27": -4445.108842822754,
               "2027-28": -4616.327610211487
+            }
+          },
+          "income_shifting_offset_m": {
+            "centax_central": {
+              "2026-27": 916.1970526490455,
+              "2027-28": 950.4861449239904
+            },
+            "centax_unadjusted": {
+              "2026-27": 1328.0489714997163,
+              "2027-28": 1377.757402460488
+            },
+            "official": {
+              "2026-27": 2645.9628218526855,
+              "2027-28": 2743.8510787718865
             }
           }
         },
@@ -1572,9 +1672,27 @@
               "2026-27": 34.94500598553467,
               "2027-28": 34.632274703796384
             },
+            "centax_unadjusted": {
+              "2026-27": 33.03284571942139,
+              "2027-28": 32.717968565917964
+            },
             "official": {
               "2026-27": 25.132181809570312,
               "2027-28": 24.806987821289063
+            }
+          },
+          "income_shifting_offset_m": {
+            "centax_central": {
+              "2026-27": 0.8983925522654105,
+              "2027-28": 0.899403068344251
+            },
+            "centax_unadjusted": {
+              "2026-27": 1.3434869395670443,
+              "2027-28": 1.3450580390537223
+            },
+            "official": {
+              "2026-27": 3.183475146701349,
+              "2027-28": 3.187692595294965
             }
           }
         },
@@ -1601,9 +1719,27 @@
               "2026-27": 170.69049396612547,
               "2027-28": 169.2265192194214
             },
+            "centax_unadjusted": {
+              "2026-27": 159.57505553619387,
+              "2027-28": 158.14734472784423
+            },
             "official": {
               "2026-27": 116.71287651971436,
               "2027-28": 115.35174461425781
+            }
+          },
+          "income_shifting_offset_m": {
+            "centax_central": {
+              "2026-27": 4.489990469473266,
+              "2027-28": 4.475863368652363
+            },
+            "centax_unadjusted": {
+              "2026-27": 6.631629603187365,
+              "2027-28": 6.6116094605506746
+            },
+            "official": {
+              "2026-27": 14.928360827354492,
+              "2027-28": 14.89119347958389
             }
           }
         },
@@ -1630,9 +1766,27 @@
               "2026-27": 168.3855976953125,
               "2027-28": 172.1033946211548
             },
+            "centax_unadjusted": {
+              "2026-27": 155.01267714117432,
+              "2027-28": 158.35168681188966
+            },
             "official": {
               "2026-27": 157.68061914959716,
               "2027-28": 161.083448449646
+            }
+          },
+          "income_shifting_offset_m": {
+            "centax_central": {
+              "2026-27": 9.574213801432242,
+              "2027-28": 9.843411588829602
+            },
+            "centax_unadjusted": {
+              "2026-27": 14.317424900980274,
+              "2027-28": 14.719995553831966
+            },
+            "official": {
+              "2026-27": 13.371143136836286,
+              "2027-28": 13.747144332205911
             }
           }
         },
@@ -1659,13 +1813,828 @@
               "2026-27": 813.4897924613648,
               "2027-28": 831.3365163551025
             },
+            "centax_unadjusted": {
+              "2026-27": 735.5614811792602,
+              "2027-28": 751.2324840729369
+            },
             "official": {
               "2026-27": 750.9177209494019,
               "2027-28": 767.0473798134155
             }
+          },
+          "income_shifting_offset_m": {
+            "centax_central": {
+              "2026-27": 47.87835317589044,
+              "2027-28": 49.21435442778516
+            },
+            "centax_unadjusted": {
+              "2026-27": 70.71159745107651,
+              "2027-28": 72.68451367385171
+            },
+            "official": {
+              "2026-27": 66.21173448012178,
+              "2027-28": 68.0475161737998
+            }
           }
         }
       ]
+    }
+  },
+  "approaches": {
+    "default": "total_revenue",
+    "approaches": [
+      {
+        "id": "total_revenue",
+        "label": "Net of income shifting",
+        "description": "Total revenue: CenTax's central 1.0, which already allows for income no longer presented as gains, and the cases measured on the CGT base (CenTax's 0.5 and 2.0 and the official elasticity) with the OBR's income tax and National Insurance on that income added back.",
+        "case_ids": [
+          "static",
+          "centax_lower",
+          "centax_central",
+          "centax_upper",
+          "official"
+        ],
+        "central_id": "centax_central",
+        "offset_case_ids": [
+          "centax_lower",
+          "centax_upper",
+          "official"
+        ]
+      },
+      {
+        "id": "cgt_only",
+        "label": "Gross of income shifting",
+        "description": "CGT only: every gain not realised counts as lost revenue, with CenTax's elasticity before its adjustments and the official elasticity with no income tax or National Insurance added back.",
+        "case_ids": [
+          "static",
+          "centax_lower",
+          "centax_unadjusted",
+          "centax_upper",
+          "official"
+        ],
+        "central_id": "centax_unadjusted",
+        "offset_case_ids": []
+      }
+    ],
+    "cases": [
+      {
+        "id": "static",
+        "label": "Static (no behavioural response)",
+        "e_retention": 0.0
+      },
+      {
+        "id": "centax_lower",
+        "label": "CenTax lower (retention elasticity 0.5)",
+        "e_retention": 0.5
+      },
+      {
+        "id": "centax_central",
+        "label": "CenTax central (retention elasticity 1.0)",
+        "e_retention": 1.0
+      },
+      {
+        "id": "centax_unadjusted",
+        "label": "CenTax before its adjustments (retention elasticity 1.5)",
+        "e_retention": 1.5
+      },
+      {
+        "id": "centax_upper",
+        "label": "CenTax upper (retention elasticity 2.0)",
+        "e_retention": 2.0
+      },
+      {
+        "id": "official",
+        "label": "HMRC/OBR official (retention elasticity 3.6; 1.4 for BADR gains)",
+        "e_retention": 3.6
+      }
+    ],
+    "income_shifting": {
+      "source": "OBR, Costing of changes to the main, BADR and IR rates of CGT (supplementary forecast information)",
+      "published": "2025-01-22",
+      "url": "https://obr.uk/docs/dlm_uploads/CGT-supplementary-release-Jan-2025.pdf",
+      "locator": "p. 3 and Table 1.1",
+      "share": 0.125,
+      "tax_rate": 0.5391304347826087,
+      "tax_rate_components": {
+        "income_tax": 0.45,
+        "employee_national_insurance": 0.02,
+        "employer_national_insurance": 0.15
+      },
+      "share_note": "The OBR's costing of the October 2024 rate rise assumes 12.5% of the behavioural response to the narrowing gap between income tax and CGT rates is income no longer presented as gains, which raises income tax receipts: HMRC assumes a quarter of the income tax response to a 1-point rise in marginal rates is avoidance, and half of that is income-to-gains shifting.",
+      "base_note": "Residential property gains are left out: the OBR's costing left the residential rates where they were, and it describes labour income presented as gains, which residential property gains are not. They are about a tenth of the fall.",
+      "tax_rate_note": "The OBR does not say what rate the shifted income pays. It describes the behaviour as structuring earnings as income or gains, against employment tax rates (paras 1.9 and 1.11), so the income is taxed here as salary paid to an additional-rate taxpayer: income tax at 45% and employee National Insurance at 2% on the salary, and employer National Insurance at 15% on top of it, 53.9% of what the employer spends. Income tax alone at 45% would give a sixth less, and dividends at the additional dividend rate (39.35%) about a quarter less.",
+      "obr_check": "Applied to the OBR's own costing (\u00a34.9bn of CGT lost to behaviour in 2029-30, on gains taxed at about 22-24%), this rate gives \u00a31.4bn to \u00a31.5bn against the OBR's \u00a31.5bn of income taxes, which imply about 56%. Income tax alone at 45% gives about \u00a31.2bn."
+    }
+  },
+  "approach_results": {
+    "cgt_only": {
+      "central_id": "centax_unadjusted",
+      "elasticity": 1.5,
+      "reform_fingerprint": "9f31ab05a187",
+      "budget": [
+        {
+          "year": "2026-27",
+          "baseline_cgt_bn": 29.240987242630652,
+          "reform_cgt_bn": 33.65108534003554,
+          "cgt_change_bn": 4.410098097404892,
+          "total_tax_change_bn": 4.41009816351416,
+          "gov_balance_change_bn": 4.410098005908569,
+          "income_shifting_offset_bn": 2.99229777758313,
+          "cgt_change_from_entrants_bn": -6.588845504467402e-05
+        },
+        {
+          "year": "2027-28",
+          "baseline_cgt_bn": 30.335929990801148,
+          "reform_cgt_bn": 34.919208085601674,
+          "cgt_change_bn": 4.583278094800529,
+          "total_tax_change_bn": 4.5832780058433835,
+          "gov_balance_change_bn": 4.583278057636414,
+          "income_shifting_offset_bn": 3.1029630648915094,
+          "cgt_change_from_entrants_bn": -0.0001184249936959862
+        },
+        {
+          "year": "2028-29",
+          "baseline_cgt_bn": 31.43971734487111,
+          "reform_cgt_bn": 36.23198647657759,
+          "cgt_change_bn": 4.792269131706482,
+          "total_tax_change_bn": 4.792269368038941,
+          "gov_balance_change_bn": 4.792269343496521,
+          "income_shifting_offset_bn": 3.209404954547472,
+          "cgt_change_from_entrants_bn": -0.0001815961786121827
+        },
+        {
+          "year": "2029-30",
+          "baseline_cgt_bn": 32.55116912363369,
+          "reform_cgt_bn": 37.52757581825272,
+          "cgt_change_bn": 4.976406694619034,
+          "total_tax_change_bn": 4.976406638598511,
+          "gov_balance_change_bn": 4.976406695541748,
+          "income_shifting_offset_bn": 3.320271531532647,
+          "cgt_change_from_entrants_bn": -0.0002612791731535229
+        },
+        {
+          "year": "2030-31",
+          "baseline_cgt_bn": 33.769208982149905,
+          "reform_cgt_bn": 38.94943475971405,
+          "cgt_change_bn": 5.180225777564148,
+          "total_tax_change_bn": 5.180225863198975,
+          "gov_balance_change_bn": 5.180225820476258,
+          "income_shifting_offset_bn": 3.440367235822391,
+          "cgt_change_from_entrants_bn": -0.0003702449815969171
+        }
+      ],
+      "income_change_groups": {
+        "2026-27": {
+          "quintile": [
+            {
+              "group": "Lowest 20%",
+              "avg_change_gbp": -17.134039389506455,
+              "relative_change_pct": -0.0845275724720338
+            },
+            {
+              "group": "20\u201340%",
+              "avg_change_gbp": -8.864256900793881,
+              "relative_change_pct": -0.02362028562152234
+            },
+            {
+              "group": "40\u201360%",
+              "avg_change_gbp": -19.62733699958588,
+              "relative_change_pct": -0.03661429018873308
+            },
+            {
+              "group": "60\u201380%",
+              "avg_change_gbp": -58.55043924676966,
+              "relative_change_pct": -0.08095284776894959
+            },
+            {
+              "group": "Highest 20%",
+              "avg_change_gbp": -8989.35224869779,
+              "relative_change_pct": -6.184803542974113
+            }
+          ],
+          "quartile": [
+            {
+              "group": "Lowest 25%",
+              "avg_change_gbp": -17.500348067567224,
+              "relative_change_pct": -0.07755770705288113
+            },
+            {
+              "group": "25\u201350%",
+              "avg_change_gbp": -8.731257519369576,
+              "relative_change_pct": -0.02010400416801671
+            },
+            {
+              "group": "50\u201375%",
+              "avg_change_gbp": -37.26486180043465,
+              "relative_change_pct": -0.05755771440292231
+            },
+            {
+              "group": "Highest 25%",
+              "avg_change_gbp": -7211.746522448035,
+              "relative_change_pct": -5.439909509942788
+            }
+          ],
+          "household_type": [
+            {
+              "group": "With children",
+              "avg_change_gbp": -2328.903408508013,
+              "relative_change_pct": -2.5653841450759653
+            },
+            {
+              "group": "Pensioner",
+              "avg_change_gbp": -1507.071768315823,
+              "relative_change_pct": -3.137084374531132
+            },
+            {
+              "group": "Working-age, no children",
+              "avg_change_gbp": -1672.6408125730466,
+              "relative_change_pct": -2.79622226817391
+            }
+          ],
+          "region": [
+            {
+              "group": "North East",
+              "avg_change_gbp": -551.860634877346,
+              "relative_change_pct": -1.017343021140245
+            },
+            {
+              "group": "North West",
+              "avg_change_gbp": -1153.1241125243655,
+              "relative_change_pct": -1.9532855062042906
+            },
+            {
+              "group": "Yorkshire and the Humber",
+              "avg_change_gbp": -1291.0350179979603,
+              "relative_change_pct": -2.2052827827780344
+            },
+            {
+              "group": "East Midlands",
+              "avg_change_gbp": -1302.3278556960663,
+              "relative_change_pct": -2.150504369480736
+            },
+            {
+              "group": "West Midlands",
+              "avg_change_gbp": -1034.1778505159782,
+              "relative_change_pct": -1.707683833215383
+            },
+            {
+              "group": "East of England",
+              "avg_change_gbp": -1904.5999630495196,
+              "relative_change_pct": -2.7627910376646994
+            },
+            {
+              "group": "London",
+              "avg_change_gbp": -4059.861499123815,
+              "relative_change_pct": -4.475040800435417
+            },
+            {
+              "group": "South East",
+              "avg_change_gbp": -2859.1053887765424,
+              "relative_change_pct": -3.7756225024963084
+            },
+            {
+              "group": "South West",
+              "avg_change_gbp": -1809.1737891671467,
+              "relative_change_pct": -2.8784235769094773
+            },
+            {
+              "group": "Wales",
+              "avg_change_gbp": -728.9571512867597,
+              "relative_change_pct": -1.3332651347965303
+            },
+            {
+              "group": "Scotland",
+              "avg_change_gbp": -957.9515244495864,
+              "relative_change_pct": -1.7795283835690463
+            },
+            {
+              "group": "Northern Ireland",
+              "avg_change_gbp": -1035.527722837911,
+              "relative_change_pct": -1.7433790449121143
+            }
+          ]
+        },
+        "2027-28": {
+          "quintile": [
+            {
+              "group": "Lowest 20%",
+              "avg_change_gbp": -17.73551673429685,
+              "relative_change_pct": -0.08638241058825918
+            },
+            {
+              "group": "20\u201340%",
+              "avg_change_gbp": -9.822170114299638,
+              "relative_change_pct": -0.025759673437656002
+            },
+            {
+              "group": "40\u201360%",
+              "avg_change_gbp": -20.83282937618739,
+              "relative_change_pct": -0.038241109725444845
+            },
+            {
+              "group": "60\u201380%",
+              "avg_change_gbp": -60.32901020059448,
+              "relative_change_pct": -0.08209096126732854
+            },
+            {
+              "group": "Highest 20%",
+              "avg_change_gbp": -9292.670406746334,
+              "relative_change_pct": -6.274471334031645
+            }
+          ],
+          "quartile": [
+            {
+              "group": "Lowest 25%",
+              "avg_change_gbp": -18.11505302690072,
+              "relative_change_pct": -0.07922336877033291
+            },
+            {
+              "group": "25\u201350%",
+              "avg_change_gbp": -8.595234711718325,
+              "relative_change_pct": -0.019484005795357865
+            },
+            {
+              "group": "50\u201375%",
+              "avg_change_gbp": -40.42264915777363,
+              "relative_change_pct": -0.06144832014499
+            },
+            {
+              "group": "Highest 25%",
+              "avg_change_gbp": -7448.686089395933,
+              "relative_change_pct": -5.517709460382018
+            }
+          ],
+          "household_type": [
+            {
+              "group": "With children",
+              "avg_change_gbp": -2406.321337905866,
+              "relative_change_pct": -2.6099446745085686
+            },
+            {
+              "group": "Pensioner",
+              "avg_change_gbp": -1557.351399213417,
+              "relative_change_pct": -3.190010938501844
+            },
+            {
+              "group": "Working-age, no children",
+              "avg_change_gbp": -1729.0966265180919,
+              "relative_change_pct": -2.8378263233559684
+            }
+          ],
+          "region": [
+            {
+              "group": "North East",
+              "avg_change_gbp": -570.9747084864453,
+              "relative_change_pct": -1.0363766690840326
+            },
+            {
+              "group": "North West",
+              "avg_change_gbp": -1196.7386545543075,
+              "relative_change_pct": -1.9952478710533763
+            },
+            {
+              "group": "Yorkshire and the Humber",
+              "avg_change_gbp": -1334.137250491705,
+              "relative_change_pct": -2.241135197725795
+            },
+            {
+              "group": "East Midlands",
+              "avg_change_gbp": -1347.866494406876,
+              "relative_change_pct": -2.1898625523197772
+            },
+            {
+              "group": "West Midlands",
+              "avg_change_gbp": -1068.28095914355,
+              "relative_change_pct": -1.7365012671179687
+            },
+            {
+              "group": "East of England",
+              "avg_change_gbp": -1967.346709718109,
+              "relative_change_pct": -2.8057052871371795
+            },
+            {
+              "group": "London",
+              "avg_change_gbp": -4191.92583196257,
+              "relative_change_pct": -4.53661899843087
+            },
+            {
+              "group": "South East",
+              "avg_change_gbp": -2953.2533912223803,
+              "relative_change_pct": -3.83430435295256
+            },
+            {
+              "group": "South West",
+              "avg_change_gbp": -1869.7288130607517,
+              "relative_change_pct": -2.9259329991859406
+            },
+            {
+              "group": "Wales",
+              "avg_change_gbp": -755.0365525590757,
+              "relative_change_pct": -1.359749254139213
+            },
+            {
+              "group": "Scotland",
+              "avg_change_gbp": -990.7193479503254,
+              "relative_change_pct": -1.8079388222481212
+            },
+            {
+              "group": "Northern Ireland",
+              "avg_change_gbp": -1069.9434892227516,
+              "relative_change_pct": -1.7694515988873474
+            }
+          ]
+        },
+        "2028-29": {
+          "quintile": [
+            {
+              "group": "Lowest 20%",
+              "avg_change_gbp": -18.38821377422637,
+              "relative_change_pct": -0.0884755733287526
+            },
+            {
+              "group": "20\u201340%",
+              "avg_change_gbp": -11.23135078753385,
+              "relative_change_pct": -0.029028428032367548
+            },
+            {
+              "group": "40\u201360%",
+              "avg_change_gbp": -20.837721327967945,
+              "relative_change_pct": -0.037672283955092416
+            },
+            {
+              "group": "60\u201380%",
+              "avg_change_gbp": -64.54575807781698,
+              "relative_change_pct": -0.08649776674723315
+            },
+            {
+              "group": "Highest 20%",
+              "avg_change_gbp": -9584.97916676403,
+              "relative_change_pct": -6.357511722833138
+            }
+          ],
+          "quartile": [
+            {
+              "group": "Lowest 25%",
+              "avg_change_gbp": -18.79699567640623,
+              "relative_change_pct": -0.08116940196042602
+            },
+            {
+              "group": "25\u201350%",
+              "avg_change_gbp": -10.91966903064311,
+              "relative_change_pct": -0.02438875399044694
+            },
+            {
+              "group": "50\u201375%",
+              "avg_change_gbp": -43.40949460272281,
+              "relative_change_pct": -0.06498519850430806
+            },
+            {
+              "group": "Highest 25%",
+              "avg_change_gbp": -7682.370124315622,
+              "relative_change_pct": -5.591754286327538
+            }
+          ],
+          "household_type": [
+            {
+              "group": "With children",
+              "avg_change_gbp": -2482.2381670803024,
+              "relative_change_pct": -2.653759149026853
+            },
+            {
+              "group": "Pensioner",
+              "avg_change_gbp": -1609.1484525666317,
+              "relative_change_pct": -3.2434132861156764
+            },
+            {
+              "group": "Working-age, no children",
+              "avg_change_gbp": -1781.6681956946259,
+              "relative_change_pct": -2.873164977103552
+            }
+          ],
+          "region": [
+            {
+              "group": "North East",
+              "avg_change_gbp": -589.458338474662,
+              "relative_change_pct": -1.054139582263766
+            },
+            {
+              "group": "North West",
+              "avg_change_gbp": -1237.0639894553062,
+              "relative_change_pct": -2.031779667614383
+            },
+            {
+              "group": "Yorkshire and the Humber",
+              "avg_change_gbp": -1376.0721871549072,
+              "relative_change_pct": -2.274517478798478
+            },
+            {
+              "group": "East Midlands",
+              "avg_change_gbp": -1393.3310242190555,
+              "relative_change_pct": -2.2294767640782696
+            },
+            {
+              "group": "West Midlands",
+              "avg_change_gbp": -1102.7631087096247,
+              "relative_change_pct": -1.7658550380675875
+            },
+            {
+              "group": "East of England",
+              "avg_change_gbp": -2029.353029311853,
+              "relative_change_pct": -2.8474343653560705
+            },
+            {
+              "group": "London",
+              "avg_change_gbp": -4314.050164444361,
+              "relative_change_pct": -4.589704468941543
+            },
+            {
+              "group": "South East",
+              "avg_change_gbp": -3047.7988885261834,
+              "relative_change_pct": -3.8918103968158313
+            },
+            {
+              "group": "South West",
+              "avg_change_gbp": -1928.816173922915,
+              "relative_change_pct": -2.970746639793648
+            },
+            {
+              "group": "Wales",
+              "avg_change_gbp": -779.6775049146879,
+              "relative_change_pct": -1.3833607496223843
+            },
+            {
+              "group": "Scotland",
+              "avg_change_gbp": -1023.4202650351349,
+              "relative_change_pct": -1.8362057262674778
+            },
+            {
+              "group": "Northern Ireland",
+              "avg_change_gbp": -1103.8629370055673,
+              "relative_change_pct": -1.7955616398751901
+            }
+          ]
+        },
+        "2029-30": {
+          "quintile": [
+            {
+              "group": "Lowest 20%",
+              "avg_change_gbp": -18.975492033709145,
+              "relative_change_pct": -0.09021367062981654
+            },
+            {
+              "group": "20\u201340%",
+              "avg_change_gbp": -9.704955229340273,
+              "relative_change_pct": -0.024708251328889597
+            },
+            {
+              "group": "40\u201360%",
+              "avg_change_gbp": -24.37477548366926,
+              "relative_change_pct": -0.0433874726509768
+            },
+            {
+              "group": "60\u201380%",
+              "avg_change_gbp": -66.18495600436168,
+              "relative_change_pct": -0.08742181315803087
+            },
+            {
+              "group": "Highest 20%",
+              "avg_change_gbp": -9874.864289458741,
+              "relative_change_pct": -6.441143734845024
+            }
+          ],
+          "quartile": [
+            {
+              "group": "Lowest 25%",
+              "avg_change_gbp": -19.642235064994473,
+              "relative_change_pct": -0.08375251407772405
+            },
+            {
+              "group": "25\u201350%",
+              "avg_change_gbp": -10.602494833628551,
+              "relative_change_pct": -0.023339357667538568
+            },
+            {
+              "group": "50\u201375%",
+              "avg_change_gbp": -44.26882895396733,
+              "relative_change_pct": -0.06530384260476764
+            },
+            {
+              "group": "Highest 25%",
+              "avg_change_gbp": -7917.141650117021,
+              "relative_change_pct": -5.668521986304141
+            }
+          ],
+          "household_type": [
+            {
+              "group": "With children",
+              "avg_change_gbp": -2556.897811807172,
+              "relative_change_pct": -2.696364227650708
+            },
+            {
+              "group": "Pensioner",
+              "avg_change_gbp": -1660.4987166514184,
+              "relative_change_pct": -3.293981118461403
+            },
+            {
+              "group": "Working-age, no children",
+              "avg_change_gbp": -1835.1755475404957,
+              "relative_change_pct": -2.9101301944125013
+            }
+          ],
+          "region": [
+            {
+              "group": "North East",
+              "avg_change_gbp": -607.6391237975962,
+              "relative_change_pct": -1.0714682655586223
+            },
+            {
+              "group": "North West",
+              "avg_change_gbp": -1275.5940598186105,
+              "relative_change_pct": -2.0647584323667387
+            },
+            {
+              "group": "Yorkshire and the Humber",
+              "avg_change_gbp": -1417.4144132037395,
+              "relative_change_pct": -2.3068472244809817
+            },
+            {
+              "group": "East Midlands",
+              "avg_change_gbp": -1436.5048806203706,
+              "relative_change_pct": -2.264826297905442
+            },
+            {
+              "group": "West Midlands",
+              "avg_change_gbp": -1136.6771539173526,
+              "relative_change_pct": -1.7940670822149691
+            },
+            {
+              "group": "East of England",
+              "avg_change_gbp": -2090.444180071939,
+              "relative_change_pct": -2.888086485552891
+            },
+            {
+              "group": "London",
+              "avg_change_gbp": -4443.961296825336,
+              "relative_change_pct": -4.651234967810697
+            },
+            {
+              "group": "South East",
+              "avg_change_gbp": -3139.1854177670616,
+              "relative_change_pct": -3.945785465173385
+            },
+            {
+              "group": "South West",
+              "avg_change_gbp": -1989.9912301705344,
+              "relative_change_pct": -3.0176447601743157
+            },
+            {
+              "group": "Wales",
+              "avg_change_gbp": -804.1406438127284,
+              "relative_change_pct": -1.4065894447015954
+            },
+            {
+              "group": "Scotland",
+              "avg_change_gbp": -1054.425036691873,
+              "relative_change_pct": -1.861007508638841
+            },
+            {
+              "group": "Northern Ireland",
+              "avg_change_gbp": -1137.473372667587,
+              "relative_change_pct": -1.8209630087204542
+            }
+          ]
+        },
+        "2030-31": {
+          "quintile": [
+            {
+              "group": "Lowest 20%",
+              "avg_change_gbp": -19.61116916576198,
+              "relative_change_pct": -0.09298568370827184
+            },
+            {
+              "group": "20\u201340%",
+              "avg_change_gbp": -10.345546078279117,
+              "relative_change_pct": -0.0260323144463736
+            },
+            {
+              "group": "40\u201360%",
+              "avg_change_gbp": -24.791832641140484,
+              "relative_change_pct": -0.043471021998361996
+            },
+            {
+              "group": "60\u201380%",
+              "avg_change_gbp": -66.63676474045359,
+              "relative_change_pct": -0.08672291253442618
+            },
+            {
+              "group": "Highest 20%",
+              "avg_change_gbp": -10194.994114969451,
+              "relative_change_pct": -6.524872708849674
+            }
+          ],
+          "quartile": [
+            {
+              "group": "Lowest 25%",
+              "avg_change_gbp": -20.348822986179464,
+              "relative_change_pct": -0.08637522030995425
+            },
+            {
+              "group": "25\u201350%",
+              "avg_change_gbp": -11.454279820105553,
+              "relative_change_pct": -0.02486861479440532
+            },
+            {
+              "group": "50\u201375%",
+              "avg_change_gbp": -44.69729845741677,
+              "relative_change_pct": -0.06493185524547888
+            },
+            {
+              "group": "Highest 25%",
+              "avg_change_gbp": -8176.716938724616,
+              "relative_change_pct": -5.7460048475119825
+            }
+          ],
+          "household_type": [
+            {
+              "group": "With children",
+              "avg_change_gbp": -2638.598012268299,
+              "relative_change_pct": -2.742671061115628
+            },
+            {
+              "group": "Pensioner",
+              "avg_change_gbp": -1714.7770473577152,
+              "relative_change_pct": -3.3444137441982322
+            },
+            {
+              "group": "Working-age, no children",
+              "avg_change_gbp": -1894.0674116695882,
+              "relative_change_pct": -2.955238231639648
+            }
+          ],
+          "region": [
+            {
+              "group": "North East",
+              "avg_change_gbp": -627.4742311808795,
+              "relative_change_pct": -1.0934261251516042
+            },
+            {
+              "group": "North West",
+              "avg_change_gbp": -1317.1543047563196,
+              "relative_change_pct": -2.1037948700805678
+            },
+            {
+              "group": "Yorkshire and the Humber",
+              "avg_change_gbp": -1462.7629721322623,
+              "relative_change_pct": -2.347285242595682
+            },
+            {
+              "group": "East Midlands",
+              "avg_change_gbp": -1485.606315150956,
+              "relative_change_pct": -2.308751694005446
+            },
+            {
+              "group": "West Midlands",
+              "avg_change_gbp": -1173.2371291200957,
+              "relative_change_pct": -1.8257378490016007
+            },
+            {
+              "group": "East of England",
+              "avg_change_gbp": -2157.5574377473167,
+              "relative_change_pct": -2.9303405567314416
+            },
+            {
+              "group": "London",
+              "avg_change_gbp": -4584.273057770546,
+              "relative_change_pct": -4.715882857112616
+            },
+            {
+              "group": "South East",
+              "avg_change_gbp": -3239.7001227171263,
+              "relative_change_pct": -4.002147523326137
+            },
+            {
+              "group": "South West",
+              "avg_change_gbp": -2054.5041958833694,
+              "relative_change_pct": -3.0678422104518743
+            },
+            {
+              "group": "Wales",
+              "avg_change_gbp": -830.6981541577824,
+              "relative_change_pct": -1.4336401578567044
+            },
+            {
+              "group": "Scotland",
+              "avg_change_gbp": -1088.8121316879137,
+              "relative_change_pct": -1.8888014281296086
+            },
+            {
+              "group": "Northern Ireland",
+              "avg_change_gbp": -1174.2681299335784,
+              "relative_change_pct": -1.8529928363423513
+            }
+          ]
+        }
+      }
     }
   }
 }
