@@ -87,7 +87,7 @@ export default function MethodologyTab({ data, anchor }) {
             simulated here. It is a staged build from{" "}
             <ExternalLink href="https://github.com/PolicyEngine/microcosm">microcosm</ExternalLink>{" "}
             main, not a certified release, and is re-pinned to the published release once that
-            exists.
+            exists. {dataset.columns}
           </li>
           <li>
             <strong>Gains imputation.</strong> {dataset.observation}. Amounts are redrawn from
@@ -99,10 +99,10 @@ export default function MethodologyTab({ data, anchor }) {
             and weighted to HMRC Table 4&apos;s bands, so the relief is charged on its own schedule.
           </li>
           <li>
-            <strong>Gainers below the exempt amount.</strong> {dataset.notes} At the base year they
-            owe nothing; once the engine uprates gains past the frozen exempt amount they become
-            taxpayers. The Baseline tab reports them as entrants by uprating and shows every figure
-            with and without them.
+            <strong>Gainers below the exempt amount.</strong> At the base year they owe nothing;
+            once the engine uprates gains past the frozen exempt amount they become taxpayers.{" "}
+            {dataset.notes} The Baseline tab reports them as entrants by uprating and shows every
+            figure with and without them.
           </li>
           <li>
             <strong>Projection.</strong> Each file is one engine year ({metadata.projection.base_year}

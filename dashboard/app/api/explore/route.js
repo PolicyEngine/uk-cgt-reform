@@ -15,6 +15,8 @@ import {
 // Modal gateway (which answers at once from its cache or queues a job).
 // Without one, and off Vercel, it runs the pipeline's own CLI locally, which
 // serves from and writes the local result cache (data/explore_results).
+// A request with `cache_only: true` (a link opened on page load) is served
+// from the cache or answered `not_cached`; it never starts a computation.
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -23,6 +25,8 @@ const execFileAsync = promisify(execFile);
 const REPO_ROOT = path.resolve(process.cwd(), "..");
 const DATASET_KEY = /^[a-z0-9_]+$/;
 const BANDS = ["basic_rate", "higher_rate", "additional_rate"];
+// The CLI's exit status for a `--cache-only` run with nothing stored.
+const NOT_CACHED_EXIT = 3;
 
 function json(body, status = 200) {
   return NextResponse.json(body, { status, headers: NO_STORE });
@@ -77,6 +81,7 @@ function cliArgs(body) {
     String(elasticity),
   ];
   if (dataset) args.push("--dataset", dataset);
+  if (body.cache_only === true) args.push("--cache-only");
   // Business Asset Disposal Relief: withdrawn, or kept at a rate and limit.
   const badr = body.badr ?? {};
   if (typeof badr !== "object" || Array.isArray(badr)) {
@@ -141,6 +146,7 @@ export async function POST(request) {
   } catch (err) {
     const stderr = (err.stderr || "").trim();
     if (err.code === 2) return json({ detail: stderr.replace(/^error:\s*/, "") }, 400);
+    if (err.code === NOT_CACHED_EXIT) return json({ status: "not_cached" });
     return json(
       { detail: stderr.split("\n").slice(-3).join(" ") || err.message || "Local run failed." },
       500,
