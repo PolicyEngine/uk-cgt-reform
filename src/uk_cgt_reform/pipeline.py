@@ -7,17 +7,15 @@ income quantile, household type and region. The pipeline asserts that the
 behavioural CGT elasticity actually fires (the static e=0 and central
 e=-0.7 reform runs must differ materially) before writing any results.
 
-The same reform runs on every registered dataset (``simulations.DATASETS``:
-the incumbent Enhanced FRS 2024-25 and the staged Microcosm UK national-line
-candidate built on microcosm#979) on the same engine and the same projection, and the per-dataset
-results are written side by side. Simulations run directly on each file
-as published, with no local reweighting and no edited inputs: calibration
-and imputation belong upstream in the dataset producer, not in an analysis
-repo. What differs between the datasets is disclosed in the validation
-block (taxpayer counts, gains totals, the schedule components and the
-entrants by uprating) rather than adjusted away.
+The reform runs on the one registered dataset (``simulations.DATASETS``: the
+published Microcosm UK 2024-25 national release). The simulations run
+directly on the file as published, with no local reweighting and no edited
+inputs: calibration and imputation belong upstream in the dataset producer,
+not in an analysis repo. The validation block reports the dataset against
+HMRC's statistics (taxpayer counts, gains totals, the schedule components
+and the entrants by uprating) rather than adjusting anything away.
 
-Each dataset's results also carry a ``benchmarks`` block (issue #7): the
+The results also carry a ``benchmarks`` block (issue #7): the
 static reform by year beside JRF's estimate, a static re-score at CenTax's
 2019/20 rules beside its Tables 3 and 8, and HMRC's ready-reckoner rows
 scored at the central and the official elasticity (``comparison.py``).
@@ -36,7 +34,6 @@ from .comparison import (
     SENSITIVITY_CASES,
     benchmarks_block,
     centax_1920_block,
-    dataset_comparison,
     price_factors,
     ready_reckoner_block,
     static_equalisation_block,
@@ -74,15 +71,10 @@ from .uprating_audit import baseline_by_year, engine_audit, projection_fingerpri
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DATA_DIR = REPO_ROOT / "data"
-# The dashboard's primary file: the default dataset's results.
+# The results file the dashboard reads.
 OUTPUT_PATH = DATA_DIR / "cgt_equalisation_results.json"
-COMPARISON_PATH = DATA_DIR / "dataset_comparison.json"
 AUDIT_PATH = DATA_DIR / "cgt_uprating_audit.json"
 DATASET_FOLDER = DATA_DIR / "policyengine_datasets"
-
-
-def results_path(spec: DatasetSpec, data_dir: Path = DATA_DIR) -> Path:
-    return data_dir / f"cgt_equalisation_results_{spec.key}.json"
 
 
 def simulation_stem(spec: DatasetSpec, fingerprint: str) -> str:
@@ -449,54 +441,30 @@ def run_dataset(
     return output, baseline_sims
 
 
-def run(output_dir: Path = DATA_DIR, dataset_keys: list[str] | None = None) -> dict[str, dict]:
-    """Run the pipeline end-to-end on the selected datasets (default: all)
-    and write the per-dataset results, the side-by-side comparison and the
-    uprating audit."""
-    keys = list(dataset_keys or DATASETS)
-    unknown = [key for key in keys if key not in DATASETS]
-    if unknown:
-        raise ValueError(f"Unknown dataset keys {unknown}; known: {sorted(DATASETS)}")
-    specs = [DATASETS[key] for key in keys]
+def run(output_dir: Path = DATA_DIR) -> dict:
+    """Run the pipeline end-to-end on the registered dataset and write its
+    results and the uprating audit."""
+    spec = DATASETS[DEFAULT_DATASET_KEY]
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # ── Step 0: the projection the engine will apply, before anything runs
     print("Step 0: Auditing the engine's uprating of gains and weights...")
-    base_year = shared_base_year(specs)
-    audit = engine_audit(base_year, YEARS)
+    audit = engine_audit(spec.base_year, YEARS)
     fingerprint = projection_fingerprint(audit)
-    aea = exempt_amounts(sorted({base_year, *YEARS}))
-    ceilings = entrant_ceilings(audit, aea[base_year], YEARS)
+    aea = exempt_amounts(sorted({spec.base_year, *YEARS}))
+    ceilings = entrant_ceilings(audit, aea[spec.base_year], YEARS)
     print(f"    projection {fingerprint}; entrant ceilings {ceilings}")
 
-    results: dict[str, dict] = {}
-    baselines: dict[str, dict] = {}
-    for spec in specs:
-        results[spec.key], baselines[spec.key] = run_dataset(
-            spec, audit, fingerprint, aea, ceilings
-        )
-        path = results_path(spec, output_dir)
-        path.write_text(json.dumps(results[spec.key], indent=2))
-        print(f"    wrote {path}")
+    results, baselines = run_dataset(spec, audit, fingerprint, aea, ceilings)
+    path = output_dir / OUTPUT_PATH.name
+    path.write_text(json.dumps(results, indent=2))
+    print(f"    wrote {path}")
 
     # ── Step 8: the uprating audit with the per-year baselines filled in ──
     print("Step 8: Writing the uprating audit...")
-    write_uprating_audit(baselines, output_dir / AUDIT_PATH.name, aea=aea, ceilings=ceilings)
-
-    # ── Step 9: the dashboard's primary file and the side-by-side ─────────
-    print("Step 9: Writing the dashboard results and the dataset comparison...")
-    if DEFAULT_DATASET_KEY in results:
-        primary = output_dir / OUTPUT_PATH.name
-        primary.write_text(json.dumps(results[DEFAULT_DATASET_KEY], indent=2))
-        print(f"    wrote {primary} ({DEFAULT_DATASET_KEY})")
-    else:
-        print(f"    default dataset {DEFAULT_DATASET_KEY} not run; primary results file untouched")
-    if set(results) == set(DATASETS):
-        comparison_path = output_dir / COMPARISON_PATH.name
-        comparison_path.write_text(json.dumps(dataset_comparison(results), indent=2))
-        print(f"    wrote {comparison_path}")
-    else:
-        print("    not every registered dataset ran; comparison file untouched")
+    write_uprating_audit(
+        {spec.key: baselines}, output_dir / AUDIT_PATH.name, aea=aea, ceilings=ceilings
+    )
     print("Done.")
     return results

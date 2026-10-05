@@ -20,9 +20,9 @@ no longer reaches them. Equalising CGT with income tax means every gain,
 whatever the asset, so the reform sets the residential property and
 carried interest schedules to the same income tax rates and withdraws the
 BADR lifetime limit (relief gains fall to the main schedule), the recipe
-the engine's changelog gives for "tax every gain at income tax rates". On
-a dataset without those columns the extra parameters are inert, so the
-incumbent's results are unchanged by them.
+the engine's changelog gives for "tax every gain at income tax rates". The
+registered dataset records residential property and relief gains but no
+carried interest, so the carried-interest setting is inert on it.
 
 Behavioural response — aligned with Arun Advani (CenTax). policyengine-uk
 now carries two conventions: ``gov.simulation.capital_gains_responses.
@@ -104,9 +104,11 @@ RATE_BANDS = ("basic_rate", "higher_rate", "additional_rate")
 # The rate explorer's scope. A chosen schedule reaches the main rates and the
 # residential property schedule, which the law aligned with the main rates
 # from April 2025; carried interest (32% flat) and Business Asset Disposal
-# Relief (lifetime limit and its own rate) stay at current law, because no
-# registered dataset records those gains and any treatment would be inert
-# today. Widening the scope once the data supports it is a repo issue.
+# Relief (lifetime limit and its own rate) stay at current law. The registered
+# dataset records no carried interest, so that treatment is inert, but it does
+# record relief gains: the Burnham reform withdraws the relief, so an explorer
+# run at its rates differs from it by the relief's withdrawal. Widening the
+# scope to the relief is a repo issue.
 EXPLORER_SCHEDULES = ("residential_property",)
 EXPLORER_SCOPE = "main_and_residential"
 
@@ -120,8 +122,8 @@ CENTAX_1920_SCHEDULE_RATES = {"basic_rate": 0.18, "higher_rate": 0.28, "addition
 CENTAX_1920_EXEMPT_AMOUNT = 12_000
 # Business Asset Disposal Relief (then Entrepreneurs' Relief) charged 10% in
 # 2019/20; CenTax's baseline applies the £1m lifetime limit of March 2020.
-# Investors' Relief has no engine parameter. Neither registered dataset
-# records BADR or Investors' Relief gains, so both settings are inert here.
+# Investors' Relief has no engine parameter; the registered dataset records
+# the two reliefs' qualifying gains together, on the BADR schedule.
 CENTAX_1920_BADR_RATE = 0.10
 CENTAX_1920_BADR_LIFETIME_LIMIT = 1_000_000
 
@@ -229,8 +231,8 @@ def centax_1920_rules() -> dict:
         "elasticity": 0.0,
         "not_modelled": (
             "Investors' Relief, which CenTax's Table 3 also abolishes, has no engine "
-            "parameter. Neither registered dataset records BADR or Investors' Relief "
-            "gains, so the BADR settings and the missing Investors' Relief are inert here."
+            "parameter. The dataset records gains qualifying for either relief together "
+            "on the BADR schedule, so the BADR settings reach both."
         ),
     }
 

@@ -1,4 +1,4 @@
-"""External benchmarks, and the registered datasets side by side.
+"""External benchmarks beside this repo's own figures.
 
 Benchmarks (issue #7) are other institutions' published figures that match
 what this repo scores, each stored with its source, scope, year and basis
@@ -389,7 +389,7 @@ READY_RECKONER = {
         {
             "hmrc_label": "BADR rate +1pp and +5pp",
             "hmrc_m": None,
-            "reason": "Neither registered dataset records BADR gains.",
+            "reason": "The explorer keeps the relief at current law; its rate is not a lever.",
         },
         {
             "hmrc_label": "Annual exempt amount +£500",
@@ -535,157 +535,4 @@ def benchmarks_block(
         "centax_2019_20_rules": centax_2019_20_rules,
         "centax_package_context": [dict(row) for row in CENTAX_PACKAGE_CONTEXT],
         "ready_reckoner": ready_reckoner,
-    }
-
-
-# ---------------------------------------------------------------------------
-# Side-by-side comparison of the registered datasets
-# ---------------------------------------------------------------------------
-
-# Validation metrics shown side by side, in display order. Dotted names
-# read nested blocks.
-VALIDATION_METRICS = [
-    ("cgt_taxpayers", "CGT taxpayers (gains above the exempt amount)"),
-    ("entrants_by_uprating.count", "of which entrants by uprating"),
-    ("cgt_taxpayers_excluding_entrants", "CGT taxpayers excluding entrants"),
-    ("total_gains_bn", "Taxable gains, £bn"),
-    ("entrants_by_uprating.gains_bn", "of which held by entrants, £bn"),
-    ("total_gains_excluding_entrants_bn", "Taxable gains excluding entrants, £bn"),
-    ("mean_gain", "Mean gain per taxpayer, £"),
-    ("median_gain", "Median gain per taxpayer, £"),
-    ("share_gains_over_1m_pct", "Share of gains from gains of £1m or more, %"),
-    ("share_gains_over_5m_pct", "Share of gains from gains of £5m or more, %"),
-    ("taxpayers_over_500k", "Taxpayers with gains over £500k"),
-    ("gains_over_500k_bn", "Gains held by taxpayers with gains over £500k, £bn"),
-    ("gains_over_5m_bn", "Gains in the £5m-and-over band, £bn"),
-    ("largest_gain_m", "Largest single gain, £m"),
-    ("baseline_cgt_revenue_bn", "Baseline CGT liability, £bn"),
-    ("entrants_by_uprating.cgt_bn", "of which paid by entrants, £bn"),
-    ("residential_property_gains_bn", "Residential property gains (own schedule), £bn"),
-    ("badr_gains_bn", "BADR gains (own schedule), £bn"),
-    ("carried_interest_gains_bn", "Carried interest gains (own schedule), £bn"),
-]
-
-DATASET_METADATA_FIELDS = (
-    "dataset",
-    "dataset_key",
-    "dataset_label",
-    "dataset_short_label",
-    "dataset_role",
-    "dataset_sha256",
-    "dataset_producer",
-    "dataset_observation",
-    "dataset_notes",
-    "policyengine_version",
-    "policyengine_uk_version",
-    "generated",
-)
-
-
-def _metric(validation: dict, name: str):
-    value = validation
-    for part in name.split("."):
-        if not isinstance(value, dict) or part not in value:
-            return None
-        value = value[part]
-    return value
-
-
-def dataset_comparison(results: dict[str, dict]) -> dict:
-    """The registered datasets' results side by side, keyed by dataset.
-
-    ``results`` maps dataset key to the results dict ``pipeline.run_dataset``
-    emits. Every block below carries one entry per dataset key so the
-    dashboard can lay them out as columns.
-    """
-    keys = list(results)
-    if not keys:
-        raise ValueError("dataset_comparison needs at least one dataset's results")
-    first = results[keys[0]]
-    years = [row["year"] for row in first["budget"]]
-    first_year = years[0]
-    projection = first["metadata"].get("projection", {})
-    return {
-        "generated": first["metadata"]["generated"],
-        "first_year": first_year,
-        "years": years,
-        "projection_fingerprint": projection.get("fingerprint"),
-        "datasets": {
-            key: {field: results[key]["metadata"].get(field) for field in DATASET_METADATA_FIELDS}
-            for key in keys
-        },
-        "validation": [
-            {
-                "metric": name,
-                "label": label,
-                **{key: _metric(results[key]["validation"], name) for key in keys},
-            }
-            for name, label in VALIDATION_METRICS
-        ],
-        "budget": [
-            {"year": year, **{key: results[key]["budget"][i] for key in keys}}
-            for i, year in enumerate(years)
-        ],
-        "five_year_total_bn": {
-            key: sum(row["gov_balance_change_bn"] for row in results[key]["budget"]) for key in keys
-        },
-        "sensitivity": [
-            {
-                "name": row["name"],
-                "e_mtr": row["e_mtr"],
-                "elasticity_parameter": row["elasticity_parameter"],
-                "applied_as": row["applied_as"],
-                "applied_value": row["applied_value"],
-                **{key: results[key]["sensitivity"][i]["revenue_2026_bn"] for key in keys},
-            }
-            for i, row in enumerate(first["sensitivity"])
-        ],
-        "top_quintile": {
-            key: results[key]["income_change_groups"][first_year]["quintile"][-1] for key in keys
-        },
-        "household_type": {
-            key: results[key]["income_change_groups"][first_year]["household_type"] for key in keys
-        },
-        "region": {key: results[key]["income_change_groups"][first_year]["region"] for key in keys},
-        "benchmarks": _benchmarks_side_by_side(results, keys),
-    }
-
-
-def _benchmarks_side_by_side(results: dict[str, dict], keys: list[str]) -> dict:
-    """The like-for-like benchmark figures per dataset: the static yield by
-    year beside JRF, and the 2019/20-rules uplift beside CenTax's."""
-    first = results[keys[0]]["benchmarks"]
-    jrf = {row["year"]: row for row in first["static_equalisation"]["external"]}
-    static_rows = {
-        key: {
-            row["year"]: row for row in results[key]["benchmarks"]["static_equalisation"]["by_year"]
-        }
-        for key in keys
-    }
-    fields = (
-        "static_cgt_change_bn",
-        "static_uplift_pct",
-        "static_cgt_change_real_bn",
-        "uplift_on_obr_receipts_real_bn",
-    )
-    return {
-        "static_equalisation": [
-            {
-                "year": row["year"],
-                "jrf_bn": jrf[row["year"]]["value"] if row["year"] in jrf else None,
-                **{key: {f: static_rows[key][row["year"]][f] for f in fields} for key in keys},
-            }
-            for row in first["static_equalisation"]["by_year"]
-        ],
-        "centax_2019_20_rules": {
-            "centax_uplift_pct": first["centax_2019_20_rules"]["external"]["value"],
-            **{
-                key: results[key]["benchmarks"]["centax_2019_20_rules"]["national"]["uplift_pct"]
-                for key in keys
-            },
-        },
-        "external": {
-            "jrf": [dict(row) for row in JRF_STATIC],
-            "centax_table_3": dict(CENTAX_TABLE_3),
-        },
     }

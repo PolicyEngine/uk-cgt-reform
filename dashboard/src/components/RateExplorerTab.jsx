@@ -209,13 +209,17 @@ function SpecTable({ metadata }) {
           <td>Carried interest CGT rate</td>
           <td>{pct(BASELINE_SCHEDULE_RATES.carried_interest.higher_rate)} flat</td>
           <td>{pct(BASELINE_SCHEDULE_RATES.carried_interest.higher_rate)} flat</td>
-          <td>Unchanged. Neither dataset records carried interest, so any treatment is inert here.</td>
+          <td>Unchanged. The dataset records no carried interest, so any treatment is inert here.</td>
         </tr>
         <tr>
           <td>Business Asset Disposal Relief</td>
           <td>£{BASELINE_SCHEDULE_RATES.badr_lifetime_limit.toLocaleString("en-GB")} lifetime limit</td>
           <td>£{BASELINE_SCHEDULE_RATES.badr_lifetime_limit.toLocaleString("en-GB")} lifetime limit</td>
-          <td>Unchanged. Neither dataset records relief gains, so any treatment is inert here.</td>
+          <td>
+            Unchanged: qualifying gains keep the relief up to the lifetime limit. The equalisation
+            reform on the Reform impacts tab withdraws it, so at 20% / 40% / 45% the two differ by
+            the relief.
+          </td>
         </tr>
         <tr>
           <td>Annual exempt amount</td>
@@ -282,9 +286,8 @@ export default function RateExplorerTab({ data, datasetKey }) {
   const initial = useMemo(() => readUrlState(searchParams), []); // eslint-disable-line react-hooks/exhaustive-deps
   const [percents, setPercents] = useState(() => initial?.percents ?? percentsOf(CURRENT_LAW));
   const [elasticity, setElasticity] = useState(() => initial?.elasticity ?? DEFAULT_ELASTICITY);
-  const { run, reset, status, result, error, elapsedSeconds } = useExploration();
+  const { run, status, result, error, elapsedSeconds } = useExploration();
   const autoRan = useRef(false);
-  const lastDataset = useRef(datasetKey);
 
   const dataset = getDatasetInfo(data);
   const validation = validatePercents(percents);
@@ -317,14 +320,6 @@ export default function RateExplorerTab({ data, datasetKey }) {
     autoRan.current = true;
     if (initial && validatePercents(initial.percents).rates) submit();
   }, [initial, submit]);
-
-  // A result belongs to one dataset: switching datasets clears it.
-  useEffect(() => {
-    if (lastDataset.current !== datasetKey) {
-      lastDataset.current = datasetKey;
-      reset();
-    }
-  }, [datasetKey, reset]);
 
   const equalisation = {
     firstYear: getFirstYear(data),
@@ -494,6 +489,8 @@ export default function RateExplorerTab({ data, datasetKey }) {
             <p className="mt-3 text-xs leading-5 text-slate-500">
               The equalisation column is the committed result for {dataset.shortLabel} at an MTR
               elasticity of −0.7{elasticityOption && elasticityOption.e_mtr !== -0.7 ? "; this schedule ran with a different elasticity, so the two are not like for like" : ""}.
+              Equalisation also withdraws Business Asset Disposal Relief, which this schedule keeps,
+              so at 20% / 40% / 45% the two columns differ by the relief.
             </p>
             {matchedRow ? <ReadyReckonerPanel row={matchedRow} result={result} /> : null}
           </section>

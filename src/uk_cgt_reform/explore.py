@@ -2,11 +2,13 @@
 
 The Reform impacts tab scores one reform, equalisation with income tax, from
 the committed results files. The explorer scores any schedule of main rates
-a reader chooses, on the same pinned per-year datasets, the same engine and
+a reader chooses, on the same pinned per-year dataset, the same engine and
 projection, the same cached baseline simulations and the same impact code
-(``impacts``). An explorer run of 20/40/45 therefore reproduces the tab's
-figures: its scope (``reform.EXPLORER_SCOPE``) differs from the Burnham
-reform only in parameters that are inert on both registered datasets.
+(``impacts``). Its scope (``reform.EXPLORER_SCOPE``) differs from the Burnham
+reform in carried interest, which the dataset does not record, and in
+Business Asset Disposal Relief, which the explorer keeps and the Burnham
+reform withdraws; an explorer run of 20/40/45 therefore differs from the
+tab's figures by the relief's withdrawal.
 
 Two runners share every function here. ``run_locally`` backs the
 ``uk-cgt-reform-explore`` command, which the dashboard's Next route also

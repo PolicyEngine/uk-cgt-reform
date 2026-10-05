@@ -19,13 +19,11 @@ policyengine.py wrapper), never by constructing
   digest and the projection fingerprint, because the wrapper also keeps an
   in-process cache keyed by id alone.
 
-Two datasets are registered (:data:`DATASETS`): the incumbent Enhanced FRS
-2024-25 as published by policyengine-uk-data, and the staged Microcosm UK
-2024-25 national-line candidate built on main plus microcosm#979, which
-carries the capital gains asset-type breakdown that policyengine-uk 2.99.0
-charges on separate schedules. Both are single engine-year files
-(``time_period`` 2024) that the engine copies forward and uprates; see
-``uprating_audit``.
+One dataset is registered (:data:`DATASETS`): the published Microcosm UK
+2024-25 national release, which carries the capital gains asset-type and
+relief breakdown that policyengine-uk 2.99.0 charges on separate schedules.
+It is a single engine-year file (``time_period`` 2024) that the engine
+copies forward and uprates; see ``uprating_audit``.
 
 Wrapper version (load-bearing): policyengine.py 5.0.3 onwards certifies
 the UK bundle against a pinned policyengine-uk (2.90.2 in 6.0.0) and
@@ -70,8 +68,8 @@ def import_wrapper(_import=None):
     On first import policyengine.py 4.22.3 fetches the UK data-release
     manifest from Hugging Face when ``HUGGING_FACE_TOKEN`` is set. That
     manifest certifies the bundled populace-uk-2023 data for policyengine-uk
-    2.89.2, not the 2.99.x this pipeline runs on (see the module docstring),
-    and the import raises. Without the token the manifest is unavailable and
+    2.89.2, not the policyengine-uk this pipeline pins (see the module
+    docstring), and the import raises. Without the token the manifest is unavailable and
     the wrapper falls back to its bundled certification with basis
     ``unverified_data_release_manifest_unavailable`` and runs against the
     installed engine, which is how every committed result was produced. So
@@ -155,87 +153,56 @@ class DatasetSpec:
         return {**asdict(self), "digest": self.digest, "revision": self.revision}
 
 
-INCUMBENT = DatasetSpec(
-    key="enhanced_frs_2024_25",
-    label="Enhanced FRS 2024-25 (policyengine-uk-data 1.57.3)",
-    short_label="Enhanced FRS 2024-25",
-    role="incumbent",
-    uri="hf://policyengine/policyengine-uk-data/enhanced_frs_2024_25.h5@1.57.3",
-    sha256="ef34c1ae28219367981fbc3c1144f58ea1f8a77554165fe02ff395b04c5ffea5",
-    base_year=2024,
-    producer=(
-        "policyengine-uk-data 1.57.3, Hugging Face model repo "
-        "policyengine/policyengine-uk-data at tag 1.57.3 (commit 25af520a, 2026-09-04)"
-    ),
-    observation=(
-        "FRS 2024-25 households; capital gains imputed onto survey households and "
-        "household weights calibrated to HMRC CGT aggregates and size-of-gain bands"
-    ),
-    notes=(
-        "Carries capital_gains only: no asset-type breakdown, so the engine charges "
-        "every gain on the main CGT schedule."
-    ),
-)
-
+#: The published release. The URI names the file on the dataset repo's main
+#: branch at the commit that published it; the release's own immutable cut
+#: (the tag in ``producer``) holds the same file, digest included.
 CANDIDATE = DatasetSpec(
-    key="microcosm_uk_2024_25_979",
-    label="Microcosm UK 2024-25, national line on microcosm#979 (staged candidate)",
-    short_label="Microcosm UK #979",
-    role="candidate",
+    key="microcosm_uk_2024_25",
+    label="Microcosm UK 2024-25, national release published 4 October 2026",
+    short_label="Microcosm UK 2024-25",
+    role="release",
     uri=(
-        "hf://policyengine/populace-uk-private/staged/"
-        "uk-frs-calibration-attempt-20260923T134002Z-c1be1c9f/"
-        "microcosm_uk_2024_25.h5@f6df65b1e98675ad305bcacf7ede3e0d34b57063"
+        "hf://policyengine/populace-uk-private/"
+        "microcosm_uk_2024_25.h5@0d633297cd46106109bd7e075a6a1afdf0ac5ddb"
     ),
-    sha256="c5f107ab6eaf74d05c1e17ecd65a4f6876666c4554bd004f76102099aa6de821",
+    sha256="aa31bdf67c977927ea2b325567d1cf7a79d94381239bc79918a0a0fc9c9588af",
     base_year=2024,
     producer=(
-        "microcosm build uk-frs-calibration-attempt-20260923T134002Z-c1be1c9f "
-        "(tools/build_uk_rowwise_candidate.py --release-role national on code "
-        "e01c6846, main 0f00021c plus PolicyEngine/microcosm#979), staged 2026-09-23 "
-        "in the Hugging Face dataset repo policyengine/populace-uk-private (commit "
-        "f6df65b1); a staging candidate whose seven calibration-seam gates passed, "
-        "not a certified release"
+        "Microcosm UK release microcosm-uk-2024-25-national, cut "
+        "microcosm-uk-2024-25-national-20261002T230158Z-5c6b3f68 (build "
+        "uk-frs-calibration-attempt-20261002T230158Z-5c6b3f68 on microcosm 64c460b6, "
+        "PolicyEngine/microcosm#1089, with policyengine-uk 2.100.0), published "
+        "2026-10-04 on the main branch of the Hugging Face dataset repo "
+        "policyengine/populace-uk-private (commit 0d633297); a certified release: "
+        "its 31 spine, 7 calibration-seam and 20 release-cut gates passed"
     ),
     observation=(
-        "FRS 2024-25 spine; capital gains amounts redrawn from HMRC Table 3 (size of gain "
-        "by taxable income, 2024-25) with asset types from HMRC Tables 7 and 8, the "
-        "sub-exempt remainder drawn from the Advani-Summers within-band distribution "
-        "restricted to (0, exempt amount] and the clone incidence anchored to the "
-        "redrawn liable mass (microcosm#970); household weights calibrated to HMRC CGT "
-        "totals, age, region and size bands for 2024-25"
+        "FRS 2024-25 spine; capital gains amounts drawn from HMRC Table 3 (size of gain "
+        "by taxable income, 2024-25) with asset types from HMRC Tables 7 and 8, gains "
+        "qualifying for Business Asset Disposal Relief and Investors' Relief imputed from "
+        "HMRC Table 4, and the sub-exempt remainder drawn from the Advani-Summers "
+        "within-band distribution; household weights calibrated to 1,168 targets, among "
+        "them HMRC's CGT totals, size bands, gains by taxable income band (Table 3), age, "
+        "region, the BADR bands (Table 4) and residential property gains"
     ),
     notes=(
-        "Carries capital_gains and capital_gains_residential_property (the residential "
-        "schedule); no BADR or carried-interest columns. Sub-exempt gainers hold gains "
-        "strictly inside (0, GBP 3,000) rather than at the cap, and the build's "
-        "projection fence bounds the stock of them that uprating carries over the "
-        "frozen exempt amount by 2030 (68.5k against HMRC's 73k in the GBP 3,000 to "
-        "5,999 band)."
+        "Carries capital_gains, capital_gains_residential_property (the residential "
+        "schedule) and capital_gains_badr (gains qualifying for Business Asset Disposal "
+        "Relief or Investors' Relief); no carried-interest column. The build's projection "
+        "fence bounds the gainers that uprating carries over the frozen exempt amount by "
+        "2030 at 7.4k, against HMRC's 73k in the GBP 3,000 to 5,999 band."
     ),
 )
 
-DATASETS: dict[str, DatasetSpec] = {spec.key: spec for spec in (INCUMBENT, CANDIDATE)}
+DATASETS: dict[str, DatasetSpec] = {spec.key: spec for spec in (CANDIDATE,)}
 
-#: The dataset whose results the dashboard shows first. The candidate is the
-#: default because it is the dataset this comparison exists to evaluate and
-#: the only one carrying the asset-type schedules the reform charges; the
-#: 21 September 2026 hesitation (the sub-exempt entrants artefact) was removed
-#: upstream by microcosm#970. The candidate is re-pinned when
-#: PolicyEngine/microcosm#979 lands on main, replacing this PR-head build with
-#: one from main, and again when a certified national release exists; the
-#: production default is confirmed when the branch merges.
+#: The dataset every result is computed on.
 DEFAULT_DATASET_KEY = CANDIDATE.key
-
-#: Kept for callers that still import the single-dataset constants.
-DATASET = INCUMBENT.uri
-BASE_YEAR = INCUMBENT.base_year
 
 # Variables needed beyond policyengine.py's bundled UK defaults. The
 # schedule components are inputs of policyengine-uk 2.99.0+ (zero where a
 # dataset does not carry them); ``region`` is the engine's own enum, present
-# in every UK dataset, and replaces the output-area code passthrough that
-# only the incumbent file carries.
+# in every UK dataset.
 EXTRA_VARIABLES = {
     "person": [
         "capital_gains",

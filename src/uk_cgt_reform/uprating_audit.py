@@ -8,8 +8,8 @@ baseline gains, taxpayer counts and CGT liability.
 How the projection happens today
 --------------------------------
 ``pe.uk.ensure_datasets`` builds ``policyengine_uk.Microsimulation`` on the
-published single-year Enhanced FRS file (``time_period`` 2024, i.e. the
-FRS 2024-25 observation), and the engine's
+registered dataset, the published Microcosm UK 2024-25 release: a single
+engine-year file (``time_period`` 2024) on an FRS 2024-25 spine. The engine's
 ``extend_single_year_dataset`` copies that year forward to 2030 and calls
 ``apply_uprating``: for every ``index -> [variables]`` entry of the
 engine's ``data/uprating_indices.yaml`` it multiplies each variable by
@@ -247,10 +247,9 @@ def audit_uprating(
         "policyengine_uk_version": version or engine_version(),
         "base_year": base_year,
         "base_year_note": (
-            "Engine period of the published single-year Enhanced FRS 2024-25 file "
-            "(time_period 2024); the observation is the FRS 2024-25 survey year. "
-            "Uprating runs year on year from the base year; the base year itself "
-            "is not uprated."
+            "Engine period of the published Microcosm UK 2024-25 release "
+            "(time_period 2024), on an FRS 2024-25 spine. Uprating runs year on year "
+            "from the base year; the base year itself is not uprated."
         ),
         "years": list(years),
         "variables": table,

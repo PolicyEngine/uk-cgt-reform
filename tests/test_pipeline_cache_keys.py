@@ -13,7 +13,7 @@ from uk_cgt_reform.pipeline import (
     simulation_stem,
 )
 from uk_cgt_reform.reform import OFFICIAL_ELASTICITY, burnham_reform, reform_fingerprint
-from uk_cgt_reform.simulations import CANDIDATE, INCUMBENT
+from uk_cgt_reform.simulations import CANDIDATE
 
 FINGERPRINT = "1b0cd0dff144"
 
@@ -32,7 +32,8 @@ def test_folder_moves_when_the_dataset_is_re_pinned():
 
 
 def test_datasets_never_share_a_folder_and_simulation_ids_carry_the_key():
-    assert dataset_folder(INCUMBENT, FINGERPRINT) != dataset_folder(CANDIDATE, FINGERPRINT)
+    another = replace(CANDIDATE, key="another_dataset", sha256="e" * 64)
+    assert dataset_folder(another, FINGERPRINT) != dataset_folder(CANDIDATE, FINGERPRINT)
     stem = simulation_stem(CANDIDATE, FINGERPRINT)
     assert stem.startswith(CANDIDATE.key)
     assert CANDIDATE.digest in stem
