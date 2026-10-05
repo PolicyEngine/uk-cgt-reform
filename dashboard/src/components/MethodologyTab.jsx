@@ -53,7 +53,6 @@ export default function MethodologyTab({ data, anchor }) {
   const elasticity = getElasticity(data);
   const dataset = getDatasetInfo(data);
   const metadata = getMetadata(data);
-  const isCandidate = dataset.role === "candidate";
   const { central, official } = getBenchmarks(data).elasticities;
   const revenueAt = (e) => getSensitivity(data).find((row) => row.e_mtr === e).revenue_2026_bn;
   // The ready reckoner's largest row: the higher rate from 24% to 34%.
@@ -66,74 +65,31 @@ export default function MethodologyTab({ data, anchor }) {
         <SectionHeading title="Data and simulation" />
         <ul className="mt-2 list-disc space-y-2 pl-5 text-sm leading-6 text-slate-600">
           <li>
-            <strong>Two datasets, one pipeline.</strong> The pipeline registers an incumbent
-            (the Enhanced FRS 2024-25 published by{" "}
-            <ExternalLink href="https://github.com/PolicyEngine/policyengine-uk-data">
-              policyengine-uk-data
-            </ExternalLink>
-            ) and a candidate (the Microcosm UK 2024-25 national line staged from{" "}
+            <strong>The dataset.</strong> {dataset.label}, built by{" "}
             <ExternalLink href="https://github.com/PolicyEngine/microcosm">microcosm</ExternalLink>
-            ), each pinned to an immutable revision and a sha256 digest that is checked
-            before anything runs. The same reform, engine and projection run on both; the
-            Dataset comparison tab lays the results side by side.
+            : {dataset.producer}. Pinned input{" "}
+            <span className="break-all font-mono text-xs">{dataset.uri}</span> (sha256{" "}
+            <span className="font-mono text-xs">{dataset.sha256.slice(0, 12)}…</span>), checked
+            before anything runs and used exactly as published with no local reweighting &mdash;
+            calibration belongs upstream in the dataset, so whatever the file provides is what is
+            simulated here.
           </li>
           <li>
-            <strong>Selected dataset.</strong> {dataset.label}: {dataset.producer}.{" "}
-            Pinned input <span className="break-all font-mono text-xs">{dataset.uri}</span>{" "}
-            (sha256 <span className="font-mono text-xs">{dataset.sha256.slice(0, 12)}…</span>
-            ), used exactly as published with no local reweighting &mdash; calibration belongs
-            upstream in the dataset, so whatever the file provides is what is simulated here.
+            <strong>Gains imputation.</strong> {dataset.observation}. Amounts are drawn from
+            HMRC&apos;s Table 3 (size of gain by taxable income) so the top bands that carry most of
+            the tax are represented, and each liable gainer is assigned a main asset type from HMRC
+            Tables 7 and 8, with residential property gains written to their own column. Gains
+            qualifying for Business Asset Disposal Relief are imputed and weighted to HMRC Table
+            4&apos;s bands, so the relief is charged on its own schedule.
           </li>
-          {isCandidate ? (
-            <>
-              <li>
-                <strong>Gains imputation.</strong> {dataset.observation}. Amounts are redrawn
-                from HMRC&apos;s Table 3 (size of gain by taxable income) so the top bands that
-                carry most of the tax are represented, and each liable gainer is assigned a
-                main asset type from HMRC Tables 7 and 8, with residential property gains
-                written to their own column.
-              </li>
-              <li>
-                <strong>Gainers beyond HMRC&apos;s count.</strong> {dataset.notes} At the base
-                year they owe nothing; once the engine uprates gains past the frozen exempt
-                amount they become taxpayers. The Baseline tab reports them as entrants by
-                uprating and shows every figure with and without them.
-              </li>
-              <li>
-                <strong>Why this dataset is the default, and when it moves.</strong> The
-                candidate is the dataset this comparison exists to evaluate and the only one
-                carrying the schedules the reform charges. It is a staged candidate built from
-                microcosm pull request #979, not a certified release: it is re-pinned when that
-                pull request lands on main and again when a certified national release exists.
-              </li>
-            </>
-          ) : (
-            <>
-              <li>
-                <strong>Gains imputation.</strong> The FRS barely captures capital gains, so
-                the dataset imputes them onto survey households from the{" "}
-                <ExternalLink href="https://warwick.ac.uk/fac/soc/economics/research/centres/cage/manage/publications/wp465.2020.pdf">
-                  Advani &amp; Summers
-                </ExternalLink>{" "}
-                distribution of gains by income band, drawn from HMRC administrative records.
-              </li>
-              <li>
-                <strong>Large gains.</strong> HMRC&apos;s size-of-gain distribution (
-                <ExternalLink href="https://www.gov.uk/government/statistics/capital-gains-tax-statistics">
-                  CGT statistics, Table 2.1a
-                </ExternalLink>
-                ) is represented directly: households carrying each published size-of-gain
-                band&apos;s mean gain are included in the dataset, and the calibrated weights
-                are targeted to reproduce each band&apos;s taxpayer count and gains total.
-              </li>
-              <li>
-                <strong>Calibration.</strong> {dataset.observation}. The measured fit is in the
-                benchmarks table on the Baseline tab.
-              </li>
-            </>
-          )}
           <li>
-            <strong>Projection.</strong> Each file is one engine year ({metadata.projection.base_year}
+            <strong>Gainers below the exempt amount.</strong> {dataset.notes} At the base year they
+            owe nothing; once the engine uprates gains past the frozen exempt amount they become
+            taxpayers. The Baseline tab reports them as entrants by uprating and shows every figure
+            with and without them.
+          </li>
+          <li>
+            <strong>Projection.</strong> The file is one engine year ({metadata.projection.base_year}
             ). The engine copies it forward to 2030 and uprates it year on year from its own
             uprating indices: capital gains and the schedule components follow OBR GDP per
             capita, household weights follow ONS population. Nothing CGT-specific enters the
@@ -147,8 +103,9 @@ export default function MethodologyTab({ data, anchor }) {
             charges residential property, carried interest and Business Asset Disposal Relief
             gains on their own schedules when a dataset records them. Equalising CGT with income
             tax means every gain, so the reform sets those schedules to the same income tax
-            rates and withdraws the BADR lifetime limit; on a dataset without those columns the
-            extra parameters are inert.
+            rates and withdraws the BADR lifetime limit. The dataset records residential property
+            and relief gains but no carried interest, so the carried-interest setting is inert
+            here.
           </li>
           <li>
             <strong>Simulation.</strong> The reform runs through{" "}
@@ -234,7 +191,7 @@ export default function MethodologyTab({ data, anchor }) {
             {percent(atOfficial.gains)} and revenue {atOfficial.revenue >= 0 ? "rises" : "falls"} by{" "}
             {percent(atOfficial.revenue)}, the direction HMRC&apos;s row shows. The engine applies
             the same formula to each person&apos;s own simulated marginal rate on gains, so the
-            aggregate effect depends on where each dataset&apos;s gains sit.
+            aggregate effect depends on where the dataset&apos;s gains sit.
           </li>
           <li>
             <strong>How the model applies it.</strong> The official case is applied as HMRC and
@@ -258,21 +215,22 @@ export default function MethodologyTab({ data, anchor }) {
         <ul className="mt-2 list-disc space-y-2 pl-5 text-sm leading-6 text-slate-600">
           <li>
             <strong>Same pipeline, run live.</strong> The Rate explorer tab scores a schedule of
-            main CGT rates you choose on the selected dataset for every modelled year. It runs the
+            main CGT rates you choose on the dataset for every modelled year. It runs the
             pipeline&apos;s own code (the same pinned per-year datasets, cached baseline
             simulations, behavioural response and impact calculations) on a Modal backend, or
             locally through the{" "}
             <span className="font-mono text-xs">uk-cgt-reform-explore</span> command. Nothing
             is precomputed or interpolated: an explorer run at 20% / 40% / 45% reproduces the
-            Reform impacts tab.
+            Reform impacts tab apart from Business Asset Disposal Relief (see Scope).
           </li>
           <li>
             <strong>Scope.</strong> The chosen rates reach the main schedule and the residential
             property schedule, which the law aligned with the main rates from April 2025. Carried
-            interest and Business Asset Disposal Relief stay at current law: neither registered
-            dataset records such gains, so their treatment is inert here. The equalisation reform
-            on the Reform impacts tab also sets those schedules; the difference is invisible on
-            these datasets.
+            interest and Business Asset Disposal Relief stay at current law. The dataset records
+            no carried interest, so that treatment is inert, but it does record gains qualifying
+            for the relief. The equalisation reform on the Reform impacts tab withdraws the relief,
+            so at 20% / 40% / 45% the explorer differs from that tab by the relief&apos;s
+            withdrawal.
           </li>
           <li>
             <strong>Cache.</strong> Every completed run is stored under a key made of the dataset

@@ -193,7 +193,7 @@
       {
         "hmrc_label": "BADR rate +1pp and +5pp",
         "hmrc_m": null,
-        "reason": "Neither registered dataset records BADR gains."
+        "reason": "The explorer keeps the relief at current law; its rate is not a lever."
       },
       {
         "hmrc_label": "Annual exempt amount +\u00a3500",
@@ -213,33 +213,19 @@
   "reform_period_start": "2026-01-01",
   "datasets": [
     {
-      "key": "enhanced_frs_2024_25",
-      "label": "Enhanced FRS 2024-25 (policyengine-uk-data 1.57.3)",
-      "short_label": "Enhanced FRS 2024-25",
-      "role": "incumbent",
-      "uri": "hf://policyengine/policyengine-uk-data/enhanced_frs_2024_25.h5@1.57.3",
-      "sha256": "ef34c1ae28219367981fbc3c1144f58ea1f8a77554165fe02ff395b04c5ffea5",
+      "key": "microcosm_uk_2024_25",
+      "label": "Microcosm UK 2024-25, national release published 4 October 2026",
+      "short_label": "Microcosm UK 2024-25",
+      "role": "release",
+      "uri": "hf://policyengine/populace-uk-private/microcosm_uk_2024_25.h5@0d633297cd46106109bd7e075a6a1afdf0ac5ddb",
+      "sha256": "aa31bdf67c977927ea2b325567d1cf7a79d94381239bc79918a0a0fc9c9588af",
       "base_year": 2024,
-      "producer": "policyengine-uk-data 1.57.3, Hugging Face model repo policyengine/policyengine-uk-data at tag 1.57.3 (commit 25af520a, 2026-09-04)",
-      "observation": "FRS 2024-25 households; capital gains imputed onto survey households and household weights calibrated to HMRC CGT aggregates and size-of-gain bands",
-      "notes": "Carries capital_gains only: no asset-type breakdown, so the engine charges every gain on the main CGT schedule.",
-      "digest": "ef34c1ae2821",
-      "revision": "1.57.3"
-    },
-    {
-      "key": "microcosm_uk_2024_25_979",
-      "label": "Microcosm UK 2024-25, national line on microcosm#979 (staged candidate)",
-      "short_label": "Microcosm UK #979",
-      "role": "candidate",
-      "uri": "hf://policyengine/populace-uk-private/staged/uk-frs-calibration-attempt-20260923T134002Z-c1be1c9f/microcosm_uk_2024_25.h5@f6df65b1e98675ad305bcacf7ede3e0d34b57063",
-      "sha256": "c5f107ab6eaf74d05c1e17ecd65a4f6876666c4554bd004f76102099aa6de821",
-      "base_year": 2024,
-      "producer": "microcosm build uk-frs-calibration-attempt-20260923T134002Z-c1be1c9f (tools/build_uk_rowwise_candidate.py --release-role national on code e01c6846, main 0f00021c plus PolicyEngine/microcosm#979), staged 2026-09-23 in the Hugging Face dataset repo policyengine/populace-uk-private (commit f6df65b1); a staging candidate whose seven calibration-seam gates passed, not a certified release",
-      "observation": "FRS 2024-25 spine; capital gains amounts redrawn from HMRC Table 3 (size of gain by taxable income, 2024-25) with asset types from HMRC Tables 7 and 8, the sub-exempt remainder drawn from the Advani-Summers within-band distribution restricted to (0, exempt amount] and the clone incidence anchored to the redrawn liable mass (microcosm#970); household weights calibrated to HMRC CGT totals, age, region and size bands for 2024-25",
-      "notes": "Carries capital_gains and capital_gains_residential_property (the residential schedule); no BADR or carried-interest columns. Sub-exempt gainers hold gains strictly inside (0, GBP 3,000) rather than at the cap, and the build's projection fence bounds the stock of them that uprating carries over the frozen exempt amount by 2030 (68.5k against HMRC's 73k in the GBP 3,000 to 5,999 band).",
-      "digest": "c5f107ab6eaf",
-      "revision": "f6df65b1e98675ad305bcacf7ede3e0d34b57063"
+      "producer": "Microcosm UK release microcosm-uk-2024-25-national, cut microcosm-uk-2024-25-national-20261002T230158Z-5c6b3f68 (build uk-frs-calibration-attempt-20261002T230158Z-5c6b3f68 on microcosm 64c460b6, PolicyEngine/microcosm#1089, with policyengine-uk 2.100.0), published 2026-10-04 on the main branch of the Hugging Face dataset repo policyengine/populace-uk-private (commit 0d633297); a certified release: its 31 spine, 7 calibration-seam and 20 release-cut gates passed",
+      "observation": "FRS 2024-25 spine; capital gains amounts drawn from HMRC Table 3 (size of gain by taxable income, 2024-25) with asset types from HMRC Tables 7 and 8, gains qualifying for Business Asset Disposal Relief and Investors' Relief imputed from HMRC Table 4, and the sub-exempt remainder drawn from the Advani-Summers within-band distribution; household weights calibrated to 1,168 targets, among them HMRC's CGT totals, size bands, gains by taxable income band (Table 3), age, region, the BADR bands (Table 4) and residential property gains",
+      "notes": "Carries capital_gains, capital_gains_residential_property (the residential schedule) and capital_gains_badr (gains qualifying for Business Asset Disposal Relief or Investors' Relief); no carried-interest column. The build's projection fence bounds the gainers that uprating carries over the frozen exempt amount by 2030 at 7.4k, against HMRC's 73k in the GBP 3,000 to 5,999 band.",
+      "digest": "aa31bdf67c97",
+      "revision": "0d633297cd46106109bd7e075a6a1afdf0ac5ddb"
     }
   ],
-  "default_dataset_key": "microcosm_uk_2024_25_979"
+  "default_dataset_key": "microcosm_uk_2024_25"
 }

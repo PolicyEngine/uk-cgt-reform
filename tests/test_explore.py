@@ -32,7 +32,7 @@ from uk_cgt_reform.reform import (
     burnham_reform,
     reform_fingerprint,
 )
-from uk_cgt_reform.simulations import CANDIDATE, DATASETS, DEFAULT_DATASET_KEY, INCUMBENT
+from uk_cgt_reform.simulations import CANDIDATE, DATASETS, DEFAULT_DATASET_KEY
 
 FLAT_30 = {"basic_rate": 0.18, "higher_rate": 0.30, "additional_rate": 0.30}
 
@@ -203,8 +203,8 @@ def test_explorer_reform_at_income_tax_rates_matches_burnham_on_the_rates():
         "gov.hmrc.cgt.residential_property.higher_rate",
     ):
         assert reform[key] == burnham[key]
-    # Scope differs only in the carried interest schedule and the BADR
-    # limit, both inert on the registered datasets.
+    # Scope differs only in the carried interest schedule, inert on the
+    # registered dataset, and the BADR limit, which the explorer keeps.
     assert set(burnham) - set(reform) == {
         "gov.hmrc.cgt.carried_interest.basic_rate",
         "gov.hmrc.cgt.carried_interest.higher_rate",
@@ -236,8 +236,8 @@ def test_cache_key_tracks_every_input_and_nothing_else():
     assert cache_key(other_rates, context()) != key
     other_e = validate_request({"dataset": CANDIDATE.key, "rates": FLAT_30, "elasticity": 0.0})
     assert cache_key(other_e, context()) != key
-    other_dataset = validate_request({"dataset": INCUMBENT.key, "rates": FLAT_30})
-    assert cache_key(other_dataset, context()) != key
+    # The key names the dataset and its digest, so a re-pinned file misses.
+    assert key.startswith(f"{CANDIDATE.key}__{CANDIDATE.digest}__")
     # Changes that must hit: the same request again, and context fields the
     # key does not track.
     again = validate_request({"dataset": CANDIDATE.key, "rates": dict(FLAT_30), "elasticity": -0.7})
