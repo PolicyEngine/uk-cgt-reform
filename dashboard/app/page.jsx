@@ -160,16 +160,25 @@ function Dashboard() {
               PolicyEngine
             </a>{" "}
             UK&apos;s microsimulation model to estimate reforms to capital gains
-            tax rates from 2026-27, with behavioural elasticities from{" "}
+            tax rates from 2026-27, with{" "}
             <a
-              href="https://centax.org.uk/wp-content/uploads/2024/10/AdvaniLonsdaleSummers2024_CGTReform.pdf"
+              href={data.benchmarks.elasticities.central.url}
               target="_blank"
               rel="noopener noreferrer"
               className="font-semibold underline decoration-1 underline-offset-2 hover:opacity-80"
             >
+              PolicyEngine&apos;s behavioural elasticity for capital gains
+            </a>{" "}
+            and, for comparison, those of{" "}
+            <a
+              href="https://centax.org.uk/wp-content/uploads/2024/10/AdvaniLonsdaleSummers2024_CGTReform.pdf"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline decoration-1 underline-offset-2 hover:opacity-80"
+            >
               Advani, Lonsdale &amp; Summers (CenTax, 2024)
-            </a>
-            . Its headline reform equalises CGT rates with income tax rates
+            </a>{" "}
+            and HMRC and the OBR. Its headline reform equalises CGT rates with income tax rates
             (18%→20%, 24%→40%, 24%→45%) and withdraws Business Asset Disposal
             Relief. Wes Streeting proposed equalising the rates in May 2026, as{" "}
             <a
@@ -221,7 +230,7 @@ function Dashboard() {
           />
         )}
 
-        {activeTab === "reform" && <ReformTab data={view} />}
+        {activeTab === "reform" && <ReformTab data={view} onNavigate={handleNavigate} />}
         {activeTab === "explorer" && <RateExplorerTab data={view} datasetKey={dataset.key} />}
         {activeTab === "baseline" && <BaselineTab data={data} />}
         {activeTab === "benchmarks" && <BenchmarksTab data={view} onNavigate={handleNavigate} />}

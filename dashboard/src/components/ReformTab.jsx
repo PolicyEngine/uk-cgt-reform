@@ -4,11 +4,13 @@ import {
   formatBn,
   formatCount,
   formatElasticity,
+  formatElasticityValue,
   formatPct,
   formatPublished,
   formatSignedBn,
   formatSignedCurrency,
   formatSignedPct,
+  formatSmallBn,
 } from "../lib/formatters";
 import {
   BASELINE_SCHEDULE_RATES,
@@ -34,8 +36,8 @@ import { MetricCard, TipHeader } from "./controls";
 import SectionHeading from "./SectionHeading";
 
 // Where each sensitivity scenario's elasticity comes from: the static case
-// has none, the official HMRC/OBR case's source is in the results file's
-// benchmarks block, and the rest are CenTax's central case and range.
+// has none, PolicyEngine's and the official HMRC/OBR case's sources are in
+// the results file's benchmarks block, and the rest are CenTax's cases.
 const CENTAX_SOURCE = {
   label: "Advani, Lonsdale & Summers (2024), CenTax",
   url: "https://centax.org.uk/wp-content/uploads/2024/10/AdvaniLonsdaleSummers2024_CGTReform.pdf#page=38",
@@ -49,10 +51,15 @@ function officialSource(official) {
   };
 }
 
-function SourceLink({ row, official }) {
+function centralSource(central) {
+  return { label: `PolicyEngine (${formatPublished(central.published.slice(0, 7))})`, url: central.url };
+}
+
+function SourceLink({ row, central, official }) {
   let source = CENTAX_SOURCE;
-  if (row.e_retention === 0) source = STATIC_SOURCE;
-  else if (row.e_retention === official.e_retention) source = officialSource(official);
+  if (row.id === "static") source = STATIC_SOURCE;
+  else if (row.id === official.id) source = officialSource(official);
+  else if (row.id === central.id) source = centralSource(central);
   if (!source.url) return <td className="font-normal text-slate-500">{source.label}</td>;
   return (
     <td>
@@ -68,16 +75,42 @@ function SourceLink({ row, official }) {
   );
 }
 
-export default function ReformTab({ data }) {
+function NavLink({ onClick, children }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="underline decoration-1 underline-offset-2 hover:opacity-80"
+    >
+      {children}
+    </button>
+  );
+}
+
+export default function ReformTab({ data, onNavigate }) {
   const budget = getBudget(data);
   const firstYear = getFirstYear(data);
   const fiveYearTotal = getFiveYearTotal(data);
   const headlineGroups = getIncomeChangeGroups(data, firstYear);
   const sensitivity = getSensitivity(data);
-  const { central, official, centax_range: centaxRange } = getBenchmarks(data).elasticities;
+  const { central, centax, official, centax_range: centaxRange } = getBenchmarks(data).elasticities;
+  // For each band the reform moves, the retention elasticity the central
+  // case behaves like over that change.
+  const equivalents = Object.fromEntries(
+    central.retention_equivalents.map((row) => [row.band, row.e_retention.toFixed(1)]),
+  );
   const { approach } = data;
   const netOfShifting = approach.id === "total_revenue";
+  const centaxCase = netOfShifting
+    ? `CenTax's central ${centax.elasticity.toFixed(1)}`
+    : `CenTax's ${centax.elasticity.toFixed(1)} before its adjustments`;
   const shifting = getIncomeShifting(data);
+  // How far a 10% rise in the rate lowers realised gains at the central case.
+  const tenPercentRise = (100 * (1 - 1.1 ** central.elasticity)).toFixed(1);
+  // The income tax and NI on shifted income the headline adds, net of income shifting.
+  const centralOffset = central.includes_income_shifting_offset
+    ? getBudget(data)[0].income_shifting_offset_bn
+    : 0;
   const reform = getReform(data);
   const schedules = getReformSchedules(data);
   const validation = getValidation(data);
@@ -121,18 +154,24 @@ export default function ReformTab({ data }) {
                 rel="noopener noreferrer"
                 className="underline decoration-1 underline-offset-2 hover:opacity-80"
               >
-                {netOfShifting
-                  ? `CenTax's central elasticity of ${central.e_retention.toFixed(1)}`
-                  : `CenTax's elasticity before its adjustments, ${central.e_retention.toFixed(1)}`}
-              </a>{" "}
-              with respect to the share of each gain they keep, applied in that
-              form.{" "}
+                PolicyEngine&apos;s capital gains elasticity of{" "}
+                {formatElasticityValue(central.elasticity)}
+              </a>
+              , which the model applies with respect to the marginal tax rate on gains:
+              a 10% rise in the rate lowers realised gains by about {tenPercentRise}%.
+              PolicyEngine set it in {formatPublished(central.published.slice(0, 7))}{" "}
+              from US evidence, judging that UK gains respond less to tax changes than
+              US gains (
+              <NavLink onClick={() => onNavigate("methodology", "elasticity")}>
+                how it was chosen
+              </NavLink>
+              ).{" "}
               {netOfShifting
-                ? "CenTax lower their figure from 1.5 partly because income that stops being presented as gains is taxed as income instead, so these estimates are total revenue across CGT and income tax."
-                : "That is CenTax's starting point before they lower it to 1.0 for income shifting and for the uplift at death their package removes, so every gain not realised counts as lost revenue: these estimates are the change in CGT alone."}{" "}
-              CenTax&apos;s elasticity comes from a package that also reforms
-              the tax base; for a rate rise alone CenTax expect a larger response,
-              which the sensitivity table below explores.
+                ? "Like the official elasticity, it is measured on gains alone, so these figures add back the income tax on income that stops being presented as gains, as the OBR does."
+                : "Every gain not realised counts as lost revenue: these figures are the change in CGT alone."}{" "}
+              The sensitivity table below compares it with {centaxCase} and CenTax&apos;s
+              range, which come from a package that also reforms the tax base, and with
+              the official HMRC/OBR assumption.
             </>
           }
         />
@@ -147,7 +186,11 @@ export default function ReformTab({ data }) {
           <MetricCard
             label={`Revenue raised, ${firstYear}`}
             value={formatSignedBn(firstYearRow.gov_balance_change_bn, 1)}
-            note="Net change in the government balance after taxpayers reduce realisations in response to the higher rates."
+            note={
+              centralOffset
+                ? "Net change in the government balance after taxpayers reduce realisations in response to the higher rates, plus the income tax and National Insurance the OBR's method adds back for income no longer presented as gains."
+                : "Net change in the government balance after taxpayers reduce realisations in response to the higher rates."
+            }
           />
           <MetricCard
             label="Five-year total, 2026-27 to 2030-31"
@@ -308,6 +351,9 @@ export default function ReformTab({ data }) {
             Wes Streeting&apos;s proposal
           </a>
           , which has not been defined. The Rate explorer scores any rate for the relief, or withdraws it, for every year.
+          {centralOffset
+            ? ` The table counts CGT alone; the headline above also adds ${formatSignedBn(centralOffset, 1)} of income tax on income no longer presented as gains.`
+            : ""}
         </p>
       </section>
 
@@ -322,7 +368,7 @@ export default function ReformTab({ data }) {
             {formatPct(100 * entrantShare, 0)} of this dataset&apos;s {firstYear} CGT taxpayers
             are entrants by uprating (see the Baseline tab): people whose base-year gains sit at
             or below the frozen £3,000 exempt amount and cross it once the engine uprates gains.
-            They contribute {formatSignedBn(firstYearRow.cgt_change_from_entrants_bn, 2)} of the{" "}
+            They contribute {formatSmallBn(firstYearRow.cgt_change_from_entrants_bn, { signed: true })} of the{" "}
             {firstYear} change ({formatPct(100 * entrantShareOfChange, 0)}), so the revenue
             figures are little affected; the share of people affected is.
           </p>
@@ -335,6 +381,12 @@ export default function ReformTab({ data }) {
           description="Change in household net income, grouped by the household's position in the baseline income distribution. Almost the entire cost falls on the highest-income group, where realised capital gains are concentrated: losses include both the extra tax paid and the gains that taxpayers choose not to realise in response, so they exceed the revenue raised. The switches show the same change grouped by income quintile or quartile, by household type, or by region."
         />
         <GroupImpactChart groupsByYear={getIncomeChangeGroupsByYear(data)} initialYear={firstYear} />
+        {centralOffset ? (
+          <p className="mt-3 text-xs leading-5 text-slate-500">
+            The income tax added back for shifted income is in the revenue figures above but not
+            in these household figures, which reflect the change in CGT alone.
+          </p>
+        ) : null}
       </section>
 
       <details className="section-card group">
@@ -348,19 +400,25 @@ export default function ReformTab({ data }) {
           <p className="mb-4 text-sm leading-6 text-slate-600">
             The revenue estimate hinges on how strongly taxpayers reduce
             realisations when rates rise. Each row re-runs the reform with a
-            different elasticity of realised gains with respect to the retention
-            rate, the share (1 − t) of each marginal pound of gain a taxpayer
-            keeps: the model scales each person&apos;s realised gains by
-            ((1 − t₁) / (1 − t₀))<sup>e</sup>, the form CenTax and the OBR state
-            their elasticities in. The bold row is this approach&apos;s central
-            assumption,{" "}
+            different elasticity, applied in the form its source states it in.
+            The bold row is the central case, PolicyEngine&apos;s{" "}
+            {formatElasticityValue(central.elasticity)} with respect to the
+            marginal tax rate on gains: the model scales each person&apos;s
+            realised gains by (t₁ / t₀)<sup>e</sup>. Over this reform&apos;s rate
+            rises it behaves like an elasticity with respect to the retention rate
+            of about {equivalents.additional_rate} to {equivalents.higher_rate} at the
+            additional and higher rates and {equivalents.basic_rate} at the basic rate.
             {netOfShifting
-              ? `CenTax's central ${central.e_retention.toFixed(1)}`
-              : `CenTax's ${central.e_retention.toFixed(1)} before its adjustments`}
-            ; the rows either side are CenTax&apos;s range,{" "}
-            {centaxRange.lower.toFixed(1)} to {centaxRange.upper.toFixed(1)}
+              ? " Measured on gains alone, like the official case, it adds the income tax and National Insurance the OBR's method attributes to income no longer presented as gains."
+              : ""}{" "}
+            The other rows are elasticities with respect to the retention rate, the
+            share (1 − t) of each marginal pound of gain a taxpayer keeps, applied
+            as ((1 − t₁) / (1 − t₀))<sup>e</sup>, the form CenTax and the OBR state
+            them in: {centaxCase}, with CenTax&apos;s range,{" "}
+            {centaxRange.lower.toFixed(1)} to {centaxRange.upper.toFixed(1)}, either
+            side
             {netOfShifting
-              ? ", from estimates that measure the CGT base only, so they take the same addition as the official case"
+              ? ", from estimates that measure the CGT base only, so they take the same addition"
               : ""}
             . CenTax estimate their elasticity for a package that also removes the
             uplift at death and charges gains on departure, and{" "}
@@ -374,8 +432,8 @@ export default function ReformTab({ data }) {
             </a>
             , expecting a larger response to rates alone: the upper rows show how
             much of the yield rests on that. The last row is the official HMRC/OBR
-            assumption, {official.e_retention} for main-rate gains and{" "}
-            {official.badr_e_retention} for gains qualifying for Business Asset Disposal
+            assumption, {official.elasticity} for main-rate gains and{" "}
+            {official.badr_elasticity} for gains qualifying for Business Asset Disposal
             Relief
             {netOfShifting
               ? `, plus the income tax and National Insurance the OBR's method adds back because part of the fall in realised gains is income no longer presented as gains (${Math.round(shifting.share * 1000) / 10}% of the fall outside residential property, taxed as salary at ${(shifting.tax_rate * 100).toFixed(1)}%)`
@@ -408,13 +466,13 @@ export default function ReformTab({ data }) {
               <th>Scenario</th>
               <TipHeader
                 label="Elasticity, as applied"
-                tip="The elasticity of realised gains with respect to the retention rate (1 − t) that the engine applies, as each source states it: realised gains scale by ((1 − t₁) / (1 − t₀)) to the power e, with t the marginal rate on gains."
+                tip="The elasticity of realised gains the engine applies, as each source states it, with t the marginal rate on gains: PolicyEngine's with respect to the rate itself, realised gains scaled by (t₁ / t₀) to the power e; the rest with respect to the retention rate (1 − t), realised gains scaled by ((1 − t₁) / (1 − t₀)) to the power e."
               />
               <TipHeader
                 label={netOfShifting ? `Revenue, ${firstYear}` : `CGT revenue, ${firstYear}`}
                 tip={
                   netOfShifting
-                    ? "Change in revenue in the first year of the reform under this elasticity: capital gains tax, plus, for CenTax's 0.5 and 2.0 and the official case, the income tax and National Insurance the OBR's method adds back for income no longer presented as gains."
+                    ? "Change in revenue in the first year of the reform under this elasticity: capital gains tax, plus, for PolicyEngine's case, CenTax's 0.5 and 2.0 and the official case, the income tax and National Insurance the OBR's method adds back for income no longer presented as gains."
                     : "Change in capital gains tax revenue in the first year of the reform under this elasticity."
                 }
               />
@@ -425,12 +483,12 @@ export default function ReformTab({ data }) {
             {sensitivity.map((row) => (
               <tr
                 key={row.name}
-                className={row.e_retention === central.e_retention ? "font-semibold" : ""}
+                className={row.id === central.id ? "font-semibold" : ""}
               >
                 <td>{row.name}</td>
                 <td>{formatElasticity(row)}</td>
                 <td>{formatSignedBn(row.revenue_2026_bn)}</td>
-                <SourceLink row={row} official={official} />
+                <SourceLink row={row} central={central} official={official} />
               </tr>
             ))}
           </tbody>

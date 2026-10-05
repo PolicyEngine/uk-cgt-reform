@@ -133,13 +133,14 @@ export function getEntrantShare(data) {
 
 // ---------------------------------------------------------------------------
 // The two approaches to income shifting (comparison.APPROACHES in the
-// pipeline). Net of income shifting: CenTax's central case as published, and
-// the cases measured on the CGT base (CenTax's bounds and the official case)
+// pipeline). Both share the central case, PolicyEngine's elasticity. Net of
+// income shifting: CenTax's central case as published, and the cases measured
+// on the CGT base (PolicyEngine's, CenTax's bounds and the official case)
 // plus the OBR's income tax and National Insurance on income no longer
 // presented as gains. Gross of income shifting: CenTax before its
-// adjustments, and every case with nothing added back. A view puts the chosen approach's
-// cases where the tabs read the central and official ones, so the tabs
-// themselves need not know which approach is shown.
+// adjustments, and every case with nothing added back. A view puts the chosen
+// approach's figures where the tabs read the central, CenTax and official
+// ones, so the tabs themselves need not know which approach is shown.
 // ---------------------------------------------------------------------------
 
 export function getApproachOptions(data) {
@@ -161,9 +162,6 @@ function findApproach(block, approachId) {
   );
 }
 
-// The schedule split's case key for each approach's central case.
-const SPLIT_CASE = { centax_central: "central", centax_unadjusted: "unadjusted" };
-
 // "…, plus the OBR's income tax and NI on shifted income": the name of a case
 // that carries the income-shifting offset.
 export function withOffsetLabel(name) {
@@ -174,16 +172,11 @@ function addByYear(values, offsets) {
   return Object.fromEntries(Object.entries(values).map(([year, v]) => [year, v + offsets[year]]));
 }
 
-function centralSplit(split, centralId) {
-  const key = SPLIT_CASE[centralId];
-  return {
-    ...split,
-    steps: split.steps.map((row) => ({
-      ...row,
-      central_cgt_change_bn: row[`${key}_cgt_change_bn`],
-      central_increment_bn: row[`${key}_increment_bn`],
-    })),
-  };
+// A ready-reckoner row's figures for one case as an approach shows them.
+function readyReckonerCase(row, caseId, offsetIds) {
+  return offsetIds.has(caseId)
+    ? addByYear(row.model_m[caseId], row.income_shifting_offset_m[caseId])
+    : row.model_m[caseId];
 }
 
 // A results file as the chosen approach shows it.
@@ -201,39 +194,43 @@ export function applyApproach(data, approachId) {
       includes_income_shifting_offset: true,
     };
   });
-  const central = data.approach_results?.[approach.id];
   const elasticities = data.benchmarks.elasticities;
   const rr = data.benchmarks.ready_reckoner;
-  const officialOffset = offsetIds.has("official");
+  // The central case's budget: the committed one, plus the income-shifting
+  // offset under the approach net of income shifting.
+  const budget = applyApproachToBudget(data.budget, approach, approach.central_id);
   return {
     ...data,
     approach,
-    metadata: { ...data.metadata, elasticity: byId[approach.central_id].e_retention },
-    budget: central ? central.budget : data.budget,
-    income_change_groups: central ? central.income_change_groups : data.income_change_groups,
+    budget,
     sensitivity,
     // Every case, as computed (no offset added), for tabs that set the two
     // approaches side by side.
     sensitivity_all: data.sensitivity,
-    schedule_split: centralSplit(data.schedule_split, approach.central_id),
     benchmarks: {
       ...data.benchmarks,
       elasticities: {
         ...elasticities,
-        // CenTax's published central, whichever approach is shown.
-        centax_central: elasticities.central,
-        central: approach.central_id === "centax_unadjusted" ? elasticities.unadjusted : elasticities.central,
-        official: { ...elasticities.official, includes_income_shifting_offset: officialOffset },
+        central: {
+          ...elasticities.central,
+          includes_income_shifting_offset: offsetIds.has(approach.central_id),
+        },
+        // The CenTax case this approach compares the central case with.
+        centax: [elasticities.centax_central, elasticities.unadjusted].find(
+          (entry) => entry.id === approach.centax_id,
+        ),
+        official: {
+          ...elasticities.official,
+          includes_income_shifting_offset: offsetIds.has("official"),
+        },
       },
       ready_reckoner: {
         ...rr,
         rows: rr.rows.map((row) => ({
           ...row,
           model_m: {
-            centax_central: row.model_m[approach.central_id],
-            official: officialOffset
-              ? addByYear(row.model_m.official, row.income_shifting_offset_m.official)
-              : row.model_m.official,
+            central: readyReckonerCase(row, approach.central_id, offsetIds),
+            official: readyReckonerCase(row, "official", offsetIds),
           },
         })),
       },
@@ -241,8 +238,9 @@ export function applyApproach(data, approachId) {
   };
 }
 
-// Explorer budget rows as an approach shows them: the official case adds the
-// income-shifting offset under the approach net of income shifting.
+// Budget rows as an approach shows them: the cases in its offset_case_ids
+// (PolicyEngine's and the official one, net of income shifting) add the
+// income-shifting offset.
 export function applyApproachToBudget(rows, approach, elasticityId) {
   if (!approach.offset_case_ids.includes(elasticityId)) return rows;
   return rows.map((row) => ({

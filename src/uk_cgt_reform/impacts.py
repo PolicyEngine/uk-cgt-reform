@@ -417,9 +417,10 @@ def sensitivity(baseline_cgt: float, cases, run_case) -> list[dict]:
 
     ``cases`` are ``(id, name, elasticity)``; ``run_case(elasticity)`` must
     return the completed reform simulation for 2026 with that elasticity.
-    Each case is a retention-rate elasticity (``e_retention``); the row also
-    says which engine parameter carried it and in which convention
-    (``reform.elasticity_convention``), and the income tax and National
+    Each row carries the elasticity in its own convention and says which
+    engine parameter carried it and in which convention (``applied_as``:
+    ``mtr`` for PolicyEngine's, ``retention`` for the rest;
+    ``reform.elasticity_convention``), and the income tax and National
     Insurance the OBR's method would add back for income shifting (never
     included in the revenue).
     """
@@ -430,7 +431,7 @@ def sensitivity(baseline_cgt: float, cases, run_case) -> list[dict]:
             {
                 "id": case_id,
                 "name": name,
-                "e_retention": e,
+                "elasticity": e,
                 **elasticity_convention(e),
                 "revenue_2026_bn": (cgt_revenue(sim) - baseline_cgt) / 1e9,
                 "income_shifting_offset_2026_bn": income_shifting_offset(sim, e) / 1e9,

@@ -62,8 +62,13 @@ function cliArgs(body) {
   }
   const dataset = body.dataset ?? "";
   if (dataset && !DATASET_KEY.test(dataset)) return { error: "Unknown dataset." };
-  const elasticity = body.elasticity ?? 1.0;
-  if (typeof elasticity !== "number" || !Number.isFinite(elasticity)) {
+  // Absent, the CLI applies its own default (PolicyEngine's elasticity).
+  const elasticity = body.elasticity;
+  if (
+    elasticity !== undefined &&
+    elasticity !== null &&
+    (typeof elasticity !== "number" || !Number.isFinite(elasticity))
+  ) {
     return { error: "elasticity must be a number." };
   }
   const args = [
@@ -77,9 +82,9 @@ function cliArgs(body) {
     String(values[1]),
     "--additional",
     String(values[2]),
-    "--elasticity",
-    String(elasticity),
   ];
+  // One token, so a negative value cannot be read as a flag.
+  if (typeof elasticity === "number") args.push(`--elasticity=${elasticity}`);
   if (dataset) args.push("--dataset", dataset);
   if (body.cache_only === true) args.push("--cache-only");
   // Business Asset Disposal Relief: withdrawn, or kept at a rate and limit.

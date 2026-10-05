@@ -21,10 +21,10 @@ import { useExploration } from "../lib/exploreApi";
 import {
   formatPct,
   formatSignedBn,
-  formatSmallBn,
   formatSignedCurrency,
   formatSignedMn,
   formatSignedPct,
+  formatSmallBn,
 } from "../lib/formatters";
 import BudgetChart from "./charts/BudgetChart";
 import GroupImpactChart from "./charts/GroupImpactChart";
@@ -65,8 +65,9 @@ const READY_RECKONER = options.ready_reckoner;
 // The OBR's treatment of income shifting, as the approaches apply it.
 const INCOME_SHIFTING = options.approaches.income_shifting;
 
-// Every behavioural option is an elasticity of realised gains with respect to
-// the retention rate (1 − t), applied as stated; its label names the source,
+// Every behavioural option is an elasticity of realised gains applied as its
+// source states it: PolicyEngine's with respect to the marginal tax rate, the
+// rest with respect to the retention rate (1 − t). Its label names the source
 // and says so when the approach adds the OBR's income tax and National
 // Insurance on shifted income.
 function elasticityLabel(option, approach) {
@@ -79,17 +80,20 @@ function approachOptions(approach) {
 }
 
 function approachCentral(approach) {
-  return ELASTICITIES.find((option) => option.id === approach.central_id).e_retention;
+  return ELASTICITIES.find((option) => option.id === approach.central_id).elasticity;
 }
 
-// Links shared before the retention form keyed each case by a marginal-tax-rate
-// value; they map to the case they named, as the backend does.
+// Links shared before CenTax's and the official cases took the retention form
+// keyed them by a marginal-tax-rate value; they map to the case they named, as
+// the backend does. -0.7 named PolicyEngine's elasticity, applied in the same
+// form then as now.
 const LEGACY_MTR_ELASTICITIES = new Map([
   [-0.35, 0.5],
-  [-0.7, 1.0],
   [-2.52, 3.6],
 ]);
 const sameElasticity = (a, b) => Math.abs(a - b) < 1e-9;
+// The engine floors each marginal rate at 0.1% in the marginal-rate form.
+const MTR_FLOOR = 0.001;
 
 const toPercent = (fraction) => Math.round(fraction * 10000) / 100;
 const toFraction = (percent) => Math.round(Number(percent) * 100) / 10000;
@@ -170,7 +174,7 @@ function readUrlState(searchParams, approach) {
   const parsed = rawE === null || rawE.trim() === "" ? NaN : Number(rawE);
   const legacy = [...LEGACY_MTR_ELASTICITIES].find(([mtr]) => sameElasticity(mtr, parsed));
   const e = legacy ? legacy[1] : parsed;
-  const elasticity = approachOptions(approach).some((option) => sameElasticity(option.e_retention, e))
+  const elasticity = approachOptions(approach).some((option) => sameElasticity(option.elasticity, e))
     ? e
     : approachCentral(approach);
   // The relief: `bw=1` withdraws it; `br` (percent) and `bl` (£) keep it at
@@ -181,11 +185,12 @@ function readUrlState(searchParams, approach) {
   const limit = Number(searchParams.get("bl"));
   if (BADR_LIMITS.includes(limit)) badrForm.limit = limit;
   // A link from before the relief lever carries a marginal-rate elasticity
-  // and no relief fields. Its 20% / 40% / 45% was the "Equalise with income
+  // (PolicyEngine's −0.7 or a legacy key) and no relief fields; links since
+  // always carry the relief. Its 20% / 40% / 45% was the "Equalise with income
   // tax" preset, which now withdraws the relief, so it loads that way and
   // still scores the Reform impacts tab's reform.
   const relieflessLegacyLink =
-    legacy && ["bw", "br", "bl"].every((key) => searchParams.get(key) === null);
+    parsed < 0 && ["bw", "br", "bl"].every((key) => searchParams.get(key) === null);
   const equalisationRates = BANDS.every(
     (band) => Number(percents[band.key]) === toPercent(EQUALISATION.rates[band.key]),
   );
@@ -389,16 +394,19 @@ export default function RateExplorerTab({ data, datasetKey }) {
   // The chosen case takes the OBR's addition under this approach; it fits a
   // schedule that narrows the gap with income tax (20% / 40% / 45%).
   const addsOffset = approach.offset_case_ids.includes(
-    ELASTICITIES.find((option) => sameElasticity(option.e_retention, elasticity))?.id,
+    ELASTICITIES.find((option) => sameElasticity(option.elasticity, elasticity))?.id,
   );
   // Switching approach keeps a case both offer and otherwise moves to the
   // new approach's central case.
   useEffect(() => {
-    if (!offered.some((option) => sameElasticity(option.e_retention, elasticity))) {
+    if (!offered.some((option) => sameElasticity(option.elasticity, elasticity))) {
       setElasticity(approachCentral(approach));
     }
   }, [approach.id]); // eslint-disable-line react-hooks/exhaustive-deps
   const { run, status, result, error, elapsedSeconds } = useExploration();
+  // The elasticity each run asked for, to catch a backend that answers with
+  // another case.
+  const requested = useRef(null);
   const autoRan = useRef(false);
 
   const dataset = getDatasetInfo(data);
@@ -443,8 +451,11 @@ export default function RateExplorerTab({ data, datasetKey }) {
       params.set("tab", "explorer");
       BANDS.forEach((band) => params.set(band.param, String(toPercent(rates[band.key]))));
       ["bw", "br", "bl"].forEach((key) => params.delete(key));
+      // The relief is always written, so a link from before the relief lever
+      // (no relief fields) stays distinguishable from one at PolicyEngine's
+      // −0.7 with the relief at current law.
       if (badr.withdrawn) params.set("bw", "1");
-      else if (!sameBadr(badr, BADR_CURRENT_LAW)) {
+      else {
         params.set("br", String(toPercent(badr.rate)));
         params.set("bl", String(badr.lifetime_limit));
       }
@@ -458,6 +469,7 @@ export default function RateExplorerTab({ data, datasetKey }) {
     (options = {}) => {
       if (!validation.rates) return;
       syncUrl(validation.rates, validation.badr, elasticity);
+      requested.current = elasticity;
       const badr = validation.badr.withdrawn
         ? { withdrawn: true }
         : { rate: validation.badr.rate, lifetime_limit: validation.badr.lifetime_limit };
@@ -484,16 +496,50 @@ export default function RateExplorerTab({ data, datasetKey }) {
   const entrants = getEntrants(data);
   const entrantShare = entrants.count / getValidation(data).cgt_taxpayers;
   const resultElasticity = result
-    ? ELASTICITIES.find((option) => sameElasticity(option.e_retention, result.metadata.elasticity))
+    ? ELASTICITIES.find((option) => sameElasticity(option.elasticity, result.metadata.elasticity))
     : null;
+  // A backend deployed before PolicyEngine's elasticity was a case of its own
+  // reads -0.7 as an older key and runs another case; the figures are then
+  // that case's, and the tab says so.
+  const requestedOption =
+    result && requested.current !== null
+      ? ELASTICITIES.find((option) => sameElasticity(option.elasticity, requested.current))
+      : null;
+  const ranOtherCase = Boolean(
+    requestedOption && !sameElasticity(requestedOption.elasticity, result.metadata.elasticity),
+  );
   const matchedRow = result
     ? rowFor(result.metadata.reform, result.metadata.reform_badr ?? BADR_CURRENT_LAW)
     : null;
-  const centralE = approachCentral(approach);
-  const centralOption = ELASTICITIES.find((option) => sameElasticity(option.e_retention, centralE));
+  const centralOption = ELASTICITIES.find((option) => option.id === approach.central_id);
+  // The chosen case, and the deepest cut the schedule makes under PolicyEngine's
+  // elasticity, whose response to a cut grows steeply as a rate nears zero:
+  // the factor (t1 / t0) ** e on the gains a cut reaches, each rate floored as
+  // the engine floors it.
+  const chosenOption = ELASTICITIES.find((option) => sameElasticity(option.elasticity, elasticity));
+  const cutFactor = (from, to) =>
+    (Math.max(to, MTR_FLOOR) / Math.max(from, MTR_FLOOR)) ** chosenOption.elasticity;
+  const deepestCut =
+    chosenOption?.applied_as === "mtr" && validation.rates
+      ? [
+          ...BANDS.map((band) => ({
+            label: band.label.toLowerCase(),
+            from: CURRENT_LAW[band.key],
+            to: validation.rates[band.key],
+          })),
+          ...(validation.badr && !validation.badr.withdrawn
+            ? [{ label: "relief's rate", from: BADR_CURRENT_LAW.rate, to: validation.badr.rate }]
+            : []),
+        ]
+          .filter((cut) => cut.to < cut.from - 1e-9)
+          .map((cut) => ({ ...cut, factor: cutFactor(cut.from, cut.to), toZero: cutFactor(cut.from, 0) }))
+          .reduce((deepest, cut) => (deepest && deepest.factor >= cut.factor ? deepest : cut), null)
+      : null;
+  const formatFactor = (factor) => (factor >= 10 ? factor.toFixed(0) : factor.toFixed(1));
   // The run as the approach shows it: under the approach net of income
-  // shifting, the cases measured on the CGT base add the OBR's income tax and
-  // National Insurance on shifted income.
+  // shifting, the cases measured on the CGT base (PolicyEngine's, CenTax's
+  // bounds and the official case) add the OBR's income tax and National
+  // Insurance on shifted income.
   // A backend older than the approaches does not report it; the run then
   // counts CGT alone and says so.
   const wantsOffset = Boolean(
@@ -638,7 +684,7 @@ export default function RateExplorerTab({ data, datasetKey }) {
           <LabelledSelect
             label="Behavioural response"
             options={offered.map((option) => ({
-              value: String(option.e_retention),
+              value: String(option.elasticity),
               label: elasticityLabel(option, approach),
             }))}
             value={String(elasticity)}
@@ -655,6 +701,18 @@ export default function RateExplorerTab({ data, datasetKey }) {
         </div>
         {validation.error ? (
           <p className="mt-3 text-sm leading-6 text-red-700">{validation.error}</p>
+        ) : null}
+        {deepestCut ? (
+          <p className="mt-3 text-sm leading-6 text-amber-800">
+            PolicyEngine&apos;s elasticity works on the marginal tax rate itself, so the response
+            to a cut grows steeply as a rate nears zero. This schedule&apos;s deepest cut, the{" "}
+            {deepestCut.label} from {formatPct(deepestCut.from * 100, 0)} to{" "}
+            {formatPct(deepestCut.to * 100, 0)}, multiplies the realised gains it reaches by about{" "}
+            {formatFactor(deepestCut.factor)}
+            {deepestCut.to > 0 ? `; a cut to 0% would multiply them by about ${formatFactor(deepestCut.toZero)}` : ""}
+            . The retention-rate cases respond less to cuts; the Methodology tab compares the two
+            forms.
+          </p>
         ) : null}
         {addsOffset ? (
           <p
@@ -692,7 +750,7 @@ export default function RateExplorerTab({ data, datasetKey }) {
           <section className="section-card">
             <SectionHeading
               title={`Headline results, ${firstYear}`}
-              description={`${formatPct(shown.metadata.reform.basic_rate * 100, 0)} / ${formatPct(shown.metadata.reform.higher_rate * 100, 0)} / ${formatPct(shown.metadata.reform.additional_rate * 100, 0)}, Business Asset Disposal Relief ${describeBadr(shown.metadata.reform_badr ?? BADR_CURRENT_LAW).toLowerCase()}, on ${shown.metadata.dataset_short_label}, ${resultElasticity ? elasticityLabel(resultElasticity, approach) : `retention elasticity ${shown.metadata.elasticity}`}; distributional figures cover all households.`}
+              description={`${formatPct(shown.metadata.reform.basic_rate * 100, 0)} / ${formatPct(shown.metadata.reform.higher_rate * 100, 0)} / ${formatPct(shown.metadata.reform.additional_rate * 100, 0)}, Business Asset Disposal Relief ${describeBadr(shown.metadata.reform_badr ?? BADR_CURRENT_LAW).toLowerCase()}, on ${shown.metadata.dataset_short_label}, ${resultElasticity ? elasticityLabel(resultElasticity, approach) : `elasticity ${shown.metadata.elasticity}`}; distributional figures cover all households.`}
             />
             <div className="grid gap-4 md:grid-cols-3">
               <MetricCard
@@ -720,6 +778,14 @@ export default function RateExplorerTab({ data, datasetKey }) {
                 The explorer&apos;s backend did not report the income tax and National Insurance on shifted income for this
                 run, so these figures count CGT alone, not the total revenue this approach shows
                 elsewhere.
+              </p>
+            ) : null}
+            {ranOtherCase ? (
+              <p className="mt-3 text-sm leading-6 text-amber-800">
+                This run asked for {requestedOption.label}, but the explorer&apos;s backend ran{" "}
+                {resultElasticity ? resultElasticity.label : `elasticity ${shown.metadata.elasticity}`}:
+                it predates PolicyEngine&apos;s elasticity as a case of its own. The figures are for
+                the case it ran.
               </p>
             ) : null}
             <table className="data-table mt-5">
@@ -758,7 +824,7 @@ export default function RateExplorerTab({ data, datasetKey }) {
               The equalisation column is the committed result for {dataset.shortLabel}: 20% / 40% /
               45% with Business Asset Disposal Relief withdrawn, at this approach&apos;s central case
               ({centralOption.label})
-              {resultElasticity && !sameElasticity(resultElasticity.e_retention, centralE)
+              {resultElasticity && resultElasticity.id !== centralOption.id
                 ? "; this schedule ran with a different elasticity, so the two are not like for like"
                 : ""}
               .
