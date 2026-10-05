@@ -1,6 +1,5 @@
 /**
- * Accessors for the cgt_equalisation_results*.json payloads and the
- * dataset_comparison.json side-by-side.
+ * Accessors for the cgt_equalisation_results.json payload.
  *
  * Deliberately no fallbacks: if a field is missing the consumer throws
  * visibly rather than rendering placeholders.
@@ -60,26 +59,34 @@ export function getReform(data) {
   );
 }
 
-// The schedules policyengine-uk 2.99.0 charges separately, with their
-// current-law rates for the reform's first year (2026-27).
+// The schedules policyengine-uk 2.99.0 charges separately that the reform
+// reaches, with their current law for the reform's first year (2026-27):
+// Business Asset Disposal Relief charges 18% up to a £1m lifetime limit.
+// Carried interest has been taxed as income since April 2026.
 export const BASELINE_SCHEDULE_RATES = {
   residential_property: { basic_rate: 0.18, higher_rate: 0.24, additional_rate: 0.24 },
-  carried_interest: { basic_rate: 0.32, higher_rate: 0.32, additional_rate: 0.32 },
-  badr_lifetime_limit: 1_000_000,
+  badr: { withdrawn: false, rate: 0.18, lifetime_limit: 1_000_000 },
 };
+
+// "£1m", "£500k": a lifetime limit for the relief.
+export function badrLimitLabel(limit) {
+  return limit >= 1_000_000
+    ? `£${limit / 1_000_000}m`
+    : `£${(limit / 1_000).toLocaleString("en-GB")}k`;
+}
+
+// "18% up to a £1m lifetime limit", "Withdrawn": a treatment of the relief.
+export function describeBadr(badr) {
+  if (badr.withdrawn) return "Withdrawn";
+  return `${Math.round(badr.rate * 100)}% up to a ${badrLimitLabel(badr.lifetime_limit)} lifetime limit`;
+}
+
+export function getScheduleSplit(data) {
+  return data.schedule_split;
+}
 
 export function getReformSchedules(data) {
   return data.metadata.reform_schedules;
-}
-
-export function getElasticity(data) {
-  // The pipeline emits the MTR elasticity as a plain number; derive the
-  // retention-rate convention (CenTax central 1.0 <-> MTR -0.7 at 40-45% rates).
-  const e = data.metadata.elasticity;
-  if (typeof e === "number") {
-    return { retention_rate_elasticity: 1.0, mtr_elasticity_approx: e };
-  }
-  return e;
 }
 
 export function getFirstYear(data) {
@@ -109,17 +116,8 @@ export function getDatasetInfo(data) {
     producer: md.dataset_producer,
     observation: md.dataset_observation,
     notes: md.dataset_notes,
+    columns: md.dataset_columns,
   };
-}
-
-// Every dataset the pipeline knows, for the dataset switch.
-export function getDatasetOptions(data) {
-  return data.metadata.datasets.map((d) => ({
-    value: d.key,
-    label: d.short_label,
-    role: d.role,
-    fullLabel: d.label,
-  }));
 }
 
 // Persons taxable only because uprating carried base-year gains at or below
@@ -131,13 +129,4 @@ export function getEntrants(data) {
 export function getEntrantShare(data) {
   const validation = data.validation;
   return validation.entrants_by_uprating.count / validation.cgt_taxpayers;
-}
-
-// dataset_comparison.json accessors.
-export function getComparisonDatasetKeys(comparison) {
-  return Object.keys(comparison.datasets);
-}
-
-export function getComparisonDataset(comparison, key) {
-  return comparison.datasets[key];
 }

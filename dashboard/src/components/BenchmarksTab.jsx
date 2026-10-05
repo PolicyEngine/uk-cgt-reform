@@ -22,8 +22,6 @@ function formatUplift(value) {
 }
 
 const percent = (rate) => `${Math.round(rate * 100)}%`;
-const signed = (value, digits) =>
-  `${value < 0 ? "\u2212" : ""}${Math.abs(value).toFixed(digits)}`;
 // "Exchequer receipts in £m ..." reads as the rest of a sentence.
 const lowerFirst = (text) => `${text[0].toLowerCase()}${text.slice(1)}`;
 
@@ -211,8 +209,8 @@ function CentaxPackage({ rows }) {
 
 function ReadyReckoner({ block, dataset, elasticities }) {
   const [first, second] = block.lag;
-  const centralLabel = `Central (MTR ${signed(elasticities.central.e_mtr, 1)})`;
-  const officialLabel = `Official (retention ${elasticities.official.e_retention})`;
+  const centralLabel = `Central (retention ${elasticities.central.e_retention.toFixed(1)})`;
+  const officialLabel = `Official (retention ${elasticities.official.e_retention}; ${elasticities.official.badr_e_retention} for BADR gains)`;
   const model = (row, elasticityId, year) => row.model_m[elasticityId][year];
   return (
     <section className="section-card">
@@ -262,7 +260,7 @@ function ReadyReckoner({ block, dataset, elasticities }) {
         Source: <SourceLink href={block.url}>{block.source}</SourceLink>, {block.locator}. {block.note}{" "}
         HMRC&apos;s figures are {lowerFirst(block.measure)}; the model figures are the change in
         government balance on its own data, in the Rate explorer&apos;s scope (main and residential
-        rates). Not scored:{" "}
+        rates and the relief). Not scored:{" "}
         {block.excluded
           .map((row) => {
             const reason = row.reason.replace(/\.$/, "");
@@ -279,10 +277,10 @@ export default function BenchmarksTab({ data, onNavigate }) {
   const benchmarks = getBenchmarks(data);
   const dataset = getDatasetInfo(data);
   const official = getSensitivity(data).find(
-    (row) => row.e_mtr === benchmarks.elasticities.official.e_mtr,
+    (row) => row.e_retention === benchmarks.elasticities.official.e_retention,
   );
   const central = getSensitivity(data).find(
-    (row) => row.e_mtr === benchmarks.elasticities.central.e_mtr,
+    (row) => row.e_retention === benchmarks.elasticities.central.e_retention,
   );
   return (
     <div className="space-y-6">
@@ -305,7 +303,9 @@ export default function BenchmarksTab({ data, onNavigate }) {
         <p className="note-eyebrow">Why the elasticity matters</p>
         <p>
           The official HMRC/OBR assumption is a retention-rate elasticity of{" "}
-          {benchmarks.elasticities.official.e_retention}, against CenTax&apos;s central{" "}
+          {benchmarks.elasticities.official.e_retention} for main-rate gains and{" "}
+          {benchmarks.elasticities.official.badr_e_retention} for gains qualifying for Business
+          Asset Disposal Relief, against CenTax&apos;s central{" "}
           {benchmarks.elasticities.central.e_retention.toFixed(1)} behind this dashboard&apos;s central
           case. On {dataset.shortLabel}, equalisation changes CGT revenue in 2026-27 by{" "}
           {formatSignedBn(central.revenue_2026_bn, 1)} at the central elasticity and by{" "}

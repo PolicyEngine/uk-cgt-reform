@@ -1,8 +1,10 @@
 """Reform specification and elasticity-convention helpers.
 
-The "Burnham" reform — debated in the Labour leadership contest, associated
-with Andy Burnham and backed by allies including Louise Haigh and Wes
-Streeting — equalises CGT rates with income tax rates from 2026-27:
+The equalisation reform charges capital gains at income tax rates from
+2026-27. Wes Streeting proposed the rate change in May 2026, alongside
+closing loopholes and an exemption for genuine entrepreneurs; CenTax
+(Advani, Lonsdale and Summers 2024) costs it inside a wider package that
+also reforms the CGT base. This module models the rate change:
 
 | Band       | Baseline CGT rate | Reformed rate (= income tax) |
 |------------|-------------------|------------------------------|
@@ -16,99 +18,168 @@ Schedules (policyengine-uk 2.99.0+): the engine charges residential
 property gains, carried interest and gains qualifying for Business Asset
 Disposal Relief on their own schedules when a dataset reports them, and a
 reform that touches only ``gov.hmrc.cgt.{basic,higher,additional}_rate``
-no longer reaches them. Equalising CGT with income tax means every gain,
-whatever the asset, so the reform sets the residential property and
-carried interest schedules to the same income tax rates and withdraws the
-BADR lifetime limit (relief gains fall to the main schedule), the recipe
-the engine's changelog gives for "tax every gain at income tax rates". On
-a dataset without those columns the extra parameters are inert, so the
-incumbent's results are unchanged by them.
+no longer reaches them. The reform sets the residential property schedule
+to the same income tax rates and withdraws Business Asset Disposal Relief
+(the lifetime limit goes to zero, so qualifying gains fall to the main
+schedule), as CenTax's rates-only estimate does; :class:`BadrPolicy` keeps
+the relief instead, at a rate and limit, for the Rate explorer and the
+split of the yield by schedule. Carried interest has been taxed as income
+since 6 April 2026 and is left where it is. On a dataset without those
+columns the extra parameters are inert.
 
-Behavioural response — aligned with Arun Advani (CenTax). policyengine-uk
-now carries two conventions: ``gov.simulation.capital_gains_responses.
-elasticity`` is the elasticity of realisations with respect to the RETENTION
-RATE (1 - t, positive, CenTax's own convention) and ``...mtr_elasticity`` the
-elasticity with respect to the MARGINAL TAX RATE itself (negative); the two
-may not both be set. This pipeline keeps the MTR convention it has always
-reported (default 0 = static) and sets ``mtr_elasticity``.
-Advani, Lonsdale & Summers (CenTax, Oct 2024, *Reforming Capital Gains Tax*)
-use a central medium-term elasticity of 1.0 with respect to the retention
-rate (1 - t), sensitivity range 0.5-2.0, anchored on Agersnap & Zidar (2021)
-and Lavecchia & Tazhitdinova (2024). Converting conventions
-(``e_mtr = e_retention * t / (1 - t)``), Advani's central 1.0 at the reformed
-40-45% top rates is an MTR elasticity of ~= -0.67 to -0.82. We use -0.7 as
-the central case — also the value PolicyEngine used in its Autumn Budget 2024
-CGT analysis.
+Behavioural response, in CenTax's convention. Advani, Lonsdale and Summers
+(CenTax, October 2024, *Reforming Capital Gains Tax*) estimate how realised
+gains respond to the retention rate, the share 1 - t of a marginal pound of
+gain the taxpayer keeps: a central medium-term elasticity of 1.0, with a
+range of 0.5 to 2.0, anchored on Agersnap and Zidar (2021) and Lavecchia and
+Tazhitdinova (2024). The HMRC/OBR assumption is stated in the same
+convention: 3.6 for the main rates and 1.4 for BADR (OBR, January 2025, para
+1.9). policyengine-uk's ``gov.simulation.capital_gains_responses.elasticity``
+applies an elasticity in exactly that form: realised gains scale by
+((1 - t1) / (1 - t0)) ** e, with t each person's marginal rate on gains
+before and after the reform. Every case here sets that parameter and leaves
+the engine's marginal-tax-rate parameter (``...mtr_elasticity``) at zero.
 
-Caveats: Advani's elasticity assumes accompanying base broadening
-(death-uplift removal, exit charges) which we do not model, so behavioural
-loss may be UNDERSTATED for a rate-only reform; and it is a medium-term
-elasticity abstracting from short-run forestalling.
+The pipeline once converted CenTax's 1.0 into a marginal-tax-rate elasticity
+of -0.7 at the reformed 40-45% rates. The conversion holds only for small
+changes: across the reform's jumps -0.7 behaves like a retention elasticity
+of about 1.4 (24% to 45%), 1.5 (24% to 40%) and 3.0 (18% to 20%), so it
+understated the yield CenTax's own assumption implies.
+
+Caveats: CenTax's elasticity belongs to a package that also removes the
+uplift at death and charges gains on departure, closing two ways of
+deferring or avoiding the tax, which this repo does not model. CenTax
+expect a larger response to a rate rise on the current base, and advise
+against equalising rates without the base reforms (*Taxes at the top*,
+September 2026, p.17); the upper end of the range and the official case
+show how much of the yield rests on the assumption. The elasticity is
+medium-term and abstracts from short-run forestalling.
 """
 
 from __future__ import annotations
 
 import hashlib
 import json
-import math
+from dataclasses import dataclass
 
 YEARS = [2026, 2027, 2028, 2029, 2030]  # fiscal years 2026-27 .. 2030-31
 # policyengine.py reform dicts take a single effective date per value and
 # apply it open-endedly (equivalent to the old "2026-01-01.2035-12-31"
 # range over the 2026-2030 window simulated here).
 PERIOD = "2026-01-01"
-# w.r.t. MTR, converted from CenTax's central retention elasticity of 1.0 at the
-# reformed 40-45% rates. That conversion is exact only marginally: applied across
-# the whole 24%->40% jump it is more responsive than CenTax's own convention
-# (which implies ~-0.5 for a change this size). Matches PolicyEngine's own
-# Autumn Budget 2024 CGT house assumption.
-ELASTICITY = -0.7
-# The engine parameter that carries it: the marginal-tax-rate convention.
-# ``gov.simulation.capital_gains_responses.elasticity`` is the retention-rate
-# convention (positive) and must stay at its default of zero.
-ELASTICITY_PARAMETER = "gov.simulation.capital_gains_responses.mtr_elasticity"
-RETENTION_ELASTICITY_PARAMETER = "gov.simulation.capital_gains_responses.elasticity"
-
-# The official HMRC/OBR assumption for the main CGT rates: a retention-rate
-# elasticity of 3.6 (OBR, "Costing of changes to the main, BADR and IR rates
-# of CGT", January 2025, para 1.9). Its MTR-convention key is 3.6 times the
-# central case, the same conversion that takes CenTax's 1.0 to -0.7.
-OFFICIAL_RETENTION_ELASTICITY = 3.6
-OFFICIAL_ELASTICITY = -2.52
-# Cases the engine applies in the retention-rate convention, keyed by their
-# MTR-convention value. The engine's MTR form scales realised gains by
-# (t1 / t0) ** e, so at -2.52 every rate rise would lose revenue, the lower
-# rate included; the retention form, ((1 - t1) / (1 - t0)) ** 3.6, is the
-# convention the OBR states the assumption in.
-RETENTION_NATIVE = {OFFICIAL_ELASTICITY: OFFICIAL_RETENTION_ELASTICITY}
+# Elasticities of realised gains with respect to the retention rate (1 - t),
+# the convention CenTax and the OBR state them in. CenTax's central case and
+# its range (Advani, Lonsdale and Summers 2024, Table 6):
+ELASTICITY = 1.0
+CENTAX_LOWER_ELASTICITY = 0.5
+CENTAX_UPPER_ELASTICITY = 2.0
+# The official HMRC/OBR assumption for the main CGT rates (OBR, "Costing of
+# changes to the main, BADR and IR rates of CGT", January 2025, para 1.9).
+OFFICIAL_ELASTICITY = 3.6
+# The official assumption for gains qualifying for Business Asset Disposal
+# Relief (same source, para 1.9 and Table 1.1). The official case applies it
+# to those gains and 3.6 to the rest (``elasticity_assignment``).
+OFFICIAL_BADR_ELASTICITY = 1.4
+# The engine parameter that carries every case: the retention-rate form,
+# realised gains scaled by ((1 - t1) / (1 - t0)) ** e. The engine's
+# marginal-tax-rate parameter stays at its default of zero; the two may not
+# both be set.
+ELASTICITY_PARAMETER = "gov.simulation.capital_gains_responses.elasticity"
+MTR_ELASTICITY_PARAMETER = "gov.simulation.capital_gains_responses.mtr_elasticity"
+# policyengine-uk 2.104.0 (PolicyEngine/policyengine-uk#1980): with the switch
+# on, gains qualifying for the relief respond at ``badr_elasticity`` and the
+# rest of a person's gains at the main elasticity, both to the same change in
+# the person's share-weighted marginal rate. With it off (the default) every
+# gain responds at the main elasticity, as CenTax's single elasticity does.
+SEPARATE_BADR_ELASTICITY_PARAMETER = (
+    "gov.simulation.capital_gains_responses.separate_badr_elasticity"
+)
+BADR_ELASTICITY_PARAMETER = "gov.simulation.capital_gains_responses.badr_elasticity"
+#: The cases with their own elasticity for gains qualifying for the relief:
+#: only the official one. CenTax state one elasticity for every gain.
+BADR_ELASTICITY_BY_CASE = {OFFICIAL_ELASTICITY: OFFICIAL_BADR_ELASTICITY}
 
 # Reformed CGT rates, equal to the income tax rates for each band.
-BURNHAM_RATES = {
+INCOME_TAX_RATES = {
     "basic_rate": 0.20,  # from 18%
     "higher_rate": 0.40,  # from 24%
     "additional_rate": 0.45,  # from 24%
 }
 
-# Schedules the engine charges separately (policyengine-uk 2.99.0+). Each
-# takes the same income tax rates as the main schedule.
-SCHEDULES = ("residential_property", "carried_interest")
-
-# Business Asset Disposal Relief: the lifetime limit goes to zero, so
-# qualifying gains are charged on the main schedule at the reformed rates.
-BADR_LIFETIME_LIMIT = 0
-
+# Schedules the engine charges separately (policyengine-uk 2.99.0+) that the
+# reform moves with the main rates. Residential property gains have been
+# charged at the main rates since 30 October 2024 and take the reformed rates
+# too. Carried interest is not among them: it has been taxed as income since
+# 6 April 2026 (the engine keeps a 32% CGT stand-in), so equalising CGT with
+# income tax leaves it where it is.
+SCHEDULES = ("residential_property",)
+CARRIED_INTEREST_SCHEDULE = "carried_interest"
 
 # The three rate bands every CGT schedule carries, in the engine's order.
 RATE_BANDS = ("basic_rate", "higher_rate", "additional_rate")
 
-# The rate explorer's scope. A chosen schedule reaches the main rates and the
-# residential property schedule, which the law aligned with the main rates
-# from April 2025; carried interest (32% flat) and Business Asset Disposal
-# Relief (lifetime limit and its own rate) stay at current law, because no
-# registered dataset records those gains and any treatment would be inert
-# today. Widening the scope once the data supports it is a repo issue.
-EXPLORER_SCHEDULES = ("residential_property",)
-EXPLORER_SCOPE = "main_and_residential"
+# Business Asset Disposal Relief (and Investors' Relief, which the engine's
+# capital_gains_badr input merges with it). Current law from 6 April 2026: a
+# rate of 18% on qualifying gains up to a £1m lifetime limit, which the engine
+# applies to each year's gains (Finance Act 2025 s. 8; TCGA 1992 s. 169N).
+BADR_RATE_PARAMETER = "gov.hmrc.cgt.badr.rate"
+BADR_LIFETIME_LIMIT_PARAMETER = "gov.hmrc.cgt.badr.lifetime_limit"
+BADR_CURRENT_RATE = 0.18
+BADR_CURRENT_LIFETIME_LIMIT = 1_000_000
+#: Lifetime limits a reader can keep the relief at: half the current limit,
+#: the current £1m, and the £10m that applied until 11 March 2020.
+BADR_LIFETIME_LIMITS = (500_000, 1_000_000, 10_000_000)
+
+
+@dataclass(frozen=True)
+class BadrPolicy:
+    """Business Asset Disposal Relief under a reform.
+
+    Kept, it charges qualifying gains at ``rate`` up to ``lifetime_limit``;
+    withdrawn, qualifying gains fall onto the main schedule at the reformed
+    main rates (the engine's lifetime limit goes to zero).
+    """
+
+    withdrawn: bool = False
+    rate: float = BADR_CURRENT_RATE
+    lifetime_limit: int = BADR_CURRENT_LIFETIME_LIMIT
+
+    @property
+    def is_current_law(self) -> bool:
+        return (
+            not self.withdrawn
+            and self.rate == BADR_CURRENT_RATE
+            and self.lifetime_limit == BADR_CURRENT_LIFETIME_LIMIT
+        )
+
+    def parameters(self) -> dict:
+        """The reform-dict entries this treatment needs: none at current law,
+        so a schedule that leaves the relief alone keys exactly as before."""
+        if self.withdrawn:
+            return {BADR_LIFETIME_LIMIT_PARAMETER: {PERIOD: 0}}
+        entries = {}
+        if self.rate != BADR_CURRENT_RATE:
+            entries[BADR_RATE_PARAMETER] = {PERIOD: self.rate}
+        if self.lifetime_limit != BADR_CURRENT_LIFETIME_LIMIT:
+            entries[BADR_LIFETIME_LIMIT_PARAMETER] = {PERIOD: self.lifetime_limit}
+        return entries
+
+    def to_dict(self) -> dict:
+        """The treatment for results metadata and API payloads."""
+        if self.withdrawn:
+            return {"withdrawn": True, "rate": None, "lifetime_limit": None}
+        return {"withdrawn": False, "rate": self.rate, "lifetime_limit": self.lifetime_limit}
+
+
+BADR_CURRENT_LAW = BadrPolicy()
+BADR_WITHDRAWN = BadrPolicy(withdrawn=True)
+
+# The rate explorer's scope: a chosen schedule reaches the main rates, the
+# residential property schedule and Business Asset Disposal Relief (kept at
+# a rate and lifetime limit, or withdrawn). With the same rates, relief and
+# elasticity it builds exactly the equalisation reform's dict.
+EXPLORER_SCHEDULES = SCHEDULES
+EXPLORER_SCOPE = "main_residential_and_badr"
 
 EXEMPT_AMOUNT_PARAMETER = "gov.hmrc.cgt.annual_exempt_amount"
 
@@ -120,31 +191,34 @@ CENTAX_1920_SCHEDULE_RATES = {"basic_rate": 0.18, "higher_rate": 0.28, "addition
 CENTAX_1920_EXEMPT_AMOUNT = 12_000
 # Business Asset Disposal Relief (then Entrepreneurs' Relief) charged 10% in
 # 2019/20; CenTax's baseline applies the £1m lifetime limit of March 2020.
-# Investors' Relief has no engine parameter. Neither registered dataset
-# records BADR or Investors' Relief gains, so both settings are inert here.
+# Investors' Relief gains sit in the engine's BADR input and follow it.
 CENTAX_1920_BADR_RATE = 0.10
 CENTAX_1920_BADR_LIFETIME_LIMIT = 1_000_000
 
 
-def elasticity_assignment(elasticity: float) -> dict[str, float]:
-    """The engine parameter (and value) that carries a behavioural case: the
-    MTR convention, or the retention convention for :data:`RETENTION_NATIVE`
-    cases. The two may not both be nonzero."""
-    for key, retention in RETENTION_NATIVE.items():
-        if math.isclose(elasticity, key, abs_tol=1e-9):
-            return {RETENTION_ELASTICITY_PARAMETER: retention}
-    return {ELASTICITY_PARAMETER: elasticity}
+def elasticity_assignment(elasticity: float) -> dict[str, float | bool]:
+    """The engine parameters (and values) that carry a behavioural case: the
+    retention-rate elasticity, applied as stated, and for the official case
+    the separate elasticity for gains qualifying for the relief."""
+    assignment: dict[str, float | bool] = {ELASTICITY_PARAMETER: elasticity}
+    badr = BADR_ELASTICITY_BY_CASE.get(elasticity)
+    if badr is not None:
+        assignment[SEPARATE_BADR_ELASTICITY_PARAMETER] = True
+        assignment[BADR_ELASTICITY_PARAMETER] = badr
+    return assignment
 
 
 def elasticity_convention(elasticity: float) -> dict:
-    """How a behavioural case keyed by its MTR value is applied: the engine
-    parameter it sets, the convention (``mtr`` or ``retention``) and the value
-    the engine receives. Every output that reports a case carries these."""
-    [(parameter, value)] = elasticity_assignment(elasticity).items()
+    """How a behavioural case is applied: the engine parameter it sets, the
+    convention, the value the engine receives and the elasticity gains
+    qualifying for the relief respond at. Every output that reports a case
+    carries these."""
+    assignment = elasticity_assignment(elasticity)
     return {
-        "elasticity_parameter": parameter,
-        "applied_as": "retention" if parameter == RETENTION_ELASTICITY_PARAMETER else "mtr",
-        "applied_value": value,
+        "elasticity_parameter": ELASTICITY_PARAMETER,
+        "applied_as": "retention",
+        "applied_value": assignment[ELASTICITY_PARAMETER],
+        "badr_elasticity": assignment.get(BADR_ELASTICITY_PARAMETER, elasticity),
     }
 
 
@@ -153,16 +227,14 @@ def cgt_rate_reform(
     elasticity: float = ELASTICITY,
     *,
     schedules: tuple[str, ...] = EXPLORER_SCHEDULES,
-    badr_lifetime_limit: float | None = None,
+    badr: BadrPolicy = BADR_CURRENT_LAW,
 ) -> dict:
     """A CGT rate schedule as a PolicyEngine parametric reform dict.
 
     ``rates`` maps every band in :data:`RATE_BANDS` to its reformed rate. The
-    main schedule and each schedule in ``schedules`` take those rates; the
-    BADR lifetime limit is set only when ``badr_lifetime_limit`` is given.
-    The behavioural elasticity goes to the parameter
-    :func:`elasticity_assignment` names (:data:`ELASTICITY_PARAMETER`
-    unless the case is retention-native).
+    main schedule and each schedule in ``schedules`` take those rates;
+    ``badr`` sets Business Asset Disposal Relief (no entries at current law).
+    The behavioural elasticity goes to :data:`ELASTICITY_PARAMETER`.
     """
     missing = [band for band in RATE_BANDS if band not in rates]
     if missing:
@@ -171,49 +243,71 @@ def cgt_rate_reform(
     for schedule in schedules:
         for band in RATE_BANDS:
             reform[f"gov.hmrc.cgt.{schedule}.{band}"] = {PERIOD: rates[band]}
-    if badr_lifetime_limit is not None:
-        reform["gov.hmrc.cgt.badr.lifetime_limit"] = {PERIOD: badr_lifetime_limit}
+    reform.update(badr.parameters())
     for parameter, value in elasticity_assignment(elasticity).items():
         reform[parameter] = {PERIOD: value}
     return reform
 
 
-def burnham_reform(elasticity: float = ELASTICITY) -> dict:
-    """The Burnham reform as a PolicyEngine parametric reform dict: every
-    schedule takes the income tax rates and the BADR lifetime limit goes to
-    zero. The dict is the one the cached simulation ids were minted from, so
-    its fingerprint is pinned in the tests."""
-    return cgt_rate_reform(
-        BURNHAM_RATES,
-        elasticity,
-        schedules=SCHEDULES,
-        badr_lifetime_limit=BADR_LIFETIME_LIMIT,
-    )
+def equalisation_reform(
+    elasticity: float = ELASTICITY, *, badr: BadrPolicy = BADR_WITHDRAWN
+) -> dict:
+    """The equalisation reform as a PolicyEngine parametric reform dict: the
+    main and residential property schedules take the income tax rates and
+    Business Asset Disposal Relief is withdrawn (``badr`` keeps it instead).
+    The dict is the one the cached simulation ids were minted from, so its
+    fingerprint is pinned in the tests."""
+    return cgt_rate_reform(INCOME_TAX_RATES, elasticity, schedules=SCHEDULES, badr=badr)
+
+
+#: The equalisation reform built up schedule by schedule, for the split of
+#: its yield: the main rates alone, then the residential property schedule
+#: (equalisation with the relief kept), then the relief withdrawn.
+SCHEDULE_STEPS = (
+    ("main_rates", "Main rates at 20% / 40% / 45%", (), BADR_CURRENT_LAW),
+    ("residential", "Residential property gains at the same rates", SCHEDULES, BADR_CURRENT_LAW),
+    ("badr_withdrawn", "Business Asset Disposal Relief withdrawn", SCHEDULES, BADR_WITHDRAWN),
+)
+
+
+def schedule_step_reforms(elasticity: float) -> list[tuple[str, str, dict]]:
+    """``(step id, label, reform dict)`` for each step of
+    :data:`SCHEDULE_STEPS`; the last is the equalisation reform itself."""
+    return [
+        (step, label, cgt_rate_reform(INCOME_TAX_RATES, elasticity, schedules=schedules, badr=badr))
+        for step, label, schedules, badr in SCHEDULE_STEPS
+    ]
 
 
 def centax_1920_reforms() -> tuple[dict, dict]:
     """The static counterfactual pair for the CenTax rates-only benchmark:
     2019/20 rules (main 10/20, residential and carried interest 18/28, BADR
     at 10% with a £1m lifetime limit, a £12,000 exempt amount) and the same
-    rules with every schedule at income tax rates and the BADR lifetime limit
-    at zero. Both at e = 0, so each is exact against the current-law baseline
-    and their difference is the uplift from equalising at 2019/20 rules."""
+    rules with every schedule, carried interest included, at income tax
+    rates and the relief withdrawn, as CenTax's Table 3 has it. Both at
+    e = 0, so each is exact against the current-law baseline and their
+    difference is the uplift from equalising at 2019/20 rules."""
     exempt = {EXEMPT_AMOUNT_PARAMETER: {PERIOD: CENTAX_1920_EXEMPT_AMOUNT}}
     baseline = cgt_rate_reform(CENTAX_1920_MAIN_RATES, 0.0, schedules=())
-    for schedule in SCHEDULES:
+    for schedule in (*SCHEDULES, CARRIED_INTEREST_SCHEDULE):
         for band in RATE_BANDS:
             baseline[f"gov.hmrc.cgt.{schedule}.{band}"] = {PERIOD: CENTAX_1920_SCHEDULE_RATES[band]}
-    baseline["gov.hmrc.cgt.badr.rate"] = {PERIOD: CENTAX_1920_BADR_RATE}
-    baseline["gov.hmrc.cgt.badr.lifetime_limit"] = {PERIOD: CENTAX_1920_BADR_LIFETIME_LIMIT}
-    return {**baseline, **exempt}, {**burnham_reform(0.0), **exempt}
+    baseline[BADR_RATE_PARAMETER] = {PERIOD: CENTAX_1920_BADR_RATE}
+    baseline[BADR_LIFETIME_LIMIT_PARAMETER] = {PERIOD: CENTAX_1920_BADR_LIFETIME_LIMIT}
+    carried = {
+        f"gov.hmrc.cgt.{CARRIED_INTEREST_SCHEDULE}.{band}": {PERIOD: INCOME_TAX_RATES[band]}
+        for band in RATE_BANDS
+    }
+    return {**baseline, **exempt}, {**equalisation_reform(0.0), **carried, **exempt}
 
 
 def centax_1920_rules() -> dict:
     """The counterfactual's rules, for the results metadata."""
+    schedules = (*SCHEDULES, CARRIED_INTEREST_SCHEDULE)
     return {
         "baseline": {
             "main": dict(CENTAX_1920_MAIN_RATES),
-            **{schedule: dict(CENTAX_1920_SCHEDULE_RATES) for schedule in SCHEDULES},
+            **{schedule: dict(CENTAX_1920_SCHEDULE_RATES) for schedule in schedules},
             "badr": {
                 "rate": CENTAX_1920_BADR_RATE,
                 "lifetime_limit": CENTAX_1920_BADR_LIFETIME_LIMIT,
@@ -221,16 +315,17 @@ def centax_1920_rules() -> dict:
             "annual_exempt_amount": CENTAX_1920_EXEMPT_AMOUNT,
         },
         "reform": {
-            "main": dict(BURNHAM_RATES),
-            **{schedule: dict(BURNHAM_RATES) for schedule in SCHEDULES},
-            "badr_lifetime_limit": BADR_LIFETIME_LIMIT,
+            "main": dict(INCOME_TAX_RATES),
+            **{schedule: dict(INCOME_TAX_RATES) for schedule in schedules},
+            "badr": BADR_WITHDRAWN.to_dict(),
             "annual_exempt_amount": CENTAX_1920_EXEMPT_AMOUNT,
         },
         "elasticity": 0.0,
         "not_modelled": (
-            "Investors' Relief, which CenTax's Table 3 also abolishes, has no engine "
-            "parameter. Neither registered dataset records BADR or Investors' Relief "
-            "gains, so the BADR settings and the missing Investors' Relief are inert here."
+            "Investors' Relief, which CenTax's Table 3 also abolishes, shares the engine's "
+            "BADR input (capital_gains_badr): it is charged at the BADR rate within the BADR "
+            "lifetime limit and withdrawn with it; its own £10m limit is not modelled. On a "
+            "dataset without BADR gains the relief settings are inert."
         ),
     }
 
@@ -242,28 +337,29 @@ def reform_fingerprint(reform: dict) -> str:
     return hashlib.sha256(payload).hexdigest()[:12]
 
 
-def reform_schedules() -> dict:
-    """The schedule part of the Burnham reform, for the results metadata."""
+def rate_reform_schedules(
+    rates: dict,
+    badr: BadrPolicy = BADR_CURRENT_LAW,
+    schedules: tuple[str, ...] = EXPLORER_SCHEDULES,
+) -> dict:
+    """The schedule part of a rate reform built by :func:`cgt_rate_reform`,
+    for the results metadata: each moved schedule's rates and the relief."""
     return {
-        **{schedule: dict(BURNHAM_RATES) for schedule in SCHEDULES},
-        "badr_lifetime_limit": BADR_LIFETIME_LIMIT,
+        **{schedule: {band: rates[band] for band in RATE_BANDS} for schedule in schedules},
+        "badr": badr.to_dict(),
     }
 
 
-def rate_reform_schedules(rates: dict, schedules: tuple[str, ...] = EXPLORER_SCHEDULES) -> dict:
-    """The schedule part of a rate reform built by :func:`cgt_rate_reform`
-    with no BADR change, for the explorer's results metadata."""
-    return {schedule: {band: rates[band] for band in RATE_BANDS} for schedule in schedules}
+def reform_schedules() -> dict:
+    """The schedule part of the equalisation reform, for the results metadata."""
+    return rate_reform_schedules(INCOME_TAX_RATES, BADR_WITHDRAWN, SCHEDULES)
 
 
-def retention_to_mtr_elasticity(e_retention: float, tax_rate: float) -> float:
-    """Convert a retention-rate elasticity (Advani/CenTax convention) to
-    PolicyEngine's marginal-tax-rate convention.
-
-    ``e_mtr = -e_retention * t / (1 - t)``: a positive elasticity of gains
-    with respect to the retention rate (1 - t) is a NEGATIVE elasticity with
-    respect to the tax rate t itself.
-    """
-    if not 0.0 <= tax_rate < 1.0:
-        raise ValueError(f"tax rate {tax_rate} outside [0, 1)")
-    return -e_retention * tax_rate / (1.0 - tax_rate)
+def retention_response(e_retention: float, t0: float, t1: float) -> float:
+    """The factor by which realised gains scale when a marginal rate on gains
+    moves from ``t0`` to ``t1``, at a retention-rate elasticity: the form
+    the engine applies, ((1 - t1) / (1 - t0)) ** e."""
+    for rate in (t0, t1):
+        if not 0.0 <= rate < 1.0:
+            raise ValueError(f"tax rate {rate} outside [0, 1)")
+    return ((1.0 - t1) / (1.0 - t0)) ** e_retention

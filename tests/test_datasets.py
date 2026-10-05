@@ -7,14 +7,12 @@ from uk_cgt_reform.simulations import (
     DATASETS,
     DEFAULT_DATASET_KEY,
     EXTRA_VARIABLES,
-    INCUMBENT,
 )
 
 
-def test_registry_has_one_incumbent_and_one_candidate():
-    assert set(DATASETS) == {INCUMBENT.key, CANDIDATE.key}
-    assert INCUMBENT.role == "incumbent" and CANDIDATE.role == "candidate"
-    assert DEFAULT_DATASET_KEY in DATASETS
+def test_registry_holds_the_microcosm_build_alone():
+    assert set(DATASETS) == {CANDIDATE.key}
+    assert DEFAULT_DATASET_KEY == CANDIDATE.key
 
 
 def test_every_dataset_is_pinned():
@@ -26,19 +24,18 @@ def test_every_dataset_is_pinned():
         assert spec.revision and "/" not in spec.revision
 
 
-def test_stems_are_distinct_and_revision_free():
-    stems = {spec.stem for spec in DATASETS.values()}
-    assert stems == {"enhanced_frs_2024_25", "microcosm_uk_2024_25"}
+def test_stem_is_revision_free():
+    assert {spec.stem for spec in DATASETS.values()} == {"microcosm_uk_2024_25"}
 
 
-def test_shared_base_year():
+def test_base_year():
     assert {spec.base_year for spec in DATASETS.values()} == {2024}
 
 
 def test_metadata_round_trip():
     metadata = CANDIDATE.to_metadata()
     assert metadata["key"] == CANDIDATE.key
-    assert metadata["revision"] == "f6df65b1e98675ad305bcacf7ede3e0d34b57063"
+    assert metadata["revision"] == "1b295f3750241f5f5f1bf92cdbe1d5b6a19a8922"
     assert metadata["digest"] == CANDIDATE.digest
 
 

@@ -4,9 +4,10 @@ The Reform impacts tab scores one reform, equalisation with income tax, from
 the committed results files. The explorer scores any schedule of main rates
 a reader chooses, on the same pinned per-year datasets, the same engine and
 projection, the same cached baseline simulations and the same impact code
-(``impacts``). An explorer run of 20/40/45 therefore reproduces the tab's
-figures: its scope (``reform.EXPLORER_SCOPE``) differs from the Burnham
-reform only in parameters that are inert on both registered datasets.
+(``impacts``). An explorer run of 20/40/45 with the relief withdrawn therefore
+builds the equalisation reform's own dict and reproduces the tab's figures;
+the scope (``reform.EXPLORER_SCOPE``) adds Business Asset Disposal Relief, kept
+at a rate and lifetime limit or withdrawn.
 
 Two runners share every function here. ``run_locally`` backs the
 ``uk-cgt-reform-explore`` command, which the dashboard's Next route also
@@ -43,13 +44,21 @@ from pathlib import Path
 from .comparison import READY_RECKONER, SENSITIVITY_CASES
 from .impacts import budget_impact, fiscal_year_label, income_change_groups
 from .reform import (
-    BURNHAM_RATES,
+    BADR_CURRENT_LAW,
+    BADR_CURRENT_RATE,
+    BADR_LIFETIME_LIMIT_PARAMETER,
+    BADR_LIFETIME_LIMITS,
+    BADR_RATE_PARAMETER,
+    BADR_WITHDRAWN,
+    CENTAX_LOWER_ELASTICITY,
     ELASTICITY,
     EXPLORER_SCOPE,
+    INCOME_TAX_RATES,
     OFFICIAL_ELASTICITY,
     PERIOD,
     RATE_BANDS,
     YEARS,
+    BadrPolicy,
     cgt_rate_reform,
     elasticity_assignment,
     elasticity_convention,
@@ -72,48 +81,63 @@ RATE_BOUNDS = (0.0, 0.75)
 RATE_DECIMALS = 4
 #: Custom rates are whole percentage points: each rate must be a multiple of
 #: this fraction. With the ordering rule (basic <= higher <= additional) this
-#: bounds the number of distinct schedules a visitor can ask the backend to
-#: compute to about 76,000 per dataset and elasticity.
+#: bounds the number of distinct rate schedules a visitor can ask the backend to
+#: compute to about 76,000 per dataset, elasticity and treatment of the relief.
 RATE_STEP = 0.01
 
 #: The behavioural assumptions a request may pick from: the pipeline's
-#: sensitivity cases, keyed for the API by their marginal-tax-rate value.
-#: ``applied_as`` says which engine convention carries each: the official
-#: HMRC/OBR case is applied as a retention-rate elasticity of 3.6
-#: (``reform.RETENTION_NATIVE``).
+#: sensitivity cases, each a retention-rate elasticity the engine applies as
+#: stated (``reform.elasticity_convention``).
 ELASTICITY_OPTIONS = tuple(
-    {"id": option_id, "label": label, "e_mtr": e_mtr, **elasticity_convention(e_mtr)}
-    for option_id, label, e_mtr in (
-        ("static", "Static (no behavioural response)", 0.0),
-        ("centax_lower", "CenTax lower (retention elasticity 0.5)", -0.35),
-        ("centax_central", "CenTax central (retention elasticity 1.0)", -0.7),
-        ("official", "HMRC/OBR official (retention elasticity 3.6)", OFFICIAL_ELASTICITY),
+    {"id": option_id, "label": label, "e_retention": e, **elasticity_convention(e)}
+    for option_id, (label, e) in zip(
+        ("static", "centax_lower", "centax_central", "centax_upper", "official"),
+        SENSITIVITY_CASES.items(),
+        strict=True,
     )
 )
 DEFAULT_ELASTICITY = ELASTICITY
-assert {o["e_mtr"] for o in ELASTICITY_OPTIONS} == set(SENSITIVITY_CASES.values())
+#: Requests from before the retention form keyed each case by a
+#: marginal-tax-rate value; shared links still carry them, so they map to
+#: the case they named.
+LEGACY_MTR_ELASTICITIES = {
+    -0.35: CENTAX_LOWER_ELASTICITY,
+    -0.7: ELASTICITY,
+    -2.52: OFFICIAL_ELASTICITY,
+}
 
-#: Schedules a reader can start from. Rates are fractions.
+#: Schedules a reader can start from. Rates are fractions; ``badr`` is the
+#: relief's treatment (current law unless stated).
 PRESETS = (
     {
         "id": "current_law",
         "label": "Current law (18% / 24% / 24%)",
         "rates": {"basic_rate": 0.18, "higher_rate": 0.24, "additional_rate": 0.24},
+        "badr": BADR_CURRENT_LAW.to_dict(),
     },
     {
         "id": "income_tax",
-        "label": "Equalise with income tax (20% / 40% / 45%)",
-        "rates": dict(BURNHAM_RATES),
+        "label": "Equalise with income tax (20% / 40% / 45%), relief withdrawn",
+        "rates": dict(INCOME_TAX_RATES),
+        "badr": BADR_WITHDRAWN.to_dict(),
+    },
+    {
+        "id": "income_tax_keep_badr",
+        "label": "Equalise with income tax (20% / 40% / 45%), relief kept at 18%",
+        "rates": dict(INCOME_TAX_RATES),
+        "badr": BADR_CURRENT_LAW.to_dict(),
     },
     {
         "id": "flat_30",
         "label": "30% above the basic rate band (18% / 30% / 30%)",
         "rates": {"basic_rate": 0.18, "higher_rate": 0.30, "additional_rate": 0.30},
+        "badr": BADR_CURRENT_LAW.to_dict(),
     },
     {
         "id": "flat_35",
         "label": "35% above the basic rate band (18% / 35% / 35%)",
         "rates": {"basic_rate": 0.18, "higher_rate": 0.35, "additional_rate": 0.35},
+        "badr": BADR_CURRENT_LAW.to_dict(),
     },
 )
 
@@ -164,18 +188,20 @@ class ExploreValidationError(ValueError):
 
 @dataclass(frozen=True)
 class ExploreRequest:
-    """A validated request: one dataset, one rate schedule, one elasticity."""
+    """A validated request: one dataset, one rate schedule, one treatment of
+    Business Asset Disposal Relief, one elasticity."""
 
     dataset_key: str
     rates: dict
     elasticity: float
+    badr: BadrPolicy = BADR_CURRENT_LAW
 
     @property
     def spec(self) -> DatasetSpec:
         return DATASETS[self.dataset_key]
 
     def reform(self) -> dict:
-        return cgt_rate_reform(self.rates, self.elasticity)
+        return cgt_rate_reform(self.rates, self.elasticity, badr=self.badr)
 
     @property
     def fingerprint(self) -> str:
@@ -185,6 +211,7 @@ class ExploreRequest:
         return {
             "dataset": self.dataset_key,
             "rates": dict(self.rates),
+            "badr": self.badr.to_dict(),
             "elasticity": self.elasticity,
         }
 
@@ -209,18 +236,70 @@ def _as_rate(value, band: str) -> float:
 def _as_elasticity(value) -> float:
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise ExploreValidationError("elasticity must be a number.")
+    for legacy, retention in LEGACY_MTR_ELASTICITIES.items():
+        if math.isclose(legacy, float(value), abs_tol=1e-9):
+            value = retention
     for option in ELASTICITY_OPTIONS:
-        if math.isclose(option["e_mtr"], float(value), abs_tol=1e-9):
-            return option["e_mtr"]
-    allowed = ", ".join(str(o["e_mtr"]) for o in ELASTICITY_OPTIONS)
-    raise ExploreValidationError(f"elasticity must be one of {allowed}; got {value}.")
+        if math.isclose(option["e_retention"], float(value), abs_tol=1e-9):
+            return option["e_retention"]
+    allowed = ", ".join(str(o["e_retention"]) for o in ELASTICITY_OPTIONS)
+    raise ExploreValidationError(
+        f"elasticity must be one of {allowed} (a retention-rate elasticity); got {value}."
+    )
+
+
+_BADR_KEYS = {"withdrawn", "rate", "lifetime_limit"}
+
+
+def _as_badr(value, rates: dict) -> BadrPolicy:
+    """The relief's treatment: absent means current law; ``{"withdrawn":
+    true}`` withdraws it; otherwise a whole-point ``rate`` no higher than the
+    additional rate (a relief above it would raise the tax on qualifying
+    gains) and a ``lifetime_limit`` from :data:`BADR_LIFETIME_LIMITS`, each
+    defaulting to current law. A rate above the basic rate is accepted, as in
+    HMRC's ready-reckoner rows for the relief, though the engine then
+    overstates the tax: it charges the relief's rate on every qualifying gain,
+    where in law a taxpayer whose qualifying gains fall in the basic rate band
+    would not claim the relief."""
+    if value is None:
+        return BADR_CURRENT_LAW
+    if not isinstance(value, dict):
+        raise ExploreValidationError(
+            'badr must be an object: {"withdrawn": true}, or a rate and a lifetime_limit.'
+        )
+    unknown = set(value) - _BADR_KEYS
+    if unknown:
+        raise ExploreValidationError(f"badr has unknown fields {sorted(unknown)}.")
+    withdrawn = value.get("withdrawn", False)
+    if not isinstance(withdrawn, bool):
+        raise ExploreValidationError("badr.withdrawn must be true or false.")
+    if withdrawn:
+        return BADR_WITHDRAWN
+    rate_value = value.get("rate")
+    rate = BADR_CURRENT_RATE if rate_value is None else _as_rate(rate_value, "The BADR rate")
+    if rate > rates["additional_rate"] + 1e-9:
+        raise ExploreValidationError(
+            "The BADR rate may not exceed the additional rate: the relief would then raise "
+            "the tax on qualifying gains."
+        )
+    limit = value.get("lifetime_limit")
+    if limit is None:
+        limit = BADR_CURRENT_LAW.lifetime_limit
+    elif isinstance(limit, bool) or limit not in BADR_LIFETIME_LIMITS:
+        allowed = ", ".join(f"{v:,}" for v in BADR_LIFETIME_LIMITS)
+        raise ExploreValidationError(
+            f"badr.lifetime_limit must be one of {allowed}; got {limit}. Withdraw the relief "
+            'with {"withdrawn": true}.'
+        )
+    return BadrPolicy(rate=rate, lifetime_limit=int(limit))
 
 
 def validate_request(payload) -> ExploreRequest:
     """Check a request body and normalise it.
 
-    ``payload`` is ``{"dataset": key, "rates": {band: fraction}, "elasticity": e}``;
-    ``dataset`` defaults to the dashboard's default dataset and ``elasticity``
+    ``payload`` is ``{"dataset": key, "rates": {band: fraction}, "badr": {...},
+    "elasticity": e}``; ``badr`` (see :func:`_as_badr`) defaults to current law,
+    ``dataset`` to the dashboard's default dataset and ``elasticity``
     to the central case. Every band must be present, within
     :data:`RATE_BOUNDS`, a whole percentage point (:data:`RATE_STEP`), and
     ordered basic <= higher <= additional: the engine splits gains above the
@@ -254,7 +333,8 @@ def validate_request(payload) -> ExploreRequest:
     if rates["basic_rate"] > rates["higher_rate"] + 1e-9:
         raise ExploreValidationError("The basic rate may not exceed the higher rate.")
     elasticity = _as_elasticity(payload.get("elasticity", DEFAULT_ELASTICITY))
-    return ExploreRequest(dataset_key=dataset_key, rates=rates, elasticity=elasticity)
+    badr = _as_badr(payload.get("badr"), rates)
+    return ExploreRequest(dataset_key=dataset_key, rates=rates, elasticity=elasticity, badr=badr)
 
 
 def api_options() -> dict:
@@ -269,7 +349,13 @@ def api_options() -> dict:
         "default_elasticity": DEFAULT_ELASTICITY,
         # The default option's parameter; each option names its own.
         "elasticity_parameter": elasticity_convention(DEFAULT_ELASTICITY)["elasticity_parameter"],
-        "presets": [{**p, "rates": dict(p["rates"])} for p in PRESETS],
+        "presets": [{**p, "rates": dict(p["rates"]), "badr": dict(p["badr"])} for p in PRESETS],
+        "badr": {
+            "current_law": BADR_CURRENT_LAW.to_dict(),
+            "lifetime_limits": list(BADR_LIFETIME_LIMITS),
+            "rate_parameter": BADR_RATE_PARAMETER,
+            "lifetime_limit_parameter": BADR_LIFETIME_LIMIT_PARAMETER,
+        },
         "ready_reckoner": json.loads(json.dumps(READY_RECKONER)),
         "scope": EXPLORER_SCOPE,
         "years": list(YEARS),
@@ -288,11 +374,35 @@ def baseline_rates(year: int = YEARS[0]) -> dict:
     return {band: round(float(getattr(cgt, band)(date)), RATE_DECIMALS) for band in RATE_BANDS}
 
 
+def baseline_badr(year: int = YEARS[0]) -> dict:
+    """The installed engine's Business Asset Disposal Relief on 6 April of
+    ``year``. It must be the current law the explorer's "keep" treatment and
+    presets assume (:data:`reform.BADR_CURRENT_LAW`), or a kept relief would
+    silently mean something else."""
+    from policyengine_uk.system import system
+
+    badr = system.parameters.gov.hmrc.cgt.badr
+    date = f"{year}-04-06"
+    engine = {
+        "withdrawn": False,
+        "rate": round(float(badr.rate(date)), RATE_DECIMALS),
+        "lifetime_limit": int(badr.lifetime_limit(date)),
+    }
+    if engine != BADR_CURRENT_LAW.to_dict():
+        raise RuntimeError(
+            f"The engine's BADR on {date} is {engine}, not the current law this code "
+            f"assumes ({BADR_CURRENT_LAW.to_dict()}); update reform.BADR_CURRENT_RATE and "
+            "BADR_CURRENT_LIFETIME_LIMIT."
+        )
+    return engine
+
+
 @functools.lru_cache(maxsize=1)
 def engine_context() -> dict:
     """Everything about the installed engine a run needs, computed once per
     process: the projection audit and its fingerprint, the exempt amounts
-    and entrant ceilings, the baseline rates and the package versions."""
+    and entrant ceilings, the baseline rates (main and BADR) and the package
+    versions."""
     from .pipeline import entrant_ceilings, exempt_amounts, shared_base_year
     from .uprating_audit import engine_audit, projection_fingerprint
 
@@ -307,6 +417,7 @@ def engine_context() -> dict:
         "exempt_amounts": aea,
         "entrant_ceilings": entrant_ceilings(audit, aea[base_year], YEARS),
         "baseline_rates": baseline_rates(),
+        "baseline_badr": baseline_badr(),
         "policyengine_version": importlib.metadata.version("policyengine"),
         "policyengine_uk_version": importlib.metadata.version("policyengine-uk"),
         "policyengine_core_version": importlib.metadata.version("policyengine-core"),
@@ -324,6 +435,7 @@ MANIFEST_FIELDS = (
     "policyengine_uk_version",
     "policyengine_core_version",
     "baseline_rates",
+    "baseline_badr",
     "wrapper_certification",
 )
 
@@ -420,6 +532,7 @@ def dataset_metadata(spec: DatasetSpec) -> dict:
         "dataset_producer": spec.producer,
         "dataset_observation": spec.observation,
         "dataset_notes": spec.notes,
+        "dataset_columns": spec.columns,
     }
 
 
@@ -517,10 +630,12 @@ def assemble_response(
             "elasticity_applied": elasticity_assignment(req.elasticity),
             "reform": dict(req.rates),
             "reform_scope": EXPLORER_SCOPE,
-            "reform_schedules": rate_reform_schedules(req.rates),
+            "reform_badr": req.badr.to_dict(),
+            "reform_schedules": rate_reform_schedules(req.rates, req.badr),
             "reform_dict": req.reform(),
             "reform_fingerprint": req.fingerprint,
             "baseline_rates": dict(context["baseline_rates"]),
+            "baseline_badr": dict(context["baseline_badr"]),
             "years": list(YEARS),
             "exempt_amount_gbp": {fiscal_year_label(y): aea[y] for y in YEARS},
             "entrant_ceiling_gbp": {fiscal_year_label(y): ceilings[y] for y in YEARS},
@@ -546,6 +661,23 @@ def mark_cache_hit(result: dict) -> dict:
     cache = copy.setdefault("metadata", {}).setdefault("cache", {})
     cache["hit"] = True
     return copy
+
+
+def cached_locally(
+    req: ExploreRequest,
+    *,
+    store: ResultStore | None = None,
+    context: dict | None = None,
+) -> dict | None:
+    """The stored result for ``req``, flagged as a cache hit, or None. This is
+    what a link opened on page load may be served: it never computes, so
+    links cannot spend the compute budget (``cache_only`` requests)."""
+    from .pipeline import DATA_DIR
+
+    context = context or engine_context()
+    store = store or ResultStore(DATA_DIR / LOCAL_RESULT_DIR_NAME)
+    cached = store.get(cache_key(req, context))
+    return None if cached is None else mark_cache_hit(cached)
 
 
 def run_locally(

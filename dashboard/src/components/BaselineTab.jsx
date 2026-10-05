@@ -1,6 +1,6 @@
 "use client";
 
-import { formatBn, formatCount, formatPct } from "../lib/formatters";
+import { formatBn, formatCount, formatPct, formatSmallBn } from "../lib/formatters";
 import { getDatasetInfo, getEntrants, getFirstYear, getValidation } from "../lib/dataHelpers";
 import SectionHeading from "./SectionHeading";
 
@@ -8,8 +8,8 @@ import SectionHeading from "./SectionHeading";
 // HMRC figures, not model outputs, so they live here rather than in the
 // pipeline JSON. Both columns come from the same release (Capital Gains Tax
 // statistics, 2026), which carries the revised 2023-24 year and the
-// provisional 2024-25 year; the two datasets calibrate their capital gains to
-// one or the other.
+// provisional 2024-25 year; the dataset calibrates its capital gains to the
+// 2024-25 year.
 const TABLE_1 =
   "https://assets.publishing.service.gov.uk/media/6a7b23f1bbafcd1db3b6e420/Table_1_2026_Taxpayer_numbers_gains_and_tax_liabilities.ods";
 const TABLE_2 =
@@ -18,6 +18,10 @@ const T1_2023 = "HMRC CGT statistics 2026 release, Table 1 (2023-24, revised)";
 const T1_2024 = "HMRC CGT statistics 2026 release, Table 1 (2024-25, provisional)";
 const T2_2023 = "HMRC CGT statistics 2026 release, Table 2.2a (2023-24, revised)";
 const T2_2024 = "HMRC CGT statistics 2026 release, Table 2.1a (2024-25, provisional)";
+const TABLE_4 =
+  "https://assets.publishing.service.gov.uk/media/6a7b242a347b198efd290ed7/Table_4_2026_Business_asset_disposal_and_investors_reliefs.ods";
+const T4_2023 = "HMRC CGT statistics 2026 release, Table 4 (2023-24, individuals)";
+const T4_2024 = "HMRC CGT statistics 2026 release, Table 4 (2024-25, provisional, individuals)";
 
 const BENCHMARKS = {
   totalGains: {
@@ -54,6 +58,17 @@ const BENCHMARKS = {
   gainsOver5m: {
     y2023: { value: "£23.6bn", source: T2_2023, url: TABLE_2 },
     y2024: { value: "£48.5bn", source: T2_2024, url: TABLE_2 },
+  },
+  // HMRC Table 4 counts claimants of Business Asset Disposal Relief and
+  // Investors' Relief together, individuals only (the engine's
+  // capital_gains_badr input merges the two reliefs the same way).
+  badrClaimants: {
+    y2023: { value: "42k", source: T4_2023, url: TABLE_4 },
+    y2024: { value: "61k", source: T4_2024, url: TABLE_4 },
+  },
+  badrGains: {
+    y2023: { value: "£11.0bn", source: T4_2023, url: TABLE_4 },
+    y2024: { value: "£18.4bn", source: T4_2024, url: TABLE_4 },
   },
 };
 
@@ -98,7 +113,6 @@ export default function BaselineTab({ data }) {
   const schedules = [
     ["Residential property", validation.residential_property_gains_bn],
     ["Business Asset Disposal Relief", validation.badr_gains_bn],
-    ["Carried interest", validation.carried_interest_gains_bn],
   ];
 
   return (
@@ -107,14 +121,14 @@ export default function BaselineTab({ data }) {
         <SectionHeading
           size="lg"
           title="Baseline estimation"
-          description={`The Family Resources Survey barely captures capital gains, so each dataset imputes them from HMRC administrative data and calibrates household weights to HMRC's CGT statistics. This analysis uses ${dataset.shortLabel} exactly as published (${dataset.producer}), with no local reweighting: calibration belongs upstream in the data, not in an analysis repository. The tables below show the fit for the first simulated year and the two features that most affect how its numbers read: the entrants by uprating and the schedule components.`}
+          description={`The Family Resources Survey barely captures capital gains, so the dataset imputes them from HMRC administrative data and calibrates household weights to HMRC's CGT statistics. This analysis uses ${dataset.shortLabel} exactly as published (${dataset.producer}), with no local reweighting: calibration belongs upstream in the data, not in an analysis repository. The tables below show the fit for the first simulated year and the two features that most affect how its numbers read: the entrants by uprating and the schedule components.`}
         />
       </div>
 
       <section className="section-card">
         <SectionHeading
           title="Model versus external benchmarks"
-          description={`PolicyEngine's baseline for ${firstYear} on ${dataset.shortLabel}, alongside HMRC's statistics for the 2023-24 tax year (revised) and the provisional 2024-25 tax year, both from the 2026 release. The vintages differ by design: each dataset calibrates its base year to one HMRC year (${dataset.observation}) and the engine uprates it to the simulated years. HMRC's 2024-25 figures are far above 2023-24 because the rate rises announced in October 2024 brought disposals forward.`}
+          description={`PolicyEngine's baseline for ${firstYear} on ${dataset.shortLabel}, alongside HMRC's statistics for the 2023-24 tax year (revised) and the provisional 2024-25 tax year, both from the 2026 release. The dataset calibrates its base year to one HMRC year (${dataset.observation}) and the engine uprates it to the simulated years. HMRC's 2024-25 figures are far above 2023-24 because the rate rises announced in October 2024 brought disposals forward. The ${firstYear} liability sits further above HMRC's 2024-25 figure than the gains do because 2024-25 charged most gains at 10% and 20% until 30 October 2024, and the relief at 10%, while ${firstYear} charges 18% and 24% all year and the relief at 18%.`}
         />
         <table className="data-table">
           <thead>
@@ -133,7 +147,7 @@ export default function BaselineTab({ data }) {
             />
             <BenchmarkRow
               label="of which held by entrants by uprating"
-              model={formatBn(entrants.gains_bn)}
+              model={formatSmallBn(entrants.gains_bn)}
               benchmark={NO_BENCHMARK}
               muted
             />
@@ -155,7 +169,7 @@ export default function BaselineTab({ data }) {
             />
             <BenchmarkRow
               label="of which paid by entrants by uprating"
-              model={formatBn(entrants.cgt_bn)}
+              model={formatSmallBn(entrants.cgt_bn)}
               benchmark={NO_BENCHMARK}
               muted
             />
@@ -183,6 +197,16 @@ export default function BaselineTab({ data }) {
               label="Gains held in the £5m-and-over band"
               model={formatBn(validation.gains_over_5m_bn)}
               benchmark={BENCHMARKS.gainsOver5m}
+            />
+            <BenchmarkRow
+              label="People with gains qualifying for BADR"
+              model={formatCount(validation.badr_claimants)}
+              benchmark={BENCHMARKS.badrClaimants}
+            />
+            <BenchmarkRow
+              label="Gains qualifying for BADR"
+              model={formatBn(validation.badr_gains_bn)}
+              benchmark={BENCHMARKS.badrGains}
             />
           </tbody>
         </table>
@@ -214,13 +238,13 @@ export default function BaselineTab({ data }) {
             <tr>
               <td>Taxable gains</td>
               <td>{formatBn(validation.total_gains_bn)}</td>
-              <td>{formatBn(entrants.gains_bn)}</td>
+              <td>{formatSmallBn(entrants.gains_bn)}</td>
               <td>{formatBn(validation.total_gains_excluding_entrants_bn)}</td>
             </tr>
             <tr>
               <td>Baseline CGT liability</td>
               <td>{formatBn(validation.baseline_cgt_revenue_bn)}</td>
-              <td>{formatBn(entrants.cgt_bn)}</td>
+              <td>{formatSmallBn(entrants.cgt_bn)}</td>
               <td>{formatBn(validation.baseline_cgt_revenue_bn - entrants.cgt_bn)}</td>
             </tr>
           </tbody>
@@ -247,7 +271,7 @@ export default function BaselineTab({ data }) {
       <section className="section-card">
         <SectionHeading
           title="Schedule components"
-          description={`policyengine-uk charges residential property, carried interest and Business Asset Disposal Relief gains on their own schedules when a dataset records them; the reform equalises every schedule. Gains recorded on each schedule in ${firstYear}, before any behavioural response.`}
+          description={`policyengine-uk charges residential property and Business Asset Disposal Relief gains on their own schedules when a dataset records them; the reform takes residential gains to the income tax rates and withdraws the relief. Carried interest has been taxed as income since April 2026 and is not part of this analysis. Gains recorded on each schedule in ${firstYear}, before any behavioural response.`}
         />
         <table className="data-table">
           <thead>
