@@ -166,7 +166,15 @@ export default function MethodologyTab({ data, anchor }) {
           where t₀ and t₁ are the person&apos;s marginal rates on gains under current law and
           under the reform, shared across the main, residential property and Business Asset
           Disposal Relief schedules in proportion to the gains on each. The central case is
-          CenTax&apos;s {central.e_retention.toFixed(1)}. The Reform impacts tab&apos;s sensitivity
+          CenTax&apos;s {central.e_retention.toFixed(1)}, which they call &ldquo;our central
+          elasticity estimate&rdquo; (
+          <ExternalLink href={central.url}>Advani, Lonsdale and Summers, 2024, p. 37</ExternalLink>
+          ). PolicyEngine UK adopted the same value as its default capital gains response in
+          policyengine-uk 2.134.0 (
+          <ExternalLink href="https://github.com/PolicyEngine/policyengine-uk/pull/2419">
+            PR #2419
+          </ExternalLink>
+          ); this dashboard&apos;s runs use an earlier release and set the elasticity directly. The Reform impacts tab&apos;s sensitivity
           table re-runs the analysis with no response, with CenTax&apos;s range and with the
           official HMRC/OBR elasticity described below.
         </p>
