@@ -91,3 +91,22 @@ export function SourceLink({ href, children }) {
     </a>
   );
 }
+
+// A link to another tab (and optionally one of its sections) inside a sentence.
+export function TabLink({ onNavigate, tab, section, children }) {
+  return (
+    <button
+      type="button"
+      onClick={() => onNavigate?.(tab, section)}
+      className="inline font-semibold text-[color:var(--pe-color-primary-600)] underline decoration-1 underline-offset-2 hover:opacity-80"
+    >
+      {children}
+    </button>
+  );
+}
+
+// Wraps a wide table so it scrolls sideways on a narrow screen instead of
+// widening the page.
+export function TableScroll({ className = "", children }) {
+  return <div className={`table-scroll overflow-x-auto ${className}`}>{children}</div>;
+}

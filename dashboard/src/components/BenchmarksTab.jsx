@@ -1,6 +1,6 @@
 "use client";
 
-import { getBenchmarks, getDatasetInfo, getSensitivity } from "../lib/dataHelpers";
+import { getBenchmarks, getDatasetInfo } from "../lib/dataHelpers";
 import {
   formatBn,
   formatPct,
@@ -8,7 +8,7 @@ import {
   formatSignedBn,
   formatSignedMn,
 } from "../lib/formatters";
-import { MetricCard, SourceLink, TipHeader } from "./controls";
+import { MetricCard, SourceLink, TabLink, TipHeader } from "./controls";
 import SectionHeading from "./SectionHeading";
 
 // Published estimates next to this dataset's own figures on the same basis
@@ -171,12 +171,22 @@ function packageValue(row) {
   return formatBn(row.value, 1);
 }
 
-function CentaxPackage({ rows }) {
+function CentaxPackage({ rows, onNavigate }) {
   return (
     <section className="section-card">
       <SectionHeading
         title="CenTax's package estimates (a different scope)"
-        description="CenTax's headline figures add an investment allowance, the removal of the death uplift and a charge on departure to equalisation, so they are not like-for-like with a rates-only reform. They are listed as context."
+        description={
+          <>
+            CenTax&apos;s headline figures cost equalisation within a wider package of reforms to
+            the CGT base, so they are not like-for-like with a rates-only reform. They are listed
+            as context;{" "}
+            <TabLink onNavigate={onNavigate} tab="methodology" section="elasticity">
+              the Methodology tab sets out the package
+            </TabLink>
+            .
+          </>
+        }
       />
       <div className="table-scroll mt-4 overflow-x-auto">
         <table className="data-table">
@@ -276,12 +286,6 @@ function ReadyReckoner({ block, dataset, elasticities }) {
 export default function BenchmarksTab({ data, onNavigate }) {
   const benchmarks = getBenchmarks(data);
   const dataset = getDatasetInfo(data);
-  const official = getSensitivity(data).find(
-    (row) => row.e_retention === benchmarks.elasticities.official.e_retention,
-  );
-  const central = getSensitivity(data).find(
-    (row) => row.e_retention === benchmarks.elasticities.central.e_retention,
-  );
   return (
     <div className="space-y-6">
       <section>
@@ -293,7 +297,7 @@ export default function BenchmarksTab({ data, onNavigate }) {
       </section>
       <StaticEqualisation block={benchmarks.static_equalisation} dataset={dataset} />
       <CentaxRegions block={benchmarks.centax_2019_20_rules} dataset={dataset} />
-      <CentaxPackage rows={benchmarks.centax_package_context} />
+      <CentaxPackage rows={benchmarks.centax_package_context} onNavigate={onNavigate} />
       <ReadyReckoner
         block={benchmarks.ready_reckoner}
         dataset={dataset}
@@ -302,20 +306,15 @@ export default function BenchmarksTab({ data, onNavigate }) {
       <section className="note-card rounded-lg p-4 text-sm leading-6 text-slate-600">
         <p className="note-eyebrow">Why the elasticity matters</p>
         <p>
-          The official HMRC/OBR assumption is a retention-rate elasticity of{" "}
-          {benchmarks.elasticities.official.e_retention} for main-rate gains and{" "}
-          {benchmarks.elasticities.official.badr_e_retention} for gains qualifying for Business
-          Asset Disposal Relief, against CenTax&apos;s central{" "}
-          {benchmarks.elasticities.central.e_retention.toFixed(1)} behind this dashboard&apos;s central
-          case. On {dataset.shortLabel}, equalisation changes CGT revenue in 2026-27 by{" "}
-          {formatSignedBn(central.revenue_2026_bn, 1)} at the central elasticity and by{" "}
-          {formatSignedBn(official.revenue_2026_bn, 1)} at the official one.{" "}
+          The ready reckoner&apos;s rows, like the reform&apos;s yield, move with the elasticity: the
+          table above scores each row at this dashboard&apos;s central elasticity and at the
+          official HMRC/OBR one.{" "}
           <button
             type="button"
             onClick={() => onNavigate("methodology", "elasticity-gap")}
             className="font-semibold text-[color:var(--pe-color-primary-600)] underline decoration-1 underline-offset-2 hover:opacity-80"
           >
-            The Methodology tab explains the difference.
+            The Methodology tab explains how the two differ.
           </button>
         </p>
       </section>

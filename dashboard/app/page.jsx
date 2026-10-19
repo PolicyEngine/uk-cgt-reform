@@ -104,9 +104,8 @@ function Dashboard() {
             >
               Advani, Lonsdale &amp; Summers (CenTax, 2024)
             </a>
-            . Its headline reform equalises CGT rates with income tax rates
-            (18%→20%, 24%→40%, 24%→45%) and withdraws Business Asset Disposal
-            Relief. Wes Streeting proposed equalising the rates in May 2026, as{" "}
+            . Its headline reform equalises CGT rates with income tax rates and
+            withdraws Business Asset Disposal Relief. In May 2026, as{" "}
             <a
               href="https://www.bloomberg.com/news/articles/2026-05-21/streeting-backs-hiking-uk-capital-gains-levy-to-match-income-tax"
               target="_blank"
@@ -115,11 +114,10 @@ function Dashboard() {
             >
               Bloomberg
             </a>{" "}
-            reported; CenTax costs the change within a wider package that also
-            reforms the CGT base, which this dashboard does not model. It runs on
-            PolicyEngine&apos;s Microcosm UK 2024-25 data, which records what kind of
-            asset each gain came from and which gains qualify for Business Asset
-            Disposal Relief.{" "}
+            reported, Wes Streeting backed raising CGT rates to match income tax
+            rates. The dashboard runs on PolicyEngine&apos;s {dataset.shortLabel} data,
+            which records what kind of asset each gain came from and which gains
+            qualify for Business Asset Disposal Relief.{" "}
             <TabLink onSelect={() => handleTabChange("reform")}>Reform impacts</TabLink>{" "}
             shows the equalisation reform&apos;s revenue and distributional effects,{" "}
             <TabLink onSelect={() => handleTabChange("explorer")}>Rate explorer</TabLink>{" "}
@@ -135,10 +133,11 @@ function Dashboard() {
           </p>
         </div>
 
-        <div className="mb-8 mt-8 flex w-fit flex-wrap border-b-2 border-slate-200">
+        <div className="tab-strip mb-8 mt-8 flex w-full flex-wrap border-b-2 border-slate-200 sm:w-fit">
           {TAB_OPTIONS.map((tab) => (
             <button
               key={tab.id}
+              type="button"
               className={`tab-button ${activeTab === tab.id ? "active" : ""}`}
               onClick={() => handleTabChange(tab.id)}
             >
@@ -147,9 +146,9 @@ function Dashboard() {
           ))}
         </div>
 
-        {activeTab === "reform" && <ReformTab data={data} />}
-        {activeTab === "explorer" && <RateExplorerTab data={data} datasetKey={dataset.key} />}
-        {activeTab === "baseline" && <BaselineTab data={data} />}
+        {activeTab === "reform" && <ReformTab data={data} onNavigate={handleNavigate} />}
+        {activeTab === "explorer" && <RateExplorerTab data={data} datasetKey={dataset.key} onNavigate={handleNavigate} />}
+        {activeTab === "baseline" && <BaselineTab data={data} onNavigate={handleNavigate} />}
         {activeTab === "benchmarks" && <BenchmarksTab data={data} onNavigate={handleNavigate} />}
         {activeTab === "methodology" && <MethodologyTab data={data} anchor={anchor} />}
 

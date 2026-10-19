@@ -1,13 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
-import {
-  getBenchmarks,
-  getDatasetInfo,
-  getMetadata,
-  getSensitivity,
-} from "../lib/dataHelpers";
-import { formatPublished, formatSignedBn } from "../lib/formatters";
+import { getBenchmarks, getDatasetInfo, getMetadata } from "../lib/dataHelpers";
+import { formatPct, formatPublished } from "../lib/formatters";
 import SectionHeading from "./SectionHeading";
 
 function ExternalLink({ href, children }) {
@@ -48,9 +43,22 @@ export default function MethodologyTab({ data, anchor }) {
 
   const dataset = getDatasetInfo(data);
   const metadata = getMetadata(data);
-  const { central, official, centax_range: centaxRange } = getBenchmarks(data).elasticities;
-  const revenueAt = (e) =>
-    getSensitivity(data).find((row) => row.e_retention === e).revenue_2026_bn;
+  const { central, official } = getBenchmarks(data).elasticities;
+  // The engine's baseline liability against the OBR's receipts forecast,
+  // year by year, from the results file's static-equalisation block.
+  const obrComparison = getBenchmarks(data).static_equalisation;
+  const obrGaps = (obrComparison?.by_year ?? [])
+    .filter((row) => Number.isFinite(row.obr_receipts_bn) && row.obr_receipts_bn > 0)
+    .map((row) => ({
+      year: row.year,
+      gap: 100 * (row.baseline_cgt_bn / row.obr_receipts_bn - 1),
+    }));
+  const signedGap = (gap) => {
+    const text = formatPct(gap, 0);
+    return Number(gap.toFixed(0)) > 0 ? `+${text}` : text;
+  };
+  const baseYear = metadata.projection.base_year;
+  const baseYearLabel = `${baseYear}-${String(baseYear + 1).slice(2)}`;
   // The ready reckoner's largest row: the higher rate from 24% to 34%.
   const atCentral = responseTo(0.24, 0.34, central);
   const atOfficial = responseTo(0.24, 0.34, official);
@@ -66,10 +74,15 @@ export default function MethodologyTab({ data, anchor }) {
             <span className="font-mono text-xs">{dataset.sha256.slice(0, 12)}…</span>), checked
             before anything runs and used exactly as published with no local reweighting &mdash;
             calibration belongs upstream in the dataset, so whatever the file provides is what is
-            simulated here. It is a staged build from{" "}
-            <ExternalLink href="https://github.com/PolicyEngine/microcosm">microcosm</ExternalLink>{" "}
-            main, not a certified release, and is re-pinned to the published release once that
-            exists. {dataset.columns}
+            simulated here.{" "}
+            {dataset.role === "candidate" ? (
+              <>
+                It is a staged build from{" "}
+                <ExternalLink href="https://github.com/PolicyEngine/microcosm">microcosm</ExternalLink>{" "}
+                main, not a certified release.{" "}
+              </>
+            ) : null}
+            {dataset.columns}
           </li>
           <li>
             <strong>Gains imputation.</strong> {dataset.observation}. Amounts are redrawn from
@@ -96,6 +109,18 @@ export default function MethodologyTab({ data, anchor }) {
             fingerprinted into every simulation id (
             <span className="font-mono text-xs">{metadata.projection.fingerprint}</span>).
           </li>
+          {obrGaps.length ? (
+            <li>
+              <strong>The projection against the OBR&apos;s forecast.</strong> Every year on this
+              dashboard uses the engine&apos;s own projection. The engine&apos;s baseline CGT
+              liability differs from the OBR&apos;s forecast of CGT receipts (
+              {obrComparison.obr_receipts_source}) by{" "}
+              {obrGaps.map((row) => `${signedGap(row.gap)} in ${row.year}`).join(", ")}. The two
+              measure different things: receipts arrive about a year after the liability they
+              settle, and the engine grows each year&apos;s gains from the {baseYearLabel} base year
+              by OBR GDP per capita, where the OBR forecasts receipts year by year.
+            </li>
+          ) : null}
           <li>
             <strong>Schedules.</strong> policyengine-uk {metadata.policyengine_uk_version}{" "}
             charges residential property and Business Asset Disposal Relief gains on their own
@@ -103,8 +128,8 @@ export default function MethodologyTab({ data, anchor }) {
             to the same income tax rates and withdraws the relief, so qualifying gains (Investors&apos;
             Relief included, which the engine&apos;s input merges with it) take the reformed main
             rates, as in CenTax&apos;s rates-only estimate. Carried interest has been taxed as
-            income since 6 April 2026 and is left where it is. On a dataset without those columns
-            the extra parameters are inert.
+            income since 6 April 2026, outside CGT, so the reform and the Rate explorer leave it
+            where it is. On a dataset without those columns the extra parameters are inert.
           </li>
           <li>
             <strong>Simulation.</strong> The reform runs through{" "}
@@ -148,10 +173,8 @@ export default function MethodologyTab({ data, anchor }) {
           under the reform, shared across the main, residential property and Business Asset
           Disposal Relief schedules in proportion to the gains on each. The central case is
           CenTax&apos;s {central.e_retention.toFixed(1)}. The Reform impacts tab&apos;s sensitivity
-          table re-runs the analysis with no response, with CenTax&apos;s range (
-          {centaxRange.lower.toFixed(1)} to {centaxRange.upper.toFixed(1)}) and with the official
-          HMRC/OBR {official.e_retention} for main-rate gains and {official.badr_e_retention} for
-          gains qualifying for Business Asset Disposal Relief.
+          table re-runs the analysis with no response, with CenTax&apos;s range and with the
+          official HMRC/OBR elasticity described below.
         </p>
         <p className="mt-3 text-sm leading-6 text-slate-600">
           CenTax estimate their elasticity for a package that also removes the uplift at death
@@ -161,8 +184,9 @@ export default function MethodologyTab({ data, anchor }) {
           <ExternalLink href="https://www.nuffieldfoundation.org/wp-content/uploads/2023/03/Taxes-at-the-top-Understanding-what-high-earners-pay-and-options-for-reform.pdf#page=20">
             advise against equalising rates without those reforms
           </ExternalLink>{" "}
-          (<em>Taxes at the top</em>, 2026). The upper end of CenTax&apos;s range and the
-          official case show how much of the yield rests on the assumption.
+          (Advani, Hughson and Summers, <em>Taxes at the top</em>, CenTax, September 2026, p.
+          17). The upper end of CenTax&apos;s range and the official case show how much of the
+          yield rests on the assumption.
         </p>
       </section>
 
@@ -208,10 +232,10 @@ export default function MethodologyTab({ data, anchor }) {
             aggregate effect depends on where the dataset&apos;s gains sit.
           </li>
           <li>
-            <strong>On this dataset.</strong> Equalisation changes CGT revenue in 2026-27 by{" "}
-            {formatSignedBn(revenueAt(central.e_retention), 1)} at the central elasticity and by{" "}
-            {formatSignedBn(revenueAt(official.e_retention), 1)} at the official one. The
-            Benchmarks tab scores the ready reckoner&apos;s rows at both.
+            <strong>On this dataset.</strong> The Reform impacts tab&apos;s sensitivity table gives
+            the reform&apos;s first-year change in CGT revenue at each elasticity, and the
+            Benchmarks tab scores the ready reckoner&apos;s rows at the central and the official
+            one.
           </li>
         </ul>
       </section>
@@ -226,7 +250,7 @@ export default function MethodologyTab({ data, anchor }) {
             per-year datasets, cached baseline simulations, behavioural response and impact
             calculations) on a Modal backend, or locally through the{" "}
             <span className="font-mono text-xs">uk-cgt-reform-explore</span> command. Nothing
-            is precomputed or interpolated: an explorer run at 20% / 40% / 45% with the relief
+            is precomputed or interpolated: the explorer&apos;s equalisation preset with the relief
             withdrawn builds the Reform impacts tab&apos;s own reform and reproduces its figures.
           </li>
           <li>
@@ -234,8 +258,7 @@ export default function MethodologyTab({ data, anchor }) {
             property schedule, which have charged the same rates since 30 October 2024. Business
             Asset Disposal Relief can be kept, at a whole-point rate no higher than the additional
             rate and a lifetime limit of £500k, £1m (current law) or £10m (the limit until March
-            2020), or withdrawn. Carried interest has been taxed as income since April 2026 and
-            stays outside the explorer.
+            2020), or withdrawn.
           </li>
           <li>
             <strong>Cache.</strong> Every completed run is stored under a key made of the dataset

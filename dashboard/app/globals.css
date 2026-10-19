@@ -292,3 +292,11 @@
     font-size: 0.9rem;
   }
 }
+
+/* Narrow screens: tabs wrap onto two rows at a smaller size. */
+@media (max-width: 640px) {
+  .tab-strip .tab-button {
+    padding: 10px 12px;
+    font-size: 0.95rem;
+  }
+}

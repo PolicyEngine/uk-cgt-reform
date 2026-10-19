@@ -26,7 +26,7 @@ import {
 } from "../lib/formatters";
 import BudgetChart from "./charts/BudgetChart";
 import GroupImpactChart from "./charts/GroupImpactChart";
-import { LabelledSelect, MetricCard, Toggle } from "./controls";
+import { LabelledSelect, MetricCard, TabLink, TableScroll, Toggle } from "./controls";
 import SectionHeading from "./SectionHeading";
 
 // The request options come from the pipeline (uk-cgt-reform-explore
@@ -250,6 +250,7 @@ function SpecTable({ metadata }) {
   const pct = (fraction) => formatPct(fraction * 100, 0);
   const changed = (band) => Math.abs(baseline[band] - reform[band]) > 1e-9;
   return (
+    <TableScroll>
     <table className="data-table">
       <thead>
         <tr>
@@ -277,10 +278,7 @@ function SpecTable({ metadata }) {
           <td className="font-semibold">
             {pct(reform.basic_rate)} / {pct(reform.higher_rate)} / {pct(reform.additional_rate)}
           </td>
-          <td>
-            Gains on UK residential property, charged on their own schedule, take the same rates;
-            the two schedules have charged the same rates since 30 October 2024.
-          </td>
+          <td>Gains on UK residential property, charged on their own schedule, take the same rates.</td>
         </tr>
         <tr>
           <td>Business Asset Disposal Relief</td>
@@ -295,12 +293,6 @@ function SpecTable({ metadata }) {
           </td>
         </tr>
         <tr>
-          <td>Carried interest</td>
-          <td>Taxed as income since April 2026</td>
-          <td>Unchanged</td>
-          <td>Carried interest moved into the income tax framework on 6 April 2026.</td>
-        </tr>
-        <tr>
           <td>Annual exempt amount</td>
           <td>£3,000</td>
           <td>£3,000</td>
@@ -308,6 +300,7 @@ function SpecTable({ metadata }) {
         </tr>
       </tbody>
     </table>
+    </TableScroll>
   );
 }
 
@@ -323,7 +316,8 @@ function ReadyReckonerPanel({ row, result }) {
       <h3 className="text-base font-semibold text-slate-800">
         HMRC ready reckoner: {row.label}
       </h3>
-      <table className="data-table mt-3">
+      <TableScroll className="mt-3">
+      <table className="data-table">
         <thead>
           <tr>
             <th>Comparison</th>
@@ -348,6 +342,7 @@ function ReadyReckonerPanel({ row, result }) {
           ))}
         </tbody>
       </table>
+      </TableScroll>
       <p className="mt-3 text-xs leading-5 text-slate-500">
         HMRC&apos;s figures ({READY_RECKONER.source}) are {READY_RECKONER.measure[0].toLowerCase()}
         {READY_RECKONER.measure.slice(1)}, after behavioural responses; HMRC has deferred its 2026
@@ -358,7 +353,7 @@ function ReadyReckonerPanel({ row, result }) {
   );
 }
 
-export default function RateExplorerTab({ data, datasetKey }) {
+export default function RateExplorerTab({ data, datasetKey, onNavigate }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   // Read once: a shared link arrives with a full schedule in the URL.
@@ -471,9 +466,8 @@ export default function RateExplorerTab({ data, datasetKey }) {
               scores the schedule on {dataset.shortLabel} for 2026-27 to 2030-31, with the same
               behavioural response. The chosen rates apply to the main schedule and to residential
               property gains. Business Asset Disposal Relief can be kept, at a rate and lifetime limit
-              you choose, or withdrawn; carried interest has been taxed as income since April 2026
-              and is left alone. Every completed run is cached, so a schedule anyone
-              has run before is served at once.
+              you choose, or withdrawn. Every completed run is cached, so a schedule anyone has
+              run before is served at once.
             </>
           }
         />
@@ -482,7 +476,7 @@ export default function RateExplorerTab({ data, datasetKey }) {
       <section className="section-card">
         <SectionHeading
           title="Rate schedule"
-          description="Rates in percent. Current law charges 18% within the basic rate band and 24% above it; equalising with income tax means 20% / 40% / 45%, and the equalisation on the Reform impacts tab also withdraws Business Asset Disposal Relief."
+          description={`Rates in percent. Current law charges ${formatPct(CURRENT_LAW.basic_rate * 100, 0)} within the basic rate band and ${formatPct(CURRENT_LAW.higher_rate * 100, 0)} above it. The "${EQUALISATION.label}" preset loads the Reform impacts tab's reform.`}
         />
         <div className="grid gap-4 md:grid-cols-3">
           {BANDS.map((band) => (
@@ -623,22 +617,23 @@ export default function RateExplorerTab({ data, datasetKey }) {
             />
             <div className="grid gap-4 md:grid-cols-3">
               <MetricCard
-                label={`Revenue raised, ${firstYear}`}
+                label={`Change in government balance, ${firstYear}`}
                 value={formatSignedBn(firstRow.gov_balance_change_bn, 1)}
-                note="Net change in the government balance after taxpayers adjust realisations to the new rates."
+                note={`After taxpayers adjust realisations to the new rates, at ${resultElasticity ? elasticityLabel(resultElasticity) : `a retention elasticity of ${result.metadata.elasticity}`}.`}
               />
               <MetricCard
-                label="Five-year total, 2026-27 to 2030-31"
+                label={`Five-year change in government balance, ${firstYear} to ${result.budget.at(-1).year}`}
                 value={formatSignedBn(result.five_year_total_bn, 1)}
-                note="Sum of the annual government balance changes over the five modelled years."
+                note="Sum of the annual changes over the five modelled years."
               />
               <MetricCard
-                label="Top quintile net income change"
+                label={`Change in net income, top income quintile, ${firstYear}`}
                 value={formatSignedPct(topQuintile.relative_change_pct)}
-                note={`Average of ${formatSignedCurrency(topQuintile.avg_change_gbp)} per household in the highest-income 20%. Includes the gains taxpayers stop realising under the elasticity, not just tax paid.`}
+                note={`An average of ${formatSignedCurrency(topQuintile.avg_change_gbp)} per household in the top income quintile.`}
               />
             </div>
-            <table className="data-table mt-5">
+            <TableScroll className="mt-5">
+            <table className="data-table">
               <thead>
                 <tr>
                   <th>Compared with equalising to income tax</th>
@@ -648,17 +643,17 @@ export default function RateExplorerTab({ data, datasetKey }) {
               </thead>
               <tbody>
                 <tr>
-                  <td>Revenue raised, {firstYear}</td>
+                  <td>Change in government balance, {firstYear}</td>
                   <td>{formatSignedBn(firstRow.gov_balance_change_bn, 1)}</td>
                   <td>{formatSignedBn(equalisation.revenue, 1)}</td>
                 </tr>
                 <tr>
-                  <td>Five-year total</td>
+                  <td>Five-year change in government balance</td>
                   <td>{formatSignedBn(result.five_year_total_bn, 1)}</td>
                   <td>{formatSignedBn(equalisation.fiveYear, 1)}</td>
                 </tr>
                 <tr>
-                  <td>Top quintile net income change, {firstYear}</td>
+                  <td>Change in net income, top income quintile, {firstYear}</td>
                   <td>
                     {formatSignedPct(topQuintile.relative_change_pct)} (
                     {formatSignedCurrency(topQuintile.avg_change_gbp)})
@@ -670,10 +665,10 @@ export default function RateExplorerTab({ data, datasetKey }) {
                 </tr>
               </tbody>
             </table>
+            </TableScroll>
             <p className="mt-3 text-xs leading-5 text-slate-500">
-              The equalisation column is the committed result for {dataset.shortLabel}: 20% / 40% /
-              45% with Business Asset Disposal Relief withdrawn, at
-              CenTax&apos;s central elasticity (retention {DEFAULT_ELASTICITY.toFixed(1)})
+              The equalisation column is the Reform impacts tab&apos;s result for {dataset.shortLabel},
+              at CenTax&apos;s central elasticity (retention {DEFAULT_ELASTICITY.toFixed(1)})
               {elasticityOption && !sameElasticity(elasticityOption.e_retention, DEFAULT_ELASTICITY)
                 ? "; this schedule ran with a different elasticity, so the two are not like for like"
                 : ""}
@@ -691,8 +686,9 @@ export default function RateExplorerTab({ data, datasetKey }) {
             </summary>
             <div className="mt-4 space-y-3">
               <p className="text-sm leading-6 text-slate-600">
-                Effective from the 2026-27 fiscal year and held in place through 2030-31. Current
-                law is read from the installed engine for 2026-27.
+                Effective from the {firstYear} fiscal year and held in place through{" "}
+                {result.budget.at(-1).year}. Current law is read from the installed engine for{" "}
+                {firstYear}.
               </p>
               <SpecTable metadata={result.metadata} />
             </div>
@@ -706,20 +702,20 @@ export default function RateExplorerTab({ data, datasetKey }) {
             <BudgetChart budget={result.budget} />
             {entrantShare > 0.05 ? (
               <p className="mt-4 text-sm leading-6 text-slate-600">
-                {formatPct(100 * entrantShare, 0)} of this dataset&apos;s {firstYear} CGT taxpayers
-                are entrants by uprating (see the Baseline tab): people whose base-year gains sit at
-                or below the frozen £3,000 exempt amount and cross it once the engine uprates gains.
-                They contribute {formatSmallBn(firstRow.cgt_change_from_entrants_bn)} of the{" "}
-                {firstYear} change, so the revenue figures are little affected; the share of people
-                affected is.
+                Entrants by uprating (
+                <TabLink onNavigate={onNavigate} tab="baseline">
+                  see the Baseline tab
+                </TabLink>
+                ) contribute {formatSmallBn(firstRow.cgt_change_from_entrants_bn)} of the{" "}
+                {firstYear} change.
               </p>
             ) : null}
           </section>
 
           <section className="section-card">
             <SectionHeading
-              title="Who bears the cost"
-              description="Change in household net income, grouped by the household's position in the baseline income distribution, by household type, or by region. Losses include both the extra tax paid and the gains taxpayers choose not to realise in response."
+              title="Change in household net income by income group"
+              description="Change in household net income, grouped by the household's position in the baseline income distribution; the switches group households by income quintile or quartile, household type or region. Gains that taxpayers defer in response to the new rates count as lower income in the year, alongside the change in tax paid."
             />
             <GroupImpactChart groupsByYear={result.income_change_groups} initialYear={firstYear} />
           </section>
