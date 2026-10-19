@@ -293,20 +293,23 @@ variable removed and restores it straight after (downloads read it at call
 time); the basis is recorded in the explorer's `metadata.wrapper_certification`
 and in the Modal Volume's `manifest.json`.
 
-### Behavioural response (CenTax's elasticities, in CenTax's form)
+### Behavioural response (CenTax's elasticities, in CenTax's convention)
 
 Advani, Lonsdale & Summers (CenTax, October 2024, *Reforming Capital Gains
 Tax*) estimate how realised gains respond to the **retention rate** (1 − t),
-the share of a marginal pound of gain the taxpayer keeps: a central
+the share of gains a taxpayer keeps after tax: a central
 medium-term elasticity of **1.0**, range 0.5–2.0, anchored on Agersnap &
 Zidar (2021) and Lavecchia & Tazhitdinova (2024). The official HMRC/OBR
 assumption is stated in the same convention: 3.6 for the main rates and 1.4
 for BADR (OBR, January 2025, para 1.9). policyengine-uk's
-`gov.simulation.capital_gains_responses.elasticity` applies an elasticity in
-exactly that form, scaling each person's realised gains by
+`gov.simulation.capital_gains_responses.elasticity` uses the same convention
+person by person, scaling each person's realised gains by
 ((1 − t₁)/(1 − t₀))^e, with t the person's marginal rate on gains (shared
 across the main, residential and BADR schedules in proportion to the gains on
-each). Every case sets that parameter and leaves `...mtr_elasticity` at zero;
+each). That is CenTax's convention and central value, not their calculation:
+they apply one aggregate elasticity to the CGT base as a whole (pp. 32 and
+37), a person's marginal rate differs from an aggregate rate, and a linear
+reading of their elasticity would differ from the power at 0.5 and 2.0. Every case sets that parameter and leaves `...mtr_elasticity` at zero;
 the sensitivity runs cover 0 (static), CenTax's 0.5, 1.0 and 2.0, and the
 official 3.6. Every sensitivity row, explorer option and explorer response
 records the engine parameter it set, the convention (`applied_as`), the
