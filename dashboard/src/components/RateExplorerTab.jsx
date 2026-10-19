@@ -709,7 +709,7 @@ export default function RateExplorerTab({ data, datasetKey }) {
                 {formatPct(100 * entrantShare, 0)} of this dataset&apos;s {firstYear} CGT taxpayers
                 are entrants by uprating (see the Baseline tab): people whose base-year gains sit at
                 or below the frozen £3,000 exempt amount and cross it once the engine uprates gains.
-                They contribute {formatSmallBn(firstRow.cgt_change_from_entrants_bn, { signed: true })} of the{" "}
+                They contribute {formatSmallBn(firstRow.cgt_change_from_entrants_bn)} of the{" "}
                 {firstYear} change, so the revenue figures are little affected; the share of people
                 affected is.
               </p>

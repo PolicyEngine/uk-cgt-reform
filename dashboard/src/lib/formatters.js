@@ -1,75 +1,102 @@
-function getSignedPrefix(value) {
-  const amount = Number(value);
-  if (amount > 0) {
-    return "";
-  }
-  if (amount < 0) {
-    return "\u2212";
-  }
+const MINUS = "\u2212";
+const DASH = "\u2014";
+
+// A missing or non-numeric value (null, undefined, "", NaN) reads as NaN, so
+// every formatter can show a dash rather than "£NaNbn" or "£0".
+function toNumber(value) {
+  if (value === null || value === undefined || value === "") return NaN;
+  return Number(value);
+}
+
+// The sign of a value as it will be shown: rounding comes first, so a value
+// that rounds to zero carries no sign ("£0.0bn", never "−£0.0bn").
+function signOf(rounded) {
+  if (Number(rounded) > 0) return "";
+  if (Number(rounded) < 0) return MINUS;
   return "";
 }
 
 export function formatCurrency(value) {
-  return `\u00A3${Math.round(Number(value)).toLocaleString("en-GB")}`;
+  const amount = toNumber(value);
+  if (!Number.isFinite(amount)) return DASH;
+  const rounded = Math.round(amount);
+  return `${signOf(rounded)}\u00A3${Math.abs(rounded).toLocaleString("en-GB")}`;
 }
 
 export function formatSignedCurrency(value) {
-  const amount = Math.round(Number(value));
-  return `${getSignedPrefix(amount)}\u00A3${Math.abs(amount).toLocaleString("en-GB")}`;
+  return formatCurrency(value);
 }
 
-export function formatBn(value, digits = 2) {
-  return `\u00A3${Number(value).toFixed(digits)}bn`;
-}
-
+// £bn with a true minus sign before the pound sign: "−£0.50bn", "£1.20bn".
 export function formatSignedBn(value, digits = 2) {
-  const amount = Number(value);
-  return `${getSignedPrefix(amount)}\u00A3${Math.abs(amount).toFixed(digits)}bn`;
+  const amount = toNumber(value);
+  if (!Number.isFinite(amount)) return DASH;
+  const rounded = amount.toFixed(digits);
+  return `${signOf(rounded)}\u00A3${Math.abs(Number(rounded)).toFixed(digits)}bn`;
+}
+
+// Levels (baseline revenue, gains) are positive; a negative one still shows
+// as "−£0.50bn", not "£-0.50bn".
+export function formatBn(value, digits = 2) {
+  return formatSignedBn(value, digits);
 }
 
 // An amount in £bn that can be tiny, such as the CGT the entrants by uprating
 // pay (tens of thousands of pounds): £bn to two places while that shows a
-// figure, then £m, then £k, rather than "£0.00bn".
-export function formatSmallBn(value, { signed = false } = {}) {
-  const amount = value === null || value === undefined ? NaN : Number(value);
-  // A missing value shows as a dash rather than "£NaNk" or "£0".
-  if (!Number.isFinite(amount)) return "\u2014";
-  const sign = signed ? getSignedPrefix(amount) : amount < 0 ? "\u2212" : "";
+// figure, then £m, then £k, then whole pounds, rather than "£0.00bn".
+export function formatSmallBn(value) {
+  const amount = toNumber(value);
+  if (!Number.isFinite(amount)) return DASH;
   const abs = Math.abs(amount);
-  if (abs >= 0.005) return `${sign}\u00A3${abs.toFixed(2)}bn`;
-  if (abs >= 0.0005) return `${sign}\u00A3${(abs * 1000).toFixed(1)}m`;
-  if (abs === 0) return "\u00A30";
-  return `${sign}\u00A3${Math.round(abs * 1e6).toLocaleString("en-GB")}k`;
+  if (abs >= 0.005) return formatSignedBn(amount, 2);
+  if (abs >= 0.0005) {
+    const rounded = (amount * 1000).toFixed(1);
+    return `${signOf(rounded)}\u00A3${Math.abs(Number(rounded)).toFixed(1)}m`;
+  }
+  if (abs >= 0.0000005) {
+    const rounded = Math.round(amount * 1e6);
+    return `${signOf(rounded)}\u00A3${Math.abs(rounded).toLocaleString("en-GB")}k`;
+  }
+  // Below £500: whole pounds.
+  return formatCurrency(amount * 1e9);
 }
 
 export function formatMn(value) {
-  return `\u00A3${Math.round(Number(value)).toLocaleString("en-GB")}m`;
+  const amount = toNumber(value);
+  if (!Number.isFinite(amount)) return DASH;
+  const rounded = Math.round(amount);
+  return `${signOf(rounded)}\u00A3${Math.abs(rounded).toLocaleString("en-GB")}m`;
 }
 
 export function formatSignedMn(value) {
-  const amount = Math.round(Number(value));
-  return `${getSignedPrefix(amount)}\u00A3${Math.abs(amount).toLocaleString("en-GB")}m`;
+  return formatMn(value);
 }
 
 export function formatPct(value, digits = 1) {
-  return `${Number(value).toFixed(digits)}%`;
+  const amount = toNumber(value);
+  if (!Number.isFinite(amount)) return DASH;
+  const rounded = amount.toFixed(digits);
+  return `${signOf(rounded)}${Math.abs(Number(rounded)).toFixed(digits)}%`;
 }
 
 export function formatSignedPct(value, digits = 1) {
-  return `${getSignedPrefix(value)}${formatPct(Math.abs(Number(value)), digits)}`;
+  return formatPct(value, digits);
 }
 
 export function formatCompactCurrency(value) {
+  const amount = toNumber(value);
+  if (!Number.isFinite(amount)) return DASH;
   const formatter = new Intl.NumberFormat("en-GB", {
     notation: "compact",
     maximumFractionDigits: 1,
   });
 
-  return `\u00A3${formatter.format(Number(value))}`;
+  return `${signOf(Math.round(amount))}\u00A3${formatter.format(Math.abs(amount))}`;
 }
 
 export function formatCount(value) {
-  const num = Number(value);
+  const num = toNumber(value);
+  if (!Number.isFinite(num)) return DASH;
   if (num >= 950_000) {
     return `${(num / 1e6).toFixed(1)}m`;
   }
@@ -112,6 +139,7 @@ const MONTHS = [
 
 // A source's publication date ("2026-06-29" or "2024-10") as prose.
 export function formatPublished(isoDate) {
+  if (typeof isoDate !== "string" || !isoDate) return DASH;
   const [year, month, day] = isoDate.split("-").map(Number);
   return day ? `${day} ${MONTHS[month - 1]} ${year}` : `${MONTHS[month - 1]} ${year}`;
 }
