@@ -10,9 +10,10 @@ from uk_cgt_reform.simulations import (
 )
 
 
-def test_registry_holds_the_microcosm_build_alone():
+def test_registry_holds_the_published_release_alone():
     assert set(DATASETS) == {CANDIDATE.key}
     assert DEFAULT_DATASET_KEY == CANDIDATE.key
+    assert CANDIDATE.role == "release"
 
 
 def test_every_dataset_is_pinned():
@@ -35,7 +36,7 @@ def test_base_year():
 def test_metadata_round_trip():
     metadata = CANDIDATE.to_metadata()
     assert metadata["key"] == CANDIDATE.key
-    assert metadata["revision"] == "1b295f3750241f5f5f1bf92cdbe1d5b6a19a8922"
+    assert metadata["revision"] == "0d633297cd46106109bd7e075a6a1afdf0ac5ddb"
     assert metadata["digest"] == CANDIDATE.digest
 
 

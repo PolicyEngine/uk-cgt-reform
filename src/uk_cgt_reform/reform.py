@@ -29,15 +29,17 @@ columns the extra parameters are inert.
 
 Behavioural response, in CenTax's convention. Advani, Lonsdale and Summers
 (CenTax, October 2024, *Reforming Capital Gains Tax*) estimate how realised
-gains respond to the retention rate, the share 1 - t of a marginal pound of
-gain the taxpayer keeps: a central medium-term elasticity of 1.0, with a
+gains respond to the retention rate 1 - t, the share of gains a taxpayer
+keeps after tax: a central medium-term elasticity of 1.0, with a
 range of 0.5 to 2.0, anchored on Agersnap and Zidar (2021) and Lavecchia and
 Tazhitdinova (2024). The HMRC/OBR assumption is stated in the same
 convention: 3.6 for the main rates and 1.4 for BADR (OBR, January 2025, para
 1.9). policyengine-uk's ``gov.simulation.capital_gains_responses.elasticity``
-applies an elasticity in exactly that form: realised gains scale by
+uses the same convention person by person: realised gains scale by
 ((1 - t1) / (1 - t0)) ** e, with t each person's marginal rate on gains
-before and after the reform. Every case here sets that parameter and leaves
+before and after the reform. CenTax instead apply one aggregate elasticity to
+the CGT base as a whole (pp. 32 and 37), so this is their convention and
+central value, not their calculation. Every case here sets that parameter and leaves
 the engine's marginal-tax-rate parameter (``...mtr_elasticity``) at zero.
 
 The pipeline once converted CenTax's 1.0 into a marginal-tax-rate elasticity
