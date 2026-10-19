@@ -125,7 +125,7 @@ function Dashboard() {
             <TabLink onSelect={() => handleTabChange("baseline")}>
               Baseline
             </TabLink>{" "}
-            validates the baseline against HMRC,{" "}
+            compares the baseline with HMRC&apos;s statistics,{" "}
             <TabLink onSelect={() => handleTabChange("benchmarks")}>Benchmarks</TabLink>{" "}
             compares the results with other published estimates, and{" "}
             <TabLink onSelect={() => handleTabChange("methodology")}>Methodology</TabLink>{" "}

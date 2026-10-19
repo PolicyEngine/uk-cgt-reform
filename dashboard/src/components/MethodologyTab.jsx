@@ -209,9 +209,9 @@ export default function MethodologyTab({ data, anchor }) {
             years after a change (Agersnap and Zidar, 2021), and lower it to{" "}
             {central.e_retention.toFixed(1)} for two reasons: their package removes the uplift at
             death, which the US keeps; and equalisation brings income that was presented as gains
-            back into income tax, which estimates measured on the CGT base count as lost. The US
-            evidence already has emigration largely closed off, so no adjustment is made for the
-            charge on departure. HMRC&apos;s figure is estimated from UK responses under the
+            back into income tax, which estimates measured on the CGT base count as lost. CenTax make
+            no adjustment for the charge on departure, on the grounds that the US evidence already
+            reflects little scope to avoid the tax by emigrating. HMRC&apos;s figure is estimated from UK responses under the
             current base.
           </li>
           <li>

@@ -122,7 +122,7 @@ export default function BaselineTab({ data }) {
         <SectionHeading
           size="lg"
           title="Baseline estimation"
-          description={`The Family Resources Survey barely captures capital gains, so the dataset imputes them from HMRC administrative data and calibrates household weights to HMRC's CGT statistics. This analysis uses ${dataset.shortLabel} exactly as published, with no local reweighting (the Methodology tab describes the build). The tables below show the fit for the first simulated year and the two features that most affect how its numbers read: the entrants by uprating and the schedule components.`}
+          description={`The Family Resources Survey records few capital gains, so the dataset imputes them from HMRC administrative data and calibrates household weights to HMRC's CGT statistics. This analysis uses ${dataset.shortLabel} exactly as published, with no local reweighting (the Methodology tab describes the build). The tables below show the fit for the first simulated year and the two features that most affect how its numbers read: the entrants by uprating and the schedule components.`}
         />
       </div>
 
