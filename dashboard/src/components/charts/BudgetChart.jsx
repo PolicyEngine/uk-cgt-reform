@@ -12,7 +12,7 @@ import {
   YAxis,
 } from "recharts";
 import { colors } from "../../lib/colors";
-import { formatBn } from "../../lib/formatters";
+import { formatSignedBn } from "../../lib/formatters";
 import ChartLogo from "../ChartLogo";
 import { Toggle } from "../controls";
 
@@ -41,11 +41,11 @@ export default function BudgetChart({ budget }) {
             <XAxis dataKey="year" tick={AXIS_STYLE} />
             <YAxis
               tick={AXIS_STYLE}
-              tickFormatter={(v) => formatBn(v)}
+              tickFormatter={(v) => formatSignedBn(v)}
               tickLine={false}
               axisLine={false}
             />
-            <Tooltip formatter={(v) => formatBn(v)} />
+            <Tooltip formatter={(v) => formatSignedBn(v)} />
             <Legend />
             {budgetView === "levels" ? (
               <>
