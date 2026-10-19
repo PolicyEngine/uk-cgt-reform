@@ -2,10 +2,17 @@ const MINUS = "\u2212";
 const DASH = "\u2014";
 
 // A missing or non-numeric value (null, undefined, "", NaN) reads as NaN, so
-// every formatter can show a dash rather than "£NaNbn" or "£0".
+// a formatter shows a dash rather than "£NaNbn" or "£0". The dash is for
+// optional fields; the accessors in dataHelpers throw on a missing required one.
 function toNumber(value) {
   if (value === null || value === undefined || value === "") return NaN;
   return Number(value);
+}
+
+// Round half away from zero, so −0.5 and 0.5 round to the same magnitude
+// (Math.round sends −0.5 to −0 and 0.5 to 1).
+function roundHalfAway(value) {
+  return Math.sign(value) * Math.round(Math.abs(value));
 }
 
 // The sign of a value as it will be shown: rounding comes first, so a value
@@ -19,7 +26,7 @@ function signOf(rounded) {
 export function formatCurrency(value) {
   const amount = toNumber(value);
   if (!Number.isFinite(amount)) return DASH;
-  const rounded = Math.round(amount);
+  const rounded = roundHalfAway(amount);
   return `${signOf(rounded)}\u00A3${Math.abs(rounded).toLocaleString("en-GB")}`;
 }
 
@@ -47,24 +54,25 @@ export function formatBn(value, digits = 2) {
 export function formatSmallBn(value) {
   const amount = toNumber(value);
   if (!Number.isFinite(amount)) return DASH;
-  const abs = Math.abs(amount);
-  if (abs >= 0.005) return formatSignedBn(amount, 2);
-  if (abs >= 0.0005) {
-    const rounded = (amount * 1000).toFixed(1);
+  if (Math.abs(amount) >= 0.005) return formatSignedBn(amount, 2);
+  // Work in pounds from here, so each step's threshold and rounding agree.
+  const pounds = amount * 1e9;
+  if (Math.abs(pounds) >= 5e5) {
+    const rounded = (pounds / 1e6).toFixed(1);
     return `${signOf(rounded)}\u00A3${Math.abs(Number(rounded)).toFixed(1)}m`;
   }
-  if (abs >= 0.0000005) {
-    const rounded = Math.round(amount * 1e6);
-    return `${signOf(rounded)}\u00A3${Math.abs(rounded).toLocaleString("en-GB")}k`;
+  const thousands = roundHalfAway(pounds / 1e3);
+  if (thousands !== 0) {
+    return `${signOf(thousands)}\u00A3${Math.abs(thousands).toLocaleString("en-GB")}k`;
   }
   // Below £500: whole pounds.
-  return formatCurrency(amount * 1e9);
+  return formatCurrency(pounds);
 }
 
 export function formatMn(value) {
   const amount = toNumber(value);
   if (!Number.isFinite(amount)) return DASH;
-  const rounded = Math.round(amount);
+  const rounded = roundHalfAway(amount);
   return `${signOf(rounded)}\u00A3${Math.abs(rounded).toLocaleString("en-GB")}m`;
 }
 
@@ -81,17 +89,6 @@ export function formatPct(value, digits = 1) {
 
 export function formatSignedPct(value, digits = 1) {
   return formatPct(value, digits);
-}
-
-export function formatCompactCurrency(value) {
-  const amount = toNumber(value);
-  if (!Number.isFinite(amount)) return DASH;
-  const formatter = new Intl.NumberFormat("en-GB", {
-    notation: "compact",
-    maximumFractionDigits: 1,
-  });
-
-  return `${signOf(Math.round(amount))}\u00A3${formatter.format(Math.abs(amount))}`;
 }
 
 export function formatCount(value) {
@@ -137,9 +134,12 @@ const MONTHS = [
   "December",
 ];
 
-// A source's publication date ("2026-06-29" or "2024-10") as prose.
+// A source's publication date ("2026-06-29", "2024-10" or "2026") as prose.
 export function formatPublished(isoDate) {
   if (typeof isoDate !== "string" || !isoDate) return DASH;
   const [year, month, day] = isoDate.split("-").map(Number);
-  return day ? `${day} ${MONTHS[month - 1]} ${year}` : `${MONTHS[month - 1]} ${year}`;
+  if (!Number.isInteger(year)) return DASH;
+  const monthName = MONTHS[month - 1];
+  if (!monthName) return String(year);
+  return day ? `${day} ${monthName} ${year}` : `${monthName} ${year}`;
 }

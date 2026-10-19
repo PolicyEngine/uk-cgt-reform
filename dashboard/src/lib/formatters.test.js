@@ -54,6 +54,12 @@ describe("formatSmallBn", () => {
     expect(formatSmallBn(-2e-10)).toBe("£0");
   });
 
+  test("a negative half rounds away from zero, as a positive one does", () => {
+    expect(formatSmallBn(5e-7)).toBe("£1k");
+    expect(formatSmallBn(-5e-7)).toBe(`${MINUS}£1k`);
+    expect(formatSmallBn(-4e-7)).toBe(`${MINUS}£400`);
+  });
+
   test("missing values show a dash", () => {
     expect(formatSmallBn(null)).toBe(DASH);
     expect(formatSmallBn(undefined)).toBe(DASH);
@@ -71,6 +77,15 @@ describe("other formatters", () => {
     expect(formatSignedPct(-2.5)).toBe(`${MINUS}2.5%`);
   });
 
+  test("halves round away from zero whatever the sign", () => {
+    expect(formatCurrency(0.5)).toBe("£1");
+    expect(formatCurrency(-0.5)).toBe(`${MINUS}£1`);
+    expect(formatMn(999.5)).toBe("£1,000m");
+    expect(formatMn(-999.5)).toBe(`${MINUS}£1,000m`);
+    expect(formatSignedBn(0.005)).toBe("£0.01bn");
+    expect(formatSignedBn(-0.005)).toBe(`${MINUS}£0.01bn`);
+  });
+
   test("missing values show a dash", () => {
     expect(formatCurrency(undefined)).toBe(DASH);
     expect(formatMn(null)).toBe(DASH);
@@ -84,5 +99,6 @@ describe("other formatters", () => {
     expect(formatCount(2802.1)).toBe("2.8k");
     expect(formatPublished("2026-09")).toBe("September 2026");
     expect(formatPublished("2026-06-29")).toBe("29 June 2026");
+    expect(formatPublished("2026")).toBe("2026");
   });
 });

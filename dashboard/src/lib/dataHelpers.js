@@ -1,9 +1,20 @@
 /**
  * Accessors for the cgt_equalisation_results.json payload.
  *
- * Deliberately no fallbacks: if a field is missing the consumer throws
- * visibly rather than rendering placeholders.
+ * Deliberately no fallbacks: if a required field is missing the accessor or
+ * its consumer throws visibly rather than rendering placeholders. The
+ * formatters' dash is for optional fields only.
  */
+
+// A required numeric field: throws when it is missing or not a number, so a
+// renamed field fails the page instead of reading as "—".
+export function requireNumber(record, field, where) {
+  const value = record?.[field];
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    throw new Error(`${where}: required field "${field}" is missing or not a number`);
+  }
+  return value;
+}
 
 export function getMetadata(data) {
   return data.metadata;
@@ -17,7 +28,9 @@ export function getValidation(data) {
   return data.validation;
 }
 
+// The revenue cards read each year's change in the government balance.
 export function getBudget(data) {
+  for (const row of data.budget) requireNumber(row, "gov_balance_change_bn", `budget row ${row.year}`);
   return data.budget;
 }
 
@@ -34,7 +47,13 @@ export function getYearLabels(data) {
   return Object.keys(data.income_change_groups);
 }
 
+// Every row's elasticity and first-year revenue change are required: the
+// Reform tab's revenue card reads its range from them.
 export function getSensitivity(data) {
+  for (const row of data.sensitivity) {
+    requireNumber(row, "e_retention", "sensitivity row");
+    requireNumber(row, "revenue_2026_bn", "sensitivity row");
+  }
   return data.sensitivity;
 }
 
