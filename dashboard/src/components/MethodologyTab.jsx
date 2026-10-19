@@ -74,15 +74,9 @@ export default function MethodologyTab({ data, anchor }) {
             <span className="font-mono text-xs">{dataset.sha256.slice(0, 12)}…</span>), checked
             before anything runs and used exactly as published with no local reweighting &mdash;
             calibration belongs upstream in the dataset, so whatever the file provides is what is
-            simulated here.{" "}
-            {dataset.role === "candidate" ? (
-              <>
-                It is a staged build from{" "}
-                <ExternalLink href="https://github.com/PolicyEngine/microcosm">microcosm</ExternalLink>{" "}
-                main, not a certified release.{" "}
-              </>
-            ) : null}
-            {dataset.columns}
+            simulated here. The build comes from{" "}
+            <ExternalLink href="https://github.com/PolicyEngine/microcosm">microcosm</ExternalLink>
+            . {dataset.columns}
           </li>
           <li>
             <strong>Gains imputation.</strong> {dataset.observation}. Amounts are redrawn from
@@ -147,7 +141,7 @@ export default function MethodologyTab({ data, anchor }) {
             that registers the baseline branch, so the elasticity measures the true change in
             marginal rates; the pipeline verifies the response is active before writing
             results. Every case sets the engine&apos;s retention-rate parameter (
-            <span className="font-mono text-xs">{metadata.elasticity_parameter}</span>) and
+            <span className="break-all font-mono text-xs">{metadata.elasticity_parameter}</span>) and
             leaves its marginal-tax-rate parameter at zero (see below).
           </li>
         </ul>

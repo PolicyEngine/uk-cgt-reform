@@ -25,12 +25,12 @@ export function Toggle({ options, value, onChange }) {
 
 export function LabelledSelect({ label, options, value, onChange }) {
   return (
-    <label className="inline-flex items-center gap-2 text-sm text-slate-600">
+    <label className="inline-flex max-w-full flex-wrap items-center gap-2 text-sm text-slate-600">
       {label}
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-800"
+        className="min-w-0 max-w-full rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-800"
       >
         {options.map((option) => (
           <option key={option.value} value={option.value}>
@@ -98,7 +98,7 @@ export function TabLink({ onNavigate, tab, section, children }) {
     <button
       type="button"
       onClick={() => onNavigate?.(tab, section)}
-      className="inline font-semibold text-[color:var(--pe-color-primary-600)] underline decoration-1 underline-offset-2 hover:opacity-80"
+      className="inline text-left font-semibold text-[color:var(--pe-color-primary-600)] underline decoration-1 underline-offset-2 hover:opacity-80"
     >
       {children}
     </button>
