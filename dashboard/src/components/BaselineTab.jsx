@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { formatBn, formatCount, formatPct, formatSmallBn } from "../lib/formatters";
 import { getDatasetInfo, getEntrants, getFirstYear, getValidation } from "../lib/dataHelpers";
 import { TableScroll } from "./controls";
@@ -105,7 +106,13 @@ function BenchmarkRow({ label, model, benchmark, muted = false }) {
 
 const NO_BENCHMARK = { y2023: null, y2024: null };
 
-export default function BaselineTab({ data }) {
+export default function BaselineTab({ data, anchor }) {
+  // Other tabs link to a section here (``anchor``); the tab mounts after
+  // navigation, so the scroll is replayed once it has.
+  useEffect(() => {
+    if (anchor) document.getElementById(anchor)?.scrollIntoView();
+  }, [anchor]);
+
   const validation = getValidation(data);
   const dataset = getDatasetInfo(data);
   const entrants = getEntrants(data);
@@ -126,7 +133,7 @@ export default function BaselineTab({ data }) {
         />
       </div>
 
-      <section className="section-card">
+      <section className="section-card scroll-mt-24" id="benchmarks">
         <SectionHeading
           title="Model versus external benchmarks"
           description={`PolicyEngine's baseline for ${firstYear} on ${dataset.shortLabel}, alongside HMRC's statistics for the 2023-24 tax year (revised) and the provisional 2024-25 tax year, both from the 2026 release. The dataset calibrates its base year to one HMRC year (${dataset.observation}) and the engine uprates it to the simulated years. The ${firstYear} liability sits further above HMRC's 2024-25 figure than the gains do because 2024-25 charged most gains at 10% and 20% until 30 October 2024, and the relief at 10%, while ${firstYear} charges 18% and 24% all year and the relief at 18%.`}
@@ -215,7 +222,7 @@ export default function BaselineTab({ data }) {
         </TableScroll>
       </section>
 
-      <section className="section-card">
+      <section className="section-card scroll-mt-24" id="entrants">
         <SectionHeading
           title="Entrants by uprating"
           description={`The annual exempt amount is frozen at £${entrants.exempt_amount_gbp.toLocaleString("en-GB")} while the engine uprates gains with GDP per capita, so a person whose base-year gains sit at or below the exempt amount can cross it in a later year and count as a CGT taxpayer with a few hundred pounds of taxable gain. Entrants are persons whose pre-response gains in ${firstYear} exceed the exempt amount but not £${Math.round(entrants.ceiling_gbp).toLocaleString("en-GB")}, the base-year exempt amount carried forward by the uprating, so they were not taxpayers in the base year. Nothing is removed or edited; the figures are reported so a reader can net them out.`}
@@ -273,7 +280,7 @@ export default function BaselineTab({ data }) {
         )}
       </section>
 
-      <section className="section-card">
+      <section className="section-card scroll-mt-24" id="schedules">
         <SectionHeading
           title="Schedule components"
           description={`policyengine-uk charges residential property and Business Asset Disposal Relief gains on their own schedules when a dataset records them. Gains recorded on each schedule in ${firstYear}, before any behavioural response.`}

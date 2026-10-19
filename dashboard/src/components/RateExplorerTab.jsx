@@ -619,7 +619,11 @@ export default function RateExplorerTab({ data, datasetKey, onNavigate }) {
               <MetricCard
                 label={`Change in government balance, ${firstYear}`}
                 value={formatSignedBn(firstRow.gov_balance_change_bn, 1)}
-                note={`After taxpayers adjust realisations to the new rates, at ${resultElasticity ? elasticityLabel(resultElasticity) : `a retention elasticity of ${result.metadata.elasticity}`}.`}
+                note={
+                  Number(result.metadata.elasticity) === 0
+                    ? "With no behavioural response."
+                    : `At ${resultElasticity ? elasticityLabel(resultElasticity) : `a retention elasticity of ${result.metadata.elasticity}`}.`
+                }
               />
               <MetricCard
                 label={`Five-year change in government balance, ${firstYear} to ${result.budget.at(-1).year}`}
@@ -703,7 +707,7 @@ export default function RateExplorerTab({ data, datasetKey, onNavigate }) {
             {entrantShare > 0.05 ? (
               <p className="mt-4 text-sm leading-6 text-slate-600">
                 Entrants by uprating (
-                <TabLink onNavigate={onNavigate} tab="baseline">
+                <TabLink onNavigate={onNavigate} tab="baseline" section="entrants">
                   see the Baseline tab
                 </TabLink>
                 ) contribute {formatSmallBn(firstRow.cgt_change_from_entrants_bn)} of the{" "}
@@ -715,7 +719,7 @@ export default function RateExplorerTab({ data, datasetKey, onNavigate }) {
           <section className="section-card">
             <SectionHeading
               title="Change in household net income by income group"
-              description="Change in household net income, grouped by the household's position in the baseline income distribution; the switches group households by income quintile or quartile, household type or region. Gains that taxpayers defer in response to the new rates count as lower income in the year, alongside the change in tax paid."
+              description="Change in household net income, grouped by the household's position in the baseline income distribution; the switches group households by income quintile or quartile, household type or region. Changes in the gains taxpayers realise in response to the new rates count as changes in income in the year, alongside the change in tax paid."
             />
             <GroupImpactChart groupsByYear={result.income_change_groups} initialYear={firstYear} />
           </section>

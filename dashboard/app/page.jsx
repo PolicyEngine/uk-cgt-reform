@@ -72,10 +72,16 @@ function Dashboard() {
     replaceUrl(tab);
   }
 
-  // Open a tab at one of its sections (e.g. Methodology's #elasticity-gap).
+  // Open a tab at one of its sections (e.g. Methodology's #elasticity-gap);
+  // a link with no section opens the tab at its top, not mid-scroll.
   function handleNavigate(tab, sectionId) {
     handleTabChange(tab);
-    setAnchor(sectionId);
+    if (sectionId) setAnchor(sectionId);
+    else {
+      window.requestAnimationFrame(() => {
+        document.querySelector(".tab-strip")?.scrollIntoView();
+      });
+    }
   }
 
   return (
@@ -148,7 +154,7 @@ function Dashboard() {
 
         {activeTab === "reform" && <ReformTab data={data} onNavigate={handleNavigate} />}
         {activeTab === "explorer" && <RateExplorerTab data={data} datasetKey={dataset.key} onNavigate={handleNavigate} />}
-        {activeTab === "baseline" && <BaselineTab data={data} onNavigate={handleNavigate} />}
+        {activeTab === "baseline" && <BaselineTab data={data} anchor={anchor} onNavigate={handleNavigate} />}
         {activeTab === "benchmarks" && <BenchmarksTab data={data} onNavigate={handleNavigate} />}
         {activeTab === "methodology" && <MethodologyTab data={data} anchor={anchor} />}
 

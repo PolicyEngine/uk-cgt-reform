@@ -30,6 +30,11 @@ function percent(change) {
   return `${Math.abs(100 * change).toFixed(0)}%`;
 }
 
+// CenTax's report, at a PDF page (printed page + 1).
+const CENTAX_REPORT =
+  "https://centax.org.uk/wp-content/uploads/2024/10/AdvaniLonsdaleSummers2024_CGTReform.pdf";
+const centaxPage = (pdfPage) => `${CENTAX_REPORT}#page=${pdfPage}`;
+
 export default function MethodologyTab({ data, anchor }) {
   // Analysis sections can link here with /?tab=methodology#<id>, or open the
   // tab at a section (``anchor``); the tab mounts after navigation, so the
@@ -149,15 +154,19 @@ export default function MethodologyTab({ data, anchor }) {
 
       <section className="section-card scroll-mt-24" id="elasticity">
         <SectionHeading
-          title="Behavioural response: CenTax's elasticity, in CenTax's form"
+          title="Behavioural response: CenTax's elasticity, in CenTax's convention"
           description="How realised gains respond to the share of each gain a taxpayer keeps."
         />
         <p className="text-sm leading-6 text-slate-600">
-          <ExternalLink href={central.url}>Arun Advani and CenTax</ExternalLink> express the
-          responsiveness of realised gains as an elasticity with respect to the{" "}
-          <em>retention rate</em> (1 − t): how much realisations rise when taxpayers keep a
-          larger share of each pound of gain. The model applies that elasticity in the same form.
-          For each person,
+          <ExternalLink href={central.url}>Arun Advani and CenTax</ExternalLink> apply one
+          aggregate elasticity to the CGT base as a whole, with respect to the{" "}
+          <em>retention rate</em> (1 − t), the share of gains a taxpayer keeps after tax (pp.{" "}
+          <ExternalLink href={centaxPage(33)}>32</ExternalLink> and{" "}
+          <ExternalLink href={centaxPage(38)}>37</ExternalLink>). The model takes their
+          convention but not their calculation: it applies the elasticity as a power to each
+          person&apos;s marginal retention rate. A person&apos;s marginal rate differs from an
+          aggregate rate, and away from 1.0, as at the sensitivity table&apos;s
+          0.5 and 2.0, the power differs from a linear reading of the elasticity. For each person,
         </p>
         <p className="my-3 rounded-lg bg-slate-50 p-4 text-center font-mono text-sm">
           realised gains × ((1 − t₁) / (1 − t₀))<sup>e</sup>
@@ -169,26 +178,25 @@ export default function MethodologyTab({ data, anchor }) {
           CenTax&apos;s {central.e_retention.toFixed(1)}, which they call &ldquo;our central
           elasticity estimate&rdquo; (
           <ExternalLink href={central.url}>Advani, Lonsdale and Summers, 2024, p. 37</ExternalLink>
-          ). PolicyEngine UK adopted the same value as its default capital gains response in
-          policyengine-uk 2.134.0 (
+          ). PolicyEngine UK adopts CenTax&apos;s central value as its default (policyengine-uk
+          2.134.0,{" "}
           <ExternalLink href="https://github.com/PolicyEngine/policyengine-uk/pull/2419">
             PR #2419
           </ExternalLink>
-          ); this dashboard sets the elasticity directly in every case. The Reform impacts tab&apos;s sensitivity
-          table re-runs the analysis with no response, with CenTax&apos;s range and with the
-          official HMRC/OBR elasticity described below.
+          ), and this dashboard sets the elasticity directly in every case. It is an assumption
+          for a package that also reforms the base, not an estimate for this rates-only reform,
+          so the Reform impacts tab&apos;s sensitivity table shows CenTax&apos;s range and the
+          official HMRC/OBR elasticity described below beside it, with a case of no response.
         </p>
         <p className="mt-3 text-sm leading-6 text-slate-600">
-          CenTax estimate their elasticity for a package that also removes the uplift at death
-          and charges gains on departure, closing two ways of deferring or avoiding the tax,
-          which this dashboard does not model. They expect a larger response to a rate rise on
-          the current base and{" "}
+          CenTax&apos;s package removes the uplift at death and charges gains on departure,
+          closing two ways of deferring or avoiding the tax; this dashboard models neither. They
+          expect a larger response to a rate rise on the current base and{" "}
           <ExternalLink href="https://www.nuffieldfoundation.org/wp-content/uploads/2023/03/Taxes-at-the-top-Understanding-what-high-earners-pay-and-options-for-reform.pdf#page=20">
             advise against equalising rates without those reforms
           </ExternalLink>{" "}
           (Advani, Hughson and Summers, <em>Taxes at the top</em>, CenTax, September 2026, p.
-          17). The upper end of CenTax&apos;s range and the official case show how much of the
-          yield rests on the assumption.
+          17).
         </p>
       </section>
 
@@ -201,12 +209,12 @@ export default function MethodologyTab({ data, anchor }) {
           <li>
             <strong>The official assumption.</strong> HMRC and the OBR use a retention-rate
             elasticity of {official.e_retention} for the main CGT rates and{" "}
-            {official.badr_e_retention} for gains qualifying for Business Asset Disposal Relief (
-            <ExternalLink href={`${official.url}#page=3`}>
-              OBR, {formatPublished(official.published.slice(0, 7))},{" "}
-              {official.locator.toLowerCase()}
-            </ExternalLink>
-            ; HMRC&apos;s estimate from 1998 to 2018 is 4.0). The main figure is{" "}
+            {official.badr_e_retention} for gains qualifying for Business Asset Disposal Relief
+            (OBR, {formatPublished(official.published.slice(0, 7))},{" "}
+            <ExternalLink href={`${official.url}#page=3`}>para 1.9</ExternalLink> and{" "}
+            <ExternalLink href={`${official.url}#page=5`}>Table 1.1</ExternalLink>; HMRC&apos;s estimate
+            from 1998 to 2018 is 4.0,{" "}
+            <ExternalLink href={`${official.url}#page=3`}>para 1.10</ExternalLink>). The main figure is{" "}
             {(official.e_retention / central.e_retention).toFixed(1)} times CenTax&apos;s central
             case. The official case applies both: the engine gives gains qualifying for the relief
             their own elasticity, and both kinds of gain respond to the same change in a
@@ -229,9 +237,8 @@ export default function MethodologyTab({ data, anchor }) {
             those gains raise {atCentral.revenue >= 0 ? "rises" : "falls"} by{" "}
             {percent(atCentral.revenue)}. At the official elasticity, realised gains fall by{" "}
             {percent(atOfficial.gains)} and revenue {atOfficial.revenue >= 0 ? "rises" : "falls"} by{" "}
-            {percent(atOfficial.revenue)}, the direction HMRC&apos;s row shows. The engine applies
-            the same formula to each person&apos;s own simulated marginal rate on gains, so the
-            aggregate effect depends on where the dataset&apos;s gains sit.
+            {percent(atOfficial.revenue)}, the direction HMRC&apos;s row shows. On a dataset, the
+            aggregate effect depends on where its taxpayers&apos; marginal rates on gains sit.
           </li>
           <li>
             <strong>On this dataset.</strong> The Reform impacts tab&apos;s sensitivity table gives

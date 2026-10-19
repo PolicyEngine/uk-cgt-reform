@@ -182,7 +182,7 @@ function CentaxPackage({ rows, onNavigate }) {
             the CGT base, so they are not like-for-like with a rates-only reform. They are listed
             as context;{" "}
             <TabLink onNavigate={onNavigate} tab="methodology" section="elasticity">
-              the Methodology tab sets out the package
+              the Methodology tab explains what the package means for the elasticity
             </TabLink>
             .
           </>

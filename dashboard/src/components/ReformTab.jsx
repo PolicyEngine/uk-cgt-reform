@@ -42,7 +42,9 @@ const STATIC_SOURCE = { label: "None: taxpayers do not respond", url: null };
 
 function officialSource(official) {
   return {
-    label: `OBR (${formatPublished(official.published.slice(0, 7))}), ${official.locator.toLowerCase()}`,
+    // The 3.6 and 1.4 are in para 1.9, on PDF p.3; the results file's locator
+    // also names Table 1.1, which is on p.5, so the label names the paragraph.
+    label: `OBR (${formatPublished(official.published.slice(0, 7))}), para 1.9`,
     url: `${official.url}#page=3`,
   };
 }
@@ -284,7 +286,7 @@ export default function ReformTab({ data, onNavigate }) {
             <>
               On {dataset.shortLabel}, the relief&apos;s qualifying gains are charged on their own
               schedule;{" "}
-              <TabLink onNavigate={onNavigate} tab="baseline">
+              <TabLink onNavigate={onNavigate} tab="baseline" section="benchmarks">
                 the Baseline tab compares them with HMRC&apos;s statistics
               </TabLink>
               .{" "}
@@ -321,7 +323,7 @@ export default function ReformTab({ data, onNavigate }) {
         {entrantShare > 0.05 ? (
           <p className="mt-4 text-sm leading-6 text-slate-600">
             Entrants by uprating (
-            <TabLink onNavigate={onNavigate} tab="baseline">
+            <TabLink onNavigate={onNavigate} tab="baseline" section="entrants">
               see the Baseline tab
             </TabLink>
             ) contribute {formatSmallBn(firstYearRow.cgt_change_from_entrants_bn)} of the{" "}
@@ -333,7 +335,7 @@ export default function ReformTab({ data, onNavigate }) {
       <section className="section-card">
         <SectionHeading
           title="Change in household net income by income group"
-          description="Change in household net income, grouped by the household's position in the baseline income distribution; the switches group households by income quintile or quartile, household type or region. Gains that taxpayers defer in response to the higher rates count as lower income in the year, alongside the extra tax paid, so the total fall in net income exceeds the revenue raised."
+          description="Change in household net income, grouped by the household's position in the baseline income distribution; the switches group households by income quintile or quartile, household type or region. Gains that taxpayers no longer realise in response to the higher rates count as lower income in the year, alongside the extra tax paid, so the total fall in net income exceeds the revenue raised."
         />
         <GroupImpactChart groupsByYear={getIncomeChangeGroupsByYear(data)} initialYear={firstYear} />
       </section>
@@ -349,9 +351,11 @@ export default function ReformTab({ data, onNavigate }) {
           <p className="mb-4 text-sm leading-6 text-slate-600">
             The revenue estimate depends on how strongly taxpayers reduce
             realisations when rates rise. Each row re-runs the reform with a
-            different elasticity of realised gains with respect to the retention
-            rate, the share (1 − t) of each marginal pound of gain a taxpayer
-            keeps. The bold row is this dashboard&apos;s central assumption,
+            different elasticity of realised gains with respect to the{" "}
+            <TabLink onNavigate={onNavigate} tab="methodology" section="elasticity">
+              retention rate
+            </TabLink>{" "}
+            (1 − t). The bold row is this dashboard&apos;s central assumption,
             CenTax&apos;s central {central.e_retention.toFixed(1)}; the rows either
             side are CenTax&apos;s range, {centaxRange.lower.toFixed(1)} to{" "}
             {centaxRange.upper.toFixed(1)}. The last row is the official HMRC/OBR
