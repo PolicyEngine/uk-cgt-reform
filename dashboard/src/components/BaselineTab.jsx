@@ -5,7 +5,7 @@ import { getDatasetInfo, getEntrants, getFirstYear, getValidation } from "../lib
 import { TableScroll } from "./controls";
 import SectionHeading from "./SectionHeading";
 
-// External benchmarks the baseline is validated against. These are published
+// External benchmarks the baseline is compared with. These are published
 // HMRC figures, not model outputs, so they live here rather than in the
 // pipeline JSON. Both columns come from the same release (Capital Gains Tax
 // statistics, 2026), which carries the revised 2023-24 year and the
