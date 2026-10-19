@@ -174,7 +174,7 @@ export default function MethodologyTab({ data, anchor }) {
           <ExternalLink href="https://github.com/PolicyEngine/policyengine-uk/pull/2419">
             PR #2419
           </ExternalLink>
-          ); this dashboard&apos;s runs use an earlier release and set the elasticity directly. The Reform impacts tab&apos;s sensitivity
+          ); this dashboard sets the elasticity directly in every case. The Reform impacts tab&apos;s sensitivity
           table re-runs the analysis with no response, with CenTax&apos;s range and with the
           official HMRC/OBR elasticity described below.
         </p>
