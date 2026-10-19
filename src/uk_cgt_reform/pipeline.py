@@ -9,8 +9,7 @@ retention-rate e=1.0 reform runs must differ materially) before writing any
 results.
 
 The reform runs on the one registered dataset (``simulations.DATASETS``: the
-staged Microcosm UK national line built from microcosm main c5a1cba8). The
-simulations run directly on the file as published, with no local
+published Microcosm UK 2024-25 national release). The simulations run directly on the file as published, with no local
 reweighting and no edited inputs: calibration and imputation belong
 upstream in the dataset producer, not in an analysis repo. The validation
 block reports the dataset against HMRC's statistics (taxpayer counts, gains
@@ -28,6 +27,7 @@ from __future__ import annotations
 import datetime
 import importlib.metadata
 import json
+import warnings
 from pathlib import Path
 
 from .comparison import (
@@ -51,6 +51,7 @@ from .impacts import (
     validation_stats,
 )
 from .reform import (
+    BADR_ELASTICITY_BY_CASE,
     ELASTICITY,
     ELASTICITY_PARAMETER,
     INCOME_TAX_RATES,
@@ -58,6 +59,7 @@ from .reform import (
     YEARS,
     centax_1920_reforms,
     centax_1920_rules,
+    elasticity_convention,
     equalisation_reform,
     reform_fingerprint,
     reform_schedules,
@@ -69,6 +71,7 @@ from .simulations import (
     DatasetSpec,
     ensure_uk_datasets,
     make_policy,
+    response_assumption,
     run_simulation,
 )
 from .uprating_audit import baseline_by_year, engine_audit, projection_fingerprint, write_audit
@@ -325,6 +328,12 @@ def run_dataset(
         f"static (e=0) yield {static_2026:.2f}bn vs central (e={ELASTICITY}) "
         f"{central_2026:.2f}bn. Refusing to write results."
     )
+    # The response each case applies, as policyengine-uk itself resolves it
+    # (capital_gains_response_assumption, 2.134.0+), beside the convention.
+    for row in sens:
+        row["response_assumption"] = checked_assumption(
+            equalisation_reform(row["e_retention"]), row["e_retention"], 2026
+        )
 
     # ── Step 3d: the yield built up schedule by schedule (2026), static and
     # central: main rates, then residential property, then the relief
@@ -457,6 +466,13 @@ def run_dataset(
             "reform_period_start": PERIOD,
             "elasticity": ELASTICITY,
             "elasticity_parameter": ELASTICITY_PARAMETER,
+            "capital_gains_response_assumption": {
+                case: {
+                    fiscal_year_label(year): checked_assumption(equalisation_reform(e), e, year)
+                    for year in YEARS
+                }
+                for case, e in (("central", ELASTICITY), ("static", 0.0))
+            },
             "reform": dict(INCOME_TAX_RATES),
             "reform_schedules": reform_schedules(),
             "reform_fingerprint": central_digest,
@@ -498,9 +514,46 @@ def run_dataset(
     return output, baseline_sims
 
 
+def checked_assumption(reform: dict, elasticity: float, year: int) -> dict:
+    """policyengine-uk's resolution of the response ``reform`` applies in
+    ``year`` (``simulations.response_assumption``), checked against the case
+    this repo meant: the retention-rate convention at ``elasticity`` (static at
+    zero), the relief elasticity and separate-relief switch the case sets (only
+    the official case has its own), no marginal-tax-rate elasticity and nothing
+    auto-resolved."""
+    assumption = response_assumption(reform, year)
+    expected = "static" if elasticity == 0 else "retention"
+    if (
+        assumption["convention"] != expected
+        or assumption["elasticity"] != elasticity
+        or assumption["badr_elasticity"] != elasticity_convention(elasticity)["badr_elasticity"]
+        or assumption["separate_badr_elasticity"] != (elasticity in BADR_ELASTICITY_BY_CASE)
+        or assumption["mtr_elasticity"] != 0
+        or assumption["mtr_auto_resolved"]
+        or assumption["warnings"]
+    ):
+        raise RuntimeError(
+            f"policyengine-uk resolves the e={elasticity} case in {year} as {assumption}, "
+            f"not the {expected} convention this repo sets. Refusing to write results."
+        )
+    return assumption
+
+
 def run(output_dir: Path = DATA_DIR) -> dict:
     """Run the pipeline end-to-end on the registered dataset and write its
     results and the uprating audit."""
+    from policyengine_uk.utils.capital_gains import CapitalGainsResponseWarning
+
+    # Every case sets the retention-rate elasticity itself; a case that fell
+    # back to the deprecated MTR-only convention would warn, so fail instead.
+    # The filter is scoped to this run and restored when it returns.
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", CapitalGainsResponseWarning)
+        return _run(output_dir)
+
+
+def _run(output_dir: Path) -> dict:
+    """The body of :func:`run`, called with the warning filter in place."""
     spec = DATASETS[DEFAULT_DATASET_KEY]
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)

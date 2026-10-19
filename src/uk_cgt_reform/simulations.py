@@ -19,11 +19,10 @@ policyengine.py wrapper), never by constructing
   digest and the projection fingerprint, because the wrapper also keeps an
   in-process cache keyed by id alone.
 
-One dataset is registered (:data:`DATASETS`): the staged Microcosm UK
-2024-25 national line built from microcosm main c5a1cba8, which carries the
-capital gains asset-type and relief breakdown that policyengine-uk 2.99.0
-charges on separate schedules. It is re-pinned to the published release
-once that exists. It is a single engine-year file (``time_period`` 2024)
+One dataset is registered (:data:`DATASETS`): the published Microcosm UK
+2024-25 national release, which carries the capital gains asset-type and
+relief breakdown that policyengine-uk 2.99.0 charges on separate schedules.
+It is a single engine-year file (``time_period`` 2024)
 that the engine copies forward and uprates; see ``uprating_audit``.
 
 Wrapper version (load-bearing): policyengine.py 5.0.3 onwards certifies
@@ -155,42 +154,43 @@ class DatasetSpec:
         return {**asdict(self), "digest": self.digest, "revision": self.revision}
 
 
+#: The published release. The URI names the file on the dataset repo's main
+#: branch at the commit that published it; the release's own immutable cut
+#: (the tag in ``producer``) holds the same file, digest included.
 CANDIDATE = DatasetSpec(
-    key="microcosm_uk_2024_25_c5a1cba8",
-    label="Microcosm UK 2024-25, national line from microcosm main c5a1cba8 (staged build)",
+    key="microcosm_uk_2024_25",
+    label="Microcosm UK 2024-25, national release published 4 October 2026",
     short_label="Microcosm UK 2024-25",
-    role="candidate",
+    role="release",
     uri=(
-        "hf://policyengine/populace-uk-private/staged/"
-        "uk-frs-calibration-attempt-20260930T155755Z-f8182725/"
-        "microcosm_uk_2024_25.h5@1b295f3750241f5f5f1bf92cdbe1d5b6a19a8922"
+        "hf://policyengine/populace-uk-private/"
+        "microcosm_uk_2024_25.h5@0d633297cd46106109bd7e075a6a1afdf0ac5ddb"
     ),
-    sha256="c64f916dc82353a028c9f7a18cf1299f1b77faf66684e7d1427e81db1fd144f3",
+    sha256="aa31bdf67c977927ea2b325567d1cf7a79d94381239bc79918a0a0fc9c9588af",
     base_year=2024,
     producer=(
-        "microcosm build uk-frs-calibration-attempt-20260930T155755Z-f8182725 "
-        "(tools/build_uk_rowwise_candidate.py --release-role national on microcosm main "
-        "c5a1cba8, the PolicyEngine/microcosm#1045 merge, with policyengine-uk 2.100.0), "
-        "staged 2026-09-30 in the Hugging Face dataset repo "
-        "policyengine/populace-uk-private (commit 1b295f37); all seven calibration-seam "
-        "gates passed, as did microcosm's evaluation against the Enhanced FRS; a "
-        "staging build, not a certified release"
+        "Microcosm UK release microcosm-uk-2024-25-national, cut "
+        "microcosm-uk-2024-25-national-20261002T230158Z-5c6b3f68 (build "
+        "uk-frs-calibration-attempt-20261002T230158Z-5c6b3f68 on microcosm 64c460b6, "
+        "PolicyEngine/microcosm#1089, with policyengine-uk 2.100.0), published "
+        "2026-10-04 on the main branch of the Hugging Face dataset repo "
+        "policyengine/populace-uk-private (commit 0d633297); a certified release: "
+        "its 31 spine, 7 calibration-seam and 20 release-cut gates passed"
     ),
     observation=(
-        "FRS 2024-25 spine; capital gains amounts redrawn from HMRC Table 3 (size of gain "
+        "FRS 2024-25 spine; capital gains amounts drawn from HMRC Table 3 (size of gain "
         "by taxable income, 2024-25) with asset types from HMRC Tables 7 and 8, gains "
         "qualifying for Business Asset Disposal Relief and Investors' Relief imputed from "
-        "HMRC Table 4, and gain carriers conditioned on wealth through a mass-conserving "
-        "support split (microcosm#1045); the sub-exempt remainder drawn from the "
-        "Advani-Summers within-band distribution (microcosm#970); household weights "
-        "calibrated to 1,090 targets for 2024-25, among them HMRC's CGT totals, size bands, "
-        "age, region, gains by taxable income band (Table 3) and the BADR bands (Table 4)"
+        "HMRC Table 4, and the sub-exempt remainder drawn from the Advani-Summers "
+        "within-band distribution; household weights calibrated to 1,168 targets, among "
+        "them HMRC's CGT totals, size bands, gains by taxable income band (Table 3), age, "
+        "region, the BADR bands (Table 4) and residential property gains"
     ),
     notes=(
-        "The build's projection gate (uk_cgt_projection_entrants, run on policyengine-uk "
-        "2.100.0) counts 6.7k gainers that uprating carries over the frozen exempt amount "
-        "by 2030, against HMRC's 73k taxpayers with gains of £3,000 to £5,999 in 2024-25 "
-        "(Table 2.1a); this repo's uprating audit counts 6.9k on policyengine-uk 2.104.0."
+        "The build's projection fence bounds the gainers that uprating carries over the "
+        "frozen exempt amount by 2030 at 7.4k, against HMRC's 73k taxpayers with gains of "
+        "£3,000 to £5,999 in 2024-25 (Table 2.1a); this repo's uprating audit counts "
+        "7.6k on policyengine-uk 2.137.0."
     ),
     columns=(
         "It carries capital_gains, capital_gains_residential_property (the residential "
@@ -201,8 +201,7 @@ CANDIDATE = DatasetSpec(
 
 DATASETS: dict[str, DatasetSpec] = {spec.key: spec for spec in (CANDIDATE,)}
 
-#: The dataset every result is computed on: the staged national line, re-pinned
-#: to the published Microcosm UK release once that exists.
+#: The dataset every result is computed on.
 DEFAULT_DATASET_KEY = CANDIDATE.key
 
 
@@ -288,6 +287,46 @@ def make_policy(reform: dict, name: str):
         return sim
 
     return Policy(name=name, simulation_modifier=modifier)
+
+
+_RESPONSE_SYSTEM = None
+
+
+class _ResponseProbe:
+    """The one attribute ``capital_gains_response_assumption`` reads from a
+    simulation: its tax-benefit system, with a reform's parameters applied."""
+
+    def __init__(self, tax_benefit_system):
+        self.tax_benefit_system = tax_benefit_system
+
+
+def response_assumption(reform: dict, year: int) -> dict:
+    """The realisation response policyengine-uk applies under ``reform`` in
+    ``year``, as ``policyengine_uk.utils.capital_gains.
+    capital_gains_response_assumption`` (policyengine-uk 2.134.0+) resolves it:
+    the convention (``retention``, ``mtr`` or ``static``), the elasticities in
+    force and whether each is current law or set by the reform.
+
+    It is resolved on a clone of the engine's tax-benefit system with the
+    reform's parameter updates applied exactly as :func:`make_policy`'s
+    modifier applies them, so it does not depend on a simulation having run
+    (a cached one never builds its microsimulation). Raises where the engine
+    would, on settings that conflict.
+    """
+    global _RESPONSE_SYSTEM
+    import_wrapper()
+    from policyengine_core.periods import period
+    from policyengine_uk import CountryTaxBenefitSystem
+    from policyengine_uk.utils.capital_gains import capital_gains_response_assumption
+
+    if _RESPONSE_SYSTEM is None:
+        _RESPONSE_SYSTEM = CountryTaxBenefitSystem()
+    system = _RESPONSE_SYSTEM.clone()
+    for path, dates in reform.items():
+        parameter = system.parameters.get_child(path)
+        for start, value in dates.items():
+            parameter.update(value=value, start=period(start))
+    return capital_gains_response_assumption(_ResponseProbe(system), year).to_dict()
 
 
 def run_simulation(dataset, policy=None, sim_id: str | None = None, *, persist: bool = True):
