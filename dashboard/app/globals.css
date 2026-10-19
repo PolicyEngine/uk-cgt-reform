@@ -293,10 +293,10 @@
   }
 }
 
-/* Narrow screens: tabs wrap onto two rows at a smaller size. */
+/* Narrow screens: tabs wrap onto two rows at a smaller size than tablets'. */
 @media (max-width: 640px) {
   .tab-strip .tab-button {
     padding: 10px 12px;
-    font-size: 0.95rem;
+    font-size: 0.85rem;
   }
 }
