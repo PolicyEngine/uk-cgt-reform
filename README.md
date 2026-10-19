@@ -657,6 +657,10 @@ elasticity 1.0 by default (so the static case sets it to 0 itself) and adds
 record (`metadata.capital_gains_response_assumption` and each sensitivity
 row's `response_assumption`); the build refuses to write results if the
 engine resolves a case differently or warns with `CapitalGainsResponseWarning`.
+The record's `sources` are reported by value: a parameter equal to current law
+shows as `default` even when the case sets it. The central case sets the
+elasticity to 1.0 itself, which equals the engine default, so its record reads
+`"elasticity": "default"`.
 The dataset was built with 2.100.0, the
 first release whose local-authority enum carries the April 2023 unitary
 authorities it records. Each release can move the projection fingerprint, so

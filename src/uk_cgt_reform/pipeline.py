@@ -51,6 +51,7 @@ from .impacts import (
     validation_stats,
 )
 from .reform import (
+    BADR_ELASTICITY_BY_CASE,
     ELASTICITY,
     ELASTICITY_PARAMETER,
     INCOME_TAX_RATES,
@@ -58,6 +59,7 @@ from .reform import (
     YEARS,
     centax_1920_reforms,
     centax_1920_rules,
+    elasticity_convention,
     equalisation_reform,
     reform_fingerprint,
     reform_schedules,
@@ -516,12 +518,16 @@ def checked_assumption(reform: dict, elasticity: float, year: int) -> dict:
     """policyengine-uk's resolution of the response ``reform`` applies in
     ``year`` (``simulations.response_assumption``), checked against the case
     this repo meant: the retention-rate convention at ``elasticity`` (static at
-    zero), no marginal-tax-rate elasticity and nothing auto-resolved."""
+    zero), the relief elasticity and separate-relief switch the case sets (only
+    the official case has its own), no marginal-tax-rate elasticity and nothing
+    auto-resolved."""
     assumption = response_assumption(reform, year)
     expected = "static" if elasticity == 0 else "retention"
     if (
         assumption["convention"] != expected
         or assumption["elasticity"] != elasticity
+        or assumption["badr_elasticity"] != elasticity_convention(elasticity)["badr_elasticity"]
+        or assumption["separate_badr_elasticity"] != (elasticity in BADR_ELASTICITY_BY_CASE)
         or assumption["mtr_elasticity"] != 0
         or assumption["mtr_auto_resolved"]
         or assumption["warnings"]
@@ -540,7 +546,14 @@ def run(output_dir: Path = DATA_DIR) -> dict:
 
     # Every case sets the retention-rate elasticity itself; a case that fell
     # back to the deprecated MTR-only convention would warn, so fail instead.
-    warnings.simplefilter("error", CapitalGainsResponseWarning)
+    # The filter is scoped to this run and restored when it returns.
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", CapitalGainsResponseWarning)
+        return _run(output_dir)
+
+
+def _run(output_dir: Path) -> dict:
+    """The body of :func:`run`, called with the warning filter in place."""
     spec = DATASETS[DEFAULT_DATASET_KEY]
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
