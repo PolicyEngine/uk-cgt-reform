@@ -38,7 +38,10 @@ async function parse(response) {
 }
 
 export function useExploration() {
-  const [status, setStatus] = useState("idle"); // idle | running | done | error
+  // idle | checking (a cache-only lookup) | running | done | error |
+  // not_cached (a cache-only request found nothing stored, so nothing was
+  // computed)
+  const [status, setStatus] = useState("idle");
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -61,11 +64,13 @@ export function useExploration() {
     setElapsedSeconds(0);
   }, []);
 
-  const run = useCallback(async (request) => {
+  // `cacheOnly` asks only for a stored result (or a computation already
+  // running), as a link opened on page load does: it never starts one.
+  const run = useCallback(async (request, { cacheOnly = false } = {}) => {
     const id = ++runId.current;
     const startedAt = Date.now();
     stopTimer();
-    setStatus("running");
+    setStatus(cacheOnly ? "checking" : "running");
     setResult(null);
     setError(null);
     setElapsedSeconds(0);
@@ -84,11 +89,17 @@ export function useExploration() {
         await fetch(`${BASE_PATH}/api/explore`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(request),
+          body: JSON.stringify(cacheOnly ? { ...request, cache_only: true } : request),
         }),
       );
+      if (body.status === "not_cached") {
+        finish(() => setStatus("not_cached"));
+        return;
+      }
       while (body.status === "queued" || body.status === "running") {
         if (id !== runId.current) return;
+        // A cache-only lookup that found the schedule already computing joins it.
+        setStatus("running");
         await new Promise((resolve) => setTimeout(resolve, POLL_MS));
         const jobId = body.job_id ?? body.jobId;
         body = { ...(await parse(await fetch(`${BASE_PATH}/api/explore/status?job=${jobId}`))), job_id: jobId };

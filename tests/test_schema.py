@@ -7,21 +7,19 @@ from uk_cgt_reform.comparison import (
     READY_RECKONER,
     READY_RECKONER_ELASTICITIES,
     SENSITIVITY_CASES,
-    VALIDATION_METRICS,
     benchmarks_block,
     centax_1920_block,
-    dataset_comparison,
     ready_reckoner_block,
     static_equalisation_block,
 )
-from uk_cgt_reform.impacts import REGION_NAMES, fiscal_year_label
+from uk_cgt_reform.impacts import REGION_NAMES, fiscal_year_label, schedule_split
 from uk_cgt_reform.reform import (
     YEARS,
     centax_1920_rules,
     elasticity_convention,
     reform_schedules,
 )
-from uk_cgt_reform.simulations import DATASETS, DEFAULT_DATASET_KEY, INCUMBENT
+from uk_cgt_reform.simulations import CANDIDATE, DATASETS, DEFAULT_DATASET_KEY
 
 YEAR_LABELS = [fiscal_year_label(y) for y in range(2026, 2031)]
 
@@ -33,6 +31,7 @@ TOP_LEVEL_KEYS = {
     "income_change_groups",
     "sensitivity",
     "benchmarks",
+    "schedule_split",
 }
 
 
@@ -93,7 +92,37 @@ def fake_benchmarks(scale: float = 1.0) -> dict:
     )
 
 
-def fake_results(spec=INCUMBENT, scale: float = 1.0) -> dict:
+def fake_schedule_split(scale: float = 1.0) -> dict:
+    """The ``schedule_split`` block, built through the real builder."""
+    steps = [
+        ("main_rates", "Main rates at 20% / 40% / 45%"),
+        ("residential", "Residential property gains at the same rates"),
+        ("badr_withdrawn", "Business Asset Disposal Relief withdrawn"),
+    ]
+    base = 17.2e9 * scale
+    revenues = {
+        "static": {
+            "main_rates": base + 9e9,
+            "residential": base + 11e9,
+            "badr_withdrawn": base + 14e9,
+        },
+        "central": {
+            "main_rates": base + 3e9,
+            "residential": base + 3.5e9,
+            "badr_withdrawn": base + 4e9,
+        },
+    }
+    return {
+        "year": "2026-27",
+        "elasticities": {"static": 0.0, "central": 1.0},
+        "reform_fingerprints": {
+            case: {step: "0" * 12 for step, _ in steps} for case in ("static", "central")
+        },
+        "steps": schedule_split(base, steps, revenues),
+    }
+
+
+def fake_results(spec=CANDIDATE, scale: float = 1.0) -> dict:
     """A results dict with the exact shape pipeline.run_dataset emits."""
     labels = [fiscal_year_label(y) for y in YEARS]
     entrants = {
@@ -117,12 +146,13 @@ def fake_results(spec=INCUMBENT, scale: float = 1.0) -> dict:
             "dataset_producer": spec.producer,
             "dataset_observation": spec.observation,
             "dataset_notes": spec.notes,
+            "dataset_columns": spec.columns,
             "datasets": [s.to_metadata() for s in DATASETS.values()],
             "default_dataset_key": DEFAULT_DATASET_KEY,
             "calibrated": False,
             "reform_period_start": "2026-01-01",
-            "elasticity": -0.7,
-            "elasticity_parameter": "gov.simulation.capital_gains_responses.mtr_elasticity",
+            "elasticity": 1.0,
+            "elasticity_parameter": "gov.simulation.capital_gains_responses.elasticity",
             "reform": {"basic_rate": 0.20, "higher_rate": 0.40, "additional_rate": 0.45},
             "reform_schedules": reform_schedules(),
             "reform_fingerprint": "def456",
@@ -152,6 +182,7 @@ def fake_results(spec=INCUMBENT, scale: float = 1.0) -> dict:
             "baseline_cgt_revenue_bn": 17.2 * scale,
             "residential_property_gains_bn": 0.0,
             "badr_gains_bn": 0.0,
+            "badr_claimants": 0.0,
             "carried_interest_gains_bn": 0.0,
             "entrants_by_uprating": entrants,
             "cgt_taxpayers_excluding_entrants": 390_000.0 * scale,
@@ -188,10 +219,11 @@ def fake_results(spec=INCUMBENT, scale: float = 1.0) -> dict:
             for label in YEAR_LABELS
         },
         "sensitivity": [
-            {"name": name, "e_mtr": e, **elasticity_convention(e), "revenue_2026_bn": 1.0}
+            {"name": name, "e_retention": e, **elasticity_convention(e), "revenue_2026_bn": 1.0}
             for name, e in SENSITIVITY_CASES.items()
         ],
         "benchmarks": fake_benchmarks(scale),
+        "schedule_split": fake_schedule_split(scale),
     }
 
 
@@ -202,13 +234,12 @@ def test_top_level_keys():
 def test_metadata_and_years():
     md = fake_results()["metadata"]
     assert md["years"] == [2026, 2027, 2028, 2029, 2030]
-    assert md["elasticity"] == -0.7
+    assert md["elasticity"] == 1.0
     assert set(md["reform"]) == {"basic_rate", "higher_rate", "additional_rate"}
-    assert set(md["reform_schedules"]) == {
-        "residential_property",
-        "carried_interest",
-        "badr_lifetime_limit",
-    }
+    # Carried interest has been taxed as income since April 2026: the reform
+    # moves the residential schedule and withdraws the relief.
+    assert set(md["reform_schedules"]) == {"residential_property", "badr"}
+    assert md["reform_schedules"]["badr"]["withdrawn"] is True
     assert md["dataset_key"] in {d["key"] for d in md["datasets"]}
     assert md["default_dataset_key"] in DATASETS
 
@@ -223,47 +254,6 @@ def test_validation_reports_entrants_by_uprating():
         "cgt_bn",
     }
     assert validation["cgt_taxpayers_excluding_entrants"] <= validation["cgt_taxpayers"]
-
-
-def test_dataset_comparison_lays_datasets_out_as_columns():
-    results = {
-        spec.key: fake_results(spec, scale=1.0 if spec.role == "incumbent" else 2.0)
-        for spec in DATASETS.values()
-    }
-    side_by_side = dataset_comparison(results)
-    keys = set(DATASETS)
-    assert set(side_by_side["datasets"]) == keys
-    assert side_by_side["first_year"] == "2026-27"
-    assert [row["metric"] for row in side_by_side["validation"]] == [
-        name for name, _ in VALIDATION_METRICS
-    ]
-    taxpayers = next(r for r in side_by_side["validation"] if r["metric"] == "cgt_taxpayers")
-    assert taxpayers["microcosm_uk_2024_25_979"] == 2 * taxpayers["enhanced_frs_2024_25"]
-    entrants = next(
-        r for r in side_by_side["validation"] if r["metric"] == "entrants_by_uprating.count"
-    )
-    assert entrants["enhanced_frs_2024_25"] == 10_000.0
-    assert set(side_by_side["budget"][0]) == {"year", *keys}
-    assert set(side_by_side["five_year_total_bn"]) == keys
-    assert set(side_by_side["sensitivity"][0]) == {
-        "name",
-        "e_mtr",
-        "elasticity_parameter",
-        "applied_as",
-        "applied_value",
-        *keys,
-    }
-    assert side_by_side["sensitivity"][-1]["applied_as"] == "retention"
-    assert set(side_by_side["top_quintile"]) == keys
-    assert set(side_by_side["region"]) == keys
-    bench = side_by_side["benchmarks"]
-    assert [row["year"] for row in bench["static_equalisation"]] == YEAR_LABELS
-    assert bench["static_equalisation"][0]["jrf_bn"] == 13.0
-    assert bench["static_equalisation"][3]["jrf_bn"] == 17.0
-    assert bench["static_equalisation"][1]["jrf_bn"] is None
-    assert set(bench["static_equalisation"][0]) == {"year", "jrf_bn", *keys}
-    assert bench["centax_2019_20_rules"]["centax_uplift_pct"] == 139.0
-    assert set(bench["centax_2019_20_rules"]) == {"centax_uplift_pct", *keys}
 
 
 def test_budget_rows_use_fiscal_year_labels():
@@ -308,17 +298,20 @@ def test_calibration_block_is_explicitly_empty():
 
 def test_sensitivity_cases():
     rows = fake_results()["sensitivity"]
-    assert [r["e_mtr"] for r in rows] == [0.0, -0.35, -0.7, -2.52]
+    assert [r["e_retention"] for r in rows] == [0.0, 0.5, 1.0, 2.0, 3.6]
     assert rows[0]["name"] == "Static (no behavioural response)"
-    # Every row says how its case reached the engine: the official one is
-    # keyed by its MTR value but applied as a retention-rate elasticity.
+    # Every row says how its case reached the engine: a retention-rate
+    # elasticity, applied as stated.
     assert [(r["applied_as"], r["applied_value"]) for r in rows] == [
-        ("mtr", 0.0),
-        ("mtr", -0.35),
-        ("mtr", -0.7),
+        ("retention", 0.0),
+        ("retention", 0.5),
+        ("retention", 1.0),
+        ("retention", 2.0),
         ("retention", 3.6),
     ]
-    assert rows[-1]["elasticity_parameter"].endswith(".capital_gains_responses.elasticity")
+    assert all(
+        r["elasticity_parameter"].endswith(".capital_gains_responses.elasticity") for r in rows
+    )
 
 
 def test_benchmarks_block_shape():
@@ -332,6 +325,9 @@ def test_benchmarks_block_shape():
     }
     assert bench["elasticities"]["official"]["applied_as"] == "retention"
     assert bench["elasticities"]["official"]["e_retention"] == 3.6
+    assert bench["elasticities"]["central"]["applied_as"] == "retention"
+    assert bench["elasticities"]["central"]["e_retention"] == 1.0
+    assert bench["elasticities"]["centax_range"] == {"lower": 0.5, "upper": 2.0}
     static = bench["static_equalisation"]
     assert [row["year"] for row in static["by_year"]] == YEAR_LABELS
     first = static["by_year"][0]
@@ -348,3 +344,18 @@ def test_benchmarks_block_shape():
     assert [row["id"] for row in rows] == [row["id"] for row in READY_RECKONER["rows"]]
     assert set(rows[0]["model_m"]) == set(READY_RECKONER_ELASTICITIES)
     assert set(rows[0]["model_m"]["official"]) == {"2026-27", "2027-28"}
+
+
+def test_schedule_split_builds_the_yield_up_step_by_step():
+    split = fake_results()["schedule_split"]
+    assert split["year"] == "2026-27"
+    assert split["elasticities"] == {"static": 0.0, "central": 1.0}
+    steps = split["steps"]
+    assert [row["step"] for row in steps] == ["main_rates", "residential", "badr_withdrawn"]
+    # Cumulative changes from current law, and each step's own increment.
+    assert [row["static_cgt_change_bn"] for row in steps] == pytest.approx([9.0, 11.0, 14.0])
+    assert [row["static_increment_bn"] for row in steps] == pytest.approx([9.0, 2.0, 3.0])
+    assert [row["central_increment_bn"] for row in steps] == pytest.approx([3.0, 0.5, 0.5])
+    assert sum(row["central_increment_bn"] for row in steps) == pytest.approx(
+        steps[-1]["central_cgt_change_bn"]
+    )

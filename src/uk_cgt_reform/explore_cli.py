@@ -5,6 +5,8 @@ year, on this machine, through the same code the Modal workers run. Results
 are served from and written to the local cache (``data/explore_results``);
 ``--json`` prints the full result on stdout (progress goes to stderr), which
 is how the dashboard's Next route uses it when no backend is configured.
+``--cache-only`` serves a stored result or exits with :data:`NOT_CACHED_EXIT`,
+never computing: the route uses it for links opened on page load.
 """
 
 from __future__ import annotations
@@ -19,17 +21,23 @@ from .explore import (
     ELASTICITY_OPTIONS,
     ExploreValidationError,
     api_options,
+    cached_locally,
     run_locally,
     validate_request,
 )
 from .simulations import DATASETS, DEFAULT_DATASET_KEY
+
+#: The exit status of a ``--cache-only`` run with nothing stored (2 is a
+#: validation error).
+NOT_CACHED_EXIT = 3
 
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="uk-cgt-reform-explore",
         description=(
-            "Score a CGT rate schedule (main and residential property rates) on a "
+            "Score a CGT rate schedule (main and residential property rates, and "
+            "Business Asset Disposal Relief) on a "
             "registered dataset for 2026-27 to 2030-31, with the pipeline's behavioural "
             "response. Rates are fractions: 0.3 for 30%."
         ),
@@ -38,6 +46,23 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--higher", type=float, help="Higher rate, e.g. 0.30")
     parser.add_argument(
         "--additional", type=float, help="Additional rate (at least the higher rate)"
+    )
+    parser.add_argument(
+        "--withdraw-badr",
+        action="store_true",
+        help="Withdraw Business Asset Disposal Relief: qualifying gains take the main rates.",
+    )
+    parser.add_argument(
+        "--badr-rate",
+        type=float,
+        default=None,
+        help="Keep the relief at this rate (a fraction; default: current law, 0.18).",
+    )
+    parser.add_argument(
+        "--badr-limit",
+        type=int,
+        default=None,
+        help="Keep the relief up to this lifetime limit (default: current law, 1000000).",
     )
     parser.add_argument(
         "--options",
@@ -58,8 +83,8 @@ def build_parser() -> argparse.ArgumentParser:
         type=float,
         default=DEFAULT_ELASTICITY,
         help=(
-            "MTR elasticity of realised gains; one of "
-            + ", ".join(str(o["e_mtr"]) for o in ELASTICITY_OPTIONS)
+            "Elasticity of realised gains with respect to the retention rate (1 - t); one of "
+            + ", ".join(str(o["e_retention"]) for o in ELASTICITY_OPTIONS)
             + f" (default {DEFAULT_ELASTICITY})."
         ),
     )
@@ -71,6 +96,14 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--no-cache", action="store_true", help="Recompute even if a result is cached."
+    )
+    parser.add_argument(
+        "--cache-only",
+        action="store_true",
+        help=(
+            "Serve a stored result only, and exit with status 3 without computing when "
+            "there is none (the dashboard's links opened on page load)."
+        ),
     )
     parser.add_argument(
         "--json", action="store_true", help="Print the full result as JSON on stdout."
@@ -86,7 +119,8 @@ def print_headline(result: dict) -> None:
     print(
         f"{md['dataset_short_label']}: basic {rates['basic_rate']:.0%}, higher "
         f"{rates['higher_rate']:.0%}, additional {rates['additional_rate']:.0%}; "
-        f"elasticity {md['elasticity']}" + (" (served from cache)" if cache.get("hit") else "")
+        f"BADR {md['reform_badr']}; elasticity {md['elasticity']}"
+        + (" (served from cache)" if cache.get("hit") else "")
     )
     for row in result["budget"]:
         print(
@@ -115,6 +149,16 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if None in (args.basic, args.higher, args.additional):
         parser.error("--basic, --higher and --additional are required (fractions, e.g. 0.3)")
+    if args.withdraw_badr and (args.badr_rate is not None or args.badr_limit is not None):
+        parser.error("--withdraw-badr cannot be combined with --badr-rate or --badr-limit")
+    if args.withdraw_badr:
+        badr = {"withdrawn": True}
+    else:
+        badr = {
+            key: value
+            for key, value in (("rate", args.badr_rate), ("lifetime_limit", args.badr_limit))
+            if value is not None
+        }
     payload = {
         "dataset": args.dataset,
         "rates": {
@@ -122,6 +166,7 @@ def main(argv: list[str] | None = None) -> int:
             "higher_rate": args.higher,
             "additional_rate": args.additional,
         },
+        "badr": badr,
         "elasticity": args.elasticity,
     }
     try:
@@ -129,10 +174,18 @@ def main(argv: list[str] | None = None) -> int:
     except ExploreValidationError as error:
         print(f"error: {error}", file=sys.stderr)
         return 2
+    if args.cache_only and args.no_cache:
+        parser.error("--cache-only cannot be combined with --no-cache")
     log = None if args.quiet else (lambda message: print(message, file=sys.stderr, flush=True))
-    result = run_locally(
-        request, data_folder=args.data_folder, use_cache=not args.no_cache, log=log
-    )
+    if args.cache_only:
+        result = cached_locally(request)
+        if result is None:
+            print("not cached: this schedule has not been computed yet", file=sys.stderr)
+            return NOT_CACHED_EXIT
+    else:
+        result = run_locally(
+            request, data_folder=args.data_folder, use_cache=not args.no_cache, log=log
+        )
     if args.json:
         json.dump(result, sys.stdout)
         sys.stdout.write("\n")

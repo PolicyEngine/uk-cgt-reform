@@ -26,7 +26,7 @@ from uk_cgt_reform.impacts import (
     cgt_uplift,
     sensitivity,
 )
-from uk_cgt_reform.reform import ELASTICITY_PARAMETER, RETENTION_ELASTICITY_PARAMETER
+from uk_cgt_reform.reform import ELASTICITY_PARAMETER
 
 
 def fake_sim(cgt: list[float]) -> SimpleNamespace:
@@ -93,17 +93,20 @@ def test_sensitivity_rows_record_how_each_case_was_applied():
     assert [set(row) for row in rows] == [
         {
             "name",
-            "e_mtr",
+            "e_retention",
             "elasticity_parameter",
             "applied_as",
             "applied_value",
+            "badr_elasticity",
             "revenue_2026_bn",
         }
     ] * len(SENSITIVITY_CASES)
-    assert [row["elasticity_parameter"] for row in rows] == [ELASTICITY_PARAMETER] * 3 + [
-        RETENTION_ELASTICITY_PARAMETER
-    ]
-    assert rows[-1]["applied_value"] == 3.6
+    assert [row["elasticity_parameter"] for row in rows] == [ELASTICITY_PARAMETER] * len(rows)
+    assert {row["applied_as"] for row in rows} == {"retention"}
+    assert [row["applied_value"] for row in rows] == [0.0, 0.5, 1.0, 2.0, 3.6]
+    # Only the official case gives gains qualifying for the relief their own
+    # elasticity (1.4); CenTax's cases apply one elasticity to every gain.
+    assert [row["badr_elasticity"] for row in rows] == [0.0, 0.5, 1.0, 2.0, 1.4]
 
 
 # --- the external figures, pinned to their sources ----------------------------
@@ -158,6 +161,8 @@ def test_external_figures_are_pinned():
 
 
 def test_ready_reckoner_rows_are_pinned():
+    # HMRC, Direct effects of illustrative tax changes, June 2025 (the ODS
+    # at READY_RECKONER["url"], sha256 in READY_RECKONER["sha256"]).
     rows = {row["id"]: row for row in READY_RECKONER["rows"]}
     assert {rid: tuple(row["rates"].values()) for rid, row in rows.items()} == {
         "higher_plus_1": (0.18, 0.25, 0.25),
@@ -165,6 +170,8 @@ def test_ready_reckoner_rows_are_pinned():
         "higher_plus_10": (0.18, 0.34, 0.34),
         "lower_plus_1": (0.19, 0.24, 0.24),
         "lower_plus_5": (0.23, 0.24, 0.24),
+        "badr_plus_1": (0.18, 0.24, 0.24),
+        "badr_plus_5": (0.18, 0.24, 0.24),
     }
     assert {rid: tuple(row["hmrc_m"].values()) for rid, row in rows.items()} == {
         "higher_plus_1": (-15, 80, -30),
@@ -172,10 +179,29 @@ def test_ready_reckoner_rows_are_pinned():
         "higher_plus_10": (-540, -2060, -3565),
         "lower_plus_1": (-5, 10, 5),
         "lower_plus_5": (-40, 20, -10),
+        "badr_plus_1": (10, 135, 180),
+        "badr_plus_5": (40, 635, 840),
     }
+    # The BADR rows move the relief's rate from 18%; the rest keep the relief
+    # at current law. The official case is the same in every row (3.6 for
+    # main-rate gains, 1.4 for gains qualifying for the relief).
+    assert {rid: row["badr"]["rate"] for rid, row in rows.items() if "badr" in rid} == {
+        "badr_plus_1": 0.19,
+        "badr_plus_5": 0.23,
+    }
+    assert not any("official_elasticity" in row for row in rows.values())
+    assert all(
+        row["badr"] == {"withdrawn": False, "rate": 0.18, "lifetime_limit": 1_000_000}
+        for rid, row in rows.items()
+        if "badr" not in rid
+    )
     assert READY_RECKONER["lag"] == [
         {"model_year": "2026-27", "hmrc_year": "2027-28"},
         {"model_year": "2027-28", "hmrc_year": "2028-29"},
+    ]
+    assert [row["hmrc_label"] for row in READY_RECKONER["excluded"]] == [
+        "Lower rate +10pp (28% / 24% / 24%)",
+        "Annual exempt amount +£500 (individuals; £250 for trusts)",
     ]
 
 

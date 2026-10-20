@@ -3,7 +3,7 @@ import "./globals.css";
 export const metadata = {
   title: "Capital gains tax reform dashboard | PolicyEngine",
   description:
-    "Interactive dashboard estimating the revenue and distributional effects of reforms to UK capital gains tax rates from 2026-27, equalisation with income tax rates or any schedule you choose, using PolicyEngine UK microsimulation with CenTax-aligned behavioural responses.",
+    "Interactive dashboard estimating the revenue and distributional effects of reforms to UK capital gains tax rates from 2026-27, equalisation with income tax rates or any schedule you choose, using PolicyEngine UK microsimulation, with behavioural responses at CenTax's elasticities.",
 };
 
 export default function RootLayout({ children }) {
