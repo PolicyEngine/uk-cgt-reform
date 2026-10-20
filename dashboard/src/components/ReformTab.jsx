@@ -200,9 +200,22 @@ export default function ReformTab({ data, datasetKey, onNavigate, anchor }) {
   const equaliseRelief = precomputed.badr.withdrawn ? "Relief withdrawn" : `Relief ${describeBadr(precomputed.badr)}`;
   const equaliseEdited = !isPrecomputed(checkForm(forms.equalise), precomputed);
   const stale = isStale(state);
-  // The live states speak for themselves; otherwise an open panel with no
-  // results says what to do.
-  const prompt = policy && !hasResults && !["checking", "running", "not_cached", "error"].includes(status);
+  // What Calculate will do, for the panel's footer.
+  const restore = (
+    <button
+      type="button"
+      onClick={() => setForm("equalise")(equaliseDefault)}
+      className="font-semibold text-[color:var(--pe-color-primary-700)] underline decoration-1 underline-offset-2 hover:opacity-80"
+    >
+      Restore defaults
+    </button>
+  );
+  let footerStatus = { tone: "live", text: "Runs live, about 30 seconds; instant if run before." };
+  if (policy === "equalise") {
+    footerStatus = equaliseEdited
+      ? { tone: "live", text: "Edited: will run live.", action: restore }
+      : { tone: "instant", text: "Precomputed: shows instantly." };
+  }
 
   return (
     <div className="space-y-6">
@@ -240,13 +253,41 @@ export default function ReformTab({ data, datasetKey, onNavigate, anchor }) {
       </section>
 
       {policy ? (
-        <section id="policy-panel" className="section-card" aria-labelledby={`policy-tile-${policy}`}>
-          <h2 className="mb-3 text-xl font-semibold tracking-tight text-slate-900">
-            {POLICY_TITLES[policy]}
-          </h2>
-          {policy === "equalise" ? (
-            <>
-              <p className="mb-5 text-sm leading-6 text-slate-600">
+        <section id="policy-panel" className="section-card" aria-labelledby="policy-panel-title">
+          <div className="mb-6">
+            <h2 id="policy-panel-title" className="text-xl font-semibold tracking-tight text-slate-900">
+              {POLICY_TITLES[policy]}
+            </h2>
+            <p className="mt-1 text-sm leading-6 text-slate-600">
+              {policy === "equalise"
+                ? `CGT rates set to income tax rates from ${firstYear}, relief withdrawn.`
+                : "Set your own rates, relief and response, or start from a preset."}
+            </p>
+          </div>
+          <ScheduleForm
+            key={policy}
+            form={forms[policy]}
+            onChange={setForm(policy)}
+            showPresets={policy === "custom"}
+            onCalculate={calculate}
+            running={inFlight}
+            status={footerStatus}
+          />
+          {shown === "live" ? (
+            <StatusLine
+              status={status}
+              elapsedSeconds={elapsedSeconds}
+              error={error}
+              result={result}
+              datasetLabel={dataset.shortLabel}
+            />
+          ) : null}
+          <details className="group mt-6 rounded-xl border border-slate-200 px-4 py-3">
+            <summary className="cursor-pointer select-none text-sm font-semibold text-slate-700 marker:text-[color:var(--pe-color-primary-600)]">
+              About this {policy === "equalise" ? "reform" : "option"}
+            </summary>
+            {policy === "equalise" ? (
+              <p className="mt-3 text-sm leading-6 text-slate-600">
                 Current law taxes capital gains at lower rates than income. The reform aligns each
                 CGT rate with the corresponding income tax rate from {firstYear} and withdraws
                 Business Asset Disposal Relief, so gains that qualify for it take the new rates too,
@@ -267,60 +308,16 @@ export default function ReformTab({ data, datasetKey, onNavigate, anchor }) {
                 </TabLink>
                 , and the sensitivity table in the results shows the yield at other elasticities.
               </p>
-              <ScheduleForm
-                form={forms.equalise}
-                onChange={setForm("equalise")}
-                onCalculate={calculate}
-                running={inFlight}
-                note={
-                  equaliseEdited ? (
-                    <>
-                      These values differ from equalisation&apos;s, so Calculate runs them live, as
-                      Custom rates does.{" "}
-                      <button
-                        type="button"
-                        onClick={() => setForm("equalise")(equaliseDefault)}
-                        className="font-semibold text-[color:var(--pe-color-primary-600)] underline decoration-1 underline-offset-2 hover:opacity-80"
-                      >
-                        Restore equalisation&apos;s values
-                      </button>
-                    </>
-                  ) : (
-                    "At these values the results are precomputed and show at once. Change any value to run it live instead."
-                  )
-                }
-              />
-            </>
-          ) : (
-            <>
-              <p className="mb-5 text-sm leading-6 text-slate-600">
-                Set a rate for each band, in percent, or load a preset or one of HMRC&apos;s
-                ready-reckoner rows. The chosen rates apply to the main schedule and to residential
-                property gains. Business Asset Disposal Relief can be kept, at a rate and lifetime
-                limit you choose, or withdrawn. Every completed run is cached, so a schedule anyone
-                has run before is served at once.
+            ) : (
+              <p className="mt-3 text-sm leading-6 text-slate-600">
+                The chosen rates apply to the main schedule and to residential property gains.
+                Business Asset Disposal Relief can be kept, at a rate and lifetime limit you choose,
+                or withdrawn. A schedule runs through the same pipeline as the precomputed
+                equalisation results, and every completed run is cached, so a schedule anyone has
+                run before is served at once.
               </p>
-              <ScheduleForm
-                form={forms.custom}
-                onChange={setForm("custom")}
-                showPresets
-                onCalculate={calculate}
-                running={inFlight}
-              />
-            </>
-          )}
-          {shown === "live" ? (
-            <StatusLine
-              status={status}
-              elapsedSeconds={elapsedSeconds}
-              error={error}
-              result={result}
-              datasetLabel={dataset.shortLabel}
-            />
-          ) : null}
-          {prompt ? (
-            <p className="mt-4 text-sm leading-6 text-slate-600">Press Calculate to see the results.</p>
-          ) : null}
+            )}
+          </details>
         </section>
       ) : null}
 

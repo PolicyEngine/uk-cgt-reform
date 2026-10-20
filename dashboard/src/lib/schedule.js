@@ -90,23 +90,27 @@ export function validatePercents(percents) {
     const raw = percents[band.key];
     const value = Number(raw);
     if (raw === "" || raw === null || raw === undefined || !Number.isFinite(value)) {
-      return { error: `Enter a ${band.label.toLowerCase()} between ${PCT_MIN}% and ${PCT_MAX}%.` };
+      return { error: `Enter a ${band.label.toLowerCase()} between ${PCT_MIN}% and ${PCT_MAX}%.`, field: band.key };
     }
     if (value < PCT_MIN || value > PCT_MAX) {
-      return { error: `The ${band.label.toLowerCase()} must be between ${PCT_MIN}% and ${PCT_MAX}%.` };
+      return { error: `The ${band.label.toLowerCase()} must be between ${PCT_MIN}% and ${PCT_MAX}%.`, field: band.key };
     }
     if (Math.abs(value / STEP_PCT - Math.round(value / STEP_PCT)) > 1e-6) {
-      return { error: `Rates are whole percentage points; ${value}% for the ${band.label.toLowerCase()} is not.` };
+      return {
+        error: `Rates are whole percentage points; ${value}% for the ${band.label.toLowerCase()} is not.`,
+        field: band.key,
+      };
     }
     numbers[band.key] = value;
   }
   if (numbers.basic_rate > numbers.higher_rate) {
-    return { error: "The basic rate may not exceed the higher rate." };
+    return { error: "The basic rate may not exceed the higher rate.", field: "basic_rate" };
   }
   if (numbers.additional_rate < numbers.higher_rate) {
     return {
       error:
         "The additional rate must be at least the higher rate. Set them equal for a single rate above the basic rate band, as in current law.",
+      field: "additional_rate",
     };
   }
   return { rates: Object.fromEntries(BANDS.map((band) => [band.key, toFraction(numbers[band.key])])) };
@@ -116,21 +120,23 @@ export function validateBadr(form, rates) {
   if (form.mode === "withdraw") return { badr: { withdrawn: true, rate: null, lifetime_limit: null } };
   const value = Number(form.rate);
   if (form.rate === "" || !Number.isFinite(value) || value < 0) {
-    return { error: "Enter a rate for Business Asset Disposal Relief, or withdraw the relief." };
+    return { error: "Enter a rate for Business Asset Disposal Relief, or withdraw the relief.", field: "badr_rate" };
   }
   if (Math.abs(value / STEP_PCT - Math.round(value / STEP_PCT)) > 1e-6) {
-    return { error: `The relief's rate is a whole percentage point; ${value}% is not.` };
+    return { error: `The relief's rate is a whole percentage point; ${value}% is not.`, field: "badr_rate" };
   }
   if (rates && value / 100 > rates.additional_rate + 1e-9) {
     return {
       error:
         "The relief's rate may not exceed the additional rate: the relief would then raise the tax on qualifying gains.",
+      field: "badr_rate",
     };
   }
   return { badr: { withdrawn: false, rate: toFraction(value), lifetime_limit: Number(form.limit) } };
 }
 
-// A whole form checked: `rates` and `badr` are set only when both are valid.
+// A whole form checked: `rates` and `badr` are set only when both are valid;
+// `errorField` names the input an error belongs to (a band key or "badr_rate").
 export function checkForm(form) {
   const rateCheck = validatePercents(form.percents);
   const badrCheck = validateBadr(form.badrForm, rateCheck.rates);
@@ -140,6 +146,7 @@ export function checkForm(form) {
     badr: valid ? badrCheck.badr : null,
     elasticity: form.elasticity,
     error: rateCheck.error ?? badrCheck.error,
+    errorField: rateCheck.field ?? badrCheck.field ?? null,
     // The model charges the relief's rate on every qualifying gain. Above the
     // basic rate, a taxpayer with qualifying gains in the basic rate band
     // would not claim the relief, which the model does not capture.

@@ -92,6 +92,20 @@ describe("initialChoice", () => {
   });
 });
 
+describe("checkForm", () => {
+  const form = formOf({ basic_rate: 0.18, higher_rate: 0.24, additional_rate: 0.24 }, null);
+  const withPercents = (patch) => checkForm({ ...form, percents: { ...form.percents, ...patch } });
+
+  test("names the input each error belongs to", () => {
+    expect(withPercents({ higher_rate: "" }).errorField).toBe("higher_rate");
+    expect(withPercents({ basic_rate: "30" }).errorField).toBe("basic_rate");
+    expect(withPercents({ additional_rate: "20" }).errorField).toBe("additional_rate");
+    expect(withPercents({ basic_rate: "18.5" }).errorField).toBe("basic_rate");
+    expect(checkForm({ ...form, badrForm: { ...form.badrForm, rate: "30" } }).errorField).toBe("badr_rate");
+    expect(checkForm(form).errorField).toBe(null);
+  });
+});
+
 describe("scheduleParams", () => {
   const check = checkForm(formOf({ basic_rate: 0.19, higher_rate: 0.27, additional_rate: 0.31 }, null, 1.0));
 
