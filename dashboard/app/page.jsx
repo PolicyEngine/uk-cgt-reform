@@ -154,10 +154,10 @@ function Dashboard() {
           ))}
         </div>
 
-        {activeTab === "reform" && <ReformTab data={data} datasetKey={dataset.key} onNavigate={handleNavigate} />}
+        {activeTab === "reform" && <ReformTab data={data} datasetKey={dataset.key} anchor={anchor} onNavigate={handleNavigate} />}
         {activeTab === "baseline" && <BaselineTab data={data} anchor={anchor} onNavigate={handleNavigate} />}
         {activeTab === "benchmarks" && <BenchmarksTab data={data} onNavigate={handleNavigate} />}
-        {activeTab === "methodology" && <MethodologyTab data={data} anchor={anchor} />}
+        {activeTab === "methodology" && <MethodologyTab data={data} anchor={anchor} onNavigate={handleNavigate} />}
 
         <footer className="mt-12 border-t border-slate-200 pt-8 text-center text-sm text-slate-500">
           <p>

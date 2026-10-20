@@ -210,13 +210,14 @@ export function readUrlState(searchParams) {
   return { percents, elasticity, badrForm };
 }
 
-// What a page load opens: which policy is expanded, each policy's form, and
-// which results show ("precomputed", "live" for a shared schedule looked up
-// in the cache, or "none"). A link with a schedule, or one to the old Rate
-// explorer tab, opens Custom rates with that schedule (current law when it
-// has none). A link whose schedule is the precomputed one shows those
-// results at once, and opens Equalise with income tax unless it came from
-// the old tab. Anything else opens Equalise with its precomputed results.
+// What a page load opens: which policy a link selects, each policy's form,
+// and the view: "precomputed" (a link to the precomputed schedule), "live"
+// (another valid schedule, looked up in the cache), "none" (a link that
+// selects Custom rates with nothing to show) or "landing" (a plain load,
+// nothing selected). A link with a schedule, or to the old Rate explorer
+// tab, selects Custom rates with that schedule (current law when it has
+// none); a link whose schedule is the precomputed one selects Equalise with
+// income tax unless it came from the old tab.
 export function initialChoice(searchParams, precomputed) {
   const fromUrl = readUrlState(searchParams);
   const equalise = formOf(precomputed.rates, precomputed.badr, precomputed.elasticity);
@@ -228,16 +229,17 @@ export function initialChoice(searchParams, precomputed) {
   }
   if (fromUrl) return { policy: "custom", forms, view: checkForm(fromUrl).rates ? "live" : "none" };
   if (explorerLink) return { policy: "custom", forms, view: "none" };
-  return { policy: "equalise", forms, view: "precomputed" };
+  return { policy: "equalise", forms, view: "landing" };
 }
 
 // The query string for a schedule run live, on top of the page's other
 // parameters; `null` clears the schedule (the precomputed results need none).
 export function scheduleParams(current, schedule) {
   const params = new URLSearchParams(current);
-  // The Reform tab is the default, so it needs no `tab`; an old link's
-  // `tab=explorer` is retired the first time the URL is rewritten.
-  if (["reform", "explorer"].includes(params.get("tab"))) params.delete("tab");
+  // Only the Reform tab writes a schedule, and it is the default tab, so the
+  // URL needs no `tab`: an old link's `tab=explorer` is retired, and a `tab`
+  // the page has not yet removed after navigating here cannot come back.
+  params.delete("tab");
   [...BANDS.map((band) => band.param), "bw", "br", "bl", "e"].forEach((key) => params.delete(key));
   if (!schedule) return params;
   const { rates, badr, elasticity } = schedule;

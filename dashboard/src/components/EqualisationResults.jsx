@@ -304,7 +304,7 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
         <GroupImpactChart groupsByYear={getIncomeChangeGroupsByYear(data)} initialYear={firstYear} />
       </section>
 
-      <details className="section-card group">
+      <details className="section-card group scroll-mt-24" id="sensitivity">
         <summary className="cursor-pointer select-none font-semibold text-slate-800 marker:text-[color:var(--pe-color-primary-600)]">
           Sensitivity to the behavioural elasticity
           <span className="ml-2 text-sm font-normal text-slate-500 group-open:hidden">

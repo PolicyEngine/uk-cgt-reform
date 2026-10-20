@@ -43,7 +43,8 @@ function RateInput({ band, value, onChange }) {
 
 // One policy's parameters: the three main rates, the relief and the
 // behavioural response, with the Calculate button. `showPresets` adds the
-// preset and HMRC ready-reckoner pickers (Custom rates).
+// preset and HMRC ready-reckoner pickers (Custom rates). It is a form, so
+// Enter in a rate input calculates; `running` (a run in flight) disables it.
 export default function ScheduleForm({ form, onChange, showPresets, onCalculate, running, note }) {
   const check = checkForm(form);
   const set = (patch) => onChange({ ...form, ...patch });
@@ -52,8 +53,13 @@ export default function ScheduleForm({ form, onChange, showPresets, onCalculate,
   const load = (schedule) => onChange(formOf(schedule.rates, schedule.badr, form.elasticity));
   const readyReckonerRow = check.rates ? (readyReckonerRowFor(check.rates, check.badr)?.id ?? "none") : "none";
 
+  const submit = (event) => {
+    event.preventDefault();
+    if (check.rates && !running) onCalculate(check);
+  };
+
   return (
-    <div>
+    <form onSubmit={submit} noValidate>
       {showPresets ? (
         <div className="mb-5 flex flex-wrap items-center gap-4">
           <LabelledSelect
@@ -151,12 +157,11 @@ export default function ScheduleForm({ form, onChange, showPresets, onCalculate,
           onChange={(value) => set({ elasticity: Number(value) })}
         />
         <button
-          type="button"
-          onClick={() => onCalculate(check)}
+          type="submit"
           disabled={!check.rates || running}
           className="rounded-md bg-[color:var(--pe-color-primary-600)] px-5 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {running ? "Running…" : "Calculate"}
+          {running ? "Calculating…" : "Calculate"}
         </button>
       </div>
       {note ? <p className="mt-3 text-xs leading-5 text-slate-500">{note}</p> : null}
@@ -170,6 +175,6 @@ export default function ScheduleForm({ form, onChange, showPresets, onCalculate,
           the tax on those gains.
         </p>
       ) : null}
-    </div>
+    </form>
   );
 }

@@ -38,10 +38,9 @@ describe("the precomputed schedule", () => {
 });
 
 describe("initialChoice", () => {
-  test("a plain page load opens Equalise with its precomputed results", () => {
+  test("a plain page load is the landing view, with both forms at their defaults", () => {
     const opened = choice("");
-    expect(opened.policy).toBe("equalise");
-    expect(opened.view).toBe("precomputed");
+    expect(opened.view).toBe("landing");
     expect(opened.forms.equalise.percents).toEqual({ basic_rate: "20", higher_rate: "40", additional_rate: "45" });
     expect(opened.forms.equalise.badrForm.mode).toBe("withdraw");
     expect(opened.forms.custom.percents).toEqual({ basic_rate: "18", higher_rate: "24", additional_rate: "24" });
@@ -106,9 +105,9 @@ describe("scheduleParams", () => {
     expect(["bw", "br", "bl"].map((key) => query.get(key))).toEqual([null, null, null]);
   });
 
-  test("keeps another tab and clears the schedule for the precomputed results", () => {
-    const query = scheduleParams("tab=baseline&basic=19&higher=27&additional=31&bw=1&e=1", null);
-    expect(query.toString()).toBe("tab=baseline");
+  test("clears the schedule for the precomputed results, keeping other parameters", () => {
+    const query = scheduleParams("tab=methodology&x=1&basic=19&higher=27&additional=31&bw=1&e=1", null);
+    expect(query.toString()).toBe("x=1");
   });
 
   test("round-trips through readUrlState", () => {

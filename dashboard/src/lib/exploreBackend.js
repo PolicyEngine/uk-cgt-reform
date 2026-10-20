@@ -35,4 +35,4 @@ export async function passThrough(upstream) {
 export const onVercel = () => process.env.VERCEL === "1";
 
 export const NOT_CONFIGURED =
-  "The backend for live runs is not configured on this deployment (CGT_EXPLORER_URL is unset). See the README's Rate explorer section.";
+  "The backend for live runs is not configured on this deployment (CGT_EXPLORER_URL is unset). See the README's Custom rates section.";
