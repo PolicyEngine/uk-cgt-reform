@@ -7,7 +7,8 @@ import BenchmarksTab from "../src/components/BenchmarksTab";
 import MethodologyTab from "../src/components/MethodologyTab";
 import PolicyEngineHeader from "../src/components/PolicyEngineHeader";
 import ReformTab from "../src/components/ReformTab";
-import { getDatasetInfo } from "../src/lib/dataHelpers";
+import { getDatasetInfo, getFirstYear } from "../src/lib/dataHelpers";
+import { InfoTip } from "../src/components/controls";
 import results from "../public/data/cgt_equalisation_results.json";
 
 // Bundled at build time: a runtime fetch() 404s when the app is served
@@ -31,18 +32,6 @@ function getInitialTab(tabParam) {
     return tabParam;
   }
   return "reform";
-}
-
-function TabLink({ onSelect, children }) {
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      className="font-semibold text-[color:var(--pe-color-primary-600)] underline decoration-1 underline-offset-2 transition-opacity hover:opacity-80"
-    >
-      {children}
-    </button>
-  );
 }
 
 function Dashboard() {
@@ -97,24 +86,14 @@ function Dashboard() {
       </header>
 
       <main className="relative z-[1] mx-auto max-w-[96rem] px-6 py-10 md:px-8 md:py-12">
-        <div className="animate-[fadeIn_0.4s_ease-out]">
-          <p className="mb-3 text-[1.05rem] leading-relaxed text-slate-600">
-            This dashboard uses{" "}
-            <a href="https://policyengine.org" target="_blank" rel="noreferrer" className="underline">
-              PolicyEngine
-            </a>{" "}
-            UK&apos;s microsimulation model to estimate reforms to capital gains
-            tax rates from 2026-27, with behavioural elasticities from{" "}
-            <a
-              href="https://centax.org.uk/wp-content/uploads/2024/10/AdvaniLonsdaleSummers2024_CGTReform.pdf"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-semibold underline decoration-1 underline-offset-2 hover:opacity-80"
-            >
-              Advani, Lonsdale &amp; Summers (CenTax, 2024)
-            </a>
-            . Its headline reform equalises CGT rates with income tax rates and
-            withdraws Business Asset Disposal Relief. In May 2026, as{" "}
+        <div className="max-w-4xl animate-[fadeIn_0.4s_ease-out]">
+          <p className="text-lg leading-8 text-slate-800">
+            This dashboard estimates the revenue and distributional effects of reforms to UK
+            capital gains tax rates. Its headline reform equalises CGT rates with income tax rates
+            and withdraws Business Asset Disposal Relief.
+          </p>
+          <p className="mt-2 text-sm leading-6 text-slate-600">
+            In May 2026, as{" "}
             <a
               href="https://www.bloomberg.com/news/articles/2026-05-21/streeting-backs-hiking-uk-capital-gains-levy-to-match-income-tax"
               target="_blank"
@@ -123,57 +102,89 @@ function Dashboard() {
             >
               Bloomberg
             </a>{" "}
-            reported, Wes Streeting backed raising CGT rates to match income tax
-            rates. The dashboard runs on PolicyEngine&apos;s {dataset.shortLabel} data,
-            which records what kind of asset each gain came from and which gains
-            qualify for Business Asset Disposal Relief.{" "}
-            <TabLink onSelect={() => handleTabChange("reform")}>Reform</TabLink>{" "}
-            shows the revenue and distributional effects of the equalisation reform or of a
-            schedule of CGT rates you choose,{" "}
-            <TabLink onSelect={() => handleTabChange("baseline")}>
-              Baseline
-            </TabLink>{" "}
-            compares the baseline with HMRC&apos;s statistics,{" "}
-            <TabLink onSelect={() => handleTabChange("benchmarks")}>Benchmarks</TabLink>{" "}
-            compares the results with other published estimates, and{" "}
-            <TabLink onSelect={() => handleTabChange("methodology")}>Methodology</TabLink>{" "}
-            explains the method.
+            reported, Wes Streeting backed raising CGT rates to match income tax rates.
           </p>
         </div>
+        <dl className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {[
+            {
+              label: "Model",
+              value: (
+                <a href="https://policyengine.org" target="_blank" rel="noreferrer" className="underline decoration-1 underline-offset-2 hover:opacity-80">
+                  PolicyEngine UK
+                </a>
+              ),
+            },
+            {
+              label: "Data",
+              value: dataset.shortLabel,
+              tip: "PolicyEngine's dataset records what kind of asset each gain came from and which gains qualify for Business Asset Disposal Relief.",
+            },
+            {
+              label: "Elasticities",
+              value: (
+                <a
+                  href="https://centax.org.uk/wp-content/uploads/2024/10/AdvaniLonsdaleSummers2024_CGTReform.pdf"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline decoration-1 underline-offset-2 hover:opacity-80"
+                >
+                  Advani, Lonsdale &amp; Summers (CenTax, 2024)
+                </a>
+              ),
+            },
+            { label: "Years", value: `${getFirstYear(data)} to ${data.budget.at(-1).year}` },
+          ].map((fact) => (
+            <div key={fact.label} className="min-w-0 rounded-xl border border-slate-200 bg-white/70 px-3 py-3 sm:px-4">
+              <dt className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                {fact.label}
+                {fact.tip ? <InfoTip label={`About the ${fact.label.toLowerCase()}`}>{fact.tip}</InfoTip> : null}
+              </dt>
+              <dd className="mt-1 text-sm font-semibold text-slate-800">{fact.value}</dd>
+            </div>
+          ))}
+        </dl>
 
-        <div className="tab-strip mb-8 mt-8 flex w-full flex-wrap border-b-2 border-slate-200 sm:w-fit">
+        <nav
+          aria-label="Dashboard sections"
+          className="tab-strip mb-8 mt-8 inline-flex max-w-full flex-wrap gap-1 rounded-xl border border-slate-300 bg-white p-1 shadow-sm"
+        >
           {TAB_OPTIONS.map((tab) => (
             <button
               key={tab.id}
               type="button"
-              className={`tab-button ${activeTab === tab.id ? "active" : ""}`}
+              aria-current={activeTab === tab.id ? "page" : undefined}
+              className={`rounded-lg px-3 py-2 text-sm font-semibold transition-colors sm:px-5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--pe-color-primary-500)] sm:text-base ${
+                activeTab === tab.id
+                  ? "bg-[color:var(--pe-color-primary-600)] text-white"
+                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+              }`}
               onClick={() => handleTabChange(tab.id)}
             >
               {tab.label}
             </button>
           ))}
-        </div>
+        </nav>
 
         {activeTab === "reform" && <ReformTab data={data} datasetKey={dataset.key} anchor={anchor} onNavigate={handleNavigate} />}
         {activeTab === "baseline" && <BaselineTab data={data} anchor={anchor} onNavigate={handleNavigate} />}
         {activeTab === "benchmarks" && <BenchmarksTab data={data} onNavigate={handleNavigate} />}
         {activeTab === "methodology" && <MethodologyTab data={data} anchor={anchor} onNavigate={handleNavigate} />}
 
-        <footer className="mt-12 border-t border-slate-200 pt-8 text-center text-sm text-slate-500">
-          <p>
-            Replication code:{" "}
-            <a
-              href="https://github.com/PolicyEngine/uk-cgt-reform"
-              target="_blank"
-              rel="noreferrer"
-            >
-              PolicyEngine/uk-cgt-reform
-            </a>
-            {data?.metadata?.policyengine_version
-              ? `, run on policyengine.py ${data.metadata.policyengine_version} with policyengine-uk ${data.metadata.policyengine_uk_version}`
-              : ""}
-            , on {dataset.label}.
-          </p>
+        <footer className="mt-12 border-t border-slate-200 pt-6 text-center text-xs leading-5 text-slate-500">
+          Replication code:{" "}
+          <a
+            href="https://github.com/PolicyEngine/uk-cgt-reform"
+            target="_blank"
+            rel="noreferrer"
+            className="font-semibold text-[color:var(--pe-color-primary-700)] underline decoration-1 underline-offset-2 hover:opacity-80"
+          >
+            PolicyEngine/uk-cgt-reform
+          </a>
+          {data?.metadata?.policyengine_version
+            ? ` · policyengine.py ${data.metadata.policyengine_version} with policyengine-uk ${data.metadata.policyengine_uk_version}`
+            : ""}
+          {` · ${dataset.label}`}
         </footer>
       </main>
     </div>

@@ -27,7 +27,7 @@ import {
 } from "../lib/schedule";
 import BudgetChart from "./charts/BudgetChart";
 import GroupImpactChart from "./charts/GroupImpactChart";
-import { MetricCard, TabLink, TableScroll } from "./controls";
+import { Card, MetricCard, Notes, TabLink, TableScroll } from "./controls";
 import SectionHeading from "./SectionHeading";
 
 const pct = (fraction) => formatPct(fraction * 100, 0);
@@ -147,44 +147,48 @@ function ReadyReckonerPanel({ row, result }) {
     1000 * result.budget.find((budgetRow) => budgetRow.year === year).gov_balance_change_bn;
   const [contextYear] = READY_RECKONER.hmrc_years;
   return (
-    <div className="mt-6">
-      <h3 className="text-base font-semibold text-slate-800">
-        HMRC ready reckoner: {row.label}
-      </h3>
-      <TableScroll className="mt-3">
+    <Card className="min-w-0">
+      <SectionHeading
+        title="HMRC ready reckoner"
+        description={`${row.label}: HMRC's receipts beside this run's liabilities a year earlier.`}
+      />
+      <TableScroll>
       <table className="data-table">
         <thead>
           <tr>
             <th>Comparison</th>
-            <th>HMRC receipts</th>
-            <th>This run, change in government balance</th>
+            <th className="num">HMRC receipts</th>
+            <th className="num">This run, change in government balance</th>
           </tr>
         </thead>
         <tbody>
           <tr className="text-slate-500">
             <td>HMRC {contextYear} (receipts in the reform&apos;s first year)</td>
-            <td>{formatSignedMn(row.hmrc_m[contextYear])}</td>
-            <td>—</td>
+            <td className="num">{formatSignedMn(row.hmrc_m[contextYear])}</td>
+            <td className="num">—</td>
           </tr>
           {READY_RECKONER.lag.map((lag) => (
             <tr key={lag.hmrc_year}>
               <td>
                 HMRC {lag.hmrc_year} against this run&apos;s {lag.model_year} liabilities
               </td>
-              <td className="font-semibold">{formatSignedMn(row.hmrc_m[lag.hmrc_year])}</td>
-              <td>{formatSignedMn(liability(lag.model_year))}</td>
+              <td className="num font-semibold">{formatSignedMn(row.hmrc_m[lag.hmrc_year])}</td>
+              <td className="num">{formatSignedMn(liability(lag.model_year))}</td>
             </tr>
           ))}
         </tbody>
       </table>
       </TableScroll>
-      <p className="mt-3 text-xs leading-5 text-slate-500">
-        HMRC&apos;s figures ({READY_RECKONER.source}) are {READY_RECKONER.measure[0].toLowerCase()}
-        {READY_RECKONER.measure.slice(1)}, after behavioural responses; HMRC has deferred its 2026
-        edition, so they are provisional. The Benchmarks tab scores every
-        row at the central and the official elasticity.
-      </p>
-    </div>
+      <Notes>
+        <p>
+          HMRC&apos;s figures ({READY_RECKONER.source}) are {READY_RECKONER.measure[0].toLowerCase()}
+          {READY_RECKONER.measure.slice(1)}, after behavioural responses; HMRC has deferred its 2026
+          edition, so they are provisional. HMRC reports receipts, which arrive about a year after
+          the liability. The Benchmarks tab scores every row at the central and the official
+          elasticity.
+        </p>
+      </Notes>
+    </Card>
   );
 }
 
@@ -219,29 +223,29 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
 
   return (
     <>
-      <section className="section-card">
+      <Card>
         <SectionHeading
           title={`Headline results, ${firstYear}`}
-          description={`${pct(reform.basic_rate)} / ${pct(reform.higher_rate)} / ${pct(reform.additional_rate)}, Business Asset Disposal Relief ${describeBadr(reformBadr).toLowerCase()}, on ${result.metadata.dataset_short_label}, ${elasticityName(resultE)}; distributional figures cover all households.`}
+          description={`${pct(reform.basic_rate)} / ${pct(reform.higher_rate)} / ${pct(reform.additional_rate)}, Business Asset Disposal Relief ${describeBadr(reformBadr).toLowerCase()}, on ${result.metadata.dataset_short_label}, ${elasticityName(resultE)}. Distributional figures cover all households.`}
         />
         <div className="grid gap-4 md:grid-cols-3">
           <MetricCard
             label={`Change in government balance, ${firstYear}`}
             value={bn(firstRow.gov_balance_change_bn)}
-            note={Number(resultE) === 0 ? "With no behavioural response." : `At ${elasticityName(resultE)}.`}
+            note={Number(resultE) === 0 ? "With no behavioural response." : "After the behavioural response."}
           />
           <MetricCard
             label={`Five-year change in government balance, ${firstYear} to ${result.budget.at(-1).year}`}
             value={bn(result.five_year_total_bn)}
-            note="Sum of the annual changes over the five modelled years."
+            note="Sum of the five modelled years."
           />
           <MetricCard
             label={`Change in net income, top income quintile, ${firstYear}`}
             value={formatSignedPct(topQuintile.relative_change_pct)}
-            note={`An average of ${formatSignedCurrency(topQuintile.avg_change_gbp)} per household in the top income quintile.`}
+            note={`${formatSignedCurrency(topQuintile.avg_change_gbp)} per household on average.`}
           />
         </div>
-        <p className="mt-5 text-sm leading-6 text-slate-600">
+        <p className="mt-4 text-sm leading-6 text-slate-600">
           {likeForLike ? (
             <>
               At the same elasticity, this schedule&apos;s change in the government balance is{" "}
@@ -258,10 +262,48 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
           )}
           <TabLink onNavigate={onShowEqualisation}>Show equalisation&apos;s results</TabLink>.
         </p>
-        {matchedRow ? <ReadyReckonerPanel row={matchedRow} result={result} /> : null}
-      </section>
+      </Card>
 
-      <details className="section-card group">
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card className="min-w-0">
+          <SectionHeading
+            title="Budgetary impact by year"
+            description="CGT revenue and the change in the government balance, by fiscal year."
+          />
+          <BudgetChart budget={result.budget} />
+          {entrantShare > 0.05 ? (
+            <Notes>
+              <p>
+                Entrants by uprating (
+                <TabLink onNavigate={onNavigate} tab="baseline" section="entrants">
+                  see the Baseline tab
+                </TabLink>
+                ) contribute {formatSmallBn(firstRow.cgt_change_from_entrants_bn)} of the{" "}
+                {firstYear} change.
+              </p>
+            </Notes>
+          ) : null}
+        </Card>
+
+        <Card className="min-w-0">
+          <SectionHeading
+            title="Change in household net income by income group"
+            description="Grouped by the household's position in the baseline income distribution."
+          />
+          <GroupImpactChart groupsByYear={result.income_change_groups} initialYear={firstYear} />
+          <Notes>
+            <p>
+              The switches group households by income quintile or quartile, household type or
+              region. Changes in the gains taxpayers realise in response to the new rates count as
+              changes in income in the year, alongside the change in tax paid.
+            </p>
+          </Notes>
+        </Card>
+      </div>
+
+      {/* The specification's long text needs the full width, so the ready
+          reckoner sits under it rather than beside it. */}
+      <Card as="details" className="group min-w-0">
         <summary className="cursor-pointer select-none font-semibold text-slate-800 marker:text-[color:var(--pe-color-primary-600)]">
           What exactly does this schedule change?
           <span className="ml-2 text-sm font-normal text-slate-500 group-open:hidden">
@@ -276,33 +318,9 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
           </p>
           <SpecTable metadata={result.metadata} />
         </div>
-      </details>
+      </Card>
 
-      <section className="section-card">
-        <SectionHeading
-          title="Budgetary impact by year"
-          description="Baseline and reformed CGT revenue, and the net change in the government balance, for each fiscal year."
-        />
-        <BudgetChart budget={result.budget} />
-        {entrantShare > 0.05 ? (
-          <p className="mt-4 text-sm leading-6 text-slate-600">
-            Entrants by uprating (
-            <TabLink onNavigate={onNavigate} tab="baseline" section="entrants">
-              see the Baseline tab
-            </TabLink>
-            ) contribute {formatSmallBn(firstRow.cgt_change_from_entrants_bn)} of the{" "}
-            {firstYear} change.
-          </p>
-        ) : null}
-      </section>
-
-      <section className="section-card">
-        <SectionHeading
-          title="Change in household net income by income group"
-          description="Change in household net income, grouped by the household's position in the baseline income distribution; the switches group households by income quintile or quartile, household type or region. Changes in the gains taxpayers realise in response to the new rates count as changes in income in the year, alongside the change in tax paid."
-        />
-        <GroupImpactChart groupsByYear={result.income_change_groups} initialYear={firstYear} />
-      </section>
+      {matchedRow ? <ReadyReckonerPanel row={matchedRow} result={result} /> : null}
 
       <p className="text-xs leading-5 text-slate-500">
         Run on policyengine.py {result.metadata.policyengine_version} with policyengine-uk{" "}

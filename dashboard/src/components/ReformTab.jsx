@@ -18,17 +18,15 @@ import EqualisationResults from "./EqualisationResults";
 import LiveResults, { StatusLine } from "./LiveResults";
 import ScheduleForm from "./ScheduleForm";
 import SectionHeading from "./SectionHeading";
-import { TabLink } from "./controls";
+import { Card, Pill, TEXT_BUTTON, TabLink, cardClass } from "./controls";
 
 const CENTAX_URL =
   "https://centax.org.uk/wp-content/uploads/2024/10/AdvaniLonsdaleSummers2024_CGTReform.pdf#page=38";
 const POLICY_TITLES = { equalise: "Equalise with income tax", custom: "Custom rates" };
 
-const PILL = "rounded-full px-2.5 py-0.5 text-xs font-semibold";
-
-// One policy in the chooser: a tile that selects it (or, selected, closes
-// its panel), with a radio-style mark and a call to action so it reads as a
-// choice. The selected policy's parameters open in a box below.
+// One policy in the chooser: an inset card that selects it (or, selected,
+// closes its panel), with a radio-style mark and a call to action so it
+// reads as a choice. The selected policy's parameters open in a box below.
 function PolicyTile({ id, sentence, pills, speed, selected, onSelect }) {
   return (
     <button
@@ -37,11 +35,7 @@ function PolicyTile({ id, sentence, pills, speed, selected, onSelect }) {
       aria-pressed={selected}
       aria-controls={selected ? "policy-panel" : undefined}
       id={`policy-tile-${id}`}
-      className={`group relative flex h-full w-full cursor-pointer flex-col rounded-2xl border-2 p-5 text-left shadow-sm transition duration-150 hover:-translate-y-0.5 hover:border-[color:var(--pe-color-primary-500)] hover:shadow-md focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[color:var(--pe-color-primary-600)] sm:p-6 ${
-        selected
-          ? "border-[color:var(--pe-color-primary-600)] bg-[color:var(--pe-color-primary-50)]"
-          : "border-slate-300 bg-white"
-      }`}
+      className={`${cardClass("inset", selected)} group relative flex h-full w-full cursor-pointer flex-col p-5 text-left shadow-sm duration-150 hover:-translate-y-0.5 hover:border-[color:var(--pe-color-primary-500)] hover:shadow-md focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[color:var(--pe-color-primary-600)] sm:p-6`}
     >
       <span
         aria-hidden="true"
@@ -53,34 +47,20 @@ function PolicyTile({ id, sentence, pills, speed, selected, onSelect }) {
       >
         {selected ? <span className="h-2.5 w-2.5 rounded-full bg-white" /> : null}
       </span>
-      <span className="pr-10 text-lg font-bold text-slate-900">{POLICY_TITLES[id]}</span>
+      <span className="pr-10 text-lg font-semibold text-slate-900">{POLICY_TITLES[id]}</span>
       <span className="mt-1.5 block text-sm leading-6 text-slate-600">{sentence}</span>
       <span className="mt-3 flex flex-wrap gap-2">
         {pills.map((pill) => (
-          <span key={pill} className={`${PILL} bg-slate-100 text-slate-700`}>
-            {pill}
-          </span>
+          <Pill key={pill}>{pill}</Pill>
         ))}
-        <span
-          className={`${PILL} ${
-            speed.instant
-              ? "bg-[color:var(--pe-color-primary-100)] text-[color:var(--pe-color-primary-800)]"
-              : "bg-amber-100 text-amber-900"
-          }`}
-        >
-          {speed.label}
-        </span>
+        <Pill tone={speed.instant ? "teal" : "amber"}>{speed.label}</Pill>
       </span>
-      <span className="mt-auto pt-5">
-        <span
-          className={`inline-flex items-center rounded-md border px-3 py-1.5 text-sm font-semibold transition-colors ${
-            selected
-              ? "border-[color:var(--pe-color-primary-600)] bg-[color:var(--pe-color-primary-600)] text-white"
-              : "border-[color:var(--pe-color-primary-600)] bg-white text-[color:var(--pe-color-primary-700)] group-hover:bg-[color:var(--pe-color-primary-600)] group-hover:text-white"
-          }`}
-        >
-          {selected ? "✓ Selected" : "Choose this reform →"}
-        </span>
+      <span className="mt-auto pt-5 text-sm">
+        {selected ? (
+          <span className="font-semibold text-[color:var(--pe-color-primary-700)]">✓ Selected</span>
+        ) : (
+          <span className={TEXT_BUTTON}>Choose this reform →</span>
+        )}
       </span>
     </button>
   );
@@ -201,25 +181,16 @@ export default function ReformTab({ data, datasetKey, onNavigate, anchor }) {
   const equaliseEdited = !isPrecomputed(checkForm(forms.equalise), precomputed);
   const stale = isStale(state);
   // What Calculate will do, for the panel's footer.
-  const restore = (
-    <button
-      type="button"
-      onClick={() => setForm("equalise")(equaliseDefault)}
-      className="font-semibold text-[color:var(--pe-color-primary-700)] underline decoration-1 underline-offset-2 hover:opacity-80"
-    >
-      Restore defaults
-    </button>
-  );
   let footerStatus = { tone: "live", text: "Runs live, about 30 seconds; instant if run before." };
   if (policy === "equalise") {
     footerStatus = equaliseEdited
-      ? { tone: "live", text: "Edited: will run live.", action: restore }
+      ? { tone: "live", text: "Edited: will run live." }
       : { tone: "instant", text: "Precomputed: shows instantly." };
   }
 
   return (
     <div className="space-y-6">
-      <section className="section-card" aria-label="Choose a reform">
+      <Card aria-label="Choose a reform">
         <div>
           <SectionHeading
             title="Choose a reform"
@@ -250,20 +221,18 @@ export default function ReformTab({ data, datasetKey, onNavigate, anchor }) {
             onSelect={() => select("custom", true)}
           />
         </div>
-      </section>
+      </Card>
 
       {policy ? (
-        <section id="policy-panel" className="section-card" aria-labelledby="policy-panel-title">
-          <div className="mb-6">
-            <h2 id="policy-panel-title" className="text-xl font-semibold tracking-tight text-slate-900">
-              {POLICY_TITLES[policy]}
-            </h2>
-            <p className="mt-1 text-sm leading-6 text-slate-600">
-              {policy === "equalise"
+        <Card id="policy-panel" aria-label={POLICY_TITLES[policy]}>
+          <SectionHeading
+            title={POLICY_TITLES[policy]}
+            description={
+              policy === "equalise"
                 ? `CGT rates set to income tax rates from ${firstYear}, relief withdrawn.`
-                : "Set your own rates, relief and response, or start from a preset."}
-            </p>
-          </div>
+                : "Set your own rates, relief and response, or start from a preset."
+            }
+          />
           <ScheduleForm
             key={policy}
             form={forms[policy]}
@@ -272,6 +241,7 @@ export default function ReformTab({ data, datasetKey, onNavigate, anchor }) {
             onCalculate={calculate}
             running={inFlight}
             status={footerStatus}
+            onRestore={policy === "equalise" && equaliseEdited ? () => setForm("equalise")(equaliseDefault) : null}
           />
           {shown === "live" ? (
             <StatusLine
@@ -318,7 +288,7 @@ export default function ReformTab({ data, datasetKey, onNavigate, anchor }) {
               </p>
             )}
           </details>
-        </section>
+        </Card>
       ) : null}
 
       {hasResults ? (

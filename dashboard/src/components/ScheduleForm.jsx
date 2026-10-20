@@ -18,6 +18,18 @@ import {
   presetFor,
   readyReckonerRowFor,
 } from "../lib/schedule";
+import {
+  Card,
+  CardTitle,
+  FIELD,
+  FieldLabel,
+  HINT,
+  PRIMARY_BUTTON,
+  TEXT_BUTTON,
+  Pill,
+  Toggle,
+  fieldBorder,
+} from "./controls";
 
 // One short line under each rate; the band's full note sits in its tooltip.
 const BAND_HINTS = {
@@ -30,34 +42,12 @@ const BADR_NOTE =
 const ELASTICITY_NOTE =
   "The elasticity of realised gains with respect to the retention rate (1 − t): taxpayers realise fewer gains as the share of each gain they keep falls.";
 
-const FIELD =
-  "w-full [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none rounded-lg border bg-white text-slate-900 shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-[color:var(--pe-color-primary-500)] focus:ring-offset-1";
-const fieldBorder = (invalid) =>
-  invalid ? "border-red-500" : "border-slate-300 hover:border-slate-400 focus:border-[color:var(--pe-color-primary-600)]";
-
 // "CenTax central (retention elasticity 1.0)" → a short name for the select
 // and its detail for the line beneath.
 function splitLabel(label) {
   const match = label.match(/^(.*?)\s*\((.*)\)$/);
   if (!match) return { name: label, detail: "" };
   return { name: match[1], detail: match[2][0].toUpperCase() + match[2].slice(1) };
-}
-
-function InfoTip({ children, label }) {
-  return (
-    <span className="info-tip" tabIndex={0} role="note" aria-label={label}>
-      ?<span className="info-tip-bubble">{children}</span>
-    </span>
-  );
-}
-
-function SectionLabel({ children, tip }) {
-  return (
-    <div className="mb-3 flex items-center gap-2">
-      <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500">{children}</h3>
-      {tip ? <InfoTip label={`About ${String(children).toLowerCase()}`}>{tip}</InfoTip> : null}
-    </div>
-  );
 }
 
 function FieldError({ id, children }) {
@@ -69,7 +59,7 @@ function FieldError({ id, children }) {
 }
 
 // A percentage input with its "%" inside the field.
-function PercentInput({ id, value, onChange, invalid, describedBy, min = PCT_MIN, large = true }) {
+function PercentInput({ id, value, onChange, invalid, describedBy, min = PCT_MIN }) {
   return (
     <div className="relative">
       <input
@@ -83,81 +73,11 @@ function PercentInput({ id, value, onChange, invalid, describedBy, min = PCT_MIN
         aria-invalid={invalid || undefined}
         aria-describedby={describedBy}
         onChange={(event) => onChange(event.target.value)}
-        className={`${FIELD} ${fieldBorder(invalid)} ${large ? "py-2 pl-3 pr-9 text-2xl font-semibold" : "py-2 pl-3 pr-8 text-lg font-semibold"}`}
+        className={`${FIELD} ${fieldBorder(invalid)} w-full pr-9`}
       />
       <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-base font-semibold text-slate-400">
         %
       </span>
-    </div>
-  );
-}
-
-// The rate's distance from current law, in percentage points.
-function ChangeChip({ value, reference }) {
-  const number = Number(value);
-  if (value === "" || !Number.isFinite(number)) return null;
-  const gap = Math.round((number - reference * 100) * 100) / 100;
-  if (gap === 0) return null;
-  return (
-    <span className="rounded-full bg-[color:var(--pe-color-primary-100)] px-2 py-0.5 text-xs font-semibold text-[color:var(--pe-color-primary-800)]">
-      {gap > 0 ? "+" : "−"}
-      {Math.abs(gap)} pp
-    </span>
-  );
-}
-
-function RateCard({ band, value, onChange, error }) {
-  const id = `rate-${band.key}`;
-  return (
-    <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
-      <div className="mb-2 flex items-center gap-2">
-        <label htmlFor={id} className="text-sm font-semibold text-slate-800">
-          {band.label}
-        </label>
-        <InfoTip label={`About the ${band.label.toLowerCase()}`}>{band.note}</InfoTip>
-      </div>
-      <PercentInput
-        id={id}
-        value={value}
-        onChange={onChange}
-        invalid={Boolean(error)}
-        describedBy={error ? `${id}-error` : `${id}-hint`}
-      />
-      <div id={`${id}-hint`} className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
-        <span>{BAND_HINTS[band.key]}</span>
-        <span className="flex items-center gap-2">
-          <span>Current law {formatPct(CURRENT_LAW.rates[band.key] * 100, 0)}</span>
-          <ChangeChip value={value} reference={CURRENT_LAW.rates[band.key]} />
-        </span>
-      </div>
-      {error ? <FieldError id={`${id}-error`}>{error}</FieldError> : null}
-    </div>
-  );
-}
-
-// A two-way segmented control for the relief.
-function Segmented({ label, options, value, onChange }) {
-  return (
-    <div role="radiogroup" aria-label={label} className="inline-flex rounded-lg bg-slate-100 p-1">
-      {options.map((option) => {
-        const selected = option.value === value;
-        return (
-          <button
-            key={option.value}
-            type="button"
-            role="radio"
-            aria-checked={selected}
-            onClick={() => onChange(option.value)}
-            className={`rounded-md px-4 py-1.5 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--pe-color-primary-500)] ${
-              selected
-                ? "bg-white text-[color:var(--pe-color-primary-700)] shadow-sm ring-1 ring-[color:var(--pe-color-primary-600)]"
-                : "text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            {option.label}
-          </button>
-        );
-      })}
     </div>
   );
 }
@@ -169,7 +89,7 @@ function Select({ id, value, onChange, options, describedBy }) {
       value={value}
       aria-describedby={describedBy}
       onChange={(event) => onChange(event.target.value)}
-      className={`${FIELD} ${fieldBorder(false)} py-2.5 pl-3 pr-8 text-sm font-medium`}
+      className={`${FIELD} ${fieldBorder()} w-full pr-8 text-sm`}
     >
       {options.map((option) => (
         <option key={option.value} value={option.value}>
@@ -180,18 +100,53 @@ function Select({ id, value, onChange, options, describedBy }) {
   );
 }
 
-const DIVIDER = "border-t border-slate-200 pt-6";
+// The rate's distance from current law, in percentage points.
+function ChangeChip({ value, reference }) {
+  const number = Number(value);
+  if (value === "" || !Number.isFinite(number)) return null;
+  const gap = Math.round((number - reference * 100) * 100) / 100;
+  if (gap === 0) return null;
+  return <Pill tone="teal">{`${gap > 0 ? "+" : "−"}${Math.abs(gap)} pp`}</Pill>;
+}
+
+function RateCard({ band, value, onChange, error }) {
+  const id = `rate-${band.key}`;
+  return (
+    <Card as="div" variant="inset">
+      <CardTitle htmlFor={id} tip={band.note} tipLabel={`About the ${band.label.toLowerCase()}`}>
+        {band.label}
+      </CardTitle>
+      <PercentInput
+        id={id}
+        value={value}
+        onChange={onChange}
+        invalid={Boolean(error)}
+        describedBy={error ? `${id}-error` : `${id}-hint`}
+      />
+      <div id={`${id}-hint`} className={`mt-2 flex flex-wrap items-center justify-between gap-2 ${HINT}`}>
+        <span>{BAND_HINTS[band.key]}</span>
+        <span className="flex items-center gap-2">
+          <span>Current law {formatPct(CURRENT_LAW.rates[band.key] * 100, 0)}</span>
+          <ChangeChip value={value} reference={CURRENT_LAW.rates[band.key]} />
+        </span>
+      </div>
+      {error ? <FieldError id={`${id}-error`}>{error}</FieldError> : null}
+    </Card>
+  );
+}
+
 const DOTS = {
   instant: "bg-[color:var(--pe-color-primary-500)]",
   live: "bg-amber-500",
 };
 
-// One policy's parameters, grouped (rates, relief, behavioural response),
-// with a footer bar: what Calculate will do (`status`: a tone, a text and an
-// optional action) and the Calculate button. `showPresets` adds a "Start
-// from" group (presets and HMRC ready-reckoner rows). It is a form, so Enter
-// in an input calculates; `running` (a run in flight) disables it.
-export default function ScheduleForm({ form, onChange, showPresets, onCalculate, running, status }) {
+// One policy's parameters as a grid of cards (start from, rates, relief,
+// behavioural response), with a footer bar: what Calculate will do
+// (`status`: a tone, a text and an optional action) and the Calculate
+// button. `showPresets` adds the "Start from" card (presets and HMRC
+// ready-reckoner rows). It is a form, so Enter in an input calculates;
+// `running` (a run in flight) disables it.
+export default function ScheduleForm({ form, onChange, showPresets, onCalculate, running, status, onRestore }) {
   const check = checkForm(form);
   const set = (patch) => onChange({ ...form, ...patch });
   const setBadr = (patch) => set({ badrForm: { ...form.badrForm, ...patch } });
@@ -206,17 +161,16 @@ export default function ScheduleForm({ form, onChange, showPresets, onCalculate,
   };
 
   return (
-    <form onSubmit={submit} noValidate className="space-y-6">
+    <form onSubmit={submit} noValidate className="space-y-4">
       {showPresets ? (
-        <div>
-          <SectionLabel>Start from</SectionLabel>
-          <div className="grid gap-4 md:grid-cols-2">
+        <Card as="div" variant="inset">
+          <CardTitle>Start from</CardTitle>
+          <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label htmlFor="preset" className="mb-1.5 block text-sm font-semibold text-slate-800">
-                Preset
-              </label>
+              <FieldLabel htmlFor="preset">Preset</FieldLabel>
               <Select
                 id="preset"
+                describedBy="preset-hint"
                 value={presetFor(check)}
                 onChange={(id) => {
                   const chosen = PRESETS.find((candidate) => candidate.id === id);
@@ -227,13 +181,13 @@ export default function ScheduleForm({ form, onChange, showPresets, onCalculate,
                   { value: "custom", label: "Custom" },
                 ]}
               />
+              <p id="preset-hint" className={`mt-2 ${HINT}`}>Fills in the rates and the relief below.</p>
             </div>
             <div>
-              <label htmlFor="ready-reckoner" className="mb-1.5 block text-sm font-semibold text-slate-800">
-                HMRC ready-reckoner row
-              </label>
+              <FieldLabel htmlFor="ready-reckoner">HMRC ready-reckoner row</FieldLabel>
               <Select
                 id="ready-reckoner"
+                describedBy="ready-reckoner-hint"
                 value={readyReckonerRow}
                 onChange={(id) => {
                   const chosen = READY_RECKONER.rows.find((row) => row.id === id);
@@ -244,31 +198,34 @@ export default function ScheduleForm({ form, onChange, showPresets, onCalculate,
                   ...READY_RECKONER.rows.map((row) => ({ value: row.id, label: row.label })),
                 ]}
               />
+              <p id="ready-reckoner-hint" className={`mt-2 ${HINT}`}>
+                A row of HMRC&apos;s published ready reckoner, compared in the results.
+              </p>
             </div>
           </div>
-        </div>
+        </Card>
       ) : null}
 
-      <div className={showPresets ? DIVIDER : ""}>
-        <SectionLabel>Rates</SectionLabel>
-        <div className="grid gap-4 md:grid-cols-3">
-          {BANDS.map((band) => (
-            <RateCard
-              key={band.key}
-              band={band}
-              value={form.percents[band.key]}
-              onChange={(value) => set({ percents: { ...form.percents, [band.key]: value } })}
-              error={errorFor(band.key)}
-            />
-          ))}
-        </div>
+      <div className="grid gap-4 md:grid-cols-3">
+        {BANDS.map((band) => (
+          <RateCard
+            key={band.key}
+            band={band}
+            value={form.percents[band.key]}
+            onChange={(value) => set({ percents: { ...form.percents, [band.key]: value } })}
+            error={errorFor(band.key)}
+          />
+        ))}
       </div>
 
-      <div className={DIVIDER}>
-        <SectionLabel tip={BADR_NOTE}>Business Asset Disposal Relief</SectionLabel>
-        <div className="flex flex-wrap items-end gap-4">
-          <Segmented
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card as="div" variant="inset" className="md:col-span-2">
+          <CardTitle id="badr-title" tip={BADR_NOTE}>
+            Business Asset Disposal Relief
+          </CardTitle>
+          <Toggle
             label="Business Asset Disposal Relief"
+            fullWidth
             options={[
               { value: "keep", label: "Keep" },
               { value: "withdraw", label: "Withdraw" },
@@ -277,15 +234,12 @@ export default function ScheduleForm({ form, onChange, showPresets, onCalculate,
             onChange={(mode) => setBadr({ mode })}
           />
           {form.badrForm.mode === "keep" ? (
-            <div className="grid w-full gap-4 sm:w-auto sm:grid-cols-[9rem_11rem]">
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
               <div>
-                <label htmlFor="badr-rate" className="mb-1.5 block text-sm font-semibold text-slate-800">
-                  Rate
-                </label>
+                <FieldLabel htmlFor="badr-rate">Rate</FieldLabel>
                 <PercentInput
                   id="badr-rate"
                   min={0}
-                  large={false}
                   value={form.badrForm.rate}
                   onChange={(rate) => setBadr({ rate })}
                   invalid={Boolean(errorFor("badr_rate"))}
@@ -293,9 +247,7 @@ export default function ScheduleForm({ form, onChange, showPresets, onCalculate,
                 />
               </div>
               <div>
-                <label htmlFor="badr-limit" className="mb-1.5 block text-sm font-semibold text-slate-800">
-                  Lifetime limit
-                </label>
+                <FieldLabel htmlFor="badr-limit">Lifetime limit</FieldLabel>
                 <Select
                   id="badr-limit"
                   value={String(form.badrForm.limit)}
@@ -305,28 +257,25 @@ export default function ScheduleForm({ form, onChange, showPresets, onCalculate,
               </div>
             </div>
           ) : null}
-        </div>
-        {errorFor("badr_rate") ? <FieldError id="badr-rate-error">{errorFor("badr_rate")}</FieldError> : null}
-        <p className="mt-2 text-xs leading-5 text-slate-500">
-          Current law: {describeBadr(BADR_CURRENT_LAW).toLowerCase()}.
-          {form.badrForm.mode === "withdraw" ? " Withdrawn, qualifying gains take the main rates." : ""}
-        </p>
-        {check.reliefAboveBasic ? (
-          <p className="mt-2 text-xs leading-5 text-amber-800">
-            The relief&apos;s {formatPct(check.badr.rate * 100, 0)} is above the basic rate of{" "}
-            {formatPct(check.rates.basic_rate * 100, 0)}. In law the relief is claimed, and a taxpayer
-            whose qualifying gains fall in the basic rate band would not claim it; the model charges
-            it anyway, so it overstates the tax on those gains.
+          {errorFor("badr_rate") ? <FieldError id="badr-rate-error">{errorFor("badr_rate")}</FieldError> : null}
+          <p className={`mt-2 ${HINT}`}>
+            Current law {describeBadr(BADR_CURRENT_LAW).toLowerCase()}
+            {form.badrForm.mode === "withdraw" ? "; withdrawn, qualifying gains take the main rates." : "."}
           </p>
-        ) : null}
-      </div>
+          {check.reliefAboveBasic ? (
+            <p className="mt-2 text-xs leading-5 text-amber-800">
+              The relief&apos;s {formatPct(check.badr.rate * 100, 0)} is above the basic rate of{" "}
+              {formatPct(check.rates.basic_rate * 100, 0)}. In law the relief is claimed, and a taxpayer
+              whose qualifying gains fall in the basic rate band would not claim it; the model charges
+              it anyway, so it overstates the tax on those gains.
+            </p>
+          ) : null}
+        </Card>
 
-      <div className={DIVIDER}>
-        <SectionLabel tip={ELASTICITY_NOTE}>Behavioural response</SectionLabel>
-        <div className="max-w-md">
-          <label htmlFor="elasticity" className="sr-only">
+        <Card as="div" variant="inset">
+          <CardTitle htmlFor="elasticity" tip={ELASTICITY_NOTE}>
             Behavioural response
-          </label>
+          </CardTitle>
           <Select
             id="elasticity"
             value={String(form.elasticity)}
@@ -337,10 +286,10 @@ export default function ScheduleForm({ form, onChange, showPresets, onCalculate,
               label: splitLabel(option.label).name,
             }))}
           />
-          <p id="elasticity-detail" className="mt-2 text-xs leading-5 text-slate-500">
+          <p id="elasticity-detail" className={`mt-2 ${HINT}`}>
             {elasticity ? splitLabel(elasticity.label).detail : ""}
           </p>
-        </div>
+        </Card>
       </div>
 
       <div className="flex flex-col gap-4 border-t border-slate-200 pt-5 sm:flex-row sm:items-center sm:justify-between">
@@ -348,14 +297,17 @@ export default function ScheduleForm({ form, onChange, showPresets, onCalculate,
           <span aria-hidden="true" className={`mt-2 inline-block h-2 w-2 shrink-0 rounded-full ${DOTS[status.tone]}`} />
           <span>
             {status.text}
-            {status.action ? <> {status.action}</> : null}
+            {onRestore ? (
+              <>
+                {" "}
+                <button type="button" onClick={onRestore} className={TEXT_BUTTON}>
+                  Restore defaults
+                </button>
+              </>
+            ) : null}
           </span>
         </p>
-        <button
-          type="submit"
-          disabled={!check.rates || running}
-          className="w-full rounded-lg bg-[color:var(--pe-color-primary-600)] px-8 py-3 text-base font-semibold text-white shadow-sm transition hover:bg-[color:var(--pe-color-primary-700)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--pe-color-primary-500)] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
-        >
+        <button type="submit" disabled={!check.rates || running} className={`${PRIMARY_BUTTON} w-full sm:w-auto`}>
           {running ? "Calculating…" : "Calculate"}
         </button>
       </div>

@@ -74,29 +74,8 @@
     text-transform: uppercase;
   }
 
-  .tab-button {
-    margin-bottom: -2px;
-    border: none;
-    border-bottom: 2px solid transparent;
-    background: transparent;
-    padding: 14px 22px;
-    font-size: 1.1rem;
-    font-weight: var(--pe-font-weight-medium);
-    color: var(--pe-color-gray-500);
-    transition: all 200ms ease;
-    white-space: nowrap;
-  }
 
-  .tab-button:hover {
-    color: var(--pe-color-gray-800);
-    background: var(--pe-color-bg-primary);
-  }
 
-  .tab-button.active {
-    color: var(--pe-color-primary-700);
-    border-bottom-color: var(--pe-color-primary-600);
-    font-weight: var(--pe-font-weight-semibold);
-  }
 
   .section-card {
     background: var(--pe-color-bg-primary);
@@ -106,74 +85,15 @@
     padding: 24px;
   }
 
-  .metric-card {
-    background: linear-gradient(
-      180deg,
-      var(--pe-color-bg-primary),
-      var(--pe-color-bg-secondary)
-    );
-    border: 1px solid var(--pe-color-border-light);
-    border-radius: 18px;
-    box-shadow: 0 1px 2px color-mix(in srgb, var(--pe-color-gray-900) 5%, transparent);
-    padding: 18px;
-  }
-
-  .selector-chip {
-    width: 100%;
-    border-radius: 18px;
-    border: 1px solid var(--pe-color-border-light);
-    background: var(--pe-color-bg-primary);
-    padding: 16px;
-    text-align: left;
-    transition: all 180ms ease;
-  }
-
-  .selector-chip:hover {
-    border-color: var(--pe-color-primary-alpha-40);
-    box-shadow: 0 1px 2px color-mix(in srgb, var(--pe-color-gray-900) 5%, transparent);
-  }
-
-  .selector-chip.active {
-    border-color: var(--pe-color-primary-alpha-50);
-    background: color-mix(in srgb, var(--pe-color-primary-50) 78%, var(--pe-color-bg-primary));
-    box-shadow: 0 0 0 1px var(--pe-color-primary-alpha-40);
-  }
 
 
-  .selector-chip.compact {
-    width: auto;
-    border-radius: 999px;
-    padding: 4px 12px;
-    font-size: 0.8rem;
-    text-align: center;
-  }
 
-  .selector-chip-status {
-    border-radius: 9999px;
-    background: var(--pe-color-bg-secondary);
-    color: var(--pe-color-gray-600);
-  }
 
-  .toggle-button {
-    border-radius: 999px;
-    border: 1px solid var(--pe-color-border-light);
-    background: var(--pe-color-bg-primary);
-    padding: 8px 14px;
-    font-size: var(--pe-font-size-sm);
-    font-weight: var(--pe-font-weight-medium);
-    color: var(--pe-color-gray-600);
-    transition: all 180ms ease;
-  }
 
-  .toggle-button:hover {
-    border-color: var(--pe-color-primary-alpha-40);
-  }
 
-  .toggle-button.active {
-    background: var(--pe-color-primary-700);
-    border-color: var(--pe-color-primary-700);
-    color: var(--pe-color-text-inverse);
-  }
+
+
+
 
   .note-card {
     border-left: 3px solid var(--pe-color-border-light);
@@ -266,6 +186,18 @@
     border-bottom: none;
   }
 
+  /* Numbers right-aligned in tabular figures; a total row is bold and ruled. */
+  .data-table .num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .data-table tr.total td {
+    font-weight: 600;
+    border-top: 1px solid var(--pe-color-border-light);
+  }
+
   .data-table tbody tr:hover {
     background: var(--pe-color-bg-secondary);
   }
@@ -286,17 +218,11 @@
     padding: 18px;
     border-radius: 20px;
   }
-
-  .tab-button {
-    padding: 12px 14px;
-    font-size: 0.9rem;
-  }
 }
 
-/* Narrow screens: tabs wrap onto two rows at a smaller size than tablets'. */
-@media (max-width: 640px) {
-  .tab-strip .tab-button {
-    padding: 10px 12px;
-    font-size: 0.85rem;
-  }
+/* Recharts measures label widths with an off-screen span appended to <body>;
+   it kept the last label measured ("−£8,000"), which page text and screen
+   readers picked up after the footer. Hidden, it still measures. */
+#recharts_measurement_span {
+  visibility: hidden;
 }
