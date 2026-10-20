@@ -269,7 +269,7 @@ function ReadyReckoner({ block, dataset, elasticities }) {
       <p className="mt-3 text-xs leading-5 text-slate-500">
         Source: <SourceLink href={block.url}>{block.source}</SourceLink>, {block.locator}. {block.note}{" "}
         HMRC&apos;s figures are {lowerFirst(block.measure)}; the model figures are the change in
-        government balance on its own data, in the Rate explorer&apos;s scope (main and residential
+        government balance on its own data, in the scope of the Reform tab&apos;s custom rates (main and residential
         rates and the relief). Not scored:{" "}
         {block.excluded
           .map((row) => {

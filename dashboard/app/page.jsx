@@ -6,7 +6,6 @@ import BaselineTab from "../src/components/BaselineTab";
 import BenchmarksTab from "../src/components/BenchmarksTab";
 import MethodologyTab from "../src/components/MethodologyTab";
 import PolicyEngineHeader from "../src/components/PolicyEngineHeader";
-import RateExplorerTab from "../src/components/RateExplorerTab";
 import ReformTab from "../src/components/ReformTab";
 import { getDatasetInfo } from "../src/lib/dataHelpers";
 import results from "../public/data/cgt_equalisation_results.json";
@@ -16,14 +15,18 @@ import results from "../public/data/cgt_equalisation_results.json";
 // writes one results file, for the one registered dataset.
 
 const TAB_OPTIONS = [
-  { id: "reform", label: "Reform impacts" },
-  { id: "explorer", label: "Rate explorer" },
+  { id: "reform", label: "Reform" },
   { id: "baseline", label: "Baseline" },
   { id: "benchmarks", label: "Benchmarks" },
   { id: "methodology", label: "Methodology" },
 ];
 
+// Links from before the Reform tab merged the Reform impacts and Rate
+// explorer tabs open the Reform tab, which reads their schedule.
+const LEGACY_TABS = { explorer: "reform" };
+
 function getInitialTab(tabParam) {
+  if (LEGACY_TABS[tabParam]) return LEGACY_TABS[tabParam];
   if (TAB_OPTIONS.some((tab) => tab.id === tabParam)) {
     return tabParam;
   }
@@ -56,7 +59,7 @@ function Dashboard() {
   }, [searchParams]);
 
   function replaceUrl(tab) {
-    // Keep any other parameters (the Rate explorer's schedule) in place; a
+    // Keep any other parameters (the Reform tab's schedule) in place; a
     // `dataset` parameter from before the dashboard had one dataset is dropped.
     const params = new URLSearchParams(searchParams.toString());
     if (tab !== "reform") params.set("tab", tab);
@@ -124,10 +127,9 @@ function Dashboard() {
             rates. The dashboard runs on PolicyEngine&apos;s {dataset.shortLabel} data,
             which records what kind of asset each gain came from and which gains
             qualify for Business Asset Disposal Relief.{" "}
-            <TabLink onSelect={() => handleTabChange("reform")}>Reform impacts</TabLink>{" "}
-            shows the equalisation reform&apos;s revenue and distributional effects,{" "}
-            <TabLink onSelect={() => handleTabChange("explorer")}>Rate explorer</TabLink>{" "}
-            scores a schedule of CGT rates you choose,{" "}
+            <TabLink onSelect={() => handleTabChange("reform")}>Reform</TabLink>{" "}
+            shows the revenue and distributional effects of the equalisation reform or of a
+            schedule of CGT rates you choose,{" "}
             <TabLink onSelect={() => handleTabChange("baseline")}>
               Baseline
             </TabLink>{" "}
@@ -152,8 +154,7 @@ function Dashboard() {
           ))}
         </div>
 
-        {activeTab === "reform" && <ReformTab data={data} onNavigate={handleNavigate} />}
-        {activeTab === "explorer" && <RateExplorerTab data={data} datasetKey={dataset.key} onNavigate={handleNavigate} />}
+        {activeTab === "reform" && <ReformTab data={data} datasetKey={dataset.key} onNavigate={handleNavigate} />}
         {activeTab === "baseline" && <BaselineTab data={data} anchor={anchor} onNavigate={handleNavigate} />}
         {activeTab === "benchmarks" && <BenchmarksTab data={data} onNavigate={handleNavigate} />}
         {activeTab === "methodology" && <MethodologyTab data={data} anchor={anchor} />}
