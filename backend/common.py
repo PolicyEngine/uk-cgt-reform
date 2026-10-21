@@ -79,6 +79,12 @@ usage = modal.Dict.from_name(USAGE_DICT_NAME, create_if_missing=True)
 # The engine image: the pinned runtime plus the pipeline package.
 engine_image = (
     modal.Image.debian_slim(python_version=PYTHON_VERSION)
+    # Modal's prebuilt Debian base carries ca-certificates 20230311, which
+    # trusts the compromised eMudhra root "emSign ECC Root CA - G3".
+    # huggingface_hub (through truststore) and hf-xet read this operating-system
+    # store when warm.py downloads the private datasets, so upgrade the package
+    # to the Debian release that drops the root (20250419~deb12u2 or later).
+    .apt_install("ca-certificates")
     .pip_install_from_requirements(str(ROOT / "backend" / "requirements.txt"))
     .env({"CGT_EXPLORER_STAGE": STAGE})
     .add_local_dir(
