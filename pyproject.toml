@@ -34,15 +34,16 @@ simulation = [
   # Asset Disposal Relief (PolicyEngine/policyengine-uk#1980); 2.134.0 makes the
   # retention-rate elasticity 1.0 by default and adds
   # capital_gains_response_assumption, which the results record. The dataset was
-  # built with 2.100.0, the first release whose LocalAuthority enum carries the
-  # April 2023 unitary authorities its local_authority column uses. Each release
+  # built with 2.132.6 (2.100.0 was the first release whose LocalAuthority enum
+  # carries the April 2023 unitary authorities its local_authority column uses). Each release
   # can move the projection fingerprint, so a fresh install reproduces the
   # committed results only on this pin; changing it is a deliberate re-pin that
   # regenerates the results. (Earlier: 1b0cd0dff144 on 2.99.1, 7c469f5300b6 on
-  # 2.100.0, cd902bb73930 on 2.100.1, e76b2e927c55 on 2.104.0; 8dc7cee0f462 on
-  # 2.137.0, which names the gains index yoy_growth.capital_gains.)
+  # 2.100.0, cd902bb73930 on 2.100.1, e76b2e927c55 on 2.104.0, 8dc7cee0f462 on
+  # 2.137.0, which names the gains index yoy_growth.capital_gains; now 6c3580c6082e
+  # on 2.141.9.)
   "policyengine>=4.20.0,<5",
-  "policyengine-uk==2.137.0",
+  "policyengine-uk==2.141.9",
   "microdf-python>=1.0",
   "pyyaml>=6",
 ]

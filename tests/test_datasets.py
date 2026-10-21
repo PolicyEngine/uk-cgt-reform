@@ -36,7 +36,7 @@ def test_base_year():
 def test_metadata_round_trip():
     metadata = CANDIDATE.to_metadata()
     assert metadata["key"] == CANDIDATE.key
-    assert metadata["revision"] == "0d633297cd46106109bd7e075a6a1afdf0ac5ddb"
+    assert metadata["revision"] == "52f48aa177944b7d07c3f25403f1fddbcd1a74af"
     assert metadata["digest"] == CANDIDATE.digest
 
 
