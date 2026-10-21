@@ -1,4 +1,4 @@
-// Server-only helpers for the rate explorer's Next routes. The Modal gateway
+// Server-only helpers for the live-run Next routes (the Reform tab's custom rates). The Modal gateway
 // sits behind proxy authentication; the credentials never reach the browser.
 export function backendConfig() {
   const url = process.env.CGT_EXPLORER_URL;
@@ -35,4 +35,4 @@ export async function passThrough(upstream) {
 export const onVercel = () => process.env.VERCEL === "1";
 
 export const NOT_CONFIGURED =
-  "The rate explorer backend is not configured on this deployment (CGT_EXPLORER_URL is unset). See the README's Rate explorer section.";
+  "The backend for live runs is not configured on this deployment (CGT_EXPLORER_URL is unset). See the README's Custom rates section.";

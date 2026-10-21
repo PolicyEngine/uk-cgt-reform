@@ -13,13 +13,13 @@ score two things:
   ([Tax Justice UK](https://taxjustice.uk/blog/what-would-bunham-mean-for-britain/));
   CenTax costs it within a wider package that also reforms the CGT base (see
   [Benchmarks](#benchmarks)). This repo models the rate change. The pipeline
-  scores it and commits the results, which the dashboard's Reform impacts tab
-  shows.
+  scores it and commits the results, which the dashboard's Reform tab shows
+  when a reader calculates its **Equalise with income tax** option.
 - **Any schedule of main CGT rates** a reader chooses, scored live by the
-  dashboard's Rate explorer tab through the same code, dataset, engine and
-  projection (see [Rate explorer](#rate-explorer)).
+  Reform tab's **Custom rates** option through the same code, dataset, engine
+  and projection (see [Custom rates](#custom-rates)).
 
-The repository was called `uk-equalising-cgt` until the rate explorer took
+The repository was called `uk-equalising-cgt` until live custom rates took
 its scope beyond equalisation; GitHub redirects the old URL, and the
 dashboard redirects its former path `/uk/equalising-cgt` (and the bare
 deployment domain) to `/uk/cgt-reform`, query string included.
@@ -85,8 +85,8 @@ The results split the reform's 2026-27 yield by schedule
 (`schedule_split`, static and central): the main rates first, then the
 residential property schedule (which is equalisation with the relief kept,
 one reading of Wes Streeting's proposed exemption for genuine entrepreneurs,
-which has not been defined), then the relief withdrawn. The Rate explorer scores any rate
-and lifetime limit for the relief, or withdraws it, for every year.
+which has not been defined), then the relief withdrawn. The Reform tab's Custom rates
+option scores any rate and lifetime limit for the relief, or withdraws it, for every year.
 
 ## Results (2026-27 unless stated)
 
@@ -211,7 +211,7 @@ external figure with its source, locator, scope, year and basis.
   departure, so they are listed as context, not compared.
 - **HMRC's ready reckoner (June 2025).** Seven rows (higher rate +1, +5 and
   +10 points; lower rate +1 and +5 points; the Business Asset Disposal Relief
-  rate +1 and +5 points) are scored through the rate explorer's code at the
+  rate +1 and +5 points) are scored through the live-run code at the
   central and the official elasticity, comparing HMRC's receipts in 2027-28
   and 2028-29 with this repo's liabilities a year earlier. The official case
   applies 3.6 to main-rate gains and 1.4 to gains qualifying for the relief,
@@ -424,9 +424,13 @@ The projection is fingerprinted into the results metadata
 (`metadata.projection`) and into every simulation id, so a change in the
 engine's uprating cannot reuse cached simulation outputs.
 
-## Rate explorer
+## Custom rates
 
-The dashboard's **Rate explorer** tab scores any schedule of CGT rates
+The dashboard has one **Reform** tab with two options. **Equalise with
+income tax** shows the committed results when a reader calculates it at its
+own values (20/40/45, relief withdrawn, central elasticity), with no backend
+call; with any value changed it runs live. **Custom rates** scores any
+schedule of CGT rates
 (basic / higher / additional, applied to the main schedule and to the
 residential property schedule) with Business Asset Disposal Relief kept, at a
 whole-point rate no higher than the additional rate and a lifetime limit of
@@ -434,16 +438,18 @@ whole-point rate no higher than the additional rate and a lifetime limit of
 2030-31, through the pipeline's own code path: the pinned per-year
 datasets, the cached baseline simulations, the `Policy.simulation_modifier`
 reform with the behavioural response, and `impacts.budget_impact` /
-`impacts.income_change_groups`. Nothing is precomputed or interpolated: an
-explorer run at 20/40/45 with the relief withdrawn builds the equalisation
+`impacts.income_change_groups`. Nothing is precomputed or interpolated: a
+live run at 20/40/45 with the relief withdrawn builds the equalisation
 reform's own dict (same fingerprint) and reproduces the committed results,
 and 18/24/24 with the relief at current law gives zero change.
 
 Links shared before the retention form carry a marginal-rate elasticity
 (−0.35, −0.7 or −2.52), which maps to the case it named. Those links have no
 relief fields, and one to 20/40/45 loads with the relief withdrawn, as the
-equalisation preset now does, so it still scores the Reform impacts tab's
-reform.
+equalisation preset now does, so it still scores the equalisation reform.
+Links to the former Rate explorer tab (`?tab=explorer`, with or without a
+schedule) open the Reform tab with Custom rates selected and that schedule;
+a schedule reaches the URL only once a calculation succeeds.
 
 A link opened on page load is served only from the result cache, or joins
 a computation already running: the dashboard sends it with

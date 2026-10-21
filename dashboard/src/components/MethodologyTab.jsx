@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { getBenchmarks, getDatasetInfo, getMetadata } from "../lib/dataHelpers";
 import { formatPct, formatPublished } from "../lib/formatters";
+import { TabLink } from "./controls";
 import SectionHeading from "./SectionHeading";
 
 function ExternalLink({ href, children }) {
@@ -35,7 +36,7 @@ const CENTAX_REPORT =
   "https://centax.org.uk/wp-content/uploads/2024/10/AdvaniLonsdaleSummers2024_CGTReform.pdf";
 const centaxPage = (pdfPage) => `${CENTAX_REPORT}#page=${pdfPage}`;
 
-export default function MethodologyTab({ data, anchor }) {
+export default function MethodologyTab({ data, anchor, onNavigate }) {
   // Analysis sections can link here with /?tab=methodology#<id>, or open the
   // tab at a section (``anchor``); the tab mounts after navigation, so the
   // browser's native hash scroll has already missed and we replay it.
@@ -127,7 +128,7 @@ export default function MethodologyTab({ data, anchor }) {
             to the same income tax rates and withdraws the relief, so qualifying gains (Investors&apos;
             Relief included, which the engine&apos;s input merges with it) take the reformed main
             rates, as in CenTax&apos;s rates-only estimate. Carried interest has been taxed as
-            income since 6 April 2026, outside CGT, so the reform and the Rate explorer leave it
+            income since 6 April 2026, outside CGT, so the reform and custom rates leave it
             where it is. On a dataset without those columns the extra parameters are inert.
           </li>
           <li>
@@ -185,7 +186,11 @@ export default function MethodologyTab({ data, anchor }) {
           </ExternalLink>
           ), and this dashboard sets the elasticity directly in every case. It is an assumption
           for a package that also reforms the base, not an estimate for this rates-only reform,
-          so the Reform impacts tab&apos;s sensitivity table shows CenTax&apos;s range and the
+          so{" "}
+          <TabLink onNavigate={onNavigate} tab="reform" section="sensitivity">
+            the Reform tab&apos;s sensitivity table for equalisation
+          </TabLink>{" "}
+          shows CenTax&apos;s range and the
           official HMRC/OBR elasticity described below beside it, with a case of no response.
         </p>
         <p className="mt-3 text-sm leading-6 text-slate-600">
@@ -241,7 +246,11 @@ export default function MethodologyTab({ data, anchor }) {
             aggregate effect depends on where its taxpayers&apos; marginal rates on gains sit.
           </li>
           <li>
-            <strong>On this dataset.</strong> The Reform impacts tab&apos;s sensitivity table gives
+            <strong>On this dataset.</strong>{" "}
+            <TabLink onNavigate={onNavigate} tab="reform" section="sensitivity">
+              The Reform tab&apos;s sensitivity table
+            </TabLink>{" "}
+            gives
             the reform&apos;s first-year change in CGT revenue at each elasticity, and the
             Benchmarks tab scores the ready reckoner&apos;s rows at the central and the official
             one.
@@ -250,17 +259,19 @@ export default function MethodologyTab({ data, anchor }) {
       </section>
 
       <section className="section-card scroll-mt-24" id="explorer">
-        <SectionHeading title="Rate explorer" />
+        <SectionHeading title="Custom rates, run live" />
         <ul className="mt-2 list-disc space-y-2 pl-5 text-sm leading-6 text-slate-600">
           <li>
-            <strong>Same pipeline, run live.</strong> The Rate explorer tab scores a schedule of
-            CGT rates and a treatment of Business Asset Disposal Relief you choose on{" "}
-            {dataset.shortLabel} for every modelled year. It runs the pipeline&apos;s own code (the same pinned
-            per-year datasets, cached baseline simulations, behavioural response and impact
-            calculations) on a Modal backend, or locally through the{" "}
+            <strong>Same pipeline, run live.</strong> The Reform tab&apos;s Custom rates option
+            scores a schedule of CGT rates and a treatment of Business Asset Disposal Relief you
+            choose on {dataset.shortLabel} for every modelled year. It runs the pipeline&apos;s own
+            code (the same pinned per-year datasets, cached baseline simulations, behavioural
+            response and impact calculations) on a Modal backend, or locally through the{" "}
             <span className="font-mono text-xs">uk-cgt-reform-explore</span> command. Nothing
-            is precomputed or interpolated: the explorer&apos;s equalisation preset with the relief
-            withdrawn builds the Reform impacts tab&apos;s own reform and reproduces its figures.
+            is precomputed or interpolated. Run live, equalisation with the relief withdrawn
+            builds the pipeline&apos;s own reform and reproduces its figures, so the tab shows the
+            precomputed results for that schedule at once and runs any other schedule live,
+            including equalisation with a value changed.
           </li>
           <li>
             <strong>Scope.</strong> The chosen rates reach the main schedule and the residential
