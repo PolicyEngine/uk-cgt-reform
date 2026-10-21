@@ -1,0 +1,316 @@
+"use client";
+
+import { badrLimitLabel, describeBadr } from "../lib/dataHelpers";
+import { formatPct } from "../lib/formatters";
+import {
+  BADR_CURRENT_LAW,
+  BADR_LIMITS,
+  BANDS,
+  CURRENT_LAW,
+  ELASTICITIES,
+  PCT_MAX,
+  PCT_MIN,
+  PRESETS,
+  READY_RECKONER,
+  STEP_PCT,
+  checkForm,
+  formOf,
+  presetFor,
+  readyReckonerRowFor,
+} from "../lib/schedule";
+import {
+  Card,
+  CardTitle,
+  FIELD,
+  FieldLabel,
+  HINT,
+  PRIMARY_BUTTON,
+  TEXT_BUTTON,
+  Pill,
+  Toggle,
+  fieldBorder,
+} from "./controls";
+
+// One short line under each rate; the band's full note sits in its tooltip.
+const BAND_HINTS = {
+  basic_rate: "Within the basic rate band",
+  higher_rate: "Up to £125,140",
+  additional_rate: "Above £125,140",
+};
+const BADR_NOTE =
+  "Gains on qualifying business disposals, Investors' Relief included. Withdrawn, those gains take the main rates. The relief's rate may not exceed the additional rate. The model charges it on every qualifying gain, without the claim a taxpayer makes in law.";
+const ELASTICITY_NOTE =
+  "The elasticity of realised gains with respect to the retention rate (1 − t): taxpayers realise fewer gains as the share of each gain they keep falls.";
+
+// "CenTax central (retention elasticity 1.0)" → a short name for the select
+// and its detail for the line beneath.
+function splitLabel(label) {
+  const match = label.match(/^(.*?)\s*\((.*)\)$/);
+  if (!match) return { name: label, detail: "" };
+  return { name: match[1], detail: match[2][0].toUpperCase() + match[2].slice(1) };
+}
+
+function FieldError({ id, children }) {
+  return (
+    <p id={id} className="mt-2 text-xs leading-5 text-red-700">
+      {children}
+    </p>
+  );
+}
+
+// A percentage input with its "%" inside the field.
+function PercentInput({ id, value, onChange, invalid, describedBy, min = PCT_MIN }) {
+  return (
+    <div className="relative">
+      <input
+        id={id}
+        type="number"
+        inputMode="decimal"
+        min={min}
+        max={PCT_MAX}
+        step={STEP_PCT}
+        value={value}
+        aria-invalid={invalid || undefined}
+        aria-describedby={describedBy}
+        onChange={(event) => onChange(event.target.value)}
+        className={`${FIELD} ${fieldBorder(invalid)} w-full pr-9`}
+      />
+      <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-base font-semibold text-slate-400">
+        %
+      </span>
+    </div>
+  );
+}
+
+function Select({ id, value, onChange, options, describedBy }) {
+  return (
+    <select
+      id={id}
+      value={value}
+      aria-describedby={describedBy}
+      onChange={(event) => onChange(event.target.value)}
+      className={`${FIELD} ${fieldBorder()} w-full pr-8 text-sm`}
+    >
+      {options.map((option) => (
+        <option key={option.value} value={option.value}>
+          {option.label}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+// The rate's distance from current law, in percentage points.
+function ChangeChip({ value, reference }) {
+  const number = Number(value);
+  if (value === "" || !Number.isFinite(number)) return null;
+  const gap = Math.round((number - reference * 100) * 100) / 100;
+  if (gap === 0) return null;
+  return <Pill tone="teal">{`${gap > 0 ? "+" : "−"}${Math.abs(gap)} pp`}</Pill>;
+}
+
+function RateCard({ band, value, onChange, error }) {
+  const id = `rate-${band.key}`;
+  return (
+    <Card as="div" variant="inset">
+      <CardTitle htmlFor={id} tip={band.note} tipLabel={`About the ${band.label.toLowerCase()}`}>
+        {band.label}
+      </CardTitle>
+      <PercentInput
+        id={id}
+        value={value}
+        onChange={onChange}
+        invalid={Boolean(error)}
+        describedBy={error ? `${id}-error` : `${id}-hint`}
+      />
+      <div id={`${id}-hint`} className={`mt-2 flex flex-wrap items-center justify-between gap-2 ${HINT}`}>
+        <span>{BAND_HINTS[band.key]}</span>
+        <span className="flex items-center gap-2">
+          <span>Current law {formatPct(CURRENT_LAW.rates[band.key] * 100, 0)}</span>
+          <ChangeChip value={value} reference={CURRENT_LAW.rates[band.key]} />
+        </span>
+      </div>
+      {error ? <FieldError id={`${id}-error`}>{error}</FieldError> : null}
+    </Card>
+  );
+}
+
+const DOTS = {
+  instant: "bg-[color:var(--pe-color-primary-500)]",
+  live: "bg-amber-500",
+};
+
+// One policy's parameters as a grid of cards (start from, rates, relief,
+// behavioural response), with a footer bar: what Calculate will do
+// (`status`: a tone, a text and an optional action) and the Calculate
+// button. `showPresets` adds the "Start from" card (presets and HMRC
+// ready-reckoner rows). It is a form, so Enter in an input calculates;
+// `running` (a run in flight) disables it.
+export default function ScheduleForm({ form, onChange, showPresets, onCalculate, running, status, onRestore }) {
+  const check = checkForm(form);
+  const set = (patch) => onChange({ ...form, ...patch });
+  const setBadr = (patch) => set({ badrForm: { ...form.badrForm, ...patch } });
+  // Loading a preset or a ready-reckoner row keeps the chosen elasticity.
+  const load = (schedule) => onChange(formOf(schedule.rates, schedule.badr, form.elasticity));
+  const readyReckonerRow = check.rates ? (readyReckonerRowFor(check.rates, check.badr)?.id ?? "none") : "none";
+  const errorFor = (field) => (check.errorField === field ? check.error : null);
+  const elasticity = ELASTICITIES.find((option) => String(option.e_retention) === String(form.elasticity));
+  const submit = (event) => {
+    event.preventDefault();
+    if (check.rates && !running) onCalculate(check);
+  };
+
+  return (
+    <form onSubmit={submit} noValidate className="space-y-4">
+      {showPresets ? (
+        <Card as="div" variant="inset">
+          <CardTitle>Start from</CardTitle>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <FieldLabel htmlFor="preset">Preset</FieldLabel>
+              <Select
+                id="preset"
+                describedBy="preset-hint"
+                value={presetFor(check)}
+                onChange={(id) => {
+                  const chosen = PRESETS.find((candidate) => candidate.id === id);
+                  if (chosen) load(chosen);
+                }}
+                options={[
+                  ...PRESETS.map((candidate) => ({ value: candidate.id, label: candidate.label })),
+                  { value: "custom", label: "Custom" },
+                ]}
+              />
+              <p id="preset-hint" className={`mt-2 ${HINT}`}>Fills in the rates and the relief below.</p>
+            </div>
+            <div>
+              <FieldLabel htmlFor="ready-reckoner">HMRC ready-reckoner row</FieldLabel>
+              <Select
+                id="ready-reckoner"
+                describedBy="ready-reckoner-hint"
+                value={readyReckonerRow}
+                onChange={(id) => {
+                  const chosen = READY_RECKONER.rows.find((row) => row.id === id);
+                  if (chosen) load(chosen);
+                }}
+                options={[
+                  { value: "none", label: "None" },
+                  ...READY_RECKONER.rows.map((row) => ({ value: row.id, label: row.label })),
+                ]}
+              />
+              <p id="ready-reckoner-hint" className={`mt-2 ${HINT}`}>
+                A row of HMRC&apos;s published ready reckoner, compared in the results.
+              </p>
+            </div>
+          </div>
+        </Card>
+      ) : null}
+
+      <div className="grid gap-4 md:grid-cols-3">
+        {BANDS.map((band) => (
+          <RateCard
+            key={band.key}
+            band={band}
+            value={form.percents[band.key]}
+            onChange={(value) => set({ percents: { ...form.percents, [band.key]: value } })}
+            error={errorFor(band.key)}
+          />
+        ))}
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card as="div" variant="inset" className="md:col-span-2">
+          <CardTitle id="badr-title" tip={BADR_NOTE}>
+            Business Asset Disposal Relief
+          </CardTitle>
+          <Toggle
+            label="Business Asset Disposal Relief"
+            fullWidth
+            options={[
+              { value: "keep", label: "Keep" },
+              { value: "withdraw", label: "Withdraw" },
+            ]}
+            value={form.badrForm.mode}
+            onChange={(mode) => setBadr({ mode })}
+          />
+          {form.badrForm.mode === "keep" ? (
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <div>
+                <FieldLabel htmlFor="badr-rate">Rate</FieldLabel>
+                <PercentInput
+                  id="badr-rate"
+                  min={0}
+                  value={form.badrForm.rate}
+                  onChange={(rate) => setBadr({ rate })}
+                  invalid={Boolean(errorFor("badr_rate"))}
+                  describedBy={errorFor("badr_rate") ? "badr-rate-error" : undefined}
+                />
+              </div>
+              <div>
+                <FieldLabel htmlFor="badr-limit">Lifetime limit</FieldLabel>
+                <Select
+                  id="badr-limit"
+                  value={String(form.badrForm.limit)}
+                  onChange={(value) => setBadr({ limit: Number(value) })}
+                  options={BADR_LIMITS.map((limit) => ({ value: String(limit), label: badrLimitLabel(limit) }))}
+                />
+              </div>
+            </div>
+          ) : null}
+          {errorFor("badr_rate") ? <FieldError id="badr-rate-error">{errorFor("badr_rate")}</FieldError> : null}
+          <p className={`mt-2 ${HINT}`}>
+            Current law {describeBadr(BADR_CURRENT_LAW).toLowerCase()}
+            {form.badrForm.mode === "withdraw" ? "; withdrawn, qualifying gains take the main rates." : "."}
+          </p>
+          {check.reliefAboveBasic ? (
+            <p className="mt-2 text-xs leading-5 text-amber-800">
+              The relief&apos;s {formatPct(check.badr.rate * 100, 0)} is above the basic rate of{" "}
+              {formatPct(check.rates.basic_rate * 100, 0)}. In law the relief is claimed, and a taxpayer
+              whose qualifying gains fall in the basic rate band would not claim it; the model charges
+              it anyway, so it overstates the tax on those gains.
+            </p>
+          ) : null}
+        </Card>
+
+        <Card as="div" variant="inset">
+          <CardTitle htmlFor="elasticity" tip={ELASTICITY_NOTE}>
+            Behavioural response
+          </CardTitle>
+          <Select
+            id="elasticity"
+            value={String(form.elasticity)}
+            onChange={(value) => set({ elasticity: Number(value) })}
+            describedBy="elasticity-detail"
+            options={ELASTICITIES.map((option) => ({
+              value: String(option.e_retention),
+              label: splitLabel(option.label).name,
+            }))}
+          />
+          <p id="elasticity-detail" className={`mt-2 ${HINT}`}>
+            {elasticity ? splitLabel(elasticity.label).detail : ""}
+          </p>
+        </Card>
+      </div>
+
+      <div className="flex flex-col gap-4 border-t border-slate-200 pt-5 sm:flex-row sm:items-center sm:justify-between">
+        <p className="flex items-start gap-2 text-sm leading-6 text-slate-600" role="status">
+          <span aria-hidden="true" className={`mt-2 inline-block h-2 w-2 shrink-0 rounded-full ${DOTS[status.tone]}`} />
+          <span>
+            {status.text}
+            {onRestore ? (
+              <>
+                {" "}
+                <button type="button" onClick={onRestore} className={TEXT_BUTTON}>
+                  Restore defaults
+                </button>
+              </>
+            ) : null}
+          </span>
+        </p>
+        <button type="submit" disabled={!check.rates || running} className={`${PRIMARY_BUTTON} w-full sm:w-auto`}>
+          {running ? "Calculating…" : "Calculate"}
+        </button>
+      </div>
+    </form>
+  );
+}

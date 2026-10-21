@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-// Client side of the rate explorer: submit a request to the dashboard's own
+// Client side of the Reform tab's live runs: submit a request to the dashboard's own
 // API route, then poll while a job is queued. The route decides whether a
 // Modal backend or the local CLI answers.
 const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH || "";
@@ -29,7 +29,7 @@ async function parse(response) {
     // say so plainly instead of showing the validator's list of values.
     if (response.status === 400 && body.detail?.startsWith("elasticity must be one of")) {
       throw new Error(
-        "The explorer's backend does not offer this behavioural response yet: it arrives with the backend update that accompanies this dashboard. Choose another response for now.",
+        "The backend for live runs does not offer this behavioural response yet: it arrives with the backend update that accompanies this dashboard. Choose another response for now.",
       );
     }
     throw new Error(body.detail || `HTTP ${response.status}`);
@@ -105,7 +105,7 @@ export function useExploration() {
         body = { ...(await parse(await fetch(`${BASE_PATH}/api/explore/status?job=${jobId}`))), job_id: jobId };
       }
       if (body.status === "failed") throw new Error(body.detail || "The run failed.");
-      if (body.status !== "done" || !body.result) throw new Error("Unexpected response from the explorer backend.");
+      if (body.status !== "done" || !body.result) throw new Error("Unexpected response from the backend for live runs.");
       finish(() => {
         setResult(body.result);
         setStatus("done");

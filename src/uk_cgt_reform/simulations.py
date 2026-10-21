@@ -159,38 +159,39 @@ class DatasetSpec:
 #: (the tag in ``producer``) holds the same file, digest included.
 CANDIDATE = DatasetSpec(
     key="microcosm_uk_2024_25",
-    label="Microcosm UK 2024-25, national release published 4 October 2026",
+    label="Microcosm UK 2024-25, national release published 19 October 2026",
     short_label="Microcosm UK 2024-25",
     role="release",
     uri=(
         "hf://policyengine/populace-uk-private/"
-        "microcosm_uk_2024_25.h5@0d633297cd46106109bd7e075a6a1afdf0ac5ddb"
+        "microcosm_uk_2024_25.h5@52f48aa177944b7d07c3f25403f1fddbcd1a74af"
     ),
-    sha256="aa31bdf67c977927ea2b325567d1cf7a79d94381239bc79918a0a0fc9c9588af",
+    sha256="810ba980005a8b907cb51464279fa5e0125464b7af9a4871b7f6744c30951ece",
     base_year=2024,
     producer=(
         "Microcosm UK release microcosm-uk-2024-25-national, cut "
-        "microcosm-uk-2024-25-national-20261002T230158Z-5c6b3f68 (build "
-        "uk-frs-calibration-attempt-20261002T230158Z-5c6b3f68 on microcosm 64c460b6, "
-        "PolicyEngine/microcosm#1089, with policyengine-uk 2.100.0), published "
-        "2026-10-04 on the main branch of the Hugging Face dataset repo "
-        "policyengine/populace-uk-private (commit 0d633297); a certified release: "
-        "its 31 spine, 7 calibration-seam and 20 release-cut gates passed"
+        "microcosm-uk-2024-25-national-20261019T083323Z-6cba5d71 (build "
+        "uk-frs-calibration-attempt-20261019T083323Z-6cba5d71 on microcosm 810315ac, the "
+        "head of PolicyEngine/microcosm#1316, merged later that day, with "
+        "policyengine-uk 2.132.6), published "
+        "2026-10-19 on the main branch of the Hugging Face dataset repo "
+        "policyengine/populace-uk-private (commit 52f48aa1); a certified release: "
+        "its 39 spine, 7 calibration-seam and 19 release-cut gates passed"
     ),
     observation=(
         "FRS 2024-25 spine; capital gains amounts drawn from HMRC Table 3 (size of gain "
         "by taxable income, 2024-25) with asset types from HMRC Tables 7 and 8, gains "
         "qualifying for Business Asset Disposal Relief and Investors' Relief imputed from "
         "HMRC Table 4, and the sub-exempt remainder drawn from the Advani-Summers "
-        "within-band distribution; household weights calibrated to 1,168 targets, among "
+        "within-band distribution; household weights calibrated to 1,215 targets, among "
         "them HMRC's CGT totals, size bands, gains by taxable income band (Table 3), age, "
         "region, the BADR bands (Table 4) and residential property gains"
     ),
     notes=(
         "The build's projection fence bounds the gainers that uprating carries over the "
-        "frozen exempt amount by 2030 at 7.4k, against HMRC's 73k taxpayers with gains of "
+        "frozen exempt amount by 2030 at 7.0k, against HMRC's 73k taxpayers with gains of "
         "£3,000 to £5,999 in 2024-25 (Table 2.1a); this repo's uprating audit counts "
-        "7.6k on policyengine-uk 2.137.0."
+        "7.1k on policyengine-uk 2.141.9."
     ),
     columns=(
         "It carries capital_gains, capital_gains_residential_property (the residential "

@@ -1,427 +1,326 @@
 "use client";
 
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { describeBadr, getDatasetInfo, getFirstYear } from "../lib/dataHelpers";
+import { formatPct } from "../lib/formatters";
+import { useExploration } from "../lib/exploreApi";
+import { initialState, isStale, reformReducer } from "../lib/reformState";
 import {
-  formatElasticity,
-  formatPct,
-  formatPublished,
-  formatSignedBn,
-  formatSignedCurrency,
-  formatSignedPct,
-  formatSmallBn,
-} from "../lib/formatters";
-import {
-  BASELINE_SCHEDULE_RATES,
-  describeBadr,
-  getBenchmarks,
-  getBudget,
-  getDatasetInfo,
-  getEntrants,
-  getFirstYear,
-  getFiveYearTotal,
-  getIncomeChangeGroups,
-  getIncomeChangeGroupsByYear,
-  getReformSchedules,
-  getScheduleSplit,
-  getSensitivity,
-  getReform,
-  getValidation,
-} from "../lib/dataHelpers";
-import BudgetChart from "./charts/BudgetChart";
-import GroupImpactChart from "./charts/GroupImpactChart";
-import { MetricCard, TabLink, TableScroll, TipHeader } from "./controls";
+  BANDS,
+  checkForm,
+  formOf,
+  isPrecomputed,
+  precomputedSchedule,
+  scheduleParams,
+} from "../lib/schedule";
+import EqualisationResults from "./EqualisationResults";
+import LiveResults, { StatusLine } from "./LiveResults";
+import ScheduleForm from "./ScheduleForm";
 import SectionHeading from "./SectionHeading";
+import { Card, Pill, TEXT_BUTTON, TabLink, cardClass } from "./controls";
 
-// Where each sensitivity scenario's elasticity comes from: the static case
-// has none, the official HMRC/OBR case's source is in the results file's
-// benchmarks block, and the rest are CenTax's central case and range.
-const CENTAX_SOURCE = {
-  label: "Advani, Lonsdale & Summers (2024), CenTax",
-  url: "https://centax.org.uk/wp-content/uploads/2024/10/AdvaniLonsdaleSummers2024_CGTReform.pdf#page=38",
-};
-const STATIC_SOURCE = { label: "None: taxpayers do not respond", url: null };
+const CENTAX_URL =
+  "https://centax.org.uk/wp-content/uploads/2024/10/AdvaniLonsdaleSummers2024_CGTReform.pdf#page=38";
+const POLICY_TITLES = { equalise: "Equalise with income tax", custom: "Custom rates" };
 
-function officialSource(official) {
-  return {
-    // The 3.6 and 1.4 are in para 1.9, on PDF p.3; the results file's locator
-    // also names Table 1.1, which is on p.5, so the label names the paragraph.
-    label: `OBR (${formatPublished(official.published.slice(0, 7))}), para 1.9`,
-    url: `${official.url}#page=3`,
-  };
-}
-
-function SourceLink({ row, official }) {
-  let source = CENTAX_SOURCE;
-  if (row.e_retention === 0) source = STATIC_SOURCE;
-  else if (row.e_retention === official.e_retention) source = officialSource(official);
-  if (!source.url) return <td className="font-normal text-slate-500">{source.label}</td>;
+// One policy in the chooser: an inset card that selects it (or, selected,
+// closes its panel), with a radio-style mark and a call to action so it
+// reads as a choice. The selected policy's parameters open in a box below.
+function PolicyTile({ id, sentence, pills, speed, selected, onSelect }) {
   return (
-    <td>
-      <a
-        href={source.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="font-normal text-[color:var(--pe-color-primary-600)] underline decoration-1 underline-offset-2 hover:opacity-80"
+    <button
+      type="button"
+      onClick={onSelect}
+      aria-pressed={selected}
+      aria-controls={selected ? "policy-panel" : undefined}
+      id={`policy-tile-${id}`}
+      className={`${cardClass("inset", selected)} group relative flex h-full w-full cursor-pointer flex-col p-5 text-left shadow-sm duration-150 hover:-translate-y-0.5 hover:border-[color:var(--pe-color-primary-500)] hover:shadow-md focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-offset-2 focus-visible:outline-[color:var(--pe-color-primary-600)] sm:p-6`}
+    >
+      <span
+        aria-hidden="true"
+        className={`absolute right-5 top-5 flex h-6 w-6 items-center justify-center rounded-full border-2 sm:right-6 sm:top-6 ${
+          selected
+            ? "border-[color:var(--pe-color-primary-600)] bg-[color:var(--pe-color-primary-600)]"
+            : "border-slate-400 bg-white group-hover:border-[color:var(--pe-color-primary-500)]"
+        }`}
       >
-        {source.label}
-      </a>
-    </td>
+        {selected ? <span className="h-2.5 w-2.5 rounded-full bg-white" /> : null}
+      </span>
+      <span className="pr-10 text-lg font-semibold text-slate-900">{POLICY_TITLES[id]}</span>
+      <span className="mt-1.5 block text-sm leading-6 text-slate-600">{sentence}</span>
+      <span className="mt-3 flex flex-wrap gap-2">
+        {pills.map((pill) => (
+          <Pill key={pill}>{pill}</Pill>
+        ))}
+        <Pill tone={speed.instant ? "teal" : "amber"}>{speed.label}</Pill>
+      </span>
+      <span className="mt-auto pt-5 text-sm">
+        {selected ? (
+          <span className="font-semibold text-[color:var(--pe-color-primary-700)]">✓ Selected</span>
+        ) : (
+          <span className={TEXT_BUTTON}>Choose this reform →</span>
+        )}
+      </span>
+    </button>
   );
 }
 
-export default function ReformTab({ data, onNavigate }) {
-  const budget = getBudget(data);
-  const firstYear = getFirstYear(data);
-  const fiveYearTotal = getFiveYearTotal(data);
-  const headlineGroups = getIncomeChangeGroups(data, firstYear);
-  const sensitivity = getSensitivity(data);
-  const { central, official, centax_range: centaxRange } = getBenchmarks(data).elasticities;
-  const reform = getReform(data);
-  const schedules = getReformSchedules(data);
-  const validation = getValidation(data);
+// The Reform tab: choose equalisation with income tax or custom rates, set
+// the parameters, and calculate. Nothing shows until Calculate, except for a
+// link that carries a schedule or asks for equalisation's results.
+// Equalisation at its own values shows the precomputed results at once; any
+// other schedule runs live through /api/explore.
+export default function ReformTab({ data, datasetKey, onNavigate, anchor }) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const dataset = getDatasetInfo(data);
-  const entrants = getEntrants(data);
-  const entrantShare = entrants.count / validation.cgt_taxpayers;
-  const firstYearRow = budget[0];
-  const entrantShareOfChange =
-    firstYearRow.cgt_change_from_entrants_bn / firstYearRow.gov_balance_change_bn;
-  const recorded = (gains) => (gains > 0 ? "" : ` ${dataset.shortLabel} records no such gains, so this line is inert here.`);
-  const topQuintile = headlineGroups.quintile[headlineGroups.quintile.length - 1];
-  const split = getScheduleSplit(data);
-  // Equalisation with the relief kept: the step before it is withdrawn.
-  const keptRelief = split.steps.find((row) => row.step === "residential");
-  // The spread of the first-year yield across the behavioural cases in the
-  // sensitivity table (the static case excluded): the official case and
-  // CenTax's upper case can turn it negative.
-  const behavioural = sensitivity.filter((row) => row.e_retention !== 0);
-  const lowest = behavioural.reduce((a, b) => (b.revenue_2026_bn < a.revenue_2026_bn ? b : a));
-  const highest = behavioural.reduce((a, b) => (b.revenue_2026_bn > a.revenue_2026_bn ? b : a));
-  const caseName = (row) =>
-    row.e_retention === official.e_retention
-      ? "the official HMRC/OBR elasticity"
-      : `a retention elasticity of ${row.e_retention.toFixed(1)}`;
-  const pct = (rate) => formatPct(rate * 100, 0);
+  const firstYear = getFirstYear(data);
+  const precomputed = useMemo(() => precomputedSchedule(data), [data]);
+  // Read once: a shared link arrives with a full schedule in the URL.
+  const [state, dispatch] = useReducer(reformReducer, null, () => initialState(searchParams, precomputed));
+  const { policy, forms, shown } = state;
+  const { run, reset, status, result, error, elapsedSeconds } = useExploration();
+  const inFlight = status === "running" || status === "checking";
+  const mounted = useRef(false);
+  const results = useRef(null);
+  // The schedule a live run will write to the URL once it succeeds, and
+  // whether to scroll to its results then (not for a link opened on load).
+  const pending = useRef(null);
+
+  const replaceSchedule = useCallback(
+    (schedule) => {
+      const query = scheduleParams(searchParams.toString(), schedule).toString();
+      router.replace(query ? `/?${query}` : "/", { scroll: false });
+    },
+    [router, searchParams],
+  );
+
+  // A scroll asked for with the results: to their top, or to a section of
+  // them (a <details> section opens). It waits until they have rendered.
+  const [scrollRequest, setScrollRequest] = useState(null);
+  const scrollTo = (target = null) => setScrollRequest({ target });
+
+  const startLive = useCallback(
+    (check, { cacheOnly = false } = {}) => {
+      const badr = check.badr.withdrawn
+        ? { withdrawn: true }
+        : { rate: check.badr.rate, lifetime_limit: check.badr.lifetime_limit };
+      pending.current = { check, scroll: !cacheOnly };
+      run({ dataset: datasetKey, rates: check.rates, badr, elasticity: check.elasticity }, { cacheOnly });
+    },
+    [datasetKey, run],
+  );
+
+  const calculate = (check) => {
+    if (!check.rates || inFlight) return;
+    if (isPrecomputed(check, precomputed)) {
+      reset();
+      dispatch({ type: "calculate", shown: "precomputed" });
+      replaceSchedule(null);
+      scrollTo();
+      return;
+    }
+    dispatch({ type: "calculate", shown: "live" });
+    startLive(check);
+  };
+
+  const hasResults = shown === "precomputed" || (shown === "live" && Boolean(result));
+  useEffect(() => {
+    if (!scrollRequest || !hasResults) return;
+    const element = scrollRequest.target ? document.getElementById(scrollRequest.target) : results.current;
+    if (element?.tagName === "DETAILS") element.open = true;
+    element?.scrollIntoView({ behavior: "smooth", block: "start" });
+    setScrollRequest(null);
+  }, [scrollRequest, hasResults]);
+
+  // A live run's schedule reaches the URL only once it succeeds.
+  useEffect(() => {
+    if (status !== "done" || !pending.current) return;
+    const { check, scroll } = pending.current;
+    pending.current = null;
+    replaceSchedule(check);
+    if (scroll) scrollTo();
+  }, [status, replaceSchedule]);
+
+  // A link to equalisation's results (or a section of them) shows them as
+  // Calculate on its own values would.
+  const showEqualisation = useCallback(
+    (target) => {
+      reset();
+      dispatch({ type: "showEqualisation", precomputed });
+      replaceSchedule(null);
+      scrollTo(target);
+    },
+    [precomputed, reset, replaceSchedule],
+  );
+
+  // On mount: a shared link shows its schedule's result if one is stored (or
+  // already computing), but never starts a computation: a crawler or a
+  // scripted link could otherwise spend the daily budget without a click.
+  // A link to the old Rate explorer tab has its `tab` retired either way.
+  useEffect(() => {
+    if (mounted.current) return;
+    mounted.current = true;
+    if (anchor) showEqualisation(anchor === "equalisation" ? null : anchor);
+    else if (shown === "live") startLive(checkForm(forms[policy]), { cacheOnly: true });
+    else if (searchParams.get("tab") === "explorer") replaceSchedule(null);
+  }, [anchor, showEqualisation, shown, startLive, forms, policy, searchParams, replaceSchedule]);
+
+  const select = (id, toggle = false) => {
+    reset();
+    pending.current = null;
+    dispatch({ type: "select", policy: id, toggle });
+    if (shown) replaceSchedule(null);
+  };
+  const setForm = (id) => (form) => dispatch({ type: "edit", policy: id, form });
+  const equaliseDefault = formOf(precomputed.rates, precomputed.badr, precomputed.elasticity);
+  // "20% · 40% · 45%" and "Relief withdrawn": the precomputed schedule in brief.
+  const equaliseRates = BANDS.map((band) => formatPct(precomputed.rates[band.key] * 100, 0)).join(" · ");
+  const equaliseRelief = precomputed.badr.withdrawn ? "Relief withdrawn" : `Relief ${describeBadr(precomputed.badr)}`;
+  const equaliseEdited = !isPrecomputed(checkForm(forms.equalise), precomputed);
+  const stale = isStale(state);
+  // What Calculate will do, for the panel's footer.
+  let footerStatus = { tone: "live", text: "Runs live, about 30 seconds; instant if run before." };
+  if (policy === "equalise") {
+    footerStatus = equaliseEdited
+      ? { tone: "live", text: "Edited: will run live." }
+      : { tone: "instant", text: "Precomputed: shows instantly." };
+  }
 
   return (
     <div className="space-y-6">
-      <div className="pt-2">
-        <SectionHeading
-          size="lg"
-          title="Equalising CGT rates with income tax rates"
-          description={
-            <>
-              Current law taxes capital gains at lower rates than income. The
-              reform aligns each CGT rate with the corresponding income tax
-              rate from {firstYear}: the basic rate rises from{" "}
-              {formatPct(reform.basic_rate.baseline * 100, 0)} to{" "}
-              {formatPct(reform.basic_rate.reform * 100, 0)}, the higher rate
-              from {formatPct(reform.higher_rate.baseline * 100, 0)} to{" "}
-              {formatPct(reform.higher_rate.reform * 100, 0)}, and the
-              additional rate from{" "}
-              {formatPct(reform.additional_rate.baseline * 100, 0)} to{" "}
-              {formatPct(reform.additional_rate.reform * 100, 0)}. It also
-              withdraws Business Asset Disposal Relief, so gains that qualify for
-              it take the new rates too, as in CenTax&apos;s rates-only estimate;
-              the table below splits the yield by schedule. Taxpayers
-              respond by realising fewer gains, modelled with{" "}
-              <a
-                href="https://centax.org.uk/wp-content/uploads/2024/10/AdvaniLonsdaleSummers2024_CGTReform.pdf#page=38"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline decoration-1 underline-offset-2 hover:opacity-80"
-              >
-                CenTax&apos;s central elasticity of {central.e_retention.toFixed(1)}
-              </a>{" "}
-              with respect to the share of each gain they keep, applied in that
-              form. CenTax estimate that elasticity for a wider package of CGT
-              reforms;{" "}
-              <TabLink onNavigate={onNavigate} tab="methodology" section="elasticity">
-                the Methodology tab sets out what that means for a rates-only reform
-              </TabLink>
-              , and the sensitivity table below shows the yield at other elasticities.
-            </>
-          }
-        />
-      </div>
-
-      <section className="section-card">
-        <SectionHeading
-          title={`Headline results, ${firstYear}`}
-          description={`Fiscal figures after the behavioural response at CenTax's central elasticity, on ${dataset.shortLabel}; distributional figures cover all households.`}
-        />
-        <div className="grid gap-4 md:grid-cols-3">
-          <MetricCard
-            label={`Change in government balance, ${firstYear} (central elasticity)`}
-            value={formatSignedBn(firstYearRow.gov_balance_change_bn, 1)}
-            note={`After taxpayers realise fewer gains in response to the higher rates. Across the behavioural cases in the sensitivity table below, the ${firstYear} change in CGT revenue runs from ${formatSignedBn(lowest.revenue_2026_bn, 1)} at ${caseName(lowest)} to ${formatSignedBn(highest.revenue_2026_bn, 1)} at ${caseName(highest)}.`}
-          />
-          <MetricCard
-            label={`Five-year change in government balance, ${firstYear} to ${budget.at(-1).year}`}
-            value={formatSignedBn(fiveYearTotal, 1)}
-            note="Sum of the annual changes over the five modelled years, at the central elasticity."
-          />
-          <MetricCard
-            label={`Change in net income, top income quintile, ${firstYear}`}
-            value={formatSignedPct(topQuintile.relative_change_pct)}
-            note={`An average of ${formatSignedCurrency(topQuintile.avg_change_gbp)} per household in the top income quintile, at the central elasticity.`}
+      <Card aria-label="Choose a reform">
+        <div>
+          <SectionHeading
+            title="Choose a reform"
+            description={
+              <>
+                <strong className="font-semibold text-slate-800">Pick one to start.</strong> Both
+                cover {firstYear} to 2030-31 on {dataset.shortLabel}, with the same behavioural
+                response.
+              </>
+            }
           />
         </div>
-      </section>
-
-      <details className="section-card group">
-        <summary className="cursor-pointer select-none font-semibold text-slate-800 marker:text-[color:var(--pe-color-primary-600)]">
-          What exactly does the reform change?
-          <span className="ml-2 text-sm font-normal text-slate-500 group-open:hidden">
-            (expand for the full specification)
-          </span>
-        </summary>
-        <div className="mt-4 space-y-3">
-          <p className="text-sm leading-6 text-slate-600">
-            Effective from the {firstYear} fiscal year and held in place through {budget.at(-1).year}. All results on
-            this page compare this reform against current policy on the same baseline. The reformed
-            rates are the income tax rates on earnings; from April 2027 savings and property income
-            face 22%, 42% and 47% (the property rates in England, Wales and Northern Ireland), and
-            Scottish taxpayers&apos; earnings face Scotland&apos;s own bands, which the reform does not
-            follow.
-          </p>
-          <TableScroll>
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Policy parameter</th>
-                <th>Baseline (current policy)</th>
-                <th>Reform</th>
-                <th>What it means</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Basic CGT rate</td>
-                <td>{formatPct(reform.basic_rate.baseline * 100, 0)}</td>
-                <td className="font-semibold">{formatPct(reform.basic_rate.reform * 100, 0)}</td>
-                <td>Gains falling in the basic income tax band are taxed at the {pct(reform.basic_rate.reform)} basic income tax rate.</td>
-              </tr>
-              <tr>
-                <td>Higher CGT rate</td>
-                <td>{formatPct(reform.higher_rate.baseline * 100, 0)}</td>
-                <td className="font-semibold">{formatPct(reform.higher_rate.reform * 100, 0)}</td>
-                <td>Gains in the higher band are taxed at the {pct(reform.higher_rate.reform)} higher income tax rate.</td>
-              </tr>
-              <tr>
-                <td>Additional CGT rate</td>
-                <td>{formatPct(reform.additional_rate.baseline * 100, 0)}</td>
-                <td className="font-semibold">{formatPct(reform.additional_rate.reform * 100, 0)}</td>
-                <td>Gains in the additional band (income over £125,140) are taxed at the {pct(reform.additional_rate.reform)} additional income tax rate.</td>
-              </tr>
-              <tr>
-                <td>Residential property CGT rates</td>
-                <td>
-                  {formatPct(BASELINE_SCHEDULE_RATES.residential_property.basic_rate * 100, 0)} /{" "}
-                  {formatPct(BASELINE_SCHEDULE_RATES.residential_property.higher_rate * 100, 0)}
-                </td>
-                <td className="font-semibold">
-                  {formatPct(schedules.residential_property.basic_rate * 100, 0)} /{" "}
-                  {formatPct(schedules.residential_property.higher_rate * 100, 0)} /{" "}
-                  {formatPct(schedules.residential_property.additional_rate * 100, 0)}
-                </td>
-                <td>
-                  Gains on UK residential property, charged on their own schedule, take the same
-                  income tax rates.{recorded(validation.residential_property_gains_bn)}
-                </td>
-              </tr>
-              <tr>
-                <td>Business Asset Disposal Relief</td>
-                <td>{describeBadr(BASELINE_SCHEDULE_RATES.badr)}</td>
-                <td className="font-semibold">{describeBadr(schedules.badr)}</td>
-                <td>
-                  {schedules.badr.withdrawn
-                    ? "Gains that qualify for the relief (Investors' Relief included) fall onto the main schedule at the reformed rates."
-                    : "Gains that qualify for the relief keep their own rate."}
-                  {recorded(validation.badr_gains_bn)}
-                </td>
-              </tr>
-              <tr>
-                <td>Annual exempt amount</td>
-                <td>£3,000</td>
-                <td>£3,000</td>
-                <td>Unchanged: the first £3,000 of gains each year stays tax-free.</td>
-              </tr>
-            </tbody>
-          </table>
-          </TableScroll>
+        <div className="grid gap-4 sm:grid-cols-2" role="group" aria-label="Reform">
+          <PolicyTile
+            id="equalise"
+            sentence="Set each CGT rate to the matching income tax rate."
+            pills={[equaliseRates, equaliseRelief]}
+            speed={{ instant: true, label: "Instant" }}
+            selected={policy === "equalise"}
+            onSelect={() => select("equalise", true)}
+          />
+          <PolicyTile
+            id="custom"
+            sentence="Choose your own CGT rates, relief and behavioural response."
+            pills={[]}
+            speed={{ instant: false, label: "Live run, ~30s" }}
+            selected={policy === "custom"}
+            onSelect={() => select("custom", true)}
+          />
         </div>
-      </details>
+      </Card>
 
-      <section className="section-card">
-        <SectionHeading
-          title={`Where the yield comes from, ${split.year}`}
-          description="The reform built up one schedule at a time: the main rates first, then residential property gains, then withdrawing Business Asset Disposal Relief. Each row is what that change adds once the rows above it are in place, with no behavioural response and at the central elasticity."
-        />
-        <TableScroll>
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Step</th>
-              <th>Change in CGT, static</th>
-              <th>Change in CGT, central elasticity</th>
-            </tr>
-          </thead>
-          <tbody>
-            {split.steps.map((row) => (
-              <tr key={row.step}>
-                <td>{row.label}</td>
-                <td>{formatSignedBn(row.static_increment_bn, 1)}</td>
-                <td>{formatSignedBn(row.central_increment_bn, 1)}</td>
-              </tr>
-            ))}
-            <tr className="font-semibold">
-              <td>The reform</td>
-              <td>{formatSignedBn(split.steps.at(-1).static_cgt_change_bn, 1)}</td>
-              <td>{formatSignedBn(split.steps.at(-1).central_cgt_change_bn, 1)}</td>
-            </tr>
-          </tbody>
-        </table>
-        </TableScroll>
-        <p className="mt-4 text-sm leading-6 text-slate-600">
-          {validation.badr_gains_bn > 0 ? (
-            <>
-              On {dataset.shortLabel}, the relief&apos;s qualifying gains are charged on their own
-              schedule;{" "}
-              <TabLink onNavigate={onNavigate} tab="baseline" section="benchmarks">
-                the Baseline tab compares them with HMRC&apos;s statistics
-              </TabLink>
-              .{" "}
-            </>
-          ) : (
-            <>
-              {dataset.shortLabel} records no gains that qualify for the relief, so withdrawing it
-              changes nothing here.{" "}
-            </>
-          )}
-          Equalising the rates while keeping the relief at current law changes CGT revenue by{" "}
-          {formatSignedBn(keptRelief.static_cgt_change_bn, 1)} before behaviour and{" "}
-          {formatSignedBn(keptRelief.central_cgt_change_bn, 1)} at the central elasticity. The Rate
-          explorer scores any rate for the relief, or withdraws it, for every year.
-        </p>
-      </section>
+      {policy ? (
+        <Card id="policy-panel" aria-label={POLICY_TITLES[policy]}>
+          <SectionHeading
+            title={POLICY_TITLES[policy]}
+            description={
+              policy === "equalise"
+                ? `CGT rates set to income tax rates from ${firstYear}, relief withdrawn.`
+                : "Set your own rates, relief and response, or start from a preset."
+            }
+          />
+          <ScheduleForm
+            key={policy}
+            form={forms[policy]}
+            onChange={setForm(policy)}
+            showPresets={policy === "custom"}
+            onCalculate={calculate}
+            running={inFlight}
+            status={footerStatus}
+            onRestore={policy === "equalise" && equaliseEdited ? () => setForm("equalise")(equaliseDefault) : null}
+          />
+          {shown === "live" ? (
+            <StatusLine
+              status={status}
+              elapsedSeconds={elapsedSeconds}
+              error={error}
+              result={result}
+              datasetLabel={dataset.shortLabel}
+            />
+          ) : null}
+          <details className="group mt-6 rounded-xl border border-slate-200 px-4 py-3">
+            <summary className="cursor-pointer select-none text-sm font-semibold text-slate-700 marker:text-[color:var(--pe-color-primary-600)]">
+              About this {policy === "equalise" ? "reform" : "option"}
+            </summary>
+            {policy === "equalise" ? (
+              <p className="mt-3 text-sm leading-6 text-slate-600">
+                Current law taxes capital gains at lower rates than income. The reform aligns each
+                CGT rate with the corresponding income tax rate from {firstYear} and withdraws
+                Business Asset Disposal Relief, so gains that qualify for it take the new rates too,
+                as in CenTax&apos;s rates-only estimate. Taxpayers respond by realising fewer gains,
+                modelled with{" "}
+                <a
+                  href={CENTAX_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline decoration-1 underline-offset-2 hover:opacity-80"
+                >
+                  CenTax&apos;s central elasticity
+                </a>{" "}
+                with respect to the share of each gain they keep, applied in that form. CenTax
+                estimate that elasticity for a wider package of CGT reforms;{" "}
+                <TabLink onNavigate={onNavigate} tab="methodology" section="elasticity">
+                  the Methodology tab sets out what that means for a rates-only reform
+                </TabLink>
+                , and the sensitivity table in the results shows the yield at other elasticities.
+              </p>
+            ) : (
+              <p className="mt-3 text-sm leading-6 text-slate-600">
+                The chosen rates apply to the main schedule and to residential property gains.
+                Business Asset Disposal Relief can be kept, at a rate and lifetime limit you choose,
+                or withdrawn. A schedule runs through the same pipeline as the precomputed
+                equalisation results, and every completed run is cached, so a schedule anyone has
+                run before is served at once.
+              </p>
+            )}
+          </details>
+        </Card>
+      ) : null}
 
-      <section className="section-card">
-        <SectionHeading
-          title="Budgetary impact by year"
-          description={
-            <>
-              Baseline and reform CGT revenue, and the net change in the government balance, for
-              each fiscal year. Baseline revenue grows as the engine uprates the dataset to each
-              year;{" "}
-              <TabLink onNavigate={onNavigate} tab="methodology" section="pathway">
-                the Methodology tab compares that projection with the OBR&apos;s forecast
-              </TabLink>
-              .
-            </>
-          }
-        />
-        <BudgetChart budget={budget} />
-        {entrantShare > 0.05 ? (
-          <p className="mt-4 text-sm leading-6 text-slate-600">
-            Entrants by uprating (
-            <TabLink onNavigate={onNavigate} tab="baseline" section="entrants">
-              see the Baseline tab
-            </TabLink>
-            ) contribute {formatSmallBn(firstYearRow.cgt_change_from_entrants_bn)} of the{" "}
-            {firstYear} change ({formatPct(100 * entrantShareOfChange, 0)}).
-          </p>
-        ) : null}
-      </section>
-
-      <section className="section-card">
-        <SectionHeading
-          title="Change in household net income by income group"
-          description="Change in household net income, grouped by the household's position in the baseline income distribution; the switches group households by income quintile or quartile, household type or region. Gains that taxpayers no longer realise in response to the higher rates count as lower income in the year, alongside the extra tax paid, so the total fall in net income exceeds the revenue raised."
-        />
-        <GroupImpactChart groupsByYear={getIncomeChangeGroupsByYear(data)} initialYear={firstYear} />
-      </section>
-
-      <details className="section-card group">
-        <summary className="cursor-pointer select-none font-semibold text-slate-800 marker:text-[color:var(--pe-color-primary-600)]">
-          Sensitivity to the behavioural elasticity
-          <span className="ml-2 text-sm font-normal text-slate-500 group-open:hidden">
-            (expand to see how the estimate moves with the assumed response)
-          </span>
-        </summary>
-        <div className="mt-4">
-          <p className="mb-4 text-sm leading-6 text-slate-600">
-            The revenue estimate depends on how strongly taxpayers reduce
-            realisations when rates rise. Each row re-runs the reform with a
-            different elasticity of realised gains with respect to the{" "}
-            <TabLink onNavigate={onNavigate} tab="methodology" section="elasticity">
-              retention rate
-            </TabLink>{" "}
-            (1 − t). The bold row is this dashboard&apos;s central assumption,
-            CenTax&apos;s central {central.e_retention.toFixed(1)}; the rows either
-            side are CenTax&apos;s range, {centaxRange.lower.toFixed(1)} to{" "}
-            {centaxRange.upper.toFixed(1)}. The last row is the official HMRC/OBR
-            assumption.{" "}
-            <TabLink onNavigate={onNavigate} tab="methodology" section="elasticity-gap">
-              The Methodology tab explains how the official elasticity and CenTax&apos;s differ
-            </TabLink>{" "}
-            and{" "}
-            <TabLink onNavigate={onNavigate} tab="methodology" section="elasticity">
-              why CenTax expect a larger response to a rate rise on its own
-            </TabLink>
-            .{" "}
-            CenTax&apos;s range is
-            anchored on{" "}
-            <a
-              href="https://www.aeaweb.org/articles?id=10.1257/aeri.20200535"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline decoration-1 underline-offset-2 hover:opacity-80"
-            >
-              Agersnap &amp; Zidar (2021)
-            </a>{" "}
-            and{" "}
-            <a
-              href="https://www.nber.org/papers/w28514"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline decoration-1 underline-offset-2 hover:opacity-80"
-            >
-              Lavecchia &amp; Tazhitdinova (2024)
-            </a>
-            .
-          </p>
-        <TableScroll>
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Scenario</th>
-              <TipHeader
-                label="Elasticity, as applied"
-                tip="The elasticity of realised gains with respect to the retention rate (1 − t) that the engine applies, as each source states it: realised gains scale by ((1 − t₁) / (1 − t₀)) to the power e, with t the marginal rate on gains."
+      {hasResults ? (
+        <div ref={results} className="scroll-mt-24 space-y-6">
+          {stale ? (
+            <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-sm leading-6 text-amber-900" role="status">
+              These results are for the previous values; press Calculate to update.
+            </p>
+          ) : null}
+          <div className={`space-y-6 transition-opacity ${stale ? "opacity-60" : ""}`}>
+            {shown === "precomputed" ? (
+              <EqualisationResults
+                data={data}
+                onNavigate={onNavigate}
+                onChooseCustom={() => {
+                  select("custom");
+                  window.requestAnimationFrame(() =>
+                    document.getElementById("policy-panel")?.scrollIntoView({ behavior: "smooth" }),
+                  );
+                }}
               />
-              <TipHeader
-                label={`Change in CGT revenue, ${firstYear}`}
-                tip="Change in capital gains tax revenue in the first year of the reform under this elasticity."
+            ) : (
+              <LiveResults
+                data={data}
+                result={result}
+                onNavigate={onNavigate}
+                onShowEqualisation={() => showEqualisation()}
               />
-              <th>Source</th>
-            </tr>
-          </thead>
-          <tbody>
-            {sensitivity.map((row) => (
-              <tr
-                key={row.name}
-                className={row.e_retention === central.e_retention ? "font-semibold" : ""}
-              >
-                <td>{row.name}</td>
-                <td>{formatElasticity(row)}</td>
-                <td>{formatSignedBn(row.revenue_2026_bn)}</td>
-                <SourceLink row={row} official={official} />
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        </TableScroll>
+            )}
+          </div>
         </div>
-      </details>
+      ) : null}
     </div>
   );
 }
