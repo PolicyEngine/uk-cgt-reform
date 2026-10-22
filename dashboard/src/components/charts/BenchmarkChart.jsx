@@ -87,7 +87,11 @@ function Row({ row, seriesLabels }) {
           {Number.isFinite(row[s.key]) ? format(row[s.key]) : "—"}
         </span>
       ))}
-      <span className="hidden text-right text-xs tabular-nums text-slate-500 md:block">{gap ?? ""}</span>
+      <span className="hidden text-right md:block">
+        {gap ? (
+          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold tabular-nums text-slate-700">{gap}</span>
+        ) : null}
+      </span>
       <div className="relative col-span-3 h-5 md:col-span-1" role="img" aria-label={`${row.label}: ${summary}`}>
         <span aria-hidden="true" className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-slate-200" />
         <span aria-hidden="true" className="absolute left-0 top-1/2 h-2 w-px -translate-y-1/2 bg-slate-300" />
@@ -100,13 +104,44 @@ function Row({ row, seriesLabels }) {
 }
 
 // The model's baseline against HMRC's published years, one row per quantity,
-// each on its own scale. `rows`: [{ key, label, unit: "bn" | "count" | "pct",
-// model, hmrc2023, hmrc2024 }]; `modelLabel` names the model series.
+// each on its own scale, under group headings. `rows`: [{ key, label, group?,
+// unit: "bn" | "count" | "pct", model, hmrc2023, hmrc2024 }]; `modelLabel`
+// names the model series. The gap column compares the model with HMRC's
+// latest year (in points for shares).
 export default function BenchmarkChart({ rows, modelLabel }) {
   const seriesLabels = { model: modelLabel, hmrc2023: SERIES[1].label, hmrc2024: SERIES[2].label };
+  // Rows sharing a `group` sit under one heading, in the order given.
+  const groups = [];
+  for (const row of rows) {
+    const name = row.group ?? "";
+    const last = groups.at(-1);
+    if (last && last[0] === name) last[1].push(row);
+    else groups.push([name, [row]]);
+  }
   return (
     <>
-      <ul className="mb-2 flex flex-wrap gap-x-5 gap-y-1 text-xs text-slate-600">
+      <div
+        aria-hidden="true"
+        className={`hidden gap-x-3 border-b border-slate-200 pb-2 text-xs font-semibold text-slate-500 md:grid ${GRID}`}
+      >
+        <span>Quantity</span>
+        <span className="text-right">PolicyEngine</span>
+        <span className="text-right">HMRC 2023-24</span>
+        <span className="text-right">HMRC 2024-25</span>
+        <span className="text-right">Difference</span>
+        <span>On one scale, from 0</span>
+      </div>
+      {groups.map(([group, groupRows]) => (
+        <section key={group} className="mt-4 first:mt-2">
+          <h4 className="text-xs font-semibold uppercase tracking-wider text-[color:var(--pe-color-primary-700)]">{group}</h4>
+          <ul>
+            {groupRows.map((row) => (
+              <Row key={row.key} row={row} seriesLabels={seriesLabels} />
+            ))}
+          </ul>
+        </section>
+      ))}
+      <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-slate-600">
         {SERIES.map((s) => (
           <li key={s.key} className="flex items-center gap-1.5">
             <span
@@ -121,22 +156,6 @@ export default function BenchmarkChart({ rows, modelLabel }) {
             />
             {seriesLabels[s.key]}
           </li>
-        ))}
-      </ul>
-      <div
-        aria-hidden="true"
-        className={`hidden gap-x-3 border-b border-slate-200 pb-2 text-xs font-semibold text-slate-500 md:grid ${GRID}`}
-      >
-        <span>Quantity</span>
-        <span className="text-right">PolicyEngine</span>
-        <span className="text-right">HMRC 2023-24</span>
-        <span className="text-right">HMRC 2024-25</span>
-        <span className="text-right">vs 2024-25</span>
-        <span>Compared (0 at left)</span>
-      </div>
-      <ul>
-        {rows.map((row) => (
-          <Row key={row.key} row={row} seriesLabels={seriesLabels} />
         ))}
       </ul>
       <ChartLogo />
