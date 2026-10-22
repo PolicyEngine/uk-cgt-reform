@@ -201,7 +201,7 @@ function RateRow({ band, value, onChange, error }) {
   );
 }
 
-// One policy's parameters as one panel with sub-tabs (CGT rates, relief,
+// One policy's parameters as one panel with sub-tabs (CGT rates; relief and
 // behavioural response) and one button: Next, or Calculate on the last
 // sub-tab. It is a form: Enter moves to the next sub-tab, or calculates on
 // the last; `running` (a run in flight) disables it.
@@ -223,8 +223,12 @@ export default function ScheduleForm({ form, onChange, onCalculate, running, onN
       summary: BANDS.map((band) => `${form.percents[band.key] || "–"}%`).join(" · "),
       error: BANDS.some((band) => check.errorField === band.key),
     },
-    { id: "relief", label: "Relief", summary: badrSummary, error: check.errorField === "badr_rate" },
-    { id: "response", label: "Behaviour", summary: elasticity ? splitLabel(elasticity.label).name : "" },
+    {
+      id: "response",
+      label: "Relief and behaviour",
+      summary: [badrSummary, elasticity ? splitLabel(elasticity.label).name : ""].filter(Boolean).join(" · "),
+      error: check.errorField === "badr_rate",
+    },
   ];
   const [step, setStep] = useState(steps[0].id);
   const current = steps.some((candidate) => candidate.id === step) ? step : steps[0].id;
@@ -263,77 +267,12 @@ export default function ScheduleForm({ form, onChange, onCalculate, running, onN
         </Step>
       ) : null}
 
-      {current === "relief" ? (
-        <Step
-          id="relief"
-          intro="Business Asset Disposal Relief: a lower rate on qualifying business disposals."
-          tip={BADR_NOTE}
-          tipLabel="About Business Asset Disposal Relief"
-        >
-          <div className="max-w-xl">
-            <Toggle
-              label="Business Asset Disposal Relief"
-              fullWidth
-              options={[
-                { value: "keep", label: "Keep" },
-                { value: "withdraw", label: "Withdraw" },
-              ]}
-              value={form.badrForm.mode}
-              onChange={(mode) => setBadr({ mode })}
-            />
-            {form.badrForm.mode === "keep" ? (
-              <div className="mt-4 grid grid-cols-2 gap-4">
-                <div>
-                  <FieldLabel htmlFor="badr-rate">Rate</FieldLabel>
-                  <PercentInput
-                    id="badr-rate"
-                    min={0}
-                    value={form.badrForm.rate}
-                    onChange={(rate) => setBadr({ rate })}
-                    invalid={Boolean(errorFor("badr_rate"))}
-                    describedBy={errorFor("badr_rate") ? "badr-rate-error" : undefined}
-                  />
-                </div>
-                <div>
-                  <FieldLabel htmlFor="badr-limit">Lifetime limit</FieldLabel>
-                  <Select
-                    id="badr-limit"
-                    value={String(form.badrForm.limit)}
-                    onChange={(value) => setBadr({ limit: Number(value) })}
-                    options={BADR_LIMITS.map((limit) => ({ value: String(limit), label: badrLimitLabel(limit) }))}
-                  />
-                </div>
-              </div>
-            ) : null}
-            {errorFor("badr_rate") ? <FieldError id="badr-rate-error">{errorFor("badr_rate")}</FieldError> : null}
-            <p className={`mt-2 ${HINT}`}>
-              Current law {describeBadr(BADR_CURRENT_LAW).toLowerCase()}
-              {form.badrForm.mode === "withdraw" ? "; withdrawn, qualifying gains take the main rates." : "."}
-            </p>
-            {check.reliefAboveBasic ? (
-              <p className="mt-2 text-xs leading-5 text-amber-800">
-                The relief&apos;s {formatPct(check.badr.rate * 100, 0)} is above the basic rate of{" "}
-                {formatPct(check.rates.basic_rate * 100, 0)}. In law the relief is claimed, and a taxpayer
-                whose qualifying gains fall in the basic rate band would not claim it; the model charges
-                it anyway, so it overstates the tax on those gains.
-              </p>
-            ) : null}
-          </div>
-        </Step>
-      ) : null}
-
       {current === "response" ? (
         <Step
           id="response"
           intro={
             <>
-              How strongly taxpayers cut the gains they realise as rates rise.{" "}
-              <InfoTip label="About the behavioural response">{ELASTICITY_NOTE}</InfoTip> The options run from
-              no response, through CenTax&apos;s estimates, to the HMRC/OBR official assumption;{" "}
-              <TabLink onNavigate={onNavigate} tab="methodology" section="elasticity">
-                Methodology
-              </TabLink>{" "}
-              explains how they differ.
+              Keep or withdraw the relief, and choose how strongly taxpayers respond.
               {about ? (
                 <>
                   {" "}
@@ -352,23 +291,89 @@ export default function ScheduleForm({ form, onChange, onCalculate, running, onN
           }
         >
           {about && showAbout ? <div className="mb-4 rounded-lg bg-slate-50 px-4 py-3">{about.content}</div> : null}
-          <div className="max-w-xl">
-            <label htmlFor="elasticity" className="sr-only">
-              Behavioural response
-            </label>
-            <Select
-              id="elasticity"
-              value={String(form.elasticity)}
-              onChange={(value) => set({ elasticity: Number(value) })}
-              describedBy="elasticity-detail"
-              options={ELASTICITIES.map((option) => ({
-                value: String(option.e_retention),
-                label: splitLabel(option.label).name,
-              }))}
-            />
-            <p id="elasticity-detail" className={`mt-2 ${HINT}`}>
-              {elasticity ? splitLabel(elasticity.label).detail : ""}
-            </p>
+          <div className="grid gap-6 md:grid-cols-2 md:gap-8">
+            <div>
+              <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-800">
+                Business Asset Disposal Relief
+                <InfoTip label="About Business Asset Disposal Relief">{BADR_NOTE}</InfoTip>
+              </h3>
+              <Toggle
+                label="Business Asset Disposal Relief"
+                fullWidth
+                options={[
+                  { value: "keep", label: "Keep" },
+                  { value: "withdraw", label: "Withdraw" },
+                ]}
+                value={form.badrForm.mode}
+                onChange={(mode) => setBadr({ mode })}
+              />
+              {form.badrForm.mode === "keep" ? (
+                <div className="mt-4 grid grid-cols-2 gap-4">
+                  <div>
+                    <FieldLabel htmlFor="badr-rate">Rate</FieldLabel>
+                    <PercentInput
+                      id="badr-rate"
+                      min={0}
+                      value={form.badrForm.rate}
+                      onChange={(rate) => setBadr({ rate })}
+                      invalid={Boolean(errorFor("badr_rate"))}
+                      describedBy={errorFor("badr_rate") ? "badr-rate-error" : undefined}
+                    />
+                  </div>
+                  <div>
+                    <FieldLabel htmlFor="badr-limit">Lifetime limit</FieldLabel>
+                    <Select
+                      id="badr-limit"
+                      value={String(form.badrForm.limit)}
+                      onChange={(value) => setBadr({ limit: Number(value) })}
+                      options={BADR_LIMITS.map((limit) => ({ value: String(limit), label: badrLimitLabel(limit) }))}
+                    />
+                  </div>
+                </div>
+              ) : null}
+              {errorFor("badr_rate") ? <FieldError id="badr-rate-error">{errorFor("badr_rate")}</FieldError> : null}
+              <p className={`mt-2 ${HINT}`}>
+                Current law {describeBadr(BADR_CURRENT_LAW).toLowerCase()}
+                {form.badrForm.mode === "withdraw" ? "; withdrawn, qualifying gains take the main rates." : "."}
+              </p>
+              {check.reliefAboveBasic ? (
+                <p className="mt-2 text-xs leading-5 text-amber-800">
+                  The relief&apos;s {formatPct(check.badr.rate * 100, 0)} is above the basic rate of{" "}
+                  {formatPct(check.rates.basic_rate * 100, 0)}. In law the relief is claimed, and a taxpayer
+                  whose qualifying gains fall in the basic rate band would not claim it; the model charges
+                  it anyway, so it overstates the tax on those gains.
+                </p>
+              ) : null}
+            </div>
+            <div>
+              <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-800">
+                Behavioural response
+                <InfoTip label="About the behavioural response">{ELASTICITY_NOTE}</InfoTip>
+              </h3>
+              <label htmlFor="elasticity" className="sr-only">
+                Behavioural response
+              </label>
+              <Select
+                id="elasticity"
+                value={String(form.elasticity)}
+                onChange={(value) => set({ elasticity: Number(value) })}
+                describedBy="elasticity-detail"
+                options={ELASTICITIES.map((option) => ({
+                  value: String(option.e_retention),
+                  label: splitLabel(option.label).name,
+                }))}
+              />
+              <p id="elasticity-detail" className={`mt-2 ${HINT}`}>
+                {elasticity ? splitLabel(elasticity.label).detail : ""}
+              </p>
+              <p className={`mt-2 ${HINT}`}>
+                From no response, through CenTax&apos;s estimates, to the HMRC/OBR official assumption;{" "}
+                <TabLink onNavigate={onNavigate} tab="methodology" section="elasticity">
+                  Methodology
+                </TabLink>{" "}
+                explains how they differ.
+              </p>
+            </div>
           </div>
         </Step>
       ) : null}
