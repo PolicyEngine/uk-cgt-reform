@@ -30,6 +30,7 @@ const CGT_STATISTICS = "https://www.gov.uk/government/statistics/capital-gains-t
 const FRS = "https://www.gov.uk/government/collections/family-resources-survey--2";
 const EXEMPT_AMOUNT = "https://www.gov.uk/capital-gains-tax/allowances";
 const BADR_GUIDANCE = "https://www.gov.uk/business-asset-disposal-relief";
+const CGT_RATES = "https://www.gov.uk/capital-gains-tax/rates";
 
 const BENCHMARKS = {
   totalGains: {
@@ -84,7 +85,10 @@ export default function BaselineTab({ data, anchor }) {
   // Other tabs link to a section here (``anchor``); the tab mounts after
   // navigation, so the scroll is replayed once it has.
   useEffect(() => {
-    if (anchor) document.getElementById(anchor)?.scrollIntoView();
+    if (!anchor) return;
+    const element = document.getElementById(anchor);
+    if (element?.tagName === "DETAILS") element.open = true;
+    element?.scrollIntoView();
   }, [anchor]);
 
   const validation = getValidation(data);
@@ -152,23 +156,25 @@ export default function BaselineTab({ data, anchor }) {
             <>
               PolicyEngine&apos;s {firstYear} baseline beside HMRC&apos;s{" "}
               <SourceLink href={CGT_STATISTICS}>statistics</SourceLink> for 2024-25 (provisional).{" "}
-              {`Liabilities are higher relative to gains in ${firstYear} because CGT rates rose from 10% and 20% to 18% and 24% partway through 2024-25.`}
+              {`Liabilities are higher relative to gains in ${firstYear} because CGT `}
+              <SourceLink href={CGT_RATES}>rates</SourceLink>
+              {" rose from 10% and 20% to 18% and 24% partway through 2024-25."}
             </>
           }
         />
         <BenchmarkChart rows={benchmarkRows} modelLabel={`PolicyEngine (${dataset.shortLabel}, ${firstYear})`} />
       </section>
 
-      <section className="section-card scroll-mt-24" id="entrants">
-        <SectionHeading
-          title="Entrants by uprating"
-          description={
-            <>
+      <details className="section-card group scroll-mt-24" id="entrants">
+        <summary className="cursor-pointer select-none text-xl font-semibold tracking-tight text-slate-900 marker:text-[color:var(--pe-color-primary-600)]">
+          Entrants by uprating
+        </summary>
+        <div className="mb-5 mt-2 text-sm leading-6 text-slate-600">
+          <>
               The exempt <SourceLink href={EXEMPT_AMOUNT}>amount</SourceLink>{" "}
               {`stays at £${entrants.exempt_amount_gbp.toLocaleString("en-GB")} while gains grow with the economy, so some people with small gains become CGT taxpayers in later years. These entrants, with ${firstYear} gains between £${entrants.exempt_amount_gbp.toLocaleString("en-GB")} and £${Math.round(entrants.ceiling_gbp).toLocaleString("en-GB")}, are shown separately so they can be netted out.${entrantShare > 0.05 ? "" : " They are a small share of taxpayers, so the headline counts read as taxpayers in the ordinary sense."}`}
             </>
-          }
-        />
+        </div>
         <div className="grid gap-4 md:grid-cols-3">
           {entrantRows.map((row) => (
             <MetricCard
@@ -191,13 +197,14 @@ export default function BaselineTab({ data, anchor }) {
             exempt amount.
           </p>
         ) : null}
-      </section>
+      </details>
 
-      <section className="section-card scroll-mt-24" id="schedules">
-        <SectionHeading
-          title="Schedule components"
-          description={
-            <>
+      <details className="section-card group scroll-mt-24" id="schedules">
+        <summary className="cursor-pointer select-none text-xl font-semibold tracking-tight text-slate-900 marker:text-[color:var(--pe-color-primary-600)]">
+          Schedule components
+        </summary>
+        <div className="mb-5 mt-2 text-sm leading-6 text-slate-600">
+          <>
               <SourceLink href="https://github.com/PolicyEngine/policyengine-uk">
                 policyengine-uk
               </SourceLink>{" "}
@@ -206,10 +213,9 @@ export default function BaselineTab({ data, anchor }) {
               when a dataset records them. Gains recorded on each schedule in {firstYear}, before
               any behavioural response.
             </>
-          }
-        />
+        </div>
         <ScheduleChart rows={scheduleRows} datasetLabel={dataset.shortLabel} />
-      </section>
+      </details>
     </div>
   );
 }
