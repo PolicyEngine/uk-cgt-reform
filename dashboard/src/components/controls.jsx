@@ -194,6 +194,36 @@ export function SourceLink({ href, children }) {
   );
 }
 
+// A source label from the data, with one word linked: the first publisher
+// named in it (so "Advani, Lonsdale & Summers (2024), CenTax" links "CenTax"),
+// or its first word if it names none. The rest of the label is plain text.
+const PUBLISHERS = ["CenTax", "OBR", "HMRC", "IFS", "ONS", "JRF", "Rowntree", "CPS", "NBER"];
+export function splitSourceLabel(label = "") {
+  let best = null;
+  for (const name of PUBLISHERS) {
+    const match = new RegExp(`\\b${name}\\b`).exec(label);
+    if (match && (best === null || match.index < best.index)) best = match;
+  }
+  if (best === null) best = /[\p{L}\p{N}]+/u.exec(label);
+  if (best === null) return { before: "", word: label, after: "" };
+  return {
+    before: label.slice(0, best.index),
+    word: best[0],
+    after: label.slice(best.index + best[0].length),
+  };
+}
+
+export function SourceLabel({ href, label }) {
+  const { before, word, after } = splitSourceLabel(label);
+  return (
+    <>
+      {before}
+      <SourceLink href={href}>{word}</SourceLink>
+      {after}
+    </>
+  );
+}
+
 // A link to another tab (and optionally one of its sections) inside a sentence.
 export function TabLink({ onNavigate, tab, section, children }) {
   return (

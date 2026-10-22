@@ -400,9 +400,9 @@ export default function ScheduleForm({ form, onChange, showPresets, onCalculate,
             <p className="mt-4 text-sm leading-6 text-slate-600">
               The options run from no response, through CenTax&apos;s estimates, to the HMRC/OBR official assumption;{" "}
               <TabLink onNavigate={onNavigate} tab="methodology" section="elasticity">
-                see how they differ
-              </TabLink>
-              .
+                Methodology
+              </TabLink>{" "}
+              explains how they differ.
             </p>
           </div>
         </Step>

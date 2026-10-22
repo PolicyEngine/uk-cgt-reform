@@ -28,7 +28,7 @@ import {
 } from "../lib/dataHelpers";
 import BudgetChart from "./charts/BudgetChart";
 import GroupImpactChart from "./charts/GroupImpactChart";
-import { Card, MetricCard, Notes, TabLink, TableScroll, TipHeader } from "./controls";
+import { Card, MetricCard, Notes, SourceLabel, TabLink, TableScroll, TipHeader } from "./controls";
 import SectionHeading from "./SectionHeading";
 
 // Where each sensitivity scenario's elasticity comes from: the static case
@@ -56,14 +56,7 @@ function SourceLink({ row, official }) {
   if (!source.url) return <td className="font-normal text-slate-500">{source.label}</td>;
   return (
     <td>
-      <a
-        href={source.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="font-normal text-[color:var(--pe-color-primary-600)] underline decoration-1 underline-offset-2 hover:opacity-80"
-      >
-        {source.label}
-      </a>
+      <SourceLabel href={source.url} label={source.label} />
     </td>
   );
 }
@@ -140,18 +133,20 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
           <BudgetChart budget={budget} />
           <Notes>
             <p>
-              Baseline revenue grows as the engine uprates the dataset to each year;{" "}
+              Baseline revenue grows as the engine uprates the dataset to each year; the{" "}
               <TabLink onNavigate={onNavigate} tab="methodology" section="pathway">
-                the Methodology tab compares that projection with the OBR&apos;s forecast
-              </TabLink>
-              .
+                Methodology
+              </TabLink>{" "}
+              tab compares that projection with the OBR&apos;s forecast.
             </p>
             {entrantShare > 0.05 ? (
               <p>
                 Entrants by uprating (
+                see the{" "}
                 <TabLink onNavigate={onNavigate} tab="baseline" section="entrants">
-                  see the Baseline tab
-                </TabLink>
+                  Baseline
+                </TabLink>{" "}
+                tab
                 ) contribute {formatSmallBn(firstYearRow.cgt_change_from_entrants_bn)} of the{" "}
                 {firstYear} change ({formatPct(100 * entrantShareOfChange, 0)}).
               </p>
@@ -217,11 +212,11 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
           {validation.badr_gains_bn > 0 ? (
             <>
               On {dataset.shortLabel}, the relief&apos;s qualifying gains are charged on their own
-              schedule;{" "}
+              schedule; the{" "}
               <TabLink onNavigate={onNavigate} tab="baseline" section="benchmarks">
-                the Baseline tab compares them with HMRC&apos;s statistics
-              </TabLink>
-              .{" "}
+                Baseline
+              </TabLink>{" "}
+              tab compares them with HMRC&apos;s statistics.{" "}
             </>
           ) : (
             <>
@@ -232,7 +227,7 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
           Equalising the rates while keeping the relief at current law changes CGT revenue by{" "}
           {formatSignedBn(keptRelief.static_cgt_change_bn, 1)} before behaviour and{" "}
           {formatSignedBn(keptRelief.central_cgt_change_bn, 1)} at the central elasticity.{" "}
-          <TabLink onNavigate={onChooseCustom}>Custom rates</TabLink> scores any rate for the
+          <TabLink onNavigate={onChooseCustom}>Custom</TabLink> rates scores any rate for the
           relief, or withdraws it, for every year.
             </p>
           </Notes>
@@ -280,22 +275,23 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
             The revenue estimate depends on how strongly taxpayers reduce
             realisations when rates rise. Each row re-runs the reform with a
             different elasticity of realised gains with respect to the{" "}
+            retention{" "}
             <TabLink onNavigate={onNavigate} tab="methodology" section="elasticity">
-              retention rate
+              rate
             </TabLink>{" "}
             (1 − t). The bold row is this dashboard&apos;s central assumption,
             CenTax&apos;s central {central.e_retention.toFixed(1)}; the rows either
             side are CenTax&apos;s range, {centaxRange.lower.toFixed(1)} to{" "}
             {centaxRange.upper.toFixed(1)}. The last row is the official HMRC/OBR
-            assumption.{" "}
+            assumption. The{" "}
             <TabLink onNavigate={onNavigate} tab="methodology" section="elasticity-gap">
-              The Methodology tab explains how the official elasticity and CenTax&apos;s differ
+              Methodology
             </TabLink>{" "}
-            and{" "}
+            tab explains how the official elasticity and CenTax&apos;s differ and{" "}
             <TabLink onNavigate={onNavigate} tab="methodology" section="elasticity">
-              why CenTax expect a larger response to a rate rise on its own
-            </TabLink>
-            .{" "}
+              why
+            </TabLink>{" "}
+            CenTax expect a larger response to a rate rise on its own.{" "}
             CenTax&apos;s range is
             anchored on{" "}
             <a
@@ -304,18 +300,18 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
               rel="noopener noreferrer"
               className="underline decoration-1 underline-offset-2 hover:opacity-80"
             >
-              Agersnap &amp; Zidar (2021)
+              Agersnap
             </a>{" "}
-            and{" "}
+            &amp; Zidar (2021) and{" "}
             <a
               href="https://www.nber.org/papers/w28514"
               target="_blank"
               rel="noopener noreferrer"
               className="underline decoration-1 underline-offset-2 hover:opacity-80"
             >
-              Lavecchia &amp; Tazhitdinova (2024)
-            </a>
-            .
+              Lavecchia
+            </a>{" "}
+            &amp; Tazhitdinova (2024).
           </p>
           </Notes>
         </Card>

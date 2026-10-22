@@ -260,7 +260,7 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
               elasticity, so the two are not like for like.{" "}
             </>
           )}
-          <TabLink onNavigate={onShowEqualisation}>Show equalisation&apos;s results</TabLink>.
+          <TabLink onNavigate={onShowEqualisation}>Show</TabLink> equalisation&apos;s results.
         </p>
       </Card>
 
@@ -275,9 +275,11 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
             <Notes>
               <p>
                 Entrants by uprating (
+                see the{" "}
                 <TabLink onNavigate={onNavigate} tab="baseline" section="entrants">
-                  see the Baseline tab
-                </TabLink>
+                  Baseline
+                </TabLink>{" "}
+                tab
                 ) contribute {formatSmallBn(firstRow.cgt_change_from_entrants_bn)} of the{" "}
                 {firstYear} change.
               </p>

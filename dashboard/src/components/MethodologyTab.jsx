@@ -78,10 +78,9 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
         <SectionHeading title="Data and simulation" />
         <p className="mt-2 text-sm leading-6 text-slate-600">
           The estimates come from{" "}
-          <ExternalLink href="https://policyengine.org">PolicyEngine UK</ExternalLink>, run on{" "}
+          <ExternalLink href="https://policyengine.org">PolicyEngine</ExternalLink> UK, run on{" "}
           {dataset.shortLabel} for {firstYear} to {lastYear}, with the behavioural response taken
-          from <ExternalLink href={CENTAX_REPORT}>Advani, Lonsdale &amp; Summers (CenTax, 2024)</ExternalLink>
-          .
+          from Advani, Lonsdale &amp; Summers (<ExternalLink href={CENTAX_REPORT}>CenTax</ExternalLink>, 2024).
         </p>
         <ul className="mt-2 list-disc space-y-2 pl-5 text-sm leading-6 text-slate-600">
           <li>
@@ -169,7 +168,7 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
           description="How realised gains respond to the share of each gain a taxpayer keeps."
         />
         <p className="text-sm leading-6 text-slate-600">
-          <ExternalLink href={central.url}>Arun Advani and CenTax</ExternalLink> apply one
+          Arun Advani and <ExternalLink href={central.url}>CenTax</ExternalLink> apply one
           aggregate elasticity to the CGT base as a whole, with respect to the{" "}
           <em>retention rate</em> (1 − t), the share of gains a taxpayer keeps after tax (pp.{" "}
           <ExternalLink href={centaxPage(33)}>32</ExternalLink> and{" "}
@@ -187,31 +186,28 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
           under the reform, shared across the main, residential property and Business Asset
           Disposal Relief schedules in proportion to the gains on each. The central case is
           CenTax&apos;s {central.e_retention.toFixed(1)}, which they call &ldquo;our central
-          elasticity estimate&rdquo; (
-          <ExternalLink href={central.url}>Advani, Lonsdale and Summers, 2024, p. 37</ExternalLink>
-          ). PolicyEngine UK adopts CenTax&apos;s central value as its default (policyengine-uk
-          2.134.0,{" "}
-          <ExternalLink href="https://github.com/PolicyEngine/policyengine-uk/pull/2419">
-            PR #2419
-          </ExternalLink>
+          elasticity estimate&rdquo; (Advani, Lonsdale and Summers, 2024, p.{" "}
+          <ExternalLink href={central.url}>37</ExternalLink>). PolicyEngine UK adopts CenTax&apos;s central value as its default (policyengine-uk
+          2.134.0, PR{" "}
+          <ExternalLink href="https://github.com/PolicyEngine/policyengine-uk/pull/2419">#2419</ExternalLink>
           ), and this dashboard sets the elasticity directly in every case. It is an assumption
           for a package that also reforms the base, not an estimate for this rates-only reform,
-          so{" "}
+          so the{" "}
           <TabLink onNavigate={onNavigate} tab="reform" section="sensitivity">
-            the Reform tab&apos;s sensitivity table for equalisation
+            Reform
           </TabLink>{" "}
-          shows CenTax&apos;s range and the
+          tab&apos;s sensitivity table for equalisation shows CenTax&apos;s range and the
           official HMRC/OBR elasticity described below beside it, with a case of no response.
         </p>
         <p className="mt-3 text-sm leading-6 text-slate-600">
           CenTax&apos;s package removes the uplift at death and charges gains on departure,
           closing two ways of deferring or avoiding the tax; this dashboard models neither. They
-          expect a larger response to a rate rise on the current base and{" "}
+          expect a larger response to a rate rise on the current base and advise against equalising rates without those reforms (Advani, Hughson
+          and Summers, <em>Taxes at the top</em>, CenTax, September 2026, p.{" "}
           <ExternalLink href="https://www.nuffieldfoundation.org/wp-content/uploads/2023/03/Taxes-at-the-top-Understanding-what-high-earners-pay-and-options-for-reform.pdf#page=20">
-            advise against equalising rates without those reforms
-          </ExternalLink>{" "}
-          (Advani, Hughson and Summers, <em>Taxes at the top</em>, CenTax, September 2026, p.
-          17).
+            17
+          </ExternalLink>
+          ).
         </p>
       </section>
 
@@ -225,11 +221,11 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
             <strong>The official assumption.</strong> HMRC and the OBR use a retention-rate
             elasticity of {official.e_retention} for the main CGT rates and{" "}
             {official.badr_e_retention} for gains qualifying for Business Asset Disposal Relief
-            (OBR, {formatPublished(official.published.slice(0, 7))},{" "}
-            <ExternalLink href={`${official.url}#page=3`}>para 1.9</ExternalLink> and{" "}
-            <ExternalLink href={`${official.url}#page=5`}>Table 1.1</ExternalLink>; HMRC&apos;s estimate
-            from 1998 to 2018 is 4.0,{" "}
-            <ExternalLink href={`${official.url}#page=3`}>para 1.10</ExternalLink>). The main figure is{" "}
+            (<ExternalLink href={`${official.url}#page=3`}>OBR</ExternalLink>,{" "}
+            {formatPublished(official.published.slice(0, 7))}, para 1.9 and{" "}
+            <ExternalLink href={`${official.url}#page=5`}>Table</ExternalLink> 1.1; HMRC&apos;s{" "}
+            <ExternalLink href={`${official.url}#page=3`}>estimate</ExternalLink> from 1998 to 2018
+            is 4.0, para 1.10). The main figure is{" "}
             {(official.e_retention / central.e_retention).toFixed(1)} times CenTax&apos;s central
             case. The official case applies both: the engine gives gains qualifying for the relief
             their own elasticity, and both kinds of gain respond to the same change in a
@@ -257,10 +253,11 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
           </li>
           <li>
             <strong>On this dataset.</strong>{" "}
+            The{" "}
             <TabLink onNavigate={onNavigate} tab="reform" section="sensitivity">
-              The Reform tab&apos;s sensitivity table
+              Reform
             </TabLink>{" "}
-            gives
+            tab&apos;s sensitivity table gives
             the reform&apos;s first-year change in CGT revenue at each elasticity, and the
             Benchmarks tab scores the ready reckoner&apos;s rows at the central and the official
             one.

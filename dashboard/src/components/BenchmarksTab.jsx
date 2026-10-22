@@ -8,7 +8,7 @@ import {
   formatSignedBn,
   formatSignedMn,
 } from "../lib/formatters";
-import { MetricCard, SourceLink, TabLink, TipHeader } from "./controls";
+import { MetricCard, SourceLabel, TabLink, TipHeader } from "./controls";
 import SectionHeading from "./SectionHeading";
 
 // Published estimates next to this dataset's own figures on the same basis
@@ -81,7 +81,7 @@ function StaticEqualisation({ block, dataset }) {
         </table>
       </div>
       <p className="mt-3 text-xs leading-5 text-slate-500">
-        Source: <SourceLink href={source.url}>{source.source}</SourceLink>,{" "}
+        Source: <SourceLabel href={source.url} label={source.source} />,{" "}
         {formatPublished(source.published)}, {source.locator.toLowerCase()}. JRF uses grouped
         statistics rather than microdata and does not state its deflator; this table deflates with
         the CPI path in {block.price_index_source}. Model figures are liabilities in the year; the
@@ -148,7 +148,7 @@ function CentaxRegions({ block, dataset }) {
           every gain at the main rates in both runs. {block.rules.not_modelled}
         </p>
         <p className="mt-2">
-          Sources: <SourceLink href={external.url}>{external.source}</SourceLink>,{" "}
+          Sources: <SourceLabel href={external.url} label={external.source} />,{" "}
           {external.locator} and {block.external_regions.locator}.
         </p>
       </div>
@@ -180,11 +180,11 @@ function CentaxPackage({ rows, onNavigate }) {
           <>
             CenTax&apos;s headline figures cost equalisation within a wider package of reforms to
             the CGT base, so they are not like-for-like with a rates-only reform. They are listed
-            as context;{" "}
+            as context; the{" "}
             <TabLink onNavigate={onNavigate} tab="methodology" section="elasticity">
-              the Methodology tab explains what the package means for the elasticity
-            </TabLink>
-            .
+              Methodology
+            </TabLink>{" "}
+            tab explains what the package means for the elasticity.
           </>
         }
       />
@@ -202,7 +202,7 @@ function CentaxPackage({ rows, onNavigate }) {
             {rows.map((row) => (
               <tr key={row.id}>
                 <td>
-                  <SourceLink href={row.url}>{row.source}</SourceLink>
+                  <SourceLabel href={row.url} label={row.source} />
                   <span className="block text-xs text-slate-500">{row.locator}</span>
                 </td>
                 <td>{row.year}</td>
@@ -267,7 +267,7 @@ function ReadyReckoner({ block, dataset, elasticities }) {
         </table>
       </div>
       <p className="mt-3 text-xs leading-5 text-slate-500">
-        Source: <SourceLink href={block.url}>{block.source}</SourceLink>, {block.locator}. {block.note}{" "}
+        Source: <SourceLabel href={block.url} label={block.source} />, {block.locator}. {block.note}{" "}
         HMRC&apos;s figures are {lowerFirst(block.measure)}; the model figures are the change in
         government balance on its own data, in the scope of the Reform tab&apos;s custom rates (main and residential
         rates and the relief). Not scored:{" "}
@@ -308,14 +308,11 @@ export default function BenchmarksTab({ data, onNavigate }) {
         <p>
           The ready reckoner&apos;s rows, like the reform&apos;s yield, move with the elasticity: the
           table above scores each row at this dashboard&apos;s central elasticity and at the
-          official HMRC/OBR one.{" "}
-          <button
-            type="button"
-            onClick={() => onNavigate("methodology", "elasticity-gap")}
-            className="font-semibold text-[color:var(--pe-color-primary-600)] underline decoration-1 underline-offset-2 hover:opacity-80"
-          >
-            The Methodology tab explains how the two differ.
-          </button>
+          official HMRC/OBR one. The{" "}
+          <TabLink onNavigate={onNavigate} tab="methodology" section="elasticity-gap">
+            Methodology
+          </TabLink>{" "}
+          tab explains how the two differ.
         </p>
       </section>
     </div>
