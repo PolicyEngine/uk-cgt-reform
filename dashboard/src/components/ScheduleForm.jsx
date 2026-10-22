@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { badrLimitLabel, describeBadr } from "../lib/dataHelpers";
 import { formatPct } from "../lib/formatters";
 import {
@@ -108,16 +109,48 @@ function ChangeChip({ value, reference }) {
   return <Pill tone="teal">{`${gap > 0 ? "+" : "−"}${Math.abs(gap)} pp`}</Pill>;
 }
 
-// One labelled block of the panel. Blocks are separated by rules, not boxed.
-function FormSection({ id, title, tip, className = "", children }) {
+// The sub-tabs along the top of the panel, one per group of parameters,
+// each with the value it currently holds; a red dot marks one with an error.
+function SubTabs({ steps, current, onSelect }) {
   return (
-    <section aria-labelledby={id} className={`py-5 ${className}`}>
-      <div className="mb-3 flex items-center gap-2">
-        <h3 id={id} className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-          {title}
-        </h3>
-        {tip ? <InfoTip label={`About ${title.toLowerCase()}`}>{tip}</InfoTip> : null}
-      </div>
+    <div role="tablist" aria-label="Parameters" className="-mx-5 -mt-5 mb-5 flex overflow-x-auto border-b border-slate-200 px-3 sm:-mx-6 sm:-mt-6 sm:px-4">
+      {steps.map((step) => {
+        const selected = step.id === current;
+        return (
+          <button
+            key={step.id}
+            type="button"
+            role="tab"
+            id={`step-tab-${step.id}`}
+            aria-selected={selected}
+            aria-controls={`step-${step.id}`}
+            onClick={() => onSelect(step.id)}
+            className={`-mb-px flex shrink-0 flex-col border-b-2 px-3 pb-3 pt-4 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--pe-color-primary-500)] sm:px-4 ${
+              selected
+                ? "border-[color:var(--pe-color-primary-600)]"
+                : "border-transparent hover:border-slate-300"
+            }`}
+          >
+            <span className={`flex items-center gap-1.5 text-sm font-semibold ${selected ? "text-[color:var(--pe-color-primary-700)]" : "text-slate-600"}`}>
+              {step.label}
+              {step.error ? <span aria-label="has an error" className="h-1.5 w-1.5 rounded-full bg-red-600" /> : null}
+            </span>
+            <span className="text-xs tabular-nums text-slate-500">{step.summary}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// One sub-tab's content, with a line saying what it sets.
+function Step({ id, intro, tip, tipLabel, children }) {
+  return (
+    <section id={`step-${id}`} role="tabpanel" aria-labelledby={`step-tab-${id}`} className="min-h-[15rem]">
+      <p className="mb-4 flex items-center gap-2 text-sm leading-6 text-slate-600">
+        {intro}
+        {tip ? <InfoTip label={tipLabel}>{tip}</InfoTip> : null}
+      </p>
       {children}
     </section>
   );
@@ -173,10 +206,10 @@ const DOTS = {
   live: "bg-amber-500",
 };
 
-// One policy's parameters as one panel of ruled sections (start from, rates
-// table, relief beside behavioural response), with a footer bar: what Calculate will do
+// One policy's parameters as one panel with sub-tabs (start from, CGT
+// rates, relief, behavioural response), with a footer bar: what Calculate will do
 // (`status`: a tone, a text and an optional action) and the Calculate
-// button. `showPresets` adds the "Start from" card (presets and HMRC
+// button. `showPresets` adds the "Start from" sub-tab (presets and HMRC
 // ready-reckoner rows). It is a form, so Enter in an input calculates;
 // `running` (a run in flight) disables it.
 export default function ScheduleForm({ form, onChange, showPresets, onCalculate, running, status, onRestore }) {
@@ -193,53 +226,76 @@ export default function ScheduleForm({ form, onChange, showPresets, onCalculate,
     if (check.rates && !running) onCalculate(check);
   };
 
+  const badrSummary = form.badrForm.mode === "withdraw"
+    ? "Withdrawn"
+    : `${form.badrForm.rate || "–"}% to ${badrLimitLabel(form.badrForm.limit)}`;
+  const preset = PRESETS.find((candidate) => candidate.id === presetFor(check));
+  const steps = [
+    ...(showPresets
+      ? [{ id: "start", label: "Start from", summary: preset ? splitLabel(preset.label).name : "Custom" }]
+      : []),
+    {
+      id: "rates",
+      label: "CGT rates",
+      summary: BANDS.map((band) => `${form.percents[band.key] || "–"}%`).join(" · "),
+      error: BANDS.some((band) => check.errorField === band.key),
+    },
+    { id: "relief", label: "Relief", summary: badrSummary, error: check.errorField === "badr_rate" },
+    { id: "response", label: "Behaviour", summary: elasticity ? splitLabel(elasticity.label).name : "" },
+  ];
+  const [step, setStep] = useState(steps[0].id);
+  const current = steps.some((candidate) => candidate.id === step) ? step : steps[0].id;
+  const next = steps[steps.findIndex((candidate) => candidate.id === current) + 1];
+
   return (
     <form onSubmit={submit} noValidate>
-      <div className="divide-y divide-slate-200 [&>*:first-child]:pt-0">
-        {showPresets ? (
-          <FormSection id="start-from-title" title="Start from">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <FieldLabel htmlFor="preset">Preset</FieldLabel>
-                <Select
-                  id="preset"
-                  describedBy="preset-hint"
-                  value={presetFor(check)}
-                  onChange={(id) => {
-                    const chosen = PRESETS.find((candidate) => candidate.id === id);
-                    if (chosen) load(chosen);
-                  }}
-                  options={[
-                    ...PRESETS.map((candidate) => ({ value: candidate.id, label: candidate.label })),
-                    { value: "custom", label: "Custom" },
-                  ]}
-                />
-                <p id="preset-hint" className={`mt-1.5 ${HINT}`}>Fills in the rates and the relief below.</p>
-              </div>
-              <div>
-                <FieldLabel htmlFor="ready-reckoner">HMRC ready-reckoner row</FieldLabel>
-                <Select
-                  id="ready-reckoner"
-                  describedBy="ready-reckoner-hint"
-                  value={readyReckonerRow}
-                  onChange={(id) => {
-                    const chosen = READY_RECKONER.rows.find((row) => row.id === id);
-                    if (chosen) load(chosen);
-                  }}
-                  options={[
-                    { value: "none", label: "None" },
-                    ...READY_RECKONER.rows.map((row) => ({ value: row.id, label: row.label })),
-                  ]}
-                />
-                <p id="ready-reckoner-hint" className={`mt-1.5 ${HINT}`}>
-                  A row of HMRC&apos;s published ready reckoner, compared in the results.
-                </p>
-              </div>
-            </div>
-          </FormSection>
-        ) : null}
+      <SubTabs steps={steps} current={current} onSelect={setStep} />
 
-        <FormSection id="rates-title" title="CGT rates">
+      {current === "start" ? (
+        <Step id="start" intro="Load a preset or a row of HMRC's ready reckoner, then adjust it in the other tabs.">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <FieldLabel htmlFor="preset">Preset</FieldLabel>
+              <Select
+                id="preset"
+                describedBy="preset-hint"
+                value={presetFor(check)}
+                onChange={(id) => {
+                  const chosen = PRESETS.find((candidate) => candidate.id === id);
+                  if (chosen) load(chosen);
+                }}
+                options={[
+                  ...PRESETS.map((candidate) => ({ value: candidate.id, label: candidate.label })),
+                  { value: "custom", label: "Custom" },
+                ]}
+              />
+              <p id="preset-hint" className={`mt-1.5 ${HINT}`}>Fills in the rates and the relief.</p>
+            </div>
+            <div>
+              <FieldLabel htmlFor="ready-reckoner">HMRC ready-reckoner row</FieldLabel>
+              <Select
+                id="ready-reckoner"
+                describedBy="ready-reckoner-hint"
+                value={readyReckonerRow}
+                onChange={(id) => {
+                  const chosen = READY_RECKONER.rows.find((row) => row.id === id);
+                  if (chosen) load(chosen);
+                }}
+                options={[
+                  { value: "none", label: "None" },
+                  ...READY_RECKONER.rows.map((row) => ({ value: row.id, label: row.label })),
+                ]}
+              />
+              <p id="ready-reckoner-hint" className={`mt-1.5 ${HINT}`}>
+                Compared with HMRC&apos;s published figure in the results.
+              </p>
+            </div>
+          </div>
+        </Step>
+      ) : null}
+
+      {current === "rates" ? (
+        <Step id="rates" intro="The CGT rate on gains in each income tax band.">
           <div
             aria-hidden="true"
             className={`${RATE_GRID} hidden pb-2 text-xs font-semibold text-slate-500 sm:grid`}
@@ -258,10 +314,17 @@ export default function ScheduleForm({ form, onChange, showPresets, onCalculate,
               error={errorFor(band.key)}
             />
           ))}
-        </FormSection>
+        </Step>
+      ) : null}
 
-        <div className="grid md:grid-cols-2 md:gap-8">
-          <FormSection id="badr-title" title="Business Asset Disposal Relief" tip={BADR_NOTE}>
+      {current === "relief" ? (
+        <Step
+          id="relief"
+          intro="Business Asset Disposal Relief: a lower rate on qualifying business disposals."
+          tip={BADR_NOTE}
+          tipLabel="About Business Asset Disposal Relief"
+        >
+          <div className="max-w-xl">
             <Toggle
               label="Business Asset Disposal Relief"
               fullWidth
@@ -309,14 +372,18 @@ export default function ScheduleForm({ form, onChange, showPresets, onCalculate,
                 it anyway, so it overstates the tax on those gains.
               </p>
             ) : null}
-          </FormSection>
+          </div>
+        </Step>
+      ) : null}
 
-          <FormSection
-            id="elasticity-title"
-            title="Behavioural response"
-            tip={ELASTICITY_NOTE}
-            className="border-t border-slate-200 md:border-t-0"
-          >
+      {current === "response" ? (
+        <Step
+          id="response"
+          intro="How strongly taxpayers cut the gains they realise as rates rise."
+          tip={ELASTICITY_NOTE}
+          tipLabel="About the behavioural response"
+        >
+          <div className="max-w-xl">
             <label htmlFor="elasticity" className="sr-only">
               Behavioural response
             </label>
@@ -333,9 +400,9 @@ export default function ScheduleForm({ form, onChange, showPresets, onCalculate,
             <p id="elasticity-detail" className={`mt-2 ${HINT}`}>
               {elasticity ? splitLabel(elasticity.label).detail : ""}
             </p>
-          </FormSection>
-        </div>
-      </div>
+          </div>
+        </Step>
+      ) : null}
 
       <div className="-mx-5 -mb-5 mt-1 flex flex-col gap-4 rounded-b-xl border-t border-slate-200 bg-slate-50 px-5 py-4 sm:-mx-6 sm:-mb-6 sm:flex-row sm:px-6 sm:items-center sm:justify-between">
         <p className="flex items-start gap-2 text-sm leading-6 text-slate-600" role="status">
@@ -352,9 +419,20 @@ export default function ScheduleForm({ form, onChange, showPresets, onCalculate,
             ) : null}
           </span>
         </p>
-        <button type="submit" disabled={!check.rates || running} className={`${PRIMARY_BUTTON} w-full sm:w-auto`}>
-          {running ? "Calculating…" : "Calculate"}
-        </button>
+        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center">
+          {next ? (
+            <button
+              type="button"
+              onClick={() => setStep(next.id)}
+              className="rounded-lg border border-slate-300 bg-white px-5 py-3 text-base font-semibold text-slate-700 shadow-sm transition hover:border-slate-400 hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--pe-color-primary-500)]"
+            >
+              Next: {next.label} →
+            </button>
+          ) : null}
+          <button type="submit" disabled={!check.rates || running} className={`${PRIMARY_BUTTON} w-full sm:w-auto`}>
+            {running ? "Calculating…" : "Calculate"}
+          </button>
+        </div>
       </div>
     </form>
   );
