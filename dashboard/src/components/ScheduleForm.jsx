@@ -25,7 +25,6 @@ import {
   HINT,
   InfoTip,
   PRIMARY_BUTTON,
-  TEXT_BUTTON,
   Pill,
   TabLink,
   Toggle,
@@ -202,19 +201,13 @@ function RateRow({ band, value, onChange, error }) {
   );
 }
 
-const DOTS = {
-  instant: "bg-[color:var(--pe-color-primary-500)]",
-  live: "bg-amber-500",
-};
-
 // One policy's parameters as one panel with sub-tabs (start from, CGT
-// rates, relief, behavioural response), with a footer bar: what Calculate will do
-// (`status`: a tone, a text and an optional action) and the Calculate
-// button. `showPresets` adds the "Start from" sub-tab (presets and HMRC
+// rates, relief, behavioural response) and one button: Next, or Calculate
+// on the last sub-tab. `showPresets` adds the "Start from" sub-tab (presets and HMRC
 // ready-reckoner rows). It is a form: Enter moves to the next sub-tab, or
 // calculates on the last;
 // `running` (a run in flight) disables it.
-export default function ScheduleForm({ form, onChange, showPresets, onCalculate, running, status, onRestore, onNavigate }) {
+export default function ScheduleForm({ form, onChange, showPresets, onCalculate, running, onNavigate }) {
   const check = checkForm(form);
   const set = (patch) => onChange({ ...form, ...patch });
   const setBadr = (patch) => set({ badrForm: { ...form.badrForm, ...patch } });
@@ -415,20 +408,7 @@ export default function ScheduleForm({ form, onChange, showPresets, onCalculate,
         </Step>
       ) : null}
 
-      <div className="-mx-5 -mb-5 mt-1 flex flex-col gap-4 rounded-b-xl border-t border-slate-200 bg-slate-50 px-5 py-4 sm:-mx-6 sm:-mb-6 sm:flex-row sm:px-6 sm:items-center sm:justify-between">
-        <p className="flex items-center gap-2 text-sm leading-6 text-slate-600" role="status">
-          {next ? null : (
-            <>
-              <span aria-hidden="true" className={`inline-block h-2 w-2 shrink-0 rounded-full ${DOTS[status.tone]}`} />
-              <span>{status.text}</span>
-            </>
-          )}
-          {onRestore ? (
-            <button type="button" onClick={onRestore} className={TEXT_BUTTON}>
-              Restore defaults
-            </button>
-          ) : null}
-        </p>
+      <div className="mt-6 flex justify-end">
         {next ? (
           <button type="submit" className={`${PRIMARY_BUTTON} w-full sm:w-auto`}>
             Next →

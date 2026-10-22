@@ -9,7 +9,6 @@ import { initialState, isStale, reformReducer } from "../lib/reformState";
 import {
   BANDS,
   checkForm,
-  formOf,
   isPrecomputed,
   precomputedSchedule,
   scheduleParams,
@@ -203,11 +202,9 @@ export default function ReformTab({ data, datasetKey, onNavigate, anchor }) {
     if (shown) replaceSchedule(null);
   };
   const setForm = (id) => (form) => dispatch({ type: "edit", policy: id, form });
-  const equaliseDefault = formOf(precomputed.rates, precomputed.badr, precomputed.elasticity);
   // "20% · 40% · 45%" and "Relief withdrawn": the precomputed schedule in brief.
   const equaliseRates = BANDS.map((band) => formatPct(precomputed.rates[band.key] * 100, 0)).join(" · ");
   const equaliseRelief = precomputed.badr.withdrawn ? "Relief withdrawn" : `Relief ${describeBadr(precomputed.badr)}`;
-  const equaliseEdited = !isPrecomputed(checkForm(forms.equalise), precomputed);
   const stale = isStale(state);
   const POLICIES = [
     {
@@ -223,13 +220,6 @@ export default function ReformTab({ data, datasetKey, onNavigate, anchor }) {
       speed: { instant: false, label: "Live run, ~30s" },
     },
   ];
-  // What Calculate will do, for the panel's footer.
-  let footerStatus = { tone: "live", text: "About 30 seconds" };
-  if (policy === "equalise") {
-    footerStatus = equaliseEdited
-      ? { tone: "live", text: "Edited: about 30 seconds" }
-      : { tone: "instant", text: "Instant" };
-  }
 
   return (
     <div className="space-y-6">
@@ -273,8 +263,6 @@ export default function ReformTab({ data, datasetKey, onNavigate, anchor }) {
                 showPresets={policy === "custom"}
                 onCalculate={calculate}
                 running={inFlight}
-                status={footerStatus}
-                onRestore={policy === "equalise" && equaliseEdited ? () => setForm("equalise")(equaliseDefault) : null}
                 onNavigate={onNavigate}
               />
             </div>
