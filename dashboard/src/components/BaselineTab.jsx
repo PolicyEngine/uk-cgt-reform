@@ -165,7 +165,7 @@ export default function BaselineTab({ data, anchor }) {
           description={
             <>
               The exempt <SourceLink href={EXEMPT_AMOUNT}>amount</SourceLink>{" "}
-              {`stays at £${entrants.exempt_amount_gbp.toLocaleString("en-GB")} while gains grow with the economy, so some people with small gains become CGT taxpayers in later years. These entrants, with ${firstYear} gains between £${entrants.exempt_amount_gbp.toLocaleString("en-GB")} and £${Math.round(entrants.ceiling_gbp).toLocaleString("en-GB")}, are shown separately so they can be netted out.`}
+              {`stays at £${entrants.exempt_amount_gbp.toLocaleString("en-GB")} while gains grow with the economy, so some people with small gains become CGT taxpayers in later years. These entrants, with ${firstYear} gains between £${entrants.exempt_amount_gbp.toLocaleString("en-GB")} and £${Math.round(entrants.ceiling_gbp).toLocaleString("en-GB")}, are shown separately so they can be netted out.${entrantShare > 0.05 ? "" : " They are a small share of taxpayers, so the headline counts read as taxpayers in the ordinary sense."}`}
             </>
           }
         />
@@ -190,12 +190,7 @@ export default function BaselineTab({ data, anchor }) {
             totals are not, because each entrant carries only a few hundred pounds above the
             exempt amount.
           </p>
-        ) : (
-          <p className="mt-4 text-sm leading-6 text-slate-600">
-            Entrants are a small share of this dataset&apos;s taxpayers, so the headline counts
-            read as taxpayers in the ordinary sense.
-          </p>
-        )}
+        ) : null}
       </section>
 
       <section className="section-card scroll-mt-24" id="schedules">
