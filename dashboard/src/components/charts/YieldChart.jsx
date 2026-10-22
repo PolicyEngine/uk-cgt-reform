@@ -1,0 +1,234 @@
+"use client";
+
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  LabelList,
+  ReferenceLine,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+import { getNiceTicks, getTickDomain } from "../../lib/chartUtils";
+import { colors } from "../../lib/colors";
+import { formatSignedBn } from "../../lib/formatters";
+import ChartLogo from "../ChartLogo";
+
+const AXIS_STYLE = { fontSize: 12, fill: colors.gray[500] };
+const fmt = (v) => formatSignedBn(v, 1);
+
+// One colour, short name and label colour per reform step, in stacking order.
+// Steps the pipeline adds later fall back to the extra colours below.
+const STEP_STYLE = {
+  main_rates: { short: "Main rates", fill: colors.primary[700], text: "#FFFFFF" },
+  residential: { short: "Residential property", fill: colors.primary[300], text: colors.gray[900] },
+  badr_withdrawn: { short: "Relief withdrawn", fill: colors.gray[400], text: colors.gray[900] },
+};
+const FALLBACK_FILLS = [colors.primary[500], colors.gray[600], colors.primary[100]];
+
+const CASES = [
+  { key: "static", label: ["No behavioural", "response"] },
+  { key: "central", label: ["CenTax central", "elasticity"] },
+];
+
+// A segment's value is printed inside it only when it is wide enough to hold
+// the text; narrow segments are read from the tooltip.
+const MIN_LABEL_PX = 46;
+
+function styleFor(step, index) {
+  return (
+    STEP_STYLE[step.step] ?? {
+      short: step.label,
+      fill: FALLBACK_FILLS[index % FALLBACK_FILLS.length],
+      text: colors.gray[900],
+    }
+  );
+}
+
+function CaseTick({ x, y, payload }) {
+  const lines = CASES.find((c) => c.key === payload.value)?.label ?? [payload.value];
+  return (
+    <text x={x - 6} y={y} textAnchor="end" fontSize={12} fill={colors.gray[700]}>
+      {lines.map((line, i) => (
+        <tspan key={line} x={x - 6} dy={i === 0 ? (1 - lines.length) * 7 + 4 : 14}>
+          {line}
+        </tspan>
+      ))}
+    </text>
+  );
+}
+
+function SegmentLabel({ x, y, width, height, value, textColor }) {
+  if (!Number.isFinite(value) || Math.abs(width) < MIN_LABEL_PX) return null;
+  return (
+    <text
+      x={x + width / 2}
+      y={y + height / 2}
+      textAnchor="middle"
+      dominantBaseline="central"
+      pointerEvents="none"
+      fontSize={12}
+      fontWeight={600}
+      fill={textColor}
+    >
+      {fmt(value)}
+    </text>
+  );
+}
+
+// The total sits past the end of the bar on the side it points to.
+function TotalLabel({ x, y, width, height, index, data }) {
+  const row = data[index];
+  if (!row) return null;
+  const negative = row.total < 0;
+  const end = negative ? row.minEnd : row.maxEnd;
+  // Recharts gives this segment's own geometry; place the total relative to
+  // the bar's outer edge on the side the total points to.
+  const pxPerUnit = width && row.lastValue ? width / row.lastValue : 0;
+  const edge = pxPerUnit ? x + width + (end - row.lastEnd) * pxPerUnit : x + width;
+  return (
+    <text
+      x={edge + (negative ? -8 : 8)}
+      y={y + height / 2}
+      textAnchor={negative ? "end" : "start"}
+      dominantBaseline="central"
+      pointerEvents="none"
+      fontSize={13}
+      fontWeight={700}
+      fill={colors.gray[900]}
+    >
+      {fmt(row.total)}
+    </text>
+  );
+}
+
+function YieldTooltip({ active, payload, label, steps }) {
+  if (!active || !payload?.length) return null;
+  const row = payload[0].payload;
+  const caseLabel = CASES.find((c) => c.key === label)?.label.join(" ") ?? label;
+  return (
+    <div className="w-[230px] rounded-md border border-slate-200 bg-white px-3 py-2 text-xs shadow-sm">
+      <p className="mb-1 font-semibold text-slate-900">{caseLabel}</p>
+      {steps.map((step, i) => (
+        <p key={step.step} className="flex items-start gap-2 py-0.5 text-slate-700">
+          <span
+            className="mt-0.5 inline-block h-2.5 w-2.5 shrink-0 rounded-sm"
+            style={{ background: styleFor(step, i).fill }}
+          />
+          <span className="flex-1 leading-snug">{step.label}</span>
+          <span className="whitespace-nowrap tabular-nums font-medium">{fmt(row[step.step])}</span>
+        </p>
+      ))}
+      <p className="mt-1 flex justify-between border-t border-slate-100 pt-1 font-semibold text-slate-900">
+        <span>Total</span>
+        <span className="tabular-nums">{fmt(row.total)}</span>
+      </p>
+    </div>
+  );
+}
+
+// Where the 2026-27 yield comes from: each reform step's increment, stacked,
+// with no behavioural response and at the CenTax central elasticity.
+// `steps` is the pipeline's schedule_split.steps.
+export default function YieldChart({ steps }) {
+  const data = CASES.map(({ key }) => {
+    const row = { case: key };
+    let pos = 0;
+    let neg = 0;
+    steps.forEach((step) => {
+      const v = Number(step[`${key}_increment_bn`]) || 0;
+      row[step.step] = v;
+      if (v >= 0) pos += v;
+      else neg += v;
+    });
+    const last = steps[steps.length - 1];
+    const lastValue = last ? row[last.step] : 0;
+    row.total = pos + neg;
+    row.maxEnd = pos;
+    row.minEnd = neg;
+    row.lastValue = lastValue;
+    // Where the last segment ends under sign stacking.
+    row.lastEnd = lastValue >= 0 ? pos : neg;
+    return row;
+  });
+  const maxEnd = Math.max(0, ...data.map((r) => r.maxEnd));
+  const minEnd = Math.min(0, ...data.map((r) => r.minEnd));
+  // The axis ends on a round tick; the chart margins hold the total labels.
+  const ticks = getNiceTicks([minEnd, maxEnd], 4);
+  const domain = getTickDomain(ticks);
+
+  return (
+    <>
+      <ul className="mb-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600">
+        {steps.map((step, i) => (
+          <li key={step.step} className="flex items-center gap-1.5">
+            <span
+              className="inline-block h-3 w-3 rounded-sm"
+              style={{ background: styleFor(step, i).fill }}
+            />
+            {styleFor(step, i).short}
+          </li>
+        ))}
+      </ul>
+      <div className="h-[220px] w-full">
+        <ResponsiveContainer>
+          <BarChart
+            data={data}
+            layout="vertical"
+            stackOffset="sign"
+            barCategoryGap="28%"
+            margin={{ top: 5, right: 64, bottom: 5, left: minEnd < 0 ? 64 : 0 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" stroke={colors.border.light} horizontal={false} />
+            <XAxis
+              type="number"
+              domain={domain}
+              ticks={ticks}
+              tick={AXIS_STYLE}
+              tickFormatter={(v) => formatSignedBn(v, 0)}
+              tickLine={false}
+              axisLine={false}
+            />
+            <YAxis
+              type="category"
+              dataKey="case"
+              width={108}
+              tick={<CaseTick />}
+              tickLine={false}
+              axisLine={false}
+            />
+            <ReferenceLine x={0} stroke={colors.gray[400]} />
+            <Tooltip
+              cursor={{ fill: colors.gray[100] }}
+              content={<YieldTooltip steps={steps} />}
+            />
+            {steps.map((step, i) => {
+              const style = styleFor(step, i);
+              const isLast = i === steps.length - 1;
+              return (
+                <Bar
+                  key={step.step}
+                  dataKey={step.step}
+                  name={step.label}
+                  stackId="yield"
+                  fill={style.fill}
+                  radius={isLast ? [0, 6, 6, 0] : 0}
+                  isAnimationActive={false}
+                >
+                  <LabelList
+                    dataKey={step.step}
+                    content={<SegmentLabel textColor={style.text} />}
+                  />
+                  {isLast && <LabelList dataKey="total" content={<TotalLabel data={data} />} />}
+                </Bar>
+              );
+            })}
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+      <ChartLogo />
+    </>
+  );
+}

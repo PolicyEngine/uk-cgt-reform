@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import BaselineTab from "../src/components/BaselineTab";
 import BenchmarksTab from "../src/components/BenchmarksTab";
 import MethodologyTab from "../src/components/MethodologyTab";
-import PolicyEngineHeader from "../src/components/PolicyEngineHeader";
 import ReformTab from "../src/components/ReformTab";
 import { getDatasetInfo } from "../src/lib/dataHelpers";
 import results from "../public/data/cgt_equalisation_results.json";
@@ -80,7 +79,6 @@ function Dashboard() {
 
   return (
     <div className="app-shell min-h-screen">
-      <PolicyEngineHeader />
       <header className="title-row">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4 md:px-8">
           <h1>Capital gains tax reform dashboard</h1>

@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  formatElasticity,
   formatPct,
   formatPublished,
   formatSignedBn,
@@ -17,7 +16,6 @@ import {
   getDatasetInfo,
   getEntrants,
   getFirstYear,
-  getFiveYearTotal,
   getIncomeChangeGroups,
   getIncomeChangeGroupsByYear,
   getReformSchedules,
@@ -27,8 +25,10 @@ import {
   getValidation,
 } from "../lib/dataHelpers";
 import BudgetChart from "./charts/BudgetChart";
-import GroupImpactChart from "./charts/GroupImpactChart";
-import { Card, MetricCard, Notes, SourceLabel, TabLink, TableScroll, TipHeader } from "./controls";
+import GroupImpactChart, { GroupDefinitions } from "./charts/GroupImpactChart";
+import SensitivityChart from "./charts/SensitivityChart";
+import YieldChart from "./charts/YieldChart";
+import { Card, MetricCard, Notes, SourceLabel, TabLink, TableScroll } from "./controls";
 import SectionHeading from "./SectionHeading";
 
 // Where each sensitivity scenario's elasticity comes from: the static case
@@ -38,7 +38,6 @@ const CENTAX_SOURCE = {
   label: "Advani, Lonsdale & Summers (2024), CenTax",
   url: "https://centax.org.uk/wp-content/uploads/2024/10/AdvaniLonsdaleSummers2024_CGTReform.pdf#page=38",
 };
-const STATIC_SOURCE = { label: "None: taxpayers do not respond", url: null };
 
 function officialSource(official) {
   return {
@@ -49,25 +48,12 @@ function officialSource(official) {
   };
 }
 
-function SourceLink({ row, official }) {
-  let source = CENTAX_SOURCE;
-  if (row.e_retention === 0) source = STATIC_SOURCE;
-  else if (row.e_retention === official.e_retention) source = officialSource(official);
-  if (!source.url) return <td className="font-normal text-slate-500">{source.label}</td>;
-  return (
-    <td>
-      <SourceLabel href={source.url} label={source.label} />
-    </td>
-  );
-}
-
 // The Reform tab's precomputed results: equalisation with income tax, as the
 // pipeline scored it, with the detail a live run does not produce (the yield
 // by schedule and the sensitivity to the elasticity).
 export default function EqualisationResults({ data, onNavigate, onChooseCustom }) {
   const budget = getBudget(data);
   const firstYear = getFirstYear(data);
-  const fiveYearTotal = getFiveYearTotal(data);
   const headlineGroups = getIncomeChangeGroups(data, firstYear);
   const sensitivity = getSensitivity(data);
   const { central, official, centax_range: centaxRange } = getBenchmarks(data).elasticities;
@@ -82,6 +68,10 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
     firstYearRow.cgt_change_from_entrants_bn / firstYearRow.gov_balance_change_bn;
   const recorded = (gains) => (gains > 0 ? "" : ` ${dataset.shortLabel} records no such gains, so this line is inert here.`);
   const topQuintile = headlineGroups.quintile[headlineGroups.quintile.length - 1];
+  // Quintiles hold equal numbers of households, so the top fifth's share of
+  // the total fall is its average over the sum of the five averages.
+  const topShare =
+    topQuintile.avg_change_gbp / headlineGroups.quintile.reduce((sum, group) => sum + group.avg_change_gbp, 0);
   const split = getScheduleSplit(data);
   // Equalisation with the relief kept: the step before it is withdrawn.
   const keptRelief = split.steps.find((row) => row.step === "residential");
@@ -101,37 +91,32 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
     <div className="space-y-6">
       <Card>
         <SectionHeading
-          title={`Headline results, ${firstYear}`}
-          description={`Equalising CGT rates with income tax rates, at CenTax's central elasticity, on ${dataset.shortLabel}. Distributional figures cover all households.`}
+          title="Headline results"
+          description={`For the reform's first year, at CenTax's central behavioural response, on ${dataset.shortLabel}. Distributional figures cover all households.`}
         />
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2">
           <MetricCard
-            label={`Change in government balance, ${firstYear}`}
+            label="Change in government balance"
             value={formatSignedBn(firstYearRow.gov_balance_change_bn, 1)}
             note="After taxpayers realise fewer gains."
-            tip={`Across the behavioural cases in the sensitivity table, the ${firstYear} change in CGT revenue runs from ${formatSignedBn(lowest.revenue_2026_bn, 1)} at ${caseName(lowest)} to ${formatSignedBn(highest.revenue_2026_bn, 1)} at ${caseName(highest)}.`}
+            tip={`Across the behavioural cases in the sensitivity chart, the first-year change in CGT revenue runs from ${formatSignedBn(lowest.revenue_2026_bn, 1)} at ${caseName(lowest)} to ${formatSignedBn(highest.revenue_2026_bn, 1)} at ${caseName(highest)}.`}
           />
           <MetricCard
-            label={`Five-year change in government balance, ${firstYear} to ${budget.at(-1).year}`}
-            value={formatSignedBn(fiveYearTotal, 1)}
-            note="Sum of the five modelled years."
-          />
-          <MetricCard
-            label={`Change in net income, top income quintile, ${firstYear}`}
-            value={formatSignedPct(topQuintile.relative_change_pct)}
-            note={`${formatSignedCurrency(topQuintile.avg_change_gbp)} per household on average.`}
+            label="Share of the fall in household income borne by the top fifth"
+            value={formatPct(100 * topShare, 0)}
+            note={`Households in the top fifth lose ${formatSignedCurrency(topQuintile.avg_change_gbp)} (${formatSignedPct(topQuintile.relative_change_pct)} of net income) on average.`}
           />
         </div>
       </Card>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card className="min-w-0">
+        <Card className="flex min-w-0 flex-col">
           <SectionHeading
             title="Budgetary impact by year"
-            description="CGT revenue and the change in the government balance, by fiscal year."
+            description="Each bar shows the change in the government's balance in one fiscal year, after taxpayers realise fewer gains."
           />
           <BudgetChart budget={budget} />
-          <Notes>
+          <Notes className="mt-auto">
             <p>
               Baseline revenue grows as the engine uprates the dataset to each year; the{" "}
               <TabLink onNavigate={onNavigate} tab="methodology" section="pathway">
@@ -154,13 +139,14 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
           </Notes>
         </Card>
 
-        <Card className="min-w-0">
+        <Card className="flex min-w-0 flex-col">
           <SectionHeading
             title="Change in household net income by income group"
-            description="Grouped by the household's position in the baseline income distribution."
+            description="Each bar shows the average change in net income for one group of households, ranked by income before the reform."
           />
           <GroupImpactChart groupsByYear={getIncomeChangeGroupsByYear(data)} initialYear={firstYear} />
-          <Notes>
+          <Notes className="mt-auto">
+            <GroupDefinitions />
             <p>
               The switches group households by income quintile or quartile, household type or
               region. Gains that taxpayers no longer realise in response to the higher rates count
@@ -171,42 +157,17 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
         </Card>
       </div>
 
-      {/* Both tables need the full width: side by side they wrap and scroll. */}
         <Card className="min-w-0">
           <SectionHeading
-            title={`Where the yield comes from, ${split.year}`}
-            description="The reform built up one schedule at a time."
+            title="Where the yield comes from"
+            description="Each bar adds the reform's parts one at a time in its first year, first with no behavioural response and then with CenTax's central response."
           />
-          <TableScroll>
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Step</th>
-                <th className="num">Change in CGT, static</th>
-                <th className="num">Change in CGT, central elasticity</th>
-              </tr>
-            </thead>
-            <tbody>
-              {split.steps.map((row) => (
-                <tr key={row.step}>
-                  <td>{row.label}</td>
-                  <td className="num">{formatSignedBn(row.static_increment_bn, 1)}</td>
-                  <td className="num">{formatSignedBn(row.central_increment_bn, 1)}</td>
-                </tr>
-              ))}
-              <tr className="total">
-                <td>The reform</td>
-                <td className="num">{formatSignedBn(split.steps.at(-1).static_cgt_change_bn, 1)}</td>
-                <td className="num">{formatSignedBn(split.steps.at(-1).central_cgt_change_bn, 1)}</td>
-              </tr>
-            </tbody>
-          </table>
-          </TableScroll>
+          <YieldChart steps={split.steps} />
           <Notes>
             <p>
               The main rates come first, then residential property gains, then withdrawing
-              Business Asset Disposal Relief. Each row is what that change adds once the rows above
-              it are in place, with no behavioural response and at the central elasticity.
+              Business Asset Disposal Relief. Each segment is what that change adds once the ones
+              before it are in place, with no behavioural response and at the central elasticity.
             </p>
             <p>
           {validation.badr_gains_bn > 0 ? (
@@ -236,40 +197,9 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
         <Card className="min-w-0 scroll-mt-24" id="sensitivity">
           <SectionHeading
             title="Sensitivity to the behavioural elasticity"
-            description={`The ${firstYear} change in CGT revenue at each elasticity.`}
+            description="Each bar shows the first-year change in CGT revenue under a different assumption about how strongly taxpayers cut the gains they realise."
           />
-        <TableScroll>
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Scenario</th>
-              <TipHeader
-                label="Elasticity, as applied"
-                tip="The elasticity of realised gains with respect to the retention rate (1 − t) that the engine applies, as each source states it: realised gains scale by ((1 − t₁) / (1 − t₀)) to the power e, with t the marginal rate on gains."
-              />
-              <TipHeader
-                className="num"
-                label={`Change in CGT revenue, ${firstYear}`}
-                tip="Change in capital gains tax revenue in the first year of the reform under this elasticity."
-              />
-              <th>Source</th>
-            </tr>
-          </thead>
-          <tbody>
-            {sensitivity.map((row) => (
-              <tr
-                key={row.name}
-                className={row.e_retention === central.e_retention ? "font-semibold" : ""}
-              >
-                <td>{row.name}</td>
-                <td>{formatElasticity(row)}</td>
-                <td className="num">{formatSignedBn(row.revenue_2026_bn)}</td>
-                <SourceLink row={row} official={official} />
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        </TableScroll>
+          <SensitivityChart rows={sensitivity} centralRetention={central.e_retention} />
           <Notes>
           <p>
             The revenue estimate depends on how strongly taxpayers reduce
@@ -279,11 +209,14 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
             <TabLink onNavigate={onNavigate} tab="methodology" section="elasticity">
               rate
             </TabLink>{" "}
-            (1 − t). The bold row is this dashboard&apos;s central assumption,
-            CenTax&apos;s central {central.e_retention.toFixed(1)}; the rows either
+            (1 − t). The dark bar is this dashboard&apos;s central assumption,
+            CenTax&apos;s central {central.e_retention.toFixed(1)}; the bars either
             side are CenTax&apos;s range, {centaxRange.lower.toFixed(1)} to{" "}
-            {centaxRange.upper.toFixed(1)}. The last row is the official HMRC/OBR
-            assumption. The{" "}
+            {centaxRange.upper.toFixed(1)}, from{" "}
+            <SourceLabel href={CENTAX_SOURCE.url} label="CenTax" />. The last bar is the official
+            HMRC/OBR assumption, from the{" "}
+            <SourceLabel href={officialSource(official).url} label="OBR" /> (January 2025, para
+            1.9). The{" "}
             <TabLink onNavigate={onNavigate} tab="methodology" section="elasticity-gap">
               Methodology
             </TabLink>{" "}

@@ -42,7 +42,7 @@ export default function GroupImpactChart({ groupsByYear, initialYear }) {
 
   return (
     <>
-      <div className="mb-3 flex flex-wrap items-center gap-4">
+      <div className="mb-4 flex flex-wrap gap-3">
         <YearSelect years={years} value={groupYear} onChange={setGroupYear} />
         <LabelledSelect
           label="Group by"
@@ -58,19 +58,19 @@ export default function GroupImpactChart({ groupsByYear, initialYear }) {
         <LabelledSelect
           label="Metric"
           options={[
-            { value: "absolute", label: "Average £ per household" },
-            { value: "relative", label: "Relative (%)" },
+            { value: "absolute", label: "£ per household" },
+            { value: "relative", label: "% of income" },
           ]}
           value={groupMetric}
           onChange={setGroupMetric}
         />
       </div>
-      <div className="h-[420px] w-full">
+      <div className="h-[340px] w-full">
         <ResponsiveContainer>
           <BarChart
             data={chartData}
             layout={grouping === "region" ? "vertical" : "horizontal"}
-            margin={{ top: 10, right: 20, bottom: 15, left: grouping === "region" ? 30 : 10 }}
+            margin={{ top: 10, right: 20, bottom: 15, left: grouping === "region" ? 30 : 0 }}
           >
             <CartesianGrid strokeDasharray="3 3" stroke={colors.border.light} />
             {grouping === "region" ? (
@@ -112,10 +112,12 @@ export default function GroupImpactChart({ groupsByYear, initialYear }) {
                   tickFormatter={formatMetric}
                   tickLine={false}
                   axisLine={false}
+                  width={72}
                 />
               </>
             )}
             <Tooltip
+              cursor={{ fill: colors.gray[100] }}
               formatter={(v, name, item) => [
                 `${formatSignedPct(item.payload.relative_change_pct)} (${formatSignedCurrency(item.payload.avg_change_gbp)}/household)`,
                 "Net income change",
@@ -131,21 +133,19 @@ export default function GroupImpactChart({ groupsByYear, initialYear }) {
         </ResponsiveContainer>
       </div>
       <ChartLogo />
-
-      <details className="group mt-4 border-t border-slate-100 pt-4">
-        <summary className="cursor-pointer select-none text-sm font-semibold text-slate-700 marker:text-[color:var(--pe-color-primary-600)]">
-          How the groups are defined
-        </summary>
-        <p className="mt-2 text-sm leading-6 text-slate-600">
-          Income groups are weighted quantiles of baseline household net
-          income. Household types: &ldquo;Pensioner&rdquo; households have no
-          working-age adults; &ldquo;With children&rdquo; households contain
-          at least one child. Regional averages reflect where households
-          holding taxable gains live in the survey data and carry more
-          sampling noise than the income groups; households without an
-          assigned area are excluded.
-        </p>
-      </details>
     </>
+  );
+}
+
+// How the groups are defined, for the Notes under the chart.
+export function GroupDefinitions() {
+  return (
+    <p>
+      Income groups are weighted quantiles of baseline household net income. Household types:
+      &ldquo;Pensioner&rdquo; households have no working-age adults; &ldquo;With children&rdquo;
+      households contain at least one child. Regional averages reflect where households holding
+      taxable gains live in the survey data and carry more sampling noise than the income groups;
+      households without an assigned area are excluded.
+    </p>
   );
 }

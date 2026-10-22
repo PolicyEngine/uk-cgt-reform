@@ -116,15 +116,16 @@ export function Toggle({ options, value, onChange, label, fullWidth = false }) {
   );
 }
 
-// A select with its label beside it (chart controls).
+// A chart control: a small label above a compact select. Several sit side
+// by side in a row of equal columns.
 export function LabelledSelect({ label, options, value, onChange }) {
   return (
-    <label className="inline-flex max-w-full flex-wrap items-center gap-2 text-sm font-semibold text-slate-600">
-      {label}
+    <label className="flex min-w-0 flex-col gap-1">
+      <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">{label}</span>
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className={`${FIELD} ${fieldBorder()} min-w-0 max-w-full pr-8 text-sm`}
+        className={`${FIELD} ${fieldBorder()} h-10 w-full min-w-0 pr-8 text-sm`}
       >
         {options.map((option) => (
           <option key={option.value} value={option.value}>
@@ -169,9 +170,9 @@ export function TipHeader({ label, tip, className = "" }) {
 }
 
 // Longer explanations for a section, collapsed under its content.
-export function Notes({ children }) {
+export function Notes({ children, className = "" }) {
   return (
-    <details className="group mt-4 border-t border-slate-200 pt-3">
+    <details className={`group mt-4 border-t border-slate-200 pt-3 ${className}`}>
       <summary className="cursor-pointer select-none text-sm font-semibold text-slate-600 marker:text-[color:var(--pe-color-primary-600)]">
         Notes
       </summary>

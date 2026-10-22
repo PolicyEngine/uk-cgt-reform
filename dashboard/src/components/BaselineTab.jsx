@@ -129,14 +129,14 @@ export default function BaselineTab({ data, anchor }) {
         <SectionHeading
           size="lg"
           title="Baseline estimation"
-          description={`The Family Resources Survey records few capital gains, so the dataset imputes them from HMRC administrative data and calibrates household weights to HMRC's CGT statistics. This analysis uses ${dataset.shortLabel} exactly as published, with no local reweighting (the Methodology tab describes the build). The tables below show the fit for the first simulated year and the two features that most affect how its numbers read: the entrants by uprating and the schedule components.`}
+          description={`The Family Resources Survey records few capital gains, so the dataset imputes them from HMRC data and weights households to HMRC's CGT statistics. The tables below check that fit and two features that affect how the figures read.`}
         />
       </div>
 
       <section className="section-card scroll-mt-24" id="benchmarks">
         <SectionHeading
           title="Model versus external benchmarks"
-          description={`PolicyEngine's baseline for ${firstYear} on ${dataset.shortLabel}, alongside HMRC's statistics for the 2023-24 tax year (revised) and the provisional 2024-25 tax year, both from the 2026 release. The dataset calibrates its base year to one HMRC year (${dataset.observation}) and the engine uprates it to the simulated years. The ${firstYear} liability sits further above HMRC's 2024-25 figure than the gains do because 2024-25 charged most gains at 10% and 20% until 30 October 2024, and the relief at 10%, while ${firstYear} charges 18% and 24% all year and the relief at 18%.`}
+          description={`PolicyEngine's ${firstYear} baseline beside HMRC's statistics for 2023-24 and, provisionally, 2024-25. Liabilities are higher relative to gains in ${firstYear} because CGT rates rose from 10% and 20% to 18% and 24% partway through 2024-25.`}
         />
         <TableScroll>
         <table className="data-table">
@@ -225,7 +225,7 @@ export default function BaselineTab({ data, anchor }) {
       <section className="section-card scroll-mt-24" id="entrants">
         <SectionHeading
           title="Entrants by uprating"
-          description={`The annual exempt amount is frozen at £${entrants.exempt_amount_gbp.toLocaleString("en-GB")} while the engine uprates gains with GDP per capita, so a person whose base-year gains sit at or below the exempt amount can cross it in a later year and count as a CGT taxpayer with a few hundred pounds of taxable gain. Entrants are persons whose pre-response gains in ${firstYear} exceed the exempt amount but not £${Math.round(entrants.ceiling_gbp).toLocaleString("en-GB")}, the base-year exempt amount carried forward by the uprating, so they were not taxpayers in the base year. Nothing is removed or edited; the figures are reported so a reader can net them out.`}
+          description={`The exempt amount stays at £${entrants.exempt_amount_gbp.toLocaleString("en-GB")} while gains grow with the economy, so some people with small gains become CGT taxpayers in later years. These entrants, with ${firstYear} gains between £${entrants.exempt_amount_gbp.toLocaleString("en-GB")} and £${Math.round(entrants.ceiling_gbp).toLocaleString("en-GB")}, are shown separately so they can be netted out.`}
         />
         <TableScroll>
         <table className="data-table">

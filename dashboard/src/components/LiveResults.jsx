@@ -26,7 +26,7 @@ import {
   sameElasticity,
 } from "../lib/schedule";
 import BudgetChart from "./charts/BudgetChart";
-import GroupImpactChart from "./charts/GroupImpactChart";
+import GroupImpactChart, { GroupDefinitions } from "./charts/GroupImpactChart";
 import { Card, MetricCard, Notes, TabLink, TableScroll } from "./controls";
 import SectionHeading from "./SectionHeading";
 
@@ -207,6 +207,10 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
   const firstYear = result.budget[0].year;
   const firstRow = result.budget[0];
   const topQuintile = result.income_change_groups[firstYear].quintile.at(-1);
+  // Quintiles hold equal numbers of households, so the top fifth's share of
+  // the total fall is its average over the sum of the five averages.
+  const quintiles = result.income_change_groups[firstYear].quintile;
+  const topShare = topQuintile.avg_change_gbp / quintiles.reduce((sum, group) => sum + group.avg_change_gbp, 0);
   const resultE = result.metadata.elasticity;
   const reformBadr = result.metadata.reform_badr ?? BADR_CURRENT_LAW;
   const matchedRow = readyReckonerRowFor(result.metadata.reform, reformBadr);
@@ -225,24 +229,19 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
     <>
       <Card>
         <SectionHeading
-          title={`Headline results, ${firstYear}`}
-          description={`${pct(reform.basic_rate)} / ${pct(reform.higher_rate)} / ${pct(reform.additional_rate)}, Business Asset Disposal Relief ${describeBadr(reformBadr).toLowerCase()}, on ${result.metadata.dataset_short_label}, ${elasticityName(resultE)}. Distributional figures cover all households.`}
+          title="Headline results"
+          description={`For the reform's first year: ${pct(reform.basic_rate)} / ${pct(reform.higher_rate)} / ${pct(reform.additional_rate)}, Business Asset Disposal Relief ${describeBadr(reformBadr).toLowerCase()}, on ${result.metadata.dataset_short_label}, ${elasticityName(resultE)}. Distributional figures cover all households.`}
         />
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2">
           <MetricCard
-            label={`Change in government balance, ${firstYear}`}
+            label="Change in government balance"
             value={bn(firstRow.gov_balance_change_bn)}
             note={Number(resultE) === 0 ? "With no behavioural response." : "After the behavioural response."}
           />
           <MetricCard
-            label={`Five-year change in government balance, ${firstYear} to ${result.budget.at(-1).year}`}
-            value={bn(result.five_year_total_bn)}
-            note="Sum of the five modelled years."
-          />
-          <MetricCard
-            label={`Change in net income, top income quintile, ${firstYear}`}
-            value={formatSignedPct(topQuintile.relative_change_pct)}
-            note={`${formatSignedCurrency(topQuintile.avg_change_gbp)} per household on average.`}
+            label="Share of the fall in household income borne by the top fifth"
+            value={formatPct(100 * topShare, 0)}
+            note={`Households in the top fifth lose ${formatSignedCurrency(topQuintile.avg_change_gbp)} (${formatSignedPct(topQuintile.relative_change_pct)} of net income) on average.`}
           />
         </div>
         <p className="mt-4 text-sm leading-6 text-slate-600">
@@ -265,14 +264,14 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
       </Card>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card className="min-w-0">
+        <Card className="flex min-w-0 flex-col">
           <SectionHeading
             title="Budgetary impact by year"
-            description="CGT revenue and the change in the government balance, by fiscal year."
+            description="Each bar shows the change in the government's balance in one fiscal year, after taxpayers realise fewer gains."
           />
           <BudgetChart budget={result.budget} />
           {entrantShare > 0.05 ? (
-            <Notes>
+            <Notes className="mt-auto">
               <p>
                 Entrants by uprating (
                 see the{" "}
@@ -287,13 +286,14 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
           ) : null}
         </Card>
 
-        <Card className="min-w-0">
+        <Card className="flex min-w-0 flex-col">
           <SectionHeading
             title="Change in household net income by income group"
-            description="Grouped by the household's position in the baseline income distribution."
+            description="Each bar shows the average change in net income for one group of households, ranked by income before the reform."
           />
           <GroupImpactChart groupsByYear={result.income_change_groups} initialYear={firstYear} />
-          <Notes>
+          <Notes className="mt-auto">
+            <GroupDefinitions />
             <p>
               The switches group households by income quintile or quartile, household type or
               region. Changes in the gains taxpayers realise in response to the new rates count as

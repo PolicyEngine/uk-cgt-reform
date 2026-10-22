@@ -142,9 +142,14 @@ function SubTabs({ steps, current, onSelect }) {
 function Step({ id, intro, tip, tipLabel, children }) {
   return (
     <section id={`step-${id}`} role="tabpanel" aria-labelledby={`step-tab-${id}`} className="min-h-[15rem]">
-      <p className="mb-4 flex items-center gap-2 text-sm leading-6 text-slate-600">
+      <p className="mb-4 text-sm leading-6 text-slate-600">
         {intro}
-        {tip ? <InfoTip label={tipLabel}>{tip}</InfoTip> : null}
+        {tip ? (
+          <>
+            {" "}
+            <InfoTip label={tipLabel}>{tip}</InfoTip>
+          </>
+        ) : null}
       </p>
       {children}
     </section>
@@ -200,7 +205,8 @@ function RateRow({ band, value, onChange, error }) {
 // behavioural response) and one button: Next, or Calculate on the last
 // sub-tab. It is a form: Enter moves to the next sub-tab, or calculates on
 // the last; `running` (a run in flight) disables it.
-export default function ScheduleForm({ form, onChange, onCalculate, running, onNavigate }) {
+export default function ScheduleForm({ form, onChange, onCalculate, running, onNavigate, about }) {
+  const [showAbout, setShowAbout] = useState(false);
   const check = checkForm(form);
   const set = (patch) => onChange({ ...form, ...patch });
   const setBadr = (patch) => set({ badrForm: { ...form.badrForm, ...patch } });
@@ -319,10 +325,33 @@ export default function ScheduleForm({ form, onChange, onCalculate, running, onN
       {current === "response" ? (
         <Step
           id="response"
-          intro="How strongly taxpayers cut the gains they realise as rates rise."
-          tip={ELASTICITY_NOTE}
-          tipLabel="About the behavioural response"
+          intro={
+            <>
+              How strongly taxpayers cut the gains they realise as rates rise.{" "}
+              <InfoTip label="About the behavioural response">{ELASTICITY_NOTE}</InfoTip> The options run from
+              no response, through CenTax&apos;s estimates, to the HMRC/OBR official assumption;{" "}
+              <TabLink onNavigate={onNavigate} tab="methodology" section="elasticity">
+                Methodology
+              </TabLink>{" "}
+              explains how they differ.
+              {about ? (
+                <>
+                  {" "}
+                  <button
+                    type="button"
+                    aria-expanded={showAbout}
+                    onClick={() => setShowAbout((open) => !open)}
+                    className="inline-flex items-center gap-1 font-semibold text-[color:var(--pe-color-primary-700)] hover:opacity-80"
+                  >
+                    <span aria-hidden="true" className={`text-xs transition-transform ${showAbout ? "rotate-90" : ""}`}>▶</span>
+                    {about.label}
+                  </button>
+                </>
+              ) : null}
+            </>
+          }
         >
+          {about && showAbout ? <div className="mb-4 rounded-lg bg-slate-50 px-4 py-3">{about.content}</div> : null}
           <div className="max-w-xl">
             <label htmlFor="elasticity" className="sr-only">
               Behavioural response
@@ -339,13 +368,6 @@ export default function ScheduleForm({ form, onChange, onCalculate, running, onN
             />
             <p id="elasticity-detail" className={`mt-2 ${HINT}`}>
               {elasticity ? splitLabel(elasticity.label).detail : ""}
-            </p>
-            <p className="mt-4 text-sm leading-6 text-slate-600">
-              The options run from no response, through CenTax&apos;s estimates, to the HMRC/OBR official assumption;{" "}
-              <TabLink onNavigate={onNavigate} tab="methodology" section="elasticity">
-                Methodology
-              </TabLink>{" "}
-              explains how they differ.
             </p>
           </div>
         </Step>

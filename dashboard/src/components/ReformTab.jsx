@@ -9,6 +9,7 @@ import { initialState, isStale, reformReducer } from "../lib/reformState";
 import {
   BANDS,
   checkForm,
+  elasticityOption,
   isPrecomputed,
   precomputedSchedule,
   scheduleParams,
@@ -94,6 +95,16 @@ function PolicyTab({ id, sentence, speed, selected, onSelect }) {
   );
 }
 
+// A form in one line: "20% · 40% · 45% · Relief withdrawn · CenTax central".
+function summarise(form) {
+  const check = checkForm(form);
+  if (!check.rates) return "";
+  const rates = BANDS.map((band) => formatPct(check.rates[band.key] * 100, 0)).join(" · ");
+  const relief = check.badr.withdrawn ? "Relief withdrawn" : `Relief ${describeBadr(check.badr)}`;
+  const response = elasticityOption(check.elasticity)?.label.replace(/\s*\(.*\)$/, "") ?? "";
+  return [rates, relief, response].filter(Boolean).join(" · ");
+}
+
 // The Reform tab: choose equalisation with income tax or custom rates, set
 // the parameters, and calculate. Nothing shows until Calculate, except for a
 // link that carries a schedule or asks for equalisation's results.
@@ -140,8 +151,13 @@ export default function ReformTab({ data, datasetKey, onNavigate, anchor }) {
     [datasetKey, run],
   );
 
+  // After Calculate the panel folds to a one-line summary; Edit, or choosing
+  // a reform, opens it again.
+  const [collapsed, setCollapsed] = useState(false);
+
   const calculate = (check) => {
     if (!check.rates || inFlight) return;
+    setCollapsed(true);
     if (isPrecomputed(check, precomputed)) {
       reset();
       dispatch({ type: "calculate", shown: "precomputed" });
@@ -196,6 +212,7 @@ export default function ReformTab({ data, datasetKey, onNavigate, anchor }) {
   }, [anchor, showEqualisation, shown, startLive, forms, policy, searchParams, replaceSchedule]);
 
   const select = (id, toggle = false) => {
+    setCollapsed(false);
     reset();
     pending.current = null;
     dispatch({ type: "select", policy: id, toggle });
@@ -220,6 +237,43 @@ export default function ReformTab({ data, datasetKey, onNavigate, anchor }) {
       speed: { instant: false, label: "Live run, ~30s" },
     },
   ];
+
+  // The reform's short explanation, opened from the last sub-tab.
+  const about =
+    policy === "equalise"
+      ? {
+          label: "About this reform",
+          content: (
+            <ul className="list-disc space-y-1.5 pl-5 text-sm leading-6 text-slate-600">
+              <li>Each CGT rate rises to the matching income tax rate from {firstYear}.</li>
+              <li>Business Asset Disposal Relief is withdrawn, so qualifying gains take the new rates.</li>
+              <li>
+                Taxpayers realise fewer gains, using CenTax&apos;s central{" "}
+                <a href={CENTAX_URL} target="_blank" rel="noopener noreferrer" className="underline decoration-1 underline-offset-2 hover:opacity-80">
+                  elasticity
+                </a>
+                .
+              </li>
+              <li>
+                <TabLink onNavigate={onNavigate} tab="methodology" section="elasticity">
+                  Methodology
+                </TabLink>{" "}
+                explains that elasticity; the sensitivity table in the results shows other values.
+              </li>
+            </ul>
+          ),
+        }
+      : {
+          label: "About this option",
+          content: (
+            <ul className="list-disc space-y-1.5 pl-5 text-sm leading-6 text-slate-600">
+              <li>The chosen rates apply to the main schedule and to residential property gains.</li>
+              <li>Business Asset Disposal Relief can be kept, at a chosen rate and lifetime limit, or withdrawn.</li>
+              <li>Each run uses the same pipeline as the equalisation results.</li>
+              <li>Completed runs are stored, so a schedule run before shows at once.</li>
+            </ul>
+          ),
+        };
 
   return (
     <div className="space-y-6">
@@ -256,14 +310,28 @@ export default function ReformTab({ data, datasetKey, onNavigate, anchor }) {
               aria-labelledby={`policy-tile-${policy}`}
               className="rounded-b-xl border border-slate-200 p-5 sm:p-6"
             >
-              <ScheduleForm
-                key={policy}
-                form={forms[policy]}
-                onChange={setForm(policy)}
-                onCalculate={calculate}
-                running={inFlight}
-                onNavigate={onNavigate}
-              />
+              {collapsed ? (
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-sm leading-6 text-slate-700">{summarise(forms[policy])}</p>
+                  <button
+                    type="button"
+                    onClick={() => setCollapsed(false)}
+                    className="rounded-lg border border-slate-300 bg-white px-5 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-slate-400 hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--pe-color-primary-500)]"
+                  >
+                    Edit
+                  </button>
+                </div>
+              ) : (
+                <ScheduleForm
+                  key={policy}
+                  form={forms[policy]}
+                  onChange={setForm(policy)}
+                  onCalculate={calculate}
+                  running={inFlight}
+                  onNavigate={onNavigate}
+                  about={about}
+                />
+              )}
             </div>
             {shown === "live" ? (
               <StatusLine
@@ -274,37 +342,6 @@ export default function ReformTab({ data, datasetKey, onNavigate, anchor }) {
                 datasetLabel={dataset.shortLabel}
               />
             ) : null}
-            <details className="group mt-4 rounded-xl border border-slate-200 px-4 py-3">
-              <summary className="cursor-pointer select-none text-sm font-semibold text-slate-700 marker:text-[color:var(--pe-color-primary-600)]">
-                About this {policy === "equalise" ? "reform" : "option"}
-              </summary>
-              {policy === "equalise" ? (
-                <ul className="mt-3 list-disc space-y-1.5 pl-5 text-sm leading-6 text-slate-600">
-                  <li>Each CGT rate rises to the matching income tax rate from {firstYear}.</li>
-                  <li>Business Asset Disposal Relief is withdrawn, so qualifying gains take the new rates.</li>
-                  <li>
-                    Taxpayers realise fewer gains, using CenTax&apos;s central{" "}
-                    <a href={CENTAX_URL} target="_blank" rel="noopener noreferrer" className="underline decoration-1 underline-offset-2 hover:opacity-80">
-                      elasticity
-                    </a>
-                    .
-                  </li>
-                  <li>
-                    <TabLink onNavigate={onNavigate} tab="methodology" section="elasticity">
-                      Methodology
-                    </TabLink>{" "}
-                    explains that elasticity; the sensitivity table in the results shows other values.
-                  </li>
-                </ul>
-              ) : (
-                <ul className="mt-3 list-disc space-y-1.5 pl-5 text-sm leading-6 text-slate-600">
-                  <li>The chosen rates apply to the main schedule and to residential property gains.</li>
-                  <li>Business Asset Disposal Relief can be kept, at a chosen rate and lifetime limit, or withdrawn.</li>
-                  <li>Each run uses the same pipeline as the equalisation results.</li>
-                  <li>Completed runs are stored, so a schedule run before shows at once.</li>
-                </ul>
-              )}
-            </details>
           </>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2" role="group" aria-label="Reform">
