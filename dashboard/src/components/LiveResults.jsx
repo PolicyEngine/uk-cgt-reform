@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 import {
   BASELINE_SCHEDULE_RATES,
   badrLimitLabel,
@@ -118,6 +120,7 @@ function ScheduleRates({ metadata }) {
 // HMRC's receipts beside this run's change in the government balance, one
 // pair of bars per year, on one £m scale centred on £0.
 function ReckonerBars({ rows }) {
+  const [hover, setHover] = useState(null);
   const max = Math.max(1, ...rows.flatMap((r) => [Math.abs(r.hmrc ?? 0), Math.abs(r.run ?? 0)]));
   const series = [
     { key: "hmrc", label: "HMRC receipts", fill: colors.gray[700], text: colors.gray[800] },
@@ -131,21 +134,30 @@ function ReckonerBars({ rows }) {
             <p className="mb-1 text-sm font-semibold text-slate-800">{r.label}</p>
             {series.map((s) => {
               const v = r[s.key];
+              const id = `${r.key}-${s.key}`;
               // The longest bar takes 38% of the row, leaving room for its label.
               const width = (38 * Math.abs(v ?? 0)) / max;
+              const end = v < 0 ? 50 - width : 50 + width;
               return (
-                <div key={s.key} className="group relative flex h-6 items-center" tabIndex={0}>
+                <div key={s.key} className="relative flex h-6 items-center">
                   <span aria-hidden="true" className="absolute left-1/2 top-0 h-full w-px bg-slate-300" />
                   <span
-                    aria-hidden="true"
-                    className="absolute h-3.5 rounded"
+                    tabIndex={0}
+                    aria-label={`${r.label}, ${s.label}: ${formatSignedMn(v)}`}
+                    onMouseEnter={() => setHover(id)}
+                    onMouseLeave={() => setHover(null)}
+                    onFocus={() => setHover(id)}
+                    onBlur={() => setHover(null)}
+                    className="absolute h-3.5 cursor-default rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--pe-color-primary-500)]"
                     style={{
                       background: s.fill,
-                      width: `${width}%`,
+                      width: `${Math.max(width, 0.4)}%`,
                       left: v < 0 ? `${50 - width}%` : "50%",
+                      opacity: hover && hover !== id ? 0.55 : 1,
                     }}
                   />
                   <span
+                    aria-hidden="true"
                     className="absolute text-xs font-semibold tabular-nums"
                     style={{
                       color: s.text,
@@ -154,12 +166,19 @@ function ReckonerBars({ rows }) {
                   >
                     {formatSignedMn(v)}
                   </span>
-                  <span
-                    role="tooltip"
-                    className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1 hidden -translate-x-1/2 whitespace-nowrap rounded-md bg-slate-900 px-2 py-1 text-xs text-white shadow group-hover:block group-focus:block"
-                  >
-                    {`${s.label}: ${formatSignedMn(v)}`}
-                  </span>
+                  {hover === id ? (
+                    <span
+                      role="tooltip"
+                      className="pointer-events-none absolute bottom-full z-20 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs shadow-lg"
+                      style={{ left: `${(50 + end) / 2}%` }}
+                    >
+                      <span className="block font-semibold text-slate-800">{r.label}</span>
+                      <span className="mt-0.5 flex items-center gap-1.5 text-slate-600">
+                        <span aria-hidden="true" className="inline-block h-2 w-2 rounded-sm" style={{ background: s.fill }} />
+                        {s.label}: <span className="font-semibold tabular-nums text-slate-900">{formatSignedMn(v)}</span>
+                      </span>
+                    </span>
+                  ) : null}
                 </div>
               );
             })}
