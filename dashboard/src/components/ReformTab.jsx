@@ -258,7 +258,7 @@ export default function ReformTab({ data, datasetKey, onNavigate, anchor }) {
                 <TabLink onNavigate={onNavigate} tab="methodology" section="elasticity">
                   Methodology
                 </TabLink>{" "}
-                explains that elasticity; the sensitivity table in the results shows other values.
+                explains that elasticity; the sensitivity chart in the results shows other values.
               </li>
             </ul>
           ),

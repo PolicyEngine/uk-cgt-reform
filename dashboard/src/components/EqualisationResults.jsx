@@ -76,7 +76,7 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
   // Equalisation with the relief kept: the step before it is withdrawn.
   const keptRelief = split.steps.find((row) => row.step === "residential");
   // The spread of the first-year yield across the behavioural cases in the
-  // sensitivity table (the static case excluded): the official case and
+  // sensitivity chart (the static case excluded): the official case and
   // CenTax's upper case can turn it negative.
   const behavioural = sensitivity.filter((row) => row.e_retention !== 0);
   const lowest = behavioural.reduce((a, b) => (b.revenue_2026_bn < a.revenue_2026_bn ? b : a));
