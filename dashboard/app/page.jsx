@@ -126,39 +126,11 @@ function Dashboard() {
         {activeTab === "methodology" && <MethodologyTab data={data} anchor={anchor} onNavigate={handleNavigate} />}
 
         <footer className="mt-12 border-t border-slate-200 pt-6 text-center text-xs leading-5 text-slate-500">
-          Replication code:{" "}
-          <a
-            href="https://github.com/PolicyEngine/uk-cgt-reform"
-            target="_blank"
-            rel="noreferrer"
-            className="font-semibold text-[color:var(--pe-color-primary-700)] underline decoration-1 underline-offset-2 hover:opacity-80"
-          >
-            PolicyEngine/uk-cgt-reform
+          Built with{" "}
+          <a href="https://github.com/PolicyEngine/policyengine.py" target="_blank" rel="noreferrer" className={LINK}>
+            policyengine.py
           </a>
-          {data?.metadata?.policyengine_version ? (
-            <>
-              {" · "}
-              <a href="https://github.com/PolicyEngine/policyengine.py" target="_blank" rel="noreferrer" className={LINK}>
-                policyengine.py
-              </a>
-              {` ${data.metadata.policyengine_version} with `}
-              <a href="https://github.com/PolicyEngine/policyengine-uk" target="_blank" rel="noreferrer" className={LINK}>
-                policyengine-uk
-              </a>
-              {` ${data.metadata.policyengine_uk_version}`}
-            </>
-          ) : null}
-          {" · "}
-          {dataset.label?.startsWith("Microcosm") ? (
-            <>
-              <a href="https://github.com/PolicyEngine/microcosm" target="_blank" rel="noreferrer" className={LINK}>
-                Microcosm
-              </a>
-              {dataset.label.slice("Microcosm".length)}
-            </>
-          ) : (
-            dataset.label
-          )}
+          {data?.metadata?.policyengine_version ? ` ${data.metadata.policyengine_version}` : ""}
         </footer>
       </main>
     </div>
