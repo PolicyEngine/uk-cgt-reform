@@ -545,16 +545,6 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
           </div>
         </aside>
 
-        <TechnicalDetails>
-          <li>
-            PolicyEngine UK adopted CenTax&apos;s central value as its default in policyengine-uk
-            2.134.0 (PR{" "}
-            <ExternalLink href="https://github.com/PolicyEngine/policyengine-uk/pull/2419">
-              #2419
-            </ExternalLink>
-            ); this dashboard still sets the elasticity explicitly in every case.
-          </li>
-        </TechnicalDetails>
       </section>
 
       <details className="section-card group scroll-mt-24" id="elasticity-gap">
