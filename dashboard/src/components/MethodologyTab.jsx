@@ -534,7 +534,7 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
 
         <aside
           aria-labelledby="main-caveat"
-          className="mt-7 max-w-[calc(70ch+2.5rem)] rounded-lg text-sm border border-amber-200 bg-amber-50/60 p-4 sm:p-5"
+          className="mt-7 rounded-lg text-sm border border-amber-200 bg-amber-50/60 p-4 sm:p-5"
         >
           <h3 id="main-caveat" className="text-base font-semibold text-slate-900">
             Main caveat
