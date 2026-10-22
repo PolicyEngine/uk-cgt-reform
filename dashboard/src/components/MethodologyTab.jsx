@@ -468,15 +468,15 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
           className="mt-7 rounded-lg text-sm border border-amber-200 bg-amber-50/60 p-4 sm:p-5"
         >
           <h3 id="main-caveat" className="text-base font-semibold text-slate-900">
-            Main caveat
+            Scope of CenTax&apos;s central value
           </h3>
           <div className={`mt-2 ${COLUMN}`}>
             <p>
-              CenTax chose the central value for a package with two further reforms. It removes
-              the uplift at death, which today wipes out the gain on assets held until death. It
-              also charges gains when people leave the UK. Both close ways to defer or avoid the
-              tax. This dashboard models neither. On today&apos;s tax base, CenTax expect a larger response to a rate rise. They advise
-              against equalising rates without those reforms (Advani, Hughson &amp; Summers,{" "}
+              CenTax&apos;s central value applies to a package that also ends the uplift at death,
+              under which gains on assets held until death are not taxed, and taxes gains when
+              people leave the UK. This dashboard models the rate changes only. CenTax estimate a
+              larger behavioural response when rates change without those measures, and state that
+              they would not equalise rates without them (Advani, Hughson &amp; Summers,{" "}
               <em>Taxes at the top</em>, CenTax, September 2026, pp.{" "}
               <ExternalLink href={taxesAtTheTopPage(19)}>17</ExternalLink>&ndash;
               <ExternalLink href={taxesAtTheTopPage(20)}>18</ExternalLink>).
