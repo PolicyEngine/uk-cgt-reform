@@ -299,6 +299,25 @@ function ReadyReckoner({ block, dataset, elasticities, rr, onNavigate }) {
           official: `${PE}, official (${elasticities.official.e_retention}; ${elasticities.official.badr_e_retention} relief)`,
         }}
       />
+      <div className="mt-4 rounded-lg bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-700">
+        <p className="font-semibold text-slate-900">Why the bars point different ways</p>
+        <ul className="mt-1 list-disc space-y-1 pl-5">
+          <li>
+            A rate rise takes more tax from each gain still sold, but people sell fewer assets. Each
+            bar is the net of the two.
+          </li>
+          <li>
+            {`With a weaker response (${elasticities.central.e_retention.toFixed(1)}) the higher rate wins and revenue rises; with a stronger one (${elasticities.official.e_retention}) the lost sales win and revenue falls.`}
+          </li>
+          <li>
+            {`Under this kind of response, the rate that raises the most is 1 / (1 + elasticity): about ${Math.round(100 / (1 + elasticities.official.e_retention))}% at ${elasticities.official.e_retention}, below today's 24% higher rate, so raising the higher rate loses revenue; ${Math.round(100 / (1 + elasticities.central.e_retention))}% at ${elasticities.central.e_retention.toFixed(1)}, so it still gains.`}
+          </li>
+          <li>
+            HMRC&apos;s bars differ from {PE}&apos;s official ones because they count receipts a year
+            later, include income tax and SDLT effects, and start from the OBR&apos;s forecast.
+          </li>
+        </ul>
+      </div>
       <Notes>
         <p>
           Source: <SourceLabel href={block.url} label={block.source} />, {block.locator}.
