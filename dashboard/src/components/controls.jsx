@@ -169,14 +169,17 @@ export function TipHeader({ label, tip, className = "" }) {
   );
 }
 
-// Longer explanations for a section, collapsed under its content.
+// Longer explanations for a section, collapsed under its content, as bullets.
 export function Notes({ children, className = "" }) {
   return (
     <details className={`group mt-4 border-t border-slate-200 pt-3 ${className}`}>
       <summary className="cursor-pointer select-none text-sm font-semibold text-slate-600 marker:text-[color:var(--pe-color-primary-600)]">
         Notes
       </summary>
-      <div className="mt-2 space-y-2 text-sm leading-6 text-slate-600">{children}</div>
+      {/* Each paragraph reads as a bullet; a list passed in keeps its own. */}
+      <div className="mt-2 list-disc space-y-1.5 pl-5 text-sm leading-6 text-slate-600 [&>p]:list-item [&>ul]:-ml-5">
+        {children}
+      </div>
     </details>
   );
 }

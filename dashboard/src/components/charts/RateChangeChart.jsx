@@ -93,6 +93,17 @@ function BarShape({ x, y, width, height, fill, payload }) {
         >
           Withdrawn
         </text>
+        {payload.note ? (
+          <text
+            x={x + w + 8}
+            y={y + height / 2}
+            dominantBaseline="central"
+            fontSize={12}
+            fill={colors.gray[600]}
+          >
+            {payload.note}
+          </text>
+        ) : null}
       </g>
     );
   }
@@ -124,6 +135,11 @@ function BarLabel({ x, y, width, height, index, data }) {
       fill={SERIES[d.series].text}
     >
       {pct(d.value)}
+      {d.note ? (
+        <tspan fontWeight={400} fill={colors.gray[500]}>
+          {` · ${d.note}`}
+        </tspan>
+      ) : null}
     </text>
   );
 }
@@ -139,6 +155,7 @@ function RowChart({ row }) {
       // Only a missing reform value reads as a withdrawal; a missing baseline
       // (an item the reform introduces) simply shows no bar.
       withdrawn: series === "reform" && !hasValue,
+      note: series === "baseline" ? row.baselineNote : row.reformNote,
     };
   });
   return (
@@ -186,17 +203,9 @@ function AxisChart() {
   );
 }
 
-function Note({ who, children }) {
-  if (!children) return null;
-  return (
-    <span>
-      <span className="font-medium text-slate-600">{who}:</span> {children}
-    </span>
-  );
-}
-
 // Current law against the reform, one item per row: a grey and a teal bar on
-// a shared 0–50% scale, the value past each bar, and the change in points.
+// a shared 0–50% scale, the value past each bar (with any short note), and
+// the change in points.
 // `rows`: [{ key, label, baseline, reform, baselineNote?, reformNote? }] with
 // rates as fractions; a null reform value marks a withdrawn item.
 export default function RateChangeChart({ rows }) {
@@ -232,12 +241,6 @@ export default function RateChangeChart({ rows }) {
               <div aria-hidden="true">
                 <RowChart row={row} />
               </div>
-              {row.baselineNote || row.reformNote ? (
-                <p className="flex flex-col gap-0.5 text-xs leading-5 text-slate-500 sm:flex-row sm:flex-wrap sm:gap-x-4" style={{ paddingLeft: MARGIN.left }}>
-                  <Note who="Current law">{row.baselineNote}</Note>
-                  <Note who="Reform">{row.reformNote}</Note>
-                </p>
-              ) : null}
             </div>
           );
         })}

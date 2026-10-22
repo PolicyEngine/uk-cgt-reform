@@ -188,32 +188,33 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
           <YieldChart steps={split.steps} />
           <Notes>
             <p>
-              The main rates come first, then residential property gains, then withdrawing
-              Business Asset Disposal <SourceLink href={BADR_GUIDANCE}>Relief</SourceLink>. Each segment is what that change adds once the ones
-              before it are in place, with no behavioural response and at the central elasticity.
+              The bars add the main rates first, then residential property gains, then withdrawing
+              Business Asset Disposal <SourceLink href={BADR_GUIDANCE}>Relief</SourceLink>.
+            </p>
+            <p>Each segment is what that change adds once the ones before it are in place.</p>
+            {validation.badr_gains_bn > 0 ? (
+              <p>
+                {dataset.shortLabel} charges the relief&apos;s qualifying gains on their own schedule; the{" "}
+                <TabLink onNavigate={onNavigate} tab="baseline" section="benchmarks">
+                  Baseline
+                </TabLink>{" "}
+                tab compares them with HMRC&apos;s{" "}
+                <SourceLink href={HMRC_TABLE_4}>statistics</SourceLink>.
+              </p>
+            ) : (
+              <p>
+                {dataset.shortLabel} records no gains that qualify for the relief, so withdrawing it
+                changes nothing here.
+              </p>
+            )}
+            <p>
+              Equalising the rates but keeping the relief changes CGT revenue by{" "}
+              {formatSignedBn(keptRelief.static_cgt_change_bn, 1)} with no behavioural response and{" "}
+              {formatSignedBn(keptRelief.central_cgt_change_bn, 1)} at the central elasticity.
             </p>
             <p>
-          {validation.badr_gains_bn > 0 ? (
-            <>
-              On {dataset.shortLabel}, the relief&apos;s qualifying gains are charged on their own
-              schedule; the{" "}
-              <TabLink onNavigate={onNavigate} tab="baseline" section="benchmarks">
-                Baseline
-              </TabLink>{" "}
-              tab compares them with HMRC&apos;s{" "}
-              <SourceLink href={HMRC_TABLE_4}>statistics</SourceLink>.{" "}
-            </>
-          ) : (
-            <>
-              {dataset.shortLabel} records no gains that qualify for the relief, so withdrawing it
-              changes nothing here.{" "}
-            </>
-          )}
-          Equalising the rates while keeping the relief at current law changes CGT revenue by{" "}
-          {formatSignedBn(keptRelief.static_cgt_change_bn, 1)} before behaviour and{" "}
-          {formatSignedBn(keptRelief.central_cgt_change_bn, 1)} at the central elasticity.{" "}
-          <TabLink onNavigate={onChooseCustom}>Custom</TabLink> rates scores any rate for the
-          relief, or withdraws it, for every year.
+              <TabLink onNavigate={onChooseCustom}>Custom</TabLink> rates can score any rate for the
+              relief, or withdraw it.
             </p>
           </Notes>
         </Card>
@@ -310,18 +311,17 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
                 label: "Business Asset Disposal Relief",
                 baseline: BASELINE_SCHEDULE_RATES.badr.rate,
                 reform: schedules.badr.withdrawn ? null : schedules.badr.rate,
-                baselineNote: `up to a ${badrLimitLabel(BASELINE_SCHEDULE_RATES.badr.lifetime_limit)} lifetime limit`,
-                reformNote: schedules.badr.withdrawn
-                  ? "qualifying gains, Investors' Relief included, take the main rates above"
-                  : undefined,
+                baselineNote: `${badrLimitLabel(BASELINE_SCHEDULE_RATES.badr.lifetime_limit)} lifetime limit`,
+                reformNote: schedules.badr.withdrawn ? "gains pay the main rates" : undefined,
               },
             ]}
           />
           <RateChangeCaption
             items={[
-              `Residential property gains take the same rates as the main ones.${recorded(validation.residential_property_gains_bn)}`,
               <>
-                The annual exempt <SourceLink href={EXEMPT_AMOUNT}>amount</SourceLink> stays £3,000.
+                Residential property gains take the same rates, and the annual exempt{" "}
+                <SourceLink href={EXEMPT_AMOUNT}>amount</SourceLink> stays £3,000.
+                {recorded(validation.residential_property_gains_bn)}
               </>,
             ]}
           />
