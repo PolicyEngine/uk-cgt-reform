@@ -85,7 +85,7 @@ function Dashboard() {
       </header>
 
       <main className="relative z-[1] mx-auto max-w-[96rem] px-6 py-10 md:px-8 md:py-12">
-        <div className="max-w-4xl animate-[fadeIn_0.4s_ease-out]">
+        <div className="animate-[fadeIn_0.4s_ease-out]">
           <p className="text-lg leading-8 text-slate-800">
             This dashboard estimates how changing UK capital gains tax rates would affect
             government revenue and household incomes. Its headline reform
