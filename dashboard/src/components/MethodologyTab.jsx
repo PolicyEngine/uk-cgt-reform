@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { getBenchmarks, getDatasetInfo, getMetadata } from "../lib/dataHelpers";
+import { getBenchmarks, getDatasetInfo, getFirstYear, getMetadata } from "../lib/dataHelpers";
 import { formatPct, formatPublished } from "../lib/formatters";
 import { TabLink } from "./controls";
 import SectionHeading from "./SectionHeading";
@@ -69,10 +69,20 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
   const atCentral = responseTo(0.24, 0.34, central);
   const atOfficial = responseTo(0.24, 0.34, official);
 
+  const firstYear = getFirstYear(data);
+  const lastYear = data.budget.at(-1).year;
+
   return (
     <div className="space-y-6">
       <section className="section-card scroll-mt-24" id="pathway">
         <SectionHeading title="Data and simulation" />
+        <p className="mt-2 text-sm leading-6 text-slate-600">
+          The estimates come from{" "}
+          <ExternalLink href="https://policyengine.org">PolicyEngine UK</ExternalLink>, run on{" "}
+          {dataset.shortLabel} for {firstYear} to {lastYear}, with the behavioural response taken
+          from <ExternalLink href={CENTAX_REPORT}>Advani, Lonsdale &amp; Summers (CenTax, 2024)</ExternalLink>
+          .
+        </p>
         <ul className="mt-2 list-disc space-y-2 pl-5 text-sm leading-6 text-slate-600">
           <li>
             <strong>The dataset.</strong> {dataset.label}: {dataset.producer}. Pinned input{" "}

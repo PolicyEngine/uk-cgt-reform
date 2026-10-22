@@ -7,8 +7,7 @@ import BenchmarksTab from "../src/components/BenchmarksTab";
 import MethodologyTab from "../src/components/MethodologyTab";
 import PolicyEngineHeader from "../src/components/PolicyEngineHeader";
 import ReformTab from "../src/components/ReformTab";
-import { getDatasetInfo, getFirstYear } from "../src/lib/dataHelpers";
-import { InfoTip } from "../src/components/controls";
+import { getDatasetInfo } from "../src/lib/dataHelpers";
 import results from "../public/data/cgt_equalisation_results.json";
 
 // Bundled at build time: a runtime fetch() 404s when the app is served
@@ -104,45 +103,6 @@ function Dashboard() {
             .
           </p>
         </div>
-        <dl className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-          {[
-            {
-              label: "Model",
-              value: (
-                <a href="https://policyengine.org" target="_blank" rel="noreferrer" className="underline decoration-1 underline-offset-2 hover:opacity-80">
-                  PolicyEngine UK
-                </a>
-              ),
-            },
-            {
-              label: "Data",
-              value: dataset.shortLabel,
-              tip: "PolicyEngine's dataset records what kind of asset each gain came from and which gains qualify for Business Asset Disposal Relief.",
-            },
-            {
-              label: "Elasticities",
-              value: (
-                <a
-                  href="https://centax.org.uk/wp-content/uploads/2024/10/AdvaniLonsdaleSummers2024_CGTReform.pdf"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline decoration-1 underline-offset-2 hover:opacity-80"
-                >
-                  Advani, Lonsdale &amp; Summers (CenTax, 2024)
-                </a>
-              ),
-            },
-            { label: "Years", value: `${getFirstYear(data)} to ${data.budget.at(-1).year}` },
-          ].map((fact) => (
-            <div key={fact.label} className="min-w-0 rounded-xl border border-slate-200 bg-white/70 px-3 py-3 sm:px-4">
-              <dt className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
-                {fact.label}
-                {fact.tip ? <InfoTip label={`About the ${fact.label.toLowerCase()}`}>{fact.tip}</InfoTip> : null}
-              </dt>
-              <dd className="mt-1 text-sm font-semibold text-slate-800">{fact.value}</dd>
-            </div>
-          ))}
-        </dl>
 
         <nav
           aria-label="Dashboard sections"
