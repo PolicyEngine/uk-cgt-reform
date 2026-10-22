@@ -135,8 +135,8 @@ def fake_results(spec=CANDIDATE, scale: float = 1.0) -> dict:
     return {
         "metadata": {
             "generated": "2026-09-21",
-            "policyengine_version": "4.22.3",
-            "policyengine_uk_version": "2.99.1",
+            "policyengine_version": "6.10.0",
+            "policyengine_uk_version": "2.132.6",
             "dataset": spec.uri,
             "dataset_key": spec.key,
             "dataset_label": spec.label,

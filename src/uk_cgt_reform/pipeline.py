@@ -329,8 +329,8 @@ def run_dataset(
         f"static (e=0) yield {static_2026:.2f}bn vs central (e={ELASTICITY}) "
         f"{central_2026:.2f}bn. Refusing to write results."
     )
-    # The response each case applies, as policyengine-uk itself resolves it
-    # (capital_gains_response_assumption, 2.134.0+), beside the convention.
+    # The response each case applies, resolved from the settings the engine
+    # reads (simulations.response_assumption), beside the convention.
     for row in sens:
         row["response_assumption"] = checked_assumption(
             equalisation_reform(row["e_retention"]), row["e_retention"], 2026
@@ -516,8 +516,8 @@ def run_dataset(
 
 
 def checked_assumption(reform: dict, elasticity: float, year: int) -> dict:
-    """policyengine-uk's resolution of the response ``reform`` applies in
-    ``year`` (``simulations.response_assumption``), checked against the case
+    """The resolution of the response ``reform`` applies in ``year``
+    (``simulations.response_assumption``), checked against the case
     this repo meant: the retention-rate convention at ``elasticity`` (static at
     zero), the relief elasticity and separate-relief switch the case sets (only
     the official case has its own), no marginal-tax-rate elasticity and nothing
@@ -543,13 +543,17 @@ def checked_assumption(reform: dict, elasticity: float, year: int) -> dict:
 def run(output_dir: Path = DATA_DIR) -> dict:
     """Run the pipeline end-to-end on the registered dataset and write its
     results and the uprating audit."""
-    from policyengine_uk.utils.capital_gains import CapitalGainsResponseWarning
-
-    # Every case sets the retention-rate elasticity itself; a case that fell
-    # back to the deprecated MTR-only convention would warn, so fail instead.
-    # The filter is scoped to this run and restored when it returns.
+    # Every case sets the retention-rate elasticity itself. policyengine-uk
+    # 2.134.0+ warns (CapitalGainsResponseWarning) where a case falls back to
+    # the MTR-only convention, so on such an engine that warning fails the
+    # run; the pinned 2.132.6 raises on conflicting settings instead and has
+    # no such warning. The filter is scoped to this run and restored when it
+    # returns.
+    capital_gains = importlib.import_module("policyengine_uk.utils.capital_gains")
+    response_warning = getattr(capital_gains, "CapitalGainsResponseWarning", None)
     with warnings.catch_warnings():
-        warnings.simplefilter("error", CapitalGainsResponseWarning)
+        if response_warning is not None:
+            warnings.simplefilter("error", response_warning)
         return _run(output_dir)
 
 

@@ -126,9 +126,9 @@ def cumulative_factors(
 
 
 # Reviewed source vintages for indices whose engine metadata did not name
-# a versioned release. Until policyengine-uk 2.141.6 the engine's
-# ``ons.population`` series carried only "ONS Population Projections" and the
-# ONS homepage (it now cites the OBR release and the ONS 2022-based
+# a versioned release. On the pinned policyengine-uk 2.132.6 the engine's
+# ``ons.population`` series carries only "ONS Population Projections" and the
+# ONS homepage (2.141.6 and later cite the OBR release and the ONS 2022-based
 # projections); its values were set by
 # policyengine-uk PR #1305 (commit b9efbaf8, 2025-08-08) from the OBR's
 # long-term economic determinants published with the March 2025 EFO, which
@@ -155,10 +155,10 @@ REVIEWED_VINTAGES: dict[str, dict] = {
             "pull_request": 1305,
             "commit": "b9efbaf8",
             "note": (
-                "Engine metadata cited 'ONS Population Projections' with an "
-                "unversioned href until policyengine-uk 2.141.6, which cites the "
-                "OBR release and the ONS 2022-based projections; the March 2026 "
-                "EFO refresh (PR #1514) left this series unchanged."
+                "Engine metadata cites 'ONS Population Projections' with an "
+                "unversioned href on policyengine-uk 2.132.6 (2.141.6 and later "
+                "cite the OBR release and the ONS 2022-based projections); the "
+                "March 2026 EFO refresh (PR #1514) left this series unchanged."
             ),
         },
         "values_of_record": {

@@ -47,20 +47,22 @@ FLAT_30 = {"basic_rate": 0.18, "higher_rate": 0.30, "additional_rate": 0.30}
 def context(**overrides):
     base = {
         "base_year": 2024,
-        "projection_fingerprint": "1b0cd0dff144",
-        "policyengine_uk_version": "2.99.1",
-        "policyengine_version": "4.22.3",
-        "policyengine_core_version": "3.32.6",
+        "projection_fingerprint": "fc5e9a879bce",
+        "policyengine_uk_version": "2.132.6",
+        "policyengine_version": "6.10.0",
+        "policyengine_core_version": "3.33.3",
         "code_fingerprint": "c0dec0dec0de",
         "exempt_amounts": {y: 3_000.0 for y in (2024, *YEARS)},
         "entrant_ceilings": {y: 3_222.0 for y in YEARS},
         "baseline_rates": {"basic_rate": 0.18, "higher_rate": 0.24, "additional_rate": 0.24},
         "baseline_badr": {"withdrawn": False, "rate": 0.18, "lifetime_limit": 1_000_000},
         "wrapper_certification": {
-            "compatibility_basis": "unverified_data_release_manifest_unavailable",
-            "certified_for_model_version": "2.99.1",
-            "data_build_id": "populace-uk-2023-dd68c73-4aa4b14-20260619T023711Z",
-            "built_with_model_version": "2.89.2",
+            "compatibility_basis": "exact_build_model_version",
+            "certified_for_model_version": "2.132.6",
+            "data_build_id": "microcosm-uk-2024-25-national-20261019T083323Z-6cba5d71",
+            "built_with_model_version": "2.132.6",
+            "bundle_id": "uk-6.10.0",
+            "certified_data_artifact_sha256": CANDIDATE.sha256,
         },
     }
     return {**base, **overrides}
@@ -294,14 +296,14 @@ def test_cache_key_tracks_every_input_and_nothing_else():
     req = validate_request({"dataset": CANDIDATE.key, "rates": FLAT_30})
     key = cache_key(req, context())
     assert key.startswith(
-        f"{CANDIDATE.key}__{CANDIDATE.digest}__1b0cd0dff144__2.99.1__4.22.3__3.32.6__c0dec0dec0de__"
+        f"{CANDIDATE.key}__{CANDIDATE.digest}__fc5e9a879bce__2.132.6__6.10.0__3.33.3__c0dec0dec0de__"
     )
     assert key.endswith(req.fingerprint)
     # Changes that must miss.
     assert cache_key(req, context(projection_fingerprint="other")) != key
-    assert cache_key(req, context(policyengine_uk_version="2.99.2")) != key
-    assert cache_key(req, context(policyengine_version="4.23.0")) != key
-    assert cache_key(req, context(policyengine_core_version="3.33.0")) != key
+    assert cache_key(req, context(policyengine_uk_version="2.132.7")) != key
+    assert cache_key(req, context(policyengine_version="6.10.1")) != key
+    assert cache_key(req, context(policyengine_core_version="3.33.4")) != key
     assert cache_key(req, context(code_fingerprint="deadbeef0000")) != key
     other_rates = validate_request(
         {"dataset": CANDIDATE.key, "rates": {**FLAT_30, "higher_rate": 0.29}}
@@ -408,13 +410,11 @@ def test_assemble_response_has_the_pipeline_shapes():
     assert md["reform_dict"] == req.reform()
     assert md["reform_fingerprint"] == req.fingerprint
     assert md["baseline_rates"] == ctx["baseline_rates"]
-    assert md["wrapper_certification"]["compatibility_basis"] == (
-        "unverified_data_release_manifest_unavailable"
-    )
+    assert md["wrapper_certification"]["compatibility_basis"] == "exact_build_model_version"
     assert md["elasticity"] == 1.0
     assert md["years"] == list(YEARS)
     assert list(md["exempt_amount_gbp"]) == labels
-    assert md["projection"] == {"fingerprint": "1b0cd0dff144", "base_year": 2024}
+    assert md["projection"] == {"fingerprint": "fc5e9a879bce", "base_year": 2024}
     assert md["timing"]["total_seconds"] == pytest.approx(30.0)
     assert md["cache"] == {
         "hit": False,

@@ -43,7 +43,7 @@ from 19 October; a 15 October cut (sha256 `04a496f2…`) sat between the two
 on Hugging Face and was never run here. Before 19 October the analysis ran
 the staged national line from microcosm main c5a1cba8 (microcosm#1045), and
 before that the microcosm#979 PR-head build. The release manifest certifies
-the file for policyengine-uk 2.132.6; this repo runs it on a later engine
+the file for policyengine-uk 2.132.6, the engine this repo runs it on
 (see [Run](#run)). Earlier versions of this repo also ran the Enhanced FRS
 2024-25 and laid the two side by side; the comparison is retired now the
 analysis uses Microcosm alone.
@@ -90,8 +90,8 @@ option scores any rate and lifetime limit for the relief, or withdraws it, for e
 
 ## Results (2026-27 unless stated)
 
-Engine policyengine-uk 2.141.9, wrapper policyengine.py 4.22.3, projection
-fingerprint `6c3580c6082e`.
+Engine policyengine-uk 2.132.6, wrapper policyengine.py 6.10.0, projection
+fingerprint `fc5e9a879bce`.
 
 | | Microcosm UK 2024-25 | External benchmark |
 |---|---:|---|
@@ -115,8 +115,8 @@ fingerprint `6c3580c6082e`.
 | Yield, CenTax upper (retention 2.0) | −£0.8bn | none |
 | Yield, official HMRC/OBR elasticities (retention 3.6; 1.4 for gains qualifying for BADR) | −£9.6bn | none |
 | Five-year total, 2026-27 to 2030-31 | +£56.3bn | none |
-| Top income quintile, net income change | −5.4% (−£7,697/household) | none |
-| Lowest income quintile, net income change | −0.02% (−£3) | none |
+| Top income quintile, net income change | −5.4% (−£7,703/household) | none |
+| Lowest income quintile, net income change | −0.04% (−£8) | none |
 
 Benchmarks are outturns for the tax year stated (HMRC Capital Gains Tax
 statistics, 2026 release, Tables 1, 2 and 8) or other institutions'
@@ -151,7 +151,7 @@ Two features of the baseline matter before the reform is applied:
    microcosm#979 build) by HMRC's count of
    taxpayers in the £3,000 to £5,999 band (73k in 2024-25). The gate ran on
    policyengine-uk 2.132.6; this repo's uprating audit counts 7.1k entrants
-   in 2030-31 on 2.141.9 (`baseline_by_year` in `data/cgt_uprating_audit.json`). An earlier
+   in 2030-31 on the same engine (`baseline_by_year` in `data/cgt_uprating_audit.json`). An earlier
    build, spine assessment v20, built every gainer beyond HMRC's taxpayer
    count with gains capped at exactly £3,000 (microcosm's `cgt_imputation`
    stage, approximation 4), so 10.8 million people entered in 2026 holding
@@ -217,11 +217,11 @@ external figure with its source, locator, scope, year and basis.
   and 2028-29 with this repo's liabilities a year earlier. The official case
   applies 3.6 to main-rate gains and 1.4 to gains qualifying for the relief,
   in every row. For the relief at 19% HMRC shows +£135m
-  and +£180m and this repo gives +£156m and +£160m at the official
-  elasticity; at 23%, +£635m and +£840m against +£742m and +£765m. For +10
+  and +£180m and this repo gives +£155m and +£160m at the official
+  elasticity; at 23%, +£635m and +£840m against +£741m and +£764m. For +10
   points on the higher rate HMRC shows −£2,060m and −£3,565m; at the official
-  elasticity this repo gives −£4,460m and −£4,643m, while at the central
-  elasticity the change raises +£5,277m on 2026-27 liabilities. The relief
+  elasticity this repo gives −£4,460m and −£4,641m, while at the central
+  elasticity the change raises +£5,279m on 2026-27 liabilities. The relief
   rows move only claimants whose gains all qualify: every claimant with
   main-rate gains as well has already passed the £1m lifetime limit, so their
   next pound of qualifying gain is taxed at the main rates.
@@ -236,7 +236,7 @@ external figure with its source, locator, scope, year and basis.
   the higher rate +1 point row read −£533m and −£173m in consecutive years at
   the official elasticity. The engine now steps by 0.1% of the gain above £1m
   and divides by the step it stored (PolicyEngine/policyengine-uk#1980). On
-  that build the row then read −£245m and −£253m (−£249m and −£256m on the
+  that build the row then read −£245m and −£253m (−£250m and −£257m on the
   current release), and the central estimate for equalisation rose by £0.2bn.
   On the staged build the £561m record had a weight of 18.9 (£10.6bn of gains,
   £2.5bn or 8.7% of baseline CGT), and without it equalisation would have
@@ -280,25 +280,18 @@ Left out by decision: the Office of Tax Simplification's 2020 static figure
   **native microdf weighted operations** (`MicroSeries.sum/mean/median/count`,
   weighted `groupby`) — no manual weight arithmetic.
 
-### Wrapper version (load-bearing)
+### Versions
 
-policyengine.py 5.0.3 onwards certifies the UK bundle against one pinned
-policyengine-uk (2.90.2 in 6.0.0) and refuses to import with any other
-version installed. The asset-type CGT schedules need policyengine-uk 2.99.0
-or later, so the pipeline pins the wrapper to the 4.x series (4.22.3 is the
-last release). `pyproject.toml` carries the pins.
-
-4.22.3 is only lenient when it cannot see the data-release manifest. With
-`HUGGING_FACE_TOKEN` set it fetches the live manifest from Hugging Face on
-first import, finds the bundled populace-uk-2023 data certified for
-policyengine-uk 2.89.2 rather than the pinned release, and raises. Without the token the
-manifest is unavailable and the wrapper falls back to its bundled
-certification (basis `unverified_data_release_manifest_unavailable`) and
-runs against the installed engine. Every committed result was produced that
-way, so `simulations.import_wrapper` performs the first import with the
-variable removed and restores it straight after (downloads read it at call
-time); the basis is recorded in the explorer's `metadata.wrapper_certification`
-and in the Modal Volume's `manifest.json`.
+The pipeline runs on policyengine.py 6.10.0, which pins policyengine-uk
+2.132.6 and policyengine-core 3.33.3: the versions the Microcosm UK 2024-25
+release was built with and is certified for. The wrapper requests the
+dataset by its bundled name (`microcosm_uk_2024_25`), verifies the file's
+sha256 against its bundle, and the pipeline checks that the bundle certifies
+the same digest this repo pins. The certification basis is recorded in the
+explorer's `metadata.wrapper_certification` and in the Modal Volume's
+`manifest.json`: `exact_build_model_version` when `HUGGING_FACE_TOKEN` lets
+the wrapper check the live data-release manifest, `built_with_model_package`
+(the bundled certification) otherwise. `pyproject.toml` carries the pins.
 
 ### Behavioural response (CenTax's elasticities, in CenTax's convention)
 
@@ -396,11 +389,11 @@ reading the installed engine's index map and growth parameters:
 
 | | 2026 | 2027 | 2028 | 2029 | 2030 | source |
 |---|---:|---:|---:|---:|---:|---|
-| gains (GDP per capita, `yoy_growth.capital_gains` from 2.134) | 1.074 | 1.109 | 1.143 | 1.177 | 1.214 | OBR EFO March 2026, Table A.1 |
+| gains (GDP per capita, `yoy_growth.capital_gains`) | 1.074 | 1.109 | 1.143 | 1.177 | 1.214 | OBR EFO March 2026, Table A.1 |
 | weights (population) | 1.011 | 1.015 | 1.019 | 1.023 | 1.028 | OBR long-term economic determinants, March 2025 EFO (ONS 2022-based projections); see below |
 | CPI (sensitivity, not applied) | 1.058 | 1.079 | 1.100 | 1.123 | 1.145 | OBR EFO March 2026, Table A.1 |
 
-Cumulative factors from the 2024 base on policyengine-uk 2.141.9; the
+Cumulative factors from the 2024 base on policyengine-uk 2.132.6; the
 committed `data/cgt_uprating_audit.json` carries the year-on-year rates,
 the parameter references, the OBR March 2026 CGT receipts path (unbridged:
 receipts are not gains and lag them), the entrant ceilings (the base-year
@@ -409,10 +402,10 @@ baseline gains, taxpayer counts, liability and entrants.
 `uk-cgt-reform-build --audit-only` rewrites the factor table and carries
 the measured baselines forward when the projection fingerprint is unchanged.
 
-Until policyengine-uk 2.141.6 the engine's population series named only
-"ONS Population Projections" with an unversioned link; it now cites the OBR
-release and the ONS 2022-based projections, and the audit still records a
-reviewed vintage beside it: the values were set by policyengine-uk PR #1305 (commit `b9efbaf8`) from the OBR's
+The engine's population series names only "ONS Population Projections" with
+an unversioned link on the pinned 2.132.6 (policyengine-uk 2.141.6 and later
+cite the OBR release and the ONS 2022-based projections), so the audit
+records a reviewed vintage beside it: the values were set by policyengine-uk PR #1305 (commit `b9efbaf8`) from the OBR's
 *Long-term economic determinants - March 2025 Economic and fiscal outlook*
 (published 19 June 2025), which adopt the ONS 2022-based national population
 projections; the March 2026 EFO refresh left the series unchanged. The audit
@@ -656,32 +649,27 @@ uk-cgt-reform-build                       # the results and the uprating audit
 uk-cgt-reform-build --audit-only          # the projection audit alone
 ```
 
-Requires a Hugging Face token with access to PolicyEngine's private repos,
-exported as `HF_TOKEN` (the variable `huggingface_hub` reads for the pinned
-downloads). Do not also export `HUGGING_FACE_TOKEN` while running on the pinned
-engine: policyengine.py 4.22.3 uses that variable to fetch the data package's
-current release manifest at import, and since 23 September 2026 that manifest
-certifies only newer policyengine-uk releases, so the import refuses the pinned
-engine.
-Without it the wrapper records its bundled default dataset as
-`unverified_data_release_manifest_unavailable`, which does not touch these
-runs: the dataset is pinned explicitly by revision and digest.
-`pyproject.toml` pins policyengine-uk 2.141.9. 2.104.0 was the first release
-with the precise marginal rate on large gains and the separate BADR elasticity
-(PolicyEngine/policyengine-uk#1980); 2.134.0 makes the retention-rate
-elasticity 1.0 by default (so the static case sets it to 0 itself) and adds
-`capital_gains_response_assumption`, whose resolution of each case the results
-record (`metadata.capital_gains_response_assumption` and each sensitivity
-row's `response_assumption`); the build refuses to write results if the
-engine resolves a case differently or warns with `CapitalGainsResponseWarning`.
-The record's `sources` are reported by value: a parameter equal to current law
-shows as `default` even when the case sets it. The central case sets the
-elasticity to 1.0 itself, which equals the engine default, so its record reads
-`"elasticity": "default"`.
-The dataset was built with 2.132.6, and its release manifest certifies it
-for that release (and policyengine-core 3.33.3) only; it runs here on the
-pinned 2.141.9 (2.100.0 was the first release whose local-authority enum
-carries the April 2023 unitary authorities it records). Each release can move the projection fingerprint, so
+Requires a Hugging Face token with access to PolicyEngine's private repos.
+`huggingface_hub` fetches the pinned file (its stored token or `HF_TOKEN`);
+export the token as `HUGGING_FACE_TOKEN` too, so the wrapper checks its
+certification against the live data-release manifest. `pyproject.toml` pins
+policyengine.py 6.10.0 with policyengine-uk 2.132.6 and policyengine-core
+3.33.3, the versions the dataset was built with and is certified for.
+2.132.6 carries the residential-property and BADR schedules, the precise
+marginal rate on large gains and the separate BADR elasticity
+(PolicyEngine/policyengine-uk#1980). Its retention-rate elasticity defaults
+to 0 (1.0 from 2.134.0), and every case sets it explicitly, the static case
+included. policyengine-uk's own report of the response
+(`capital_gains_response_assumption`) arrives only in 2.134.0, so
+`simulations.response_assumption` resolves each case from the settings the
+engine reads, in the same shape, and the results record it
+(`metadata.capital_gains_response_assumption` and each sensitivity row's
+`response_assumption`); the build refuses to write results if a case
+resolves differently from the one this repo sets. The record's `sources`
+are reported by value: a parameter equal to current law shows as `default`
+even when the case sets it, so on 2.132.6 the static case's elasticity reads
+`"default"` and the central case's `"override"`.
+Each release can move the projection fingerprint, so
 changing the pin is a deliberate re-pin that regenerates the results. A run needs the per-year builds, twenty-four stored simulations (baseline,
 central and static reform for every year, three more sensitivity cases, the
 CenTax counterfactual pair and four schedule-split steps) and forty-two

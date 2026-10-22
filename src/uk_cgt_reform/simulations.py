@@ -4,14 +4,16 @@ All simulations are built through the ``policyengine`` package (the
 policyengine.py wrapper), never by constructing
 ``policyengine_uk.Microsimulation`` objects directly:
 
-- ``pe.uk.ensure_datasets`` materialises a published single-year dataset
-  file, referenced as a pinned ``hf://owner/repo/path@revision`` URI, as
-  one per-year dataset file per simulated year. The pipeline verifies the
-  source file's sha256 against the digest recorded here before the wrapper
-  builds anything, so a re-tagged or re-uploaded file cannot pass silently.
-  Simulations run on those files unmodified: this repo does no local
-  reweighting and no local editing of inputs, since calibration and
-  imputation belong upstream in the dataset producer.
+- ``pe.uk.ensure_datasets`` materialises the published single-year
+  dataset as one per-year dataset file per simulated year. The dataset is
+  the release policyengine.py 6.10.0 bundles and certifies for its pinned
+  policyengine-uk (2.132.6): it is requested by its logical name, the
+  wrapper verifies the file's sha256 against the bundle, and the pipeline
+  checks that digest against the one recorded here as well, so a re-tagged
+  or re-uploaded file cannot pass silently. Simulations run on those files
+  unmodified: this repo does no local reweighting and no local editing of
+  inputs, since calibration and imputation belong upstream in the dataset
+  producer.
 - ``policyengine.Simulation`` runs the model for one (dataset-year,
   policy) pair, with deterministic ids so policyengine.py's
   output-dataset cache (``<id>.h5`` beside the input dataset file) lets a
@@ -25,95 +27,60 @@ relief breakdown that policyengine-uk 2.99.0 charges on separate schedules.
 It is a single engine-year file (``time_period`` 2024)
 that the engine copies forward and uprates; see ``uprating_audit``.
 
-Wrapper version (load-bearing): policyengine.py 5.0.3 onwards certifies
-the UK bundle against a pinned policyengine-uk (2.90.2 in 6.0.0) and
-refuses to import with any other version installed. The asset-type CGT
-schedules need policyengine-uk 2.99.0 or later, so the pipeline pins the
-wrapper to the 4.x series (4.22.3 is the last release), which warns on the
-mismatch but runs against the installed engine.
+Versions: the pipeline runs on policyengine.py 6.10.0, which pins
+policyengine-uk 2.132.6 and policyengine-core 3.33.3, the versions the
+Microcosm UK 2024-25 release was built with and is certified for. 2.132.6
+already charges the residential-property schedule, carries
+``capital_gains_badr`` and the four
+``gov.simulation.capital_gains_responses`` settings this repo sets.
 
-CRITICAL — why reforms go through ``Policy.simulation_modifier`` and not a
-plain reform dict: policyengine.py applies a plain-dict reform as
-post-construction parameter updates on an unreformed
-``policyengine_uk.Microsimulation`` and never registers the baseline
-branch, so ``relative_capital_gains_mtr_change``'s
-``get_branch("baseline")`` forks the REFORM simulation and the CGT
-behavioural elasticity is silently zero (verified empirically: e=0 and
-e=-0.7 produced identical revenue). The fix uses policyengine.py's own
-first-class ``Policy.simulation_modifier`` hook to (a) register the
-baseline branch — ``Microsimulation.clone()`` gives the baseline its own
-unreformed parameter tree — and (b) apply the same parameter updates the
-wrapper would. Each policyengine.py Simulation covers a single year, so
-the shared-system neutralisation bug never bites. The pipeline still
-asserts that static (e=0) and central (e=-0.7) runs differ before writing
-results.
+Reforms go through ``Policy.simulation_modifier`` rather than a plain
+reform dict, so every case applies its parameter updates the same way (to
+the reform simulation's own parameter tree, after construction) and the
+simulation ids stay those of the cached outputs. policyengine-uk measures
+the CGT behavioural response against ``simulation.baseline``, which it
+builds as an unreformed clone; the modifier also registers that baseline
+as the ``baseline`` branch. Each policyengine.py Simulation covers a single
+year. The pipeline asserts that static (e=0) and central (e=1.0) runs
+differ before writing results.
 """
 
 from __future__ import annotations
 
 import hashlib
 import importlib
-import os
-import sys
+import shutil
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
-#: The variable policyengine.py reads to fetch the data-release manifest.
-WRAPPER_TOKEN_VARIABLE = "HUGGING_FACE_TOKEN"
 
+def import_wrapper():
+    """Import ``policyengine`` (the wrapper).
 
-def import_wrapper(_import=None):
-    """Import ``policyengine`` (the wrapper) the way this pipeline needs it.
-
-    On first import policyengine.py 4.22.3 fetches the UK data-release
-    manifest from Hugging Face when ``HUGGING_FACE_TOKEN`` is set. That
-    manifest certifies the bundled populace-uk-2023 data for policyengine-uk
-    2.89.2, not the 2.99.x this pipeline runs on (see the module docstring),
-    and the import raises. Without the token the manifest is unavailable and
-    the wrapper falls back to its bundled certification with basis
-    ``unverified_data_release_manifest_unavailable`` and runs against the
-    installed engine, which is how every committed result was produced. So
-    the first import happens with the variable removed from the environment,
-    and it is restored immediately after: downloads read it at call time.
-    :func:`wrapper_certification` exposes the basis for results metadata.
-
-    Observed 2026-09-23 (policyengine 4.22.3, policyengine-uk 2.99.1) with
-    ``HUGGING_FACE_TOKEN`` set to a token that can read
-    ``policyengine/populace-uk-private``, locally and in a Modal container::
-
-        policyengine/tax_benefit_models/uk/model.py:333   uk_latest = PolicyEngineUKLatest()
-        policyengine/tax_benefit_models/common/model_version.py:114
-            certify_data_release_compatibility(...)
-        policyengine/provenance/manifest.py:505
-        ValueError: Data release manifest is not certified for the runtime
-        model version 2.99.1 in country 'uk'.
-
-    ``get_data_release_manifest`` reads the variable inside the function, so
-    popping it around the import affects only that fetch. A token without
-    access to the private data repo gets a 401 on the manifest, which is
-    the lenient path, so the failure does not reproduce with such a token.
+    With ``HUGGING_FACE_TOKEN`` set the wrapper checks its bundled
+    certification against the data release manifest on Hugging Face (basis
+    ``exact_build_model_version``); without it, it uses the bundled
+    certification (``built_with_model_package``). Both certify the pinned
+    policyengine-uk for the Microcosm UK 2024-25 release;
+    :func:`wrapper_certification` records which basis a run used.
     """
-    if "policyengine" in sys.modules:
-        return sys.modules["policyengine"]
-    do_import = _import or (lambda: importlib.import_module("policyengine"))
-    token = os.environ.pop(WRAPPER_TOKEN_VARIABLE, None)
-    try:
-        return do_import()
-    finally:
-        if token is not None:
-            os.environ[WRAPPER_TOKEN_VARIABLE] = token
+    return importlib.import_module("policyengine")
 
 
 def wrapper_certification() -> dict:
     """How the wrapper certified the installed engine against its bundled
-    data release (``compatibility_basis`` is the field to read)."""
+    data release (``compatibility_basis`` is the field to read), and the
+    release bundle it certified."""
     pe = import_wrapper()
     certification = pe.uk.model.data_certification
+    bundle = pe.uk.model.release_bundle
     return {
         "compatibility_basis": certification.compatibility_basis,
         "certified_for_model_version": certification.certified_for_model_version,
         "data_build_id": certification.data_build_id,
         "built_with_model_version": certification.built_with_model_version,
+        "bundle_id": bundle.get("bundle_id"),
+        "certified_data_artifact_sha256": bundle.get("certified_data_artifact_sha256"),
     }
 
 
@@ -191,7 +158,7 @@ CANDIDATE = DatasetSpec(
         "The build's projection fence bounds the gainers that uprating carries over the "
         "frozen exempt amount by 2030 at 7.0k, against HMRC's 73k taxpayers with gains of "
         "£3,000 to £5,999 in 2024-25 (Table 2.1a); this repo's uprating audit counts "
-        "7.1k on policyengine-uk 2.141.9."
+        "7.1k on policyengine-uk 2.132.6."
     ),
     columns=(
         "It carries capital_gains, capital_gains_residential_property (the residential "
@@ -231,17 +198,64 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
-def materialise_source(spec: DatasetSpec) -> Path:
-    """Download (or reuse from the Hugging Face cache) the pinned source file
-    and verify its digest against the registry."""
-    import_wrapper()
-    from policyengine.provenance.dataset_sources import materialize_dataset_source
+def bundle_check(spec: DatasetSpec) -> dict:
+    """The wrapper's bundle entry for ``spec``, checked against the registry:
+    the bundle must certify the same file (same sha256) this repo pins."""
+    pe = import_wrapper()
+    manifest = pe.uk.model.release_manifest
+    entry = manifest.datasets.get(spec.key)
+    if entry is None:
+        raise RuntimeError(
+            f"policyengine.py {manifest.policyengine_version} bundles no dataset named "
+            f"{spec.key}; known: {sorted(manifest.datasets)}."
+        )
+    if entry.sha256 != spec.sha256:
+        raise RuntimeError(
+            f"policyengine.py's bundle certifies {spec.key} with sha256 {entry.sha256}, "
+            f"but this repo pins {spec.sha256}. Refusing to simulate on another file."
+        )
+    return {"revision": entry.revision, "sha256": entry.sha256}
 
-    path = Path(materialize_dataset_source(spec.uri))
+
+def _seed_from_hub(spec: DatasetSpec, destination: Path) -> None:
+    """Place the pinned file (``spec.uri``, at its commit) where the wrapper
+    looks for it, from the Hugging Face cache or a download through
+    ``huggingface_hub`` (which reads the stored or environment token). The
+    wrapper then finds a file with the bundle's digest and does not
+    download it again."""
+    from huggingface_hub import hf_hub_download
+
+    repo_path, revision = spec.uri.removeprefix("hf://").rsplit("@", 1)
+    owner, repo, filename = repo_path.split("/", 2)
+    cached = hf_hub_download(
+        repo_id=f"{owner}/{repo}",
+        filename=filename,
+        revision=revision,
+        repo_type="dataset",
+    )
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    partial = destination.with_suffix(destination.suffix + ".partial")
+    shutil.copyfile(cached, partial)
+    partial.replace(destination)
+
+
+def materialise_source(spec: DatasetSpec, data_folder: str | Path) -> Path:
+    """Materialise the pinned source file in ``data_folder`` through the
+    wrapper's bundle (which verifies the bundle's sha256) and verify its
+    digest against the registry as well."""
+    import_wrapper()
+    from policyengine.provenance.dataset_materialization import materialize_dataset
+
+    bundle_check(spec)
+    destination = Path(data_folder) / Path(spec.uri.rsplit("@", 1)[0]).name
+    if not destination.exists() or sha256_file(destination) != spec.sha256:
+        _seed_from_hub(spec, destination)
+    source = materialize_dataset("uk", spec.key, data_dir=Path(data_folder))
+    path = Path(source.path)
     digest = sha256_file(path)
     if digest != spec.sha256:
         raise RuntimeError(
-            f"Dataset {spec.key} at {spec.uri} has sha256 {digest}, expected "
+            f"Dataset {spec.key} at {path} has sha256 {digest}, expected "
             f"{spec.sha256}. Refusing to simulate on an unverified file."
         )
     return path
@@ -258,9 +272,9 @@ def ensure_uk_datasets(
     """
     pe = import_wrapper()
 
-    materialise_source(spec)
+    materialise_source(spec, data_folder)
     datasets = pe.uk.ensure_datasets(
-        datasets=[spec.uri],
+        datasets=[spec.key],
         years=list(years),
         data_folder=str(data_folder),
     )
@@ -270,16 +284,15 @@ def ensure_uk_datasets(
 def make_policy(reform: dict, name: str):
     """Wrap a ``{parameter_path: {start_date: value}}`` reform dict in a
     policyengine.py ``Policy`` whose ``simulation_modifier`` registers the
-    baseline branch (required for the CGT elasticity — see module
-    docstring) before applying the parameter updates."""
+    unreformed baseline as the ``baseline`` branch and applies the parameter
+    updates to the reform simulation (see the module docstring)."""
     import_wrapper()
     from policyengine.core.policy import Policy
     from policyengine_core.periods import period
 
     def modifier(sim):
-        # Register the baseline branch so the CGT behavioural response can
-        # measure the unreformed MTR (policyengine-uk's
-        # relative_capital_gains_mtr_change reads branches["baseline"]).
+        # The unreformed baseline policyengine-uk measures the CGT
+        # behavioural response against, registered as a branch too.
         sim.branches["baseline"] = sim.baseline
         for path, dates in reform.items():
             parameter = sim.tax_benefit_system.parameters.get_child(path)
@@ -292,33 +305,106 @@ def make_policy(reform: dict, name: str):
 
 _RESPONSE_SYSTEM = None
 
+#: The response settings under ``gov.simulation.capital_gains_responses``.
+RESPONSE_SETTINGS = "gov.simulation.capital_gains_responses"
+RESPONSE_SETTING_NAMES = (
+    "elasticity",
+    "mtr_elasticity",
+    "separate_badr_elasticity",
+    "badr_elasticity",
+)
 
-class _ResponseProbe:
-    """The one attribute ``capital_gains_response_assumption`` reads from a
-    simulation: its tax-benefit system, with a reform's parameters applied."""
 
-    def __init__(self, tax_benefit_system):
-        self.tax_benefit_system = tax_benefit_system
+def resolve_response(settings: dict, current_law: dict, year: int) -> dict:
+    """The realisation response that ``settings`` (each of
+    :data:`RESPONSE_SETTING_NAMES` in force in ``year``) select, against
+    ``current_law`` (the same settings unreformed), in the shape of
+    policyengine-uk's ``CapitalGainsResponseAssumption.to_dict()``.
+
+    policyengine-uk 2.132.6 applies the response in ``realisation_factors``:
+    main-rate gains scale by the retention-rate change to the power
+    ``elasticity``, gains qualifying for Business Asset Disposal Relief by
+    ``badr_elasticity`` when ``separate_badr_elasticity`` is true and by
+    ``elasticity`` otherwise, and a nonzero ``mtr_elasticity`` selects the
+    marginal-rate convention instead, raising if a retention-rate elasticity
+    in force is also nonzero. This resolves the same settings the same way.
+    It has no defaults to auto-resolve (2.132.6 raises instead), so
+    ``mtr_auto_resolved`` is always false and ``warnings`` empty.
+    """
+    main = float(settings["elasticity"])
+    mtr = float(settings["mtr_elasticity"])
+    separate = bool(settings["separate_badr_elasticity"])
+    badr = float(settings["badr_elasticity"]) if separate else main
+    changed = {
+        name: float(settings[name]) != float(current_law[name]) for name in RESPONSE_SETTING_NAMES
+    }
+
+    def source(name: str) -> str:
+        return "override" if changed[name] else "default"
+
+    sources = {
+        "elasticity": source("elasticity"),
+        "badr_elasticity": (
+            "override"
+            if changed["separate_badr_elasticity"] or changed["badr_elasticity"]
+            else "default"
+        )
+        if separate
+        else source("elasticity"),
+        "mtr_elasticity": source("mtr_elasticity"),
+        "separate_badr_elasticity": source("separate_badr_elasticity"),
+    }
+    if mtr != 0 and (main != 0 or badr != 0):
+        raise ValueError(
+            f"{RESPONSE_SETTINGS}: a retention-rate elasticity ({main:g}, BADR {badr:g}) "
+            f"and mtr_elasticity ({mtr:g}) cannot both be nonzero in {year}."
+        )
+    if mtr != 0:
+        convention = "mtr"
+    elif main == 0 and badr == 0:
+        convention = "static"
+    else:
+        convention = "retention"
+    return {
+        "period": str(int(year)),
+        "convention": convention,
+        "elasticity": 0.0 if mtr != 0 else main,
+        "badr_elasticity": 0.0 if mtr != 0 else badr,
+        "mtr_elasticity": mtr,
+        "separate_badr_elasticity": separate,
+        "sources": sources,
+        "mtr_auto_resolved": False,
+        "warnings": [],
+    }
+
+
+def _settings(system, year: int) -> dict:
+    from policyengine_core.periods import period
+
+    node = system.parameters.get_child(RESPONSE_SETTINGS)
+    instant = period(str(int(year))).start
+    return {name: node.children[name](instant) for name in RESPONSE_SETTING_NAMES}
 
 
 def response_assumption(reform: dict, year: int) -> dict:
     """The realisation response policyengine-uk applies under ``reform`` in
-    ``year``, as ``policyengine_uk.utils.capital_gains.
-    capital_gains_response_assumption`` (policyengine-uk 2.134.0+) resolves it:
-    the convention (``retention``, ``mtr`` or ``static``), the elasticities in
-    force and whether each is current law or set by the reform.
+    ``year``: the convention (``retention``, ``mtr`` or ``static``), the
+    elasticities in force and whether each is current law or set by the
+    reform.
 
     It is resolved on a clone of the engine's tax-benefit system with the
     reform's parameter updates applied exactly as :func:`make_policy`'s
     modifier applies them, so it does not depend on a simulation having run
-    (a cached one never builds its microsimulation). Raises where the engine
-    would, on settings that conflict.
+    (a cached one never builds its microsimulation). The pinned
+    policyengine-uk (2.132.6) has no report of its own
+    (``capital_gains_response_assumption`` arrives in 2.134.0), so it is
+    resolved by :func:`resolve_response` from the settings the engine reads.
+    Raises where the engine would, on settings that conflict.
     """
     global _RESPONSE_SYSTEM
     import_wrapper()
     from policyengine_core.periods import period
     from policyengine_uk import CountryTaxBenefitSystem
-    from policyengine_uk.utils.capital_gains import capital_gains_response_assumption
 
     if _RESPONSE_SYSTEM is None:
         _RESPONSE_SYSTEM = CountryTaxBenefitSystem()
@@ -327,7 +413,7 @@ def response_assumption(reform: dict, year: int) -> dict:
         parameter = system.parameters.get_child(path)
         for start, value in dates.items():
             parameter.update(value=value, start=period(start))
-    return capital_gains_response_assumption(_ResponseProbe(system), year).to_dict()
+    return resolve_response(_settings(system, year), _settings(_RESPONSE_SYSTEM, year), year)
 
 
 def run_simulation(dataset, policy=None, sim_id: str | None = None, *, persist: bool = True):

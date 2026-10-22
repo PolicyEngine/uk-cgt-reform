@@ -1,5 +1,5 @@
-"""The pipeline records policyengine-uk's own resolution of each case's
-realisation response (capital_gains_response_assumption, 2.134.0+) and
+"""The pipeline records the resolution of each case's realisation response
+(simulations.response_assumption, from the settings the engine reads) and
 refuses to write results when it differs from the case this repo sets."""
 
 import sys
@@ -33,7 +33,9 @@ def resolved(convention, elasticity, mtr=0.0, auto=False, warnings=(), badr=None
 
 
 def test_static_and_central_set_the_retention_elasticity_explicitly():
-    # The engine's default is now 1.0, so the static case must say 0 itself.
+    # Every case sets the retention elasticity itself, the static case too,
+    # so a change to the engine's default (1.0 from policyengine-uk 2.134.0)
+    # cannot move a case.
     assert equalisation_reform(0.0)[ELASTICITY_PARAMETER] == {"2026-01-01": 0.0}
     assert equalisation_reform(1.0)[ELASTICITY_PARAMETER] == {"2026-01-01": 1.0}
     for e in (0.0, 1.0):

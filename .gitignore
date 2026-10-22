@@ -6,6 +6,7 @@ __pycache__/
 build/
 dist/
 .venv/
+.venv*/
 .DS_Store
 data/policyengine_datasets/
 data/explore_results/
