@@ -224,11 +224,11 @@ export default function ReformTab({ data, datasetKey, onNavigate, anchor }) {
     },
   ];
   // What Calculate will do, for the panel's footer.
-  let footerStatus = { tone: "live", text: "Runs live, about 30 seconds; instant if run before." };
+  let footerStatus = { tone: "live", text: "About 30 seconds" };
   if (policy === "equalise") {
     footerStatus = equaliseEdited
-      ? { tone: "live", text: "Edited: will run live." }
-      : { tone: "instant", text: "Precomputed: shows instantly." };
+      ? { tone: "live", text: "Edited: about 30 seconds" }
+      : { tone: "instant", text: "Instant" };
   }
 
   return (
@@ -275,6 +275,7 @@ export default function ReformTab({ data, datasetKey, onNavigate, anchor }) {
                 running={inFlight}
                 status={footerStatus}
                 onRestore={policy === "equalise" && equaliseEdited ? () => setForm("equalise")(equaliseDefault) : null}
+                onNavigate={onNavigate}
               />
             </div>
             {shown === "live" ? (

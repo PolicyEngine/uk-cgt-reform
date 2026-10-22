@@ -27,6 +27,7 @@ import {
   PRIMARY_BUTTON,
   TEXT_BUTTON,
   Pill,
+  TabLink,
   Toggle,
   fieldBorder,
 } from "./controls";
@@ -210,9 +211,10 @@ const DOTS = {
 // rates, relief, behavioural response), with a footer bar: what Calculate will do
 // (`status`: a tone, a text and an optional action) and the Calculate
 // button. `showPresets` adds the "Start from" sub-tab (presets and HMRC
-// ready-reckoner rows). It is a form, so Enter in an input calculates;
+// ready-reckoner rows). It is a form: Enter moves to the next sub-tab, or
+// calculates on the last;
 // `running` (a run in flight) disables it.
-export default function ScheduleForm({ form, onChange, showPresets, onCalculate, running, status, onRestore }) {
+export default function ScheduleForm({ form, onChange, showPresets, onCalculate, running, status, onRestore, onNavigate }) {
   const check = checkForm(form);
   const set = (patch) => onChange({ ...form, ...patch });
   const setBadr = (patch) => set({ badrForm: { ...form.badrForm, ...patch } });
@@ -221,10 +223,6 @@ export default function ScheduleForm({ form, onChange, showPresets, onCalculate,
   const readyReckonerRow = check.rates ? (readyReckonerRowFor(check.rates, check.badr)?.id ?? "none") : "none";
   const errorFor = (field) => (check.errorField === field ? check.error : null);
   const elasticity = ELASTICITIES.find((option) => String(option.e_retention) === String(form.elasticity));
-  const submit = (event) => {
-    event.preventDefault();
-    if (check.rates && !running) onCalculate(check);
-  };
 
   const badrSummary = form.badrForm.mode === "withdraw"
     ? "Withdrawn"
@@ -246,6 +244,12 @@ export default function ScheduleForm({ form, onChange, showPresets, onCalculate,
   const [step, setStep] = useState(steps[0].id);
   const current = steps.some((candidate) => candidate.id === step) ? step : steps[0].id;
   const next = steps[steps.findIndex((candidate) => candidate.id === current) + 1];
+  // Calculate is on the last sub-tab only; before it, Enter moves on.
+  const submit = (event) => {
+    event.preventDefault();
+    if (next) setStep(next.id);
+    else if (check.rates && !running) onCalculate(check);
+  };
 
   return (
     <form onSubmit={submit} noValidate>
@@ -400,39 +404,40 @@ export default function ScheduleForm({ form, onChange, showPresets, onCalculate,
             <p id="elasticity-detail" className={`mt-2 ${HINT}`}>
               {elasticity ? splitLabel(elasticity.label).detail : ""}
             </p>
+            <p className="mt-4 text-sm leading-6 text-slate-600">
+              The options run from no response, through CenTax&apos;s estimates, to the HMRC/OBR official assumption;{" "}
+              <TabLink onNavigate={onNavigate} tab="methodology" section="elasticity">
+                see how they differ
+              </TabLink>
+              .
+            </p>
           </div>
         </Step>
       ) : null}
 
       <div className="-mx-5 -mb-5 mt-1 flex flex-col gap-4 rounded-b-xl border-t border-slate-200 bg-slate-50 px-5 py-4 sm:-mx-6 sm:-mb-6 sm:flex-row sm:px-6 sm:items-center sm:justify-between">
-        <p className="flex items-start gap-2 text-sm leading-6 text-slate-600" role="status">
-          <span aria-hidden="true" className={`mt-2 inline-block h-2 w-2 shrink-0 rounded-full ${DOTS[status.tone]}`} />
-          <span>
-            {status.text}
-            {onRestore ? (
-              <>
-                {" "}
-                <button type="button" onClick={onRestore} className={TEXT_BUTTON}>
-                  Restore defaults
-                </button>
-              </>
-            ) : null}
-          </span>
-        </p>
-        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center">
-          {next ? (
-            <button
-              type="button"
-              onClick={() => setStep(next.id)}
-              className="rounded-lg border border-slate-300 bg-white px-5 py-3 text-base font-semibold text-slate-700 shadow-sm transition hover:border-slate-400 hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--pe-color-primary-500)]"
-            >
-              Next: {next.label} →
+        <p className="flex items-center gap-2 text-sm leading-6 text-slate-600" role="status">
+          {next ? null : (
+            <>
+              <span aria-hidden="true" className={`inline-block h-2 w-2 shrink-0 rounded-full ${DOTS[status.tone]}`} />
+              <span>{status.text}</span>
+            </>
+          )}
+          {onRestore ? (
+            <button type="button" onClick={onRestore} className={TEXT_BUTTON}>
+              Restore defaults
             </button>
           ) : null}
+        </p>
+        {next ? (
+          <button type="submit" className={`${PRIMARY_BUTTON} w-full sm:w-auto`}>
+            Next →
+          </button>
+        ) : (
           <button type="submit" disabled={!check.rates || running} className={`${PRIMARY_BUTTON} w-full sm:w-auto`}>
             {running ? "Calculating…" : "Calculate"}
           </button>
-        </div>
+        )}
       </div>
     </form>
   );

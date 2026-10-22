@@ -90,35 +90,43 @@ function Dashboard() {
             This dashboard estimates how changing UK capital gains tax rates would affect
             government revenue and household incomes. Its headline reform
             sets CGT rates equal to income tax rates and withdraws Business Asset Disposal Relief;
-            a custom option scores any other set of rates. Taxing gains at income tax rates is an
-            ongoing debate in the UK:{" "}
+            a custom option scores any other set of rates. Taxing capital gains at income tax
+            rates has been discussed in UK policy research and news coverage, including by the{" "}
             <a
               href="https://ifs.org.uk/sites/default/files/2024-10/Captial-gains-tax-reform.pdf"
               target="_blank"
               rel="noopener noreferrer"
               className="underline decoration-1 underline-offset-2 hover:opacity-80"
             >
-              supporters
-            </a>{" "}
-            argue it would treat income and gains consistently and raise revenue, while{" "}
+              IFS
+            </a>,{" "}
+            <a
+              href="https://centax.org.uk/reform-capital-gains-tax-to-make-it-fairer-and-more-efficient-and-raise-14bn/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline decoration-1 underline-offset-2 hover:opacity-80"
+            >
+              CenTax
+            </a>,
+            the{" "}
             <a
               href="https://cps.org.uk/media/post/2026/governments-own-stats-say-burnham-would-be-wrong-to-raise-capital-gains-tax/"
               target="_blank"
               rel="noopener noreferrer"
               className="underline decoration-1 underline-offset-2 hover:opacity-80"
             >
-              sceptics
+              Centre for Policy Studies
             </a>{" "}
-            warn that delayed sales and emigration could reduce receipts, and the question has{" "}
+            and{" "}
             <a
               href="https://www.cityam.com/healey-rejects-calls-to-equalise-capital-gains-and-income-tax-rates/"
               target="_blank"
               rel="noopener noreferrer"
               className="underline decoration-1 underline-offset-2 hover:opacity-80"
             >
-              featured in reporting
-            </a>{" "}
-            ahead of the 28 October Budget.
+              City AM
+            </a>
+            .
           </p>
         </div>
 
