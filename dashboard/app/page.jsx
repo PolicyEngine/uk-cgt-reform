@@ -88,21 +88,20 @@ function Dashboard() {
       <main className="relative z-[1] mx-auto max-w-[96rem] px-6 py-10 md:px-8 md:py-12">
         <div className="max-w-4xl animate-[fadeIn_0.4s_ease-out]">
           <p className="text-lg leading-8 text-slate-800">
-            This dashboard estimates the revenue and distributional effects of reforms to UK
-            capital gains tax rates. Its headline reform equalises CGT rates with income tax rates
-            and withdraws Business Asset Disposal Relief.
-          </p>
-          <p className="mt-2 text-sm leading-6 text-slate-600">
-            In May 2026, as{" "}
+            This dashboard estimates how changing UK capital gains tax rates would affect
+            government revenue and household incomes. Its headline reform
+            sets CGT rates equal to income tax rates and withdraws Business Asset Disposal Relief;
+            a custom option scores any other set of rates. Several Cabinet ministers pressed for
+            equalisation ahead of the 28 October Budget, but Chancellor John Healey has{" "}
             <a
-              href="https://www.bloomberg.com/news/articles/2026-05-21/streeting-backs-hiking-uk-capital-gains-levy-to-match-income-tax"
+              href="https://www.cityam.com/healey-rejects-calls-to-equalise-capital-gains-and-income-tax-rates/"
               target="_blank"
               rel="noopener noreferrer"
               className="underline decoration-1 underline-offset-2 hover:opacity-80"
             >
-              Bloomberg
-            </a>{" "}
-            reported, Wes Streeting backed raising CGT rates to match income tax rates.
+              reportedly ruled it out
+            </a>
+            .
           </p>
         </div>
         <dl className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
