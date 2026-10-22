@@ -325,10 +325,10 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
 
         <Card className="flex min-w-0 flex-col">
           <SectionHeading
-            title={`Change in household net income by income group, ${firstYear}`}
+            title="Change in household net income by income group"
             description="Each bar shows the average change in net income for one group of households, ranked by income before the reform."
           />
-          <GroupImpactChart groupsByYear={result.income_change_groups} initialYear={firstYear} />
+          <GroupImpactChart groupsByYear={result.income_change_groups} />
           <Notes className="mt-auto">
             <GroupDefinitions>
               <li>

@@ -21,14 +21,16 @@ const AXIS_STYLE = { fontSize: 12, fill: colors.gray[500] };
 
 
 // Change in household net income by income quantile, household type or
-// region, in the reform's first year (the headline's year). `groupsByYear` is
-// the pipeline's income_change_groups block (fiscal label -> groupings).
-export default function GroupImpactChart({ groupsByYear, initialYear }) {
-  const years = Object.keys(groupsByYear);
-  const groupYear = years.includes(initialYear) ? initialYear : years[0];
+// region, for a chosen year from 2027-28 on (the first year, 2026-27, is the
+// headline's). `groupsByYear` is the pipeline's income_change_groups block
+// (fiscal label -> groupings).
+export default function GroupImpactChart({ groupsByYear }) {
+  const all = Object.keys(groupsByYear);
+  const years = all.length > 1 ? all.slice(1) : all;
+  const [groupYear, setGroupYear] = useState(years[0]);
   const [groupMetric, setGroupMetric] = useState("absolute");
   const [grouping, setGrouping] = useState("quintile");
-  const groups = groupsByYear[groupYear];
+  const groups = groupsByYear[groupYear] ?? groupsByYear[years[0]];
   const isRelative = groupMetric === "relative";
   const metricKey = isRelative ? "relative_change_pct" : "avg_change_gbp";
   // Regions and household types are ordered by impact (largest loss first);
@@ -48,6 +50,12 @@ export default function GroupImpactChart({ groupsByYear, initialYear }) {
   return (
     <>
       <div className="mb-4 flex flex-wrap gap-2 sm:gap-3">
+        <LabelledSelect
+          label="Year"
+          options={years.map((year) => ({ value: year, label: year }))}
+          value={groupYear}
+          onChange={setGroupYear}
+        />
         <LabelledSelect
           label="Group by"
           options={[

@@ -164,10 +164,10 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
 
         <Card className="flex min-w-0 flex-col">
           <SectionHeading
-            title={`Change in household net income by income group, ${firstYear}`}
+            title="Change in household net income by income group"
             description="Each bar shows the average change in net income for one group of households, ranked by income before the reform."
           />
-          <GroupImpactChart groupsByYear={getIncomeChangeGroupsByYear(data)} initialYear={firstYear} />
+          <GroupImpactChart groupsByYear={getIncomeChangeGroupsByYear(data)} />
           <Notes className="mt-auto">
             <GroupDefinitions>
               <li>
