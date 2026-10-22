@@ -38,8 +38,8 @@ const pct = (fraction) => formatPct(fraction * 100, 0);
 const elasticityName = (e) => elasticityOption(e)?.label ?? `retention elasticity ${e}`;
 
 // Where a live run stands: a cache lookup for a shared link, a computation,
-// an error, or a finished run and whether the cache served it.
-export function StatusLine({ status, elapsedSeconds, error, result }) {
+// or an error; a finished run shows its results instead.
+export function StatusLine({ status, error }) {
   if (status === "checking") {
     return (
       <p className="mt-4 text-sm leading-6 text-slate-600" role="status">
@@ -71,17 +71,6 @@ export function StatusLine({ status, elapsedSeconds, error, result }) {
     return (
       <p className="mt-4 text-sm leading-6 text-red-700" role="alert">
         {error}
-      </p>
-    );
-  }
-  if (status === "done" && result) {
-    const cache = result.metadata.cache ?? {};
-    const when = cache.computed_at ? new Date(cache.computed_at) : null;
-    return (
-      <p className="mt-4 text-sm leading-6 text-slate-600" role="status">
-        {cache.hit
-          ? `Served from the cache in ${elapsedSeconds}s; first computed ${when ? when.toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" }) : "earlier"}.`
-          : `Computed in ${elapsedSeconds}s. The result is cached, so anyone who runs this schedule again is served it at once.`}
       </p>
     );
   }

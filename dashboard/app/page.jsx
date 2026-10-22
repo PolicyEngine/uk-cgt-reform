@@ -78,14 +78,14 @@ function Dashboard() {
   }
 
   return (
-    <div className="app-shell min-h-screen">
+    <div className="app-shell">
       <header className="title-row">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4 md:px-8">
           <h1>Capital gains tax reform dashboard</h1>
         </div>
       </header>
 
-      <main className="relative z-[1] mx-auto max-w-6xl px-6 py-10 md:px-8 md:py-12">
+      <main className="relative z-[1] mx-auto max-w-6xl px-6 pb-6 pt-10 md:px-8 md:pt-12">
         <div className="animate-[fadeIn_0.4s_ease-out]">
           <p className="text-lg leading-8 text-slate-800">
             This dashboard estimates how changing UK capital gains tax rates would affect{" "}
@@ -125,7 +125,7 @@ function Dashboard() {
         {activeTab === "benchmarks" && <BenchmarksTab data={data} onNavigate={handleNavigate} />}
         {activeTab === "methodology" && <MethodologyTab data={data} anchor={anchor} onNavigate={handleNavigate} />}
 
-        <footer className="mt-12 border-t border-slate-200 pt-6 text-center text-xs leading-5 text-slate-500">
+        <footer className="mt-10 border-t border-slate-200 pt-5 text-center text-xs leading-5 text-slate-500">
           Replication code:{" "}
           <a
             href="https://github.com/PolicyEngine/uk-cgt-reform"

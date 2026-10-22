@@ -120,7 +120,7 @@ export default function ReformTab({ data, datasetKey, onNavigate, anchor }) {
   // Read once: a shared link arrives with a full schedule in the URL.
   const [state, dispatch] = useReducer(reformReducer, null, () => initialState(searchParams, precomputed));
   const { policy, forms, shown } = state;
-  const { run, reset, status, result, error, elapsedSeconds } = useExploration();
+  const { run, reset, status, result, error } = useExploration();
   const inFlight = status === "running" || status === "checking";
   const mounted = useRef(false);
   const results = useRef(null);
@@ -344,12 +344,7 @@ export default function ReformTab({ data, datasetKey, onNavigate, anchor }) {
               )}
             </div>
             {shown === "live" ? (
-              <StatusLine
-                status={status}
-                elapsedSeconds={elapsedSeconds}
-                error={error}
-                result={result}
-              />
+              <StatusLine status={status} error={error} />
             ) : null}
           </>
         ) : (
