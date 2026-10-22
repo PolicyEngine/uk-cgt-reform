@@ -253,12 +253,12 @@ function CentaxPackage({ rows, onNavigate }) {
     <section className="section-card">
       <SectionHeading
         title="CenTax's wider package (context)"
-        description="CenTax's estimates after behavioural responses for equalisation within a package of reforms to the CGT base, plus one rates-only figure derived from its tables."
+        description="CenTax estimate what equalising would raise alongside wider changes to how gains are taxed. These cover more than this dashboard's reform, so they are context, not a direct comparison."
       />
       <PackageEstimatesChart rows={built} />
       {range ? (
-        <Takeaway lead="The higher the elasticity, the lower the yield.">
-          {`CenTax's range across elasticities runs from ${formatBn(hi.value, 1)} at an elasticity of ${hi.elasticity.toFixed(1)} to ${formatBn(lo.value, 1)} at ${lo.elasticity.toFixed(1)}.`}
+        <Takeaway lead="The stronger the response, the less it raises.">
+          {`CenTax's package raises ${formatBn(hi.value, 1)} with the weakest response (${hi.elasticity.toFixed(1)}) and ${formatBn(lo.value, 1)} with the strongest (${lo.elasticity.toFixed(1)}).`}
         </Takeaway>
       ) : null}
       <Notes>

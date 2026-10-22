@@ -18,11 +18,11 @@ const DERIVED = { fill: "#FFFFFF", stroke: colors.gray[500], text: colors.gray[7
 // Short row labels, keyed by the results file's ids; an id not listed here
 // falls back to its source and locator.
 const SHORT_LABELS = {
-  centax_2024_rates_only_post_behavioural_derived: "Rates only, derived from CenTax (2024) Tables 3 and 4",
-  centax_2024_table5_package: "Package, CenTax (2024) Table 5",
-  centax_2024_table6_package_range: "Package across elasticities, CenTax (2024) Table 6",
-  centax_2025_technical_note_package: "Package, CenTax technical note (2025)",
-  centax_2026_taxes_at_the_top_package: "Package, CenTax Taxes at the top (2026)",
+  centax_2024_rates_only_post_behavioural_derived: "Rates only (PolicyEngine's estimate from CenTax's tables)",
+  centax_2024_table5_package: "Full package (CenTax 2024)",
+  centax_2024_table6_package_range: "Full package, range of responses (CenTax 2024)",
+  centax_2025_technical_note_package: "Full package, updated (CenTax 2025)",
+  centax_2026_taxes_at_the_top_package: "Full package, latest (CenTax 2026)",
 };
 
 const DERIVED_IDS = new Set(["centax_2024_rates_only_post_behavioural_derived"]);
@@ -47,7 +47,7 @@ export function buildPackageRows(rows) {
         points: sorted.map((p) => ({ value: p.value, elasticity: p.retention_elasticity })),
         // "£5.0–19.0bn": short enough to sit past the range at phone width.
         text: `${formatBn(sorted[0].value, 1).replace(/bn$/, "")}\u2013${formatBn(sorted[sorted.length - 1].value, 1).replace("\u00A3", "")}`,
-        note: "Each point is labelled with its retention elasticity.",
+        note: "Each point is one behavioural response assumption: 0.5 is weakest, 2.0 strongest.",
       };
     }
     const uplift = row.details?.uplift_pct;
@@ -188,7 +188,7 @@ export default function PackageEstimatesChart({ rows }) {
         items={[
           { label: "CenTax estimate", fill: CENTAX.fill },
           ...(anyDerived
-            ? [{ label: "Derived by PolicyEngine from CenTax's tables", fill: DERIVED.fill, stroke: DERIVED.stroke, dashed: true }]
+            ? [{ label: "PolicyEngine's estimate from CenTax's tables", fill: DERIVED.fill, stroke: DERIVED.stroke, dashed: true }]
             : []),
         ]}
       />
