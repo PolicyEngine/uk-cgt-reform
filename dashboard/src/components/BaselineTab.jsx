@@ -1,9 +1,12 @@
 "use client";
 
 import { useEffect } from "react";
-import { formatBn, formatCount, formatPct, formatSmallBn } from "../lib/formatters";
+import { formatPct } from "../lib/formatters";
 import { getDatasetInfo, getEntrants, getFirstYear, getValidation } from "../lib/dataHelpers";
-import { SourceLink, TableScroll } from "./controls";
+import { SourceLink } from "./controls";
+import BenchmarkChart, { parseBenchmark } from "./charts/BenchmarkChart";
+import EntrantsChart from "./charts/EntrantsChart";
+import ScheduleChart from "./charts/ScheduleChart";
 import SectionHeading from "./SectionHeading";
 
 // External benchmarks the baseline is compared with. These are published
@@ -78,38 +81,6 @@ const BENCHMARKS = {
   },
 };
 
-function BenchmarkCell({ benchmark }) {
-  if (!benchmark) {
-    return <td className="text-slate-400">—</td>;
-  }
-  return (
-    <td>
-      <a
-        href={benchmark.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="underline decoration-1 underline-offset-2 hover:opacity-80"
-        title={benchmark.source}
-      >
-        {benchmark.value}
-      </a>
-    </td>
-  );
-}
-
-function BenchmarkRow({ label, model, benchmark, muted = false }) {
-  return (
-    <tr className={muted ? "text-slate-500" : ""}>
-      <td className={muted ? "pl-6" : ""}>{label}</td>
-      <td>{model}</td>
-      <BenchmarkCell benchmark={benchmark.y2023} />
-      <BenchmarkCell benchmark={benchmark.y2024} />
-    </tr>
-  );
-}
-
-const NO_BENCHMARK = { y2023: null, y2024: null };
-
 export default function BaselineTab({ data, anchor }) {
   // Other tabs link to a section here (``anchor``); the tab mounts after
   // navigation, so the scroll is replayed once it has.
@@ -122,9 +93,34 @@ export default function BaselineTab({ data, anchor }) {
   const entrants = getEntrants(data);
   const firstYear = getFirstYear(data);
   const entrantShare = entrants.count / validation.cgt_taxpayers;
-  const schedules = [
-    ["Residential property", validation.residential_property_gains_bn],
-    ["Business Asset Disposal Relief", validation.badr_gains_bn],
+  const bench = (key, label, unit, model) => ({
+    key,
+    label,
+    unit,
+    model,
+    hmrc2023: parseBenchmark(BENCHMARKS[key].y2023?.value),
+    hmrc2024: parseBenchmark(BENCHMARKS[key].y2024?.value),
+  });
+  const benchmarkRows = [
+    bench("totalGains", "Total taxable gains", "bn", validation.total_gains_bn),
+    bench("taxpayers", "CGT taxpayers (gains above the exempt amount)", "count", validation.cgt_taxpayers),
+    bench("liability", "Baseline CGT liability", "bn", validation.baseline_cgt_revenue_bn),
+    bench("shareOver1m", "Share of gains from gains of £1m or more", "pct", validation.share_gains_over_1m_pct),
+    bench("shareOver5m", "Share of gains from gains of £5m or more", "pct", validation.share_gains_over_5m_pct),
+    bench("taxpayersOver500k", "Taxpayers with gains over £500k", "count", validation.taxpayers_over_500k),
+    bench("gainsOver500k", "Gains held by taxpayers with gains over £500k", "bn", validation.gains_over_500k_bn),
+    bench("gainsOver5m", "Gains held in the £5m-and-over band", "bn", validation.gains_over_5m_bn),
+    bench("badrClaimants", "People with gains qualifying for the relief", "count", validation.badr_claimants),
+    bench("badrGains", "Gains qualifying for the relief", "bn", validation.badr_gains_bn),
+  ];
+  const entrantRows = [
+    { key: "taxpayers", label: "Taxpayers", unit: "count", total: validation.cgt_taxpayers, entrants: entrants.count },
+    { key: "gains", label: "Taxable gains", unit: "bn", total: validation.total_gains_bn, entrants: entrants.gains_bn },
+    { key: "liability", label: "Baseline CGT liability", unit: "bn", total: validation.baseline_cgt_revenue_bn, entrants: entrants.cgt_bn },
+  ];
+  const scheduleRows = [
+    { key: "residential", label: "Residential property", gainsBn: validation.residential_property_gains_bn },
+    { key: "badr", label: "Business Asset Disposal Relief", gainsBn: validation.badr_gains_bn },
   ];
 
   return (
@@ -155,88 +151,7 @@ export default function BaselineTab({ data, anchor }) {
             </>
           }
         />
-        <TableScroll>
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Quantity</th>
-              <th>PolicyEngine ({dataset.shortLabel}, {firstYear})</th>
-              <th>HMRC, 2023-24 (revised)</th>
-              <th>HMRC, 2024-25 (provisional)</th>
-            </tr>
-          </thead>
-          <tbody>
-            <BenchmarkRow
-              label="Total taxable gains"
-              model={formatBn(validation.total_gains_bn)}
-              benchmark={BENCHMARKS.totalGains}
-            />
-            <BenchmarkRow
-              label="of which held by entrants by uprating"
-              model={formatSmallBn(entrants.gains_bn)}
-              benchmark={NO_BENCHMARK}
-              muted
-            />
-            <BenchmarkRow
-              label="CGT taxpayers (gains above the exempt amount)"
-              model={formatCount(validation.cgt_taxpayers)}
-              benchmark={BENCHMARKS.taxpayers}
-            />
-            <BenchmarkRow
-              label="of which entrants by uprating"
-              model={formatCount(entrants.count)}
-              benchmark={NO_BENCHMARK}
-              muted
-            />
-            <BenchmarkRow
-              label="Baseline CGT liability"
-              model={formatBn(validation.baseline_cgt_revenue_bn)}
-              benchmark={BENCHMARKS.liability}
-            />
-            <BenchmarkRow
-              label="of which paid by entrants by uprating"
-              model={formatSmallBn(entrants.cgt_bn)}
-              benchmark={NO_BENCHMARK}
-              muted
-            />
-            <BenchmarkRow
-              label="Share of gains from gains of £1m or more"
-              model={formatPct(validation.share_gains_over_1m_pct, 0)}
-              benchmark={BENCHMARKS.shareOver1m}
-            />
-            <BenchmarkRow
-              label="Share of gains from gains of £5m or more"
-              model={formatPct(validation.share_gains_over_5m_pct, 0)}
-              benchmark={BENCHMARKS.shareOver5m}
-            />
-            <BenchmarkRow
-              label="Taxpayers with gains over £500k"
-              model={formatCount(validation.taxpayers_over_500k)}
-              benchmark={BENCHMARKS.taxpayersOver500k}
-            />
-            <BenchmarkRow
-              label="Gains held by taxpayers with gains over £500k"
-              model={formatBn(validation.gains_over_500k_bn)}
-              benchmark={BENCHMARKS.gainsOver500k}
-            />
-            <BenchmarkRow
-              label="Gains held in the £5m-and-over band"
-              model={formatBn(validation.gains_over_5m_bn)}
-              benchmark={BENCHMARKS.gainsOver5m}
-            />
-            <BenchmarkRow
-              label="People with gains qualifying for BADR"
-              model={formatCount(validation.badr_claimants)}
-              benchmark={BENCHMARKS.badrClaimants}
-            />
-            <BenchmarkRow
-              label="Gains qualifying for BADR"
-              model={formatBn(validation.badr_gains_bn)}
-              benchmark={BENCHMARKS.badrGains}
-            />
-          </tbody>
-        </table>
-        </TableScroll>
+        <BenchmarkChart rows={benchmarkRows} modelLabel={`PolicyEngine (${dataset.shortLabel}, ${firstYear})`} />
       </section>
 
       <section className="section-card scroll-mt-24" id="entrants">
@@ -249,40 +164,7 @@ export default function BaselineTab({ data, anchor }) {
             </>
           }
         />
-        <TableScroll>
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Quantity, {firstYear}</th>
-              <th>All CGT taxpayers</th>
-              <th>Entrants by uprating</th>
-              <th>Excluding entrants</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Taxpayers</td>
-              <td>{formatCount(validation.cgt_taxpayers)}</td>
-              <td>
-                {formatCount(entrants.count)} ({formatPct(100 * entrantShare, 0)})
-              </td>
-              <td>{formatCount(validation.cgt_taxpayers_excluding_entrants)}</td>
-            </tr>
-            <tr>
-              <td>Taxable gains</td>
-              <td>{formatBn(validation.total_gains_bn)}</td>
-              <td>{formatSmallBn(entrants.gains_bn)}</td>
-              <td>{formatBn(validation.total_gains_excluding_entrants_bn)}</td>
-            </tr>
-            <tr>
-              <td>Baseline CGT liability</td>
-              <td>{formatBn(validation.baseline_cgt_revenue_bn)}</td>
-              <td>{formatSmallBn(entrants.cgt_bn)}</td>
-              <td>{formatBn(validation.baseline_cgt_revenue_bn - entrants.cgt_bn)}</td>
-            </tr>
-          </tbody>
-        </table>
-        </TableScroll>
+        <EntrantsChart rows={entrantRows} />
         {entrantShare > 0.05 ? (
           <p className="note-card mt-4 rounded-lg p-4 text-sm leading-6 text-slate-600">
             <span className="note-eyebrow block text-xs font-semibold uppercase tracking-wide">
@@ -317,26 +199,7 @@ export default function BaselineTab({ data, anchor }) {
             </>
           }
         />
-        <TableScroll>
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Schedule</th>
-              <th>Gains, {firstYear}</th>
-              <th>Recorded in {dataset.shortLabel}?</th>
-            </tr>
-          </thead>
-          <tbody>
-            {schedules.map(([name, gains]) => (
-              <tr key={name}>
-                <td>{name}</td>
-                <td>{formatBn(gains)}</td>
-                <td>{gains > 0 ? "Yes" : "No: charged on the main schedule"}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        </TableScroll>
+        <ScheduleChart rows={scheduleRows} datasetLabel={dataset.shortLabel} />
       </section>
     </div>
   );
