@@ -15,6 +15,7 @@ import { getNiceTicks, getTickDomain } from "../../lib/chartUtils";
 import { colors } from "../../lib/colors";
 import { formatSignedBn } from "../../lib/formatters";
 import ChartLogo from "../ChartLogo";
+import ChartLegend from "./ChartLegend";
 
 const AXIS_STYLE = { fontSize: 12, fill: colors.gray[500] };
 const fmt = (v) => formatSignedBn(v, 1);
@@ -161,17 +162,6 @@ export default function YieldChart({ steps }) {
 
   return (
     <>
-      <ul className="mb-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600">
-        {steps.map((step, i) => (
-          <li key={step.step} className="flex items-center gap-1.5">
-            <span
-              className="inline-block h-3 w-3 rounded-sm"
-              style={{ background: styleFor(step, i).fill }}
-            />
-            {styleFor(step, i).short}
-          </li>
-        ))}
-      </ul>
       <div className="h-[220px] w-full">
         <ResponsiveContainer>
           <BarChart
@@ -228,6 +218,9 @@ export default function YieldChart({ steps }) {
           </BarChart>
         </ResponsiveContainer>
       </div>
+      <ChartLegend
+        items={steps.map((step, i) => ({ label: styleFor(step, i).short, fill: styleFor(step, i).fill }))}
+      />
       <ChartLogo />
     </>
   );

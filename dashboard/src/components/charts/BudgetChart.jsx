@@ -5,7 +5,6 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
-  Legend,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -14,6 +13,7 @@ import {
 import { colors } from "../../lib/colors";
 import { formatSignedBn } from "../../lib/formatters";
 import ChartLogo from "../ChartLogo";
+import ChartLegend from "./ChartLegend";
 import { LabelledSelect } from "../controls";
 
 const AXIS_STYLE = { fontSize: 12, fill: colors.gray[500] };
@@ -54,7 +54,6 @@ export default function BudgetChart({ budget }) {
               width={72}
             />
             <Tooltip formatter={(v) => formatSignedBn(v, 1)} cursor={{ fill: colors.gray[100] }} />
-            {budgetView === "levels" ? <Legend iconType="circle" wrapperStyle={{ fontSize: 12 }} /> : null}
             {budgetView === "levels" ? (
               <>
                 <Bar
@@ -81,6 +80,14 @@ export default function BudgetChart({ budget }) {
           </BarChart>
         </ResponsiveContainer>
       </div>
+      {budgetView === "levels" ? (
+        <ChartLegend
+          items={[
+            { label: "Baseline CGT revenue", fill: colors.gray[400] },
+            { label: "Reform CGT revenue", fill: colors.primary[600] },
+          ]}
+        />
+      ) : null}
       <ChartLogo />
     </>
   );

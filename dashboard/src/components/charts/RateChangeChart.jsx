@@ -14,6 +14,7 @@ import {
 import { colors } from "../../lib/colors";
 import { formatPct } from "../../lib/formatters";
 import ChartLogo from "../ChartLogo";
+import ChartLegend from "./ChartLegend";
 
 const AXIS_STYLE = { fontSize: 12, fill: colors.gray[500] };
 const MINUS = "−";
@@ -211,14 +212,6 @@ function AxisChart() {
 export default function RateChangeChart({ rows }) {
   return (
     <>
-      <ul className="mb-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600">
-        {Object.entries(SERIES).map(([key, s]) => (
-          <li key={key} className="flex items-center gap-1.5">
-            <span className="inline-block h-3 w-3 rounded-sm" style={{ background: s.fill }} />
-            {s.label}
-          </li>
-        ))}
-      </ul>
       <div aria-hidden="true">
         <AxisChart />
       </div>
@@ -245,6 +238,7 @@ export default function RateChangeChart({ rows }) {
           );
         })}
       </div>
+      <ChartLegend items={Object.values(SERIES).map(({ label, fill }) => ({ label, fill }))} />
       <ChartLogo />
     </>
   );
