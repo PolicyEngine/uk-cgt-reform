@@ -245,7 +245,7 @@ export default function ReformTab({ data, datasetKey, onNavigate, anchor }) {
           label: "About this reform",
           content: (
             <ul className="list-disc space-y-1.5 pl-5 text-sm leading-6 text-slate-600">
-              <li>Each CGT rate rises to the matching income tax rate from {firstYear}.</li>
+              <li>Each CGT rate rises to the matching income tax rate.</li>
               <li>Business Asset Disposal Relief is withdrawn, so qualifying gains take the new rates.</li>
               <li>
                 Taxpayers realise fewer gains, using CenTax&apos;s central{" "}
@@ -284,7 +284,7 @@ export default function ReformTab({ data, datasetKey, onNavigate, anchor }) {
             policy ? null : (
               <>
                 <strong className="font-semibold text-slate-800">Pick one to start.</strong> Both
-                cover {firstYear} to 2030-31 on {dataset.shortLabel}, with the same behavioural
+                cover the same five years on {dataset.shortLabel}, with the same behavioural
                 response.
               </>
             )

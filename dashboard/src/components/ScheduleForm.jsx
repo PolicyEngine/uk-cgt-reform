@@ -22,7 +22,6 @@ import {
   PRIMARY_BUTTON,
   Pill,
   TabLink,
-  Toggle,
   fieldBorder,
 } from "./controls";
 
@@ -291,21 +290,22 @@ export default function ScheduleForm({ form, onChange, onCalculate, running, onN
           }
         >
           {about && showAbout ? <div className="mb-4 rounded-lg bg-slate-50 px-4 py-3">{about.content}</div> : null}
-          <div className="grid gap-6 md:grid-cols-2 md:gap-8">
+          <div className="max-w-xl space-y-6">
             <div>
-              <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-800">
-                Business Asset Disposal Relief
+              <div className="mb-2 flex items-center gap-2">
+                <label htmlFor="badr-mode" className="text-sm font-semibold text-slate-800">
+                  Business Asset Disposal Relief
+                </label>
                 <InfoTip label="About Business Asset Disposal Relief">{BADR_NOTE}</InfoTip>
-              </h3>
-              <Toggle
-                label="Business Asset Disposal Relief"
-                fullWidth
-                options={[
-                  { value: "keep", label: "Keep" },
-                  { value: "withdraw", label: "Withdraw" },
-                ]}
+              </div>
+              <Select
+                id="badr-mode"
                 value={form.badrForm.mode}
                 onChange={(mode) => setBadr({ mode })}
+                options={[
+                  { value: "keep", label: "Keep the relief" },
+                  { value: "withdraw", label: "Withdraw the relief" },
+                ]}
               />
               {form.badrForm.mode === "keep" ? (
                 <div className="mt-4 grid grid-cols-2 gap-4">

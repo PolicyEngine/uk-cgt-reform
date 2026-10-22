@@ -230,19 +230,26 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
       <Card>
         <SectionHeading
           title="Headline results"
-          description={`For the reform's first year: ${pct(reform.basic_rate)} / ${pct(reform.higher_rate)} / ${pct(reform.additional_rate)}, Business Asset Disposal Relief ${describeBadr(reformBadr).toLowerCase()}, on ${result.metadata.dataset_short_label}, ${elasticityName(resultE)}. Distributional figures cover all households.`}
+          description={`In ${firstYear}, the reform's first year: ${pct(reform.basic_rate)} / ${pct(reform.higher_rate)} / ${pct(reform.additional_rate)}, Business Asset Disposal Relief ${describeBadr(reformBadr).toLowerCase()}, on ${result.metadata.dataset_short_label}, ${elasticityName(resultE)}. Distributional figures cover all households.`}
         />
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className={`grid gap-4 ${topQuintile.share_affected_pct !== undefined ? "md:grid-cols-3" : "md:grid-cols-2"}`}>
           <MetricCard
             label="Change in government balance"
             value={bn(firstRow.gov_balance_change_bn)}
             note={Number(resultE) === 0 ? "With no behavioural response." : "After the behavioural response."}
           />
           <MetricCard
-            label="Share of the fall in household income borne by the top fifth"
-            value={formatPct(100 * topShare, 0)}
-            note={`Households in the top fifth lose ${formatSignedCurrency(topQuintile.avg_change_gbp)} (${formatSignedPct(topQuintile.relative_change_pct)} of net income) on average.`}
+            label="Average change in net income, top fifth of households"
+            value={formatSignedCurrency(topQuintile.avg_change_gbp)}
+            note={`${formatSignedPct(topQuintile.relative_change_pct)} of net income; ${formatPct(100 * topShare, 0)} of the total fall in household income.`}
           />
+          {topQuintile.share_affected_pct !== undefined ? (
+            <MetricCard
+              label="Top-fifth households with lower net income"
+              value={formatPct(topQuintile.share_affected_pct, 0)}
+              note="Households whose net income falls under the reform."
+            />
+          ) : null}
         </div>
         <p className="mt-4 text-sm leading-6 text-slate-600">
           {likeForLike ? (
@@ -279,8 +286,8 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
                   Baseline
                 </TabLink>{" "}
                 tab
-                ) contribute {formatSmallBn(firstRow.cgt_change_from_entrants_bn)} of the{" "}
-                {firstYear} change.
+                ) contribute {formatSmallBn(firstRow.cgt_change_from_entrants_bn)} of the
+                first-year change.
               </p>
             </Notes>
           ) : null}
@@ -293,12 +300,12 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
           />
           <GroupImpactChart groupsByYear={result.income_change_groups} initialYear={firstYear} />
           <Notes className="mt-auto">
-            <GroupDefinitions />
-            <p>
-              The switches group households by income quintile or quartile, household type or
-              region. Changes in the gains taxpayers realise in response to the new rates count as
-              changes in income in the year, alongside the change in tax paid.
-            </p>
+            <GroupDefinitions>
+              <li>
+                Changes in the gains taxpayers realise count as changes in income, alongside the
+                change in tax paid.
+              </li>
+            </GroupDefinitions>
           </Notes>
         </Card>
       </div>
@@ -314,9 +321,8 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
         </summary>
         <div className="mt-4 space-y-3">
           <p className="text-sm leading-6 text-slate-600">
-            Effective from the {firstYear} fiscal year and held in place through{" "}
-            {result.budget.at(-1).year}. Current law is read from the installed engine for{" "}
-            {firstYear}.
+            Effective in every modelled year. Current law is read from the installed engine for
+            the first year.
           </p>
           <SpecTable metadata={result.metadata} />
         </div>

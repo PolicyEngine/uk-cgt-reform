@@ -92,9 +92,9 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
       <Card>
         <SectionHeading
           title="Headline results"
-          description={`For the reform's first year, at CenTax's central behavioural response, on ${dataset.shortLabel}. Distributional figures cover all households.`}
+          description={`In ${firstYear}, the reform's first year, at CenTax's central behavioural response, on ${dataset.shortLabel}. Distributional figures cover all households.`}
         />
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className={`grid gap-4 ${topQuintile.share_affected_pct !== undefined ? "md:grid-cols-3" : "md:grid-cols-2"}`}>
           <MetricCard
             label="Change in government balance"
             value={formatSignedBn(firstYearRow.gov_balance_change_bn, 1)}
@@ -102,10 +102,17 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
             tip={`Across the behavioural cases in the sensitivity chart, the first-year change in CGT revenue runs from ${formatSignedBn(lowest.revenue_2026_bn, 1)} at ${caseName(lowest)} to ${formatSignedBn(highest.revenue_2026_bn, 1)} at ${caseName(highest)}.`}
           />
           <MetricCard
-            label="Share of the fall in household income borne by the top fifth"
-            value={formatPct(100 * topShare, 0)}
-            note={`Households in the top fifth lose ${formatSignedCurrency(topQuintile.avg_change_gbp)} (${formatSignedPct(topQuintile.relative_change_pct)} of net income) on average.`}
+            label="Average change in net income, top fifth of households"
+            value={formatSignedCurrency(topQuintile.avg_change_gbp)}
+            note={`${formatSignedPct(topQuintile.relative_change_pct)} of net income; ${formatPct(100 * topShare, 0)} of the total fall in household income.`}
           />
+          {topQuintile.share_affected_pct !== undefined ? (
+            <MetricCard
+              label="Top-fifth households with lower net income"
+              value={formatPct(topQuintile.share_affected_pct, 0)}
+              note="Households whose net income falls under the reform."
+            />
+          ) : null}
         </div>
       </Card>
 
@@ -132,8 +139,8 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
                   Baseline
                 </TabLink>{" "}
                 tab
-                ) contribute {formatSmallBn(firstYearRow.cgt_change_from_entrants_bn)} of the{" "}
-                {firstYear} change ({formatPct(100 * entrantShareOfChange, 0)}).
+                ) contribute {formatSmallBn(firstYearRow.cgt_change_from_entrants_bn)} of the
+                first-year change ({formatPct(100 * entrantShareOfChange, 0)}).
               </p>
             ) : null}
           </Notes>
@@ -146,13 +153,12 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
           />
           <GroupImpactChart groupsByYear={getIncomeChangeGroupsByYear(data)} initialYear={firstYear} />
           <Notes className="mt-auto">
-            <GroupDefinitions />
-            <p>
-              The switches group households by income quintile or quartile, household type or
-              region. Gains that taxpayers no longer realise in response to the higher rates count
-              as lower income in the year, alongside the extra tax paid, so the total fall in net
-              income exceeds the revenue raised.
-            </p>
+            <GroupDefinitions>
+              <li>
+                Gains that taxpayers no longer realise count as lower income, alongside the extra
+                tax paid, so the total fall in net income exceeds the revenue raised.
+              </li>
+            </GroupDefinitions>
           </Notes>
         </Card>
       </div>
@@ -194,11 +200,17 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
           </Notes>
         </Card>
 
-        <Card className="min-w-0 scroll-mt-24" id="sensitivity">
-          <SectionHeading
-            title="Sensitivity to the behavioural elasticity"
-            description="Each bar shows the first-year change in CGT revenue under a different assumption about how strongly taxpayers cut the gains they realise."
-          />
+        <Card as="details" className="group min-w-0 scroll-mt-24" id="sensitivity">
+          <summary className="cursor-pointer select-none text-xl font-semibold tracking-tight text-slate-900 marker:text-[color:var(--pe-color-primary-600)]">
+            Sensitivity to the behavioural elasticity
+            <span className="ml-2 text-sm font-normal text-slate-500 group-open:hidden">
+              (expand to see how the result depends on taxpayers&apos; response)
+            </span>
+          </summary>
+          <p className="mb-5 mt-2 text-sm leading-6 text-slate-600">
+            Each bar shows the first-year change in CGT revenue under a different assumption about
+            how strongly taxpayers cut the gains they realise.
+          </p>
           <SensitivityChart rows={sensitivity} centralRetention={central.e_retention} />
           <Notes>
           <p>
@@ -258,7 +270,7 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
         </summary>
         <div className="mt-4 space-y-3">
           <p className="text-sm leading-6 text-slate-600">
-            Effective from the {firstYear} fiscal year and held in place through {budget.at(-1).year}. All results on
+            Effective in every modelled year. All results on
             this page compare this reform against current policy on the same baseline. The reformed
             rates are the income tax rates on earnings; from April 2027 savings and property income
             face 22%, 42% and 47% (the property rates in England, Wales and Northern Ireland), and

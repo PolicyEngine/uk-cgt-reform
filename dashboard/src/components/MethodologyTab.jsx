@@ -19,6 +19,24 @@ function ExternalLink({ href, children }) {
   );
 }
 
+const LIST = "mt-3 list-disc space-y-2 pl-5 text-sm leading-6 text-slate-600";
+const CODE = "break-all font-mono text-xs";
+
+// The auditable identifiers behind a section (build ids, file digests,
+// parameter paths, versions), collapsed so the main text stays readable.
+function TechnicalDetails({ children }) {
+  return (
+    <details className="group mt-5 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+      <summary className="cursor-pointer select-none text-sm font-semibold text-slate-800 marker:text-[color:var(--pe-color-primary-600)]">
+        Technical details
+      </summary>
+      <ul className="mt-3 list-disc space-y-1.5 pl-5 text-xs leading-5 text-slate-600">
+        {children}
+      </ul>
+    </details>
+  );
+}
+
 // How realised gains and the revenue on them respond when one rate moves
 // from t0 to t1, in the form the engine applies: a retention-rate
 // elasticity, realised gains scaled by ((1 - t1) / (1 - t0)) ** e.
@@ -36,6 +54,31 @@ const CENTAX_REPORT =
   "https://centax.org.uk/wp-content/uploads/2024/10/AdvaniLonsdaleSummers2024_CGTReform.pdf";
 const centaxPage = (pdfPage) => `${CENTAX_REPORT}#page=${pdfPage}`;
 
+// The dataset's own notes carry the figures the plain-language text needs;
+// pull them out so nothing is hardcoded, and fall back to the note itself.
+function datasetFigures(dataset) {
+  const targets = dataset.observation?.match(/calibrated to ([\d,]+) targets/)?.[1];
+  const fence = dataset.notes?.match(
+    /by (\d{4}) at ([\d.]+k), against HMRC's ([\d.]+k) taxpayers with gains of (.+?) in (\d{4}-\d{2}) \((Table [\w.]+)\)/,
+  );
+  const audit = dataset.notes?.match(/counts ([\d.]+k)/)?.[1];
+  return {
+    targets,
+    entrants:
+      fence && audit
+        ? {
+            year: fence[1],
+            bound: fence[2],
+            hmrc: fence[3],
+            band: fence[4],
+            hmrcYear: fence[5],
+            table: fence[6],
+            audit,
+          }
+        : null,
+  };
+}
+
 export default function MethodologyTab({ data, anchor, onNavigate }) {
   // Analysis sections can link here with /?tab=methodology#<id>, or open the
   // tab at a section (``anchor``); the tab mounts after navigation, so the
@@ -48,8 +91,11 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
   }, [anchor]);
 
   const dataset = getDatasetInfo(data);
+  const figures = datasetFigures(dataset);
   const metadata = getMetadata(data);
   const { central, official } = getBenchmarks(data).elasticities;
+  const centaxRange = getBenchmarks(data).elasticities.centax_range;
+  const exemptAmount = data.validation?.entrants_by_uprating?.exempt_amount_gbp;
   // The engine's baseline liability against the OBR's receipts forecast,
   // year by year, from the results file's static-equalisation block.
   const obrComparison = getBenchmarks(data).static_equalisation;
@@ -71,230 +117,305 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
 
   const firstYear = getFirstYear(data);
   const lastYear = data.budget.at(-1).year;
+  const indices = metadata.projection.indices ?? {};
 
   return (
     <div className="space-y-6">
       <section className="section-card scroll-mt-24" id="pathway">
-        <SectionHeading title="Data and simulation" />
-        <p className="mt-2 text-sm leading-6 text-slate-600">
-          The estimates come from{" "}
-          <ExternalLink href="https://policyengine.org">PolicyEngine</ExternalLink> UK, run on{" "}
-          {dataset.shortLabel} for {firstYear} to {lastYear}, with the behavioural response taken
-          from Advani, Lonsdale &amp; Summers (<ExternalLink href={CENTAX_REPORT}>CenTax</ExternalLink>, 2024).
-        </p>
-        <ul className="mt-2 list-disc space-y-2 pl-5 text-sm leading-6 text-slate-600">
+        <SectionHeading
+          title="Data and simulation"
+          description={
+            <>
+              The estimates come from{" "}
+              <ExternalLink href="https://policyengine.org">PolicyEngine</ExternalLink> UK, a
+              model of the UK tax and benefit system, run on a representative sample of UK
+              households for {firstYear} to {lastYear}. How well that sample captures capital
+              gains, which are concentrated among a small number of people, largely decides how
+              reliable the results are.
+            </>
+          }
+        />
+        <ul className={LIST}>
           <li>
-            <strong>The dataset.</strong> {dataset.label}: {dataset.producer}. Pinned input{" "}
-            <span className="break-all font-mono text-xs">{dataset.uri}</span> (sha256{" "}
-            <span className="font-mono text-xs">{dataset.sha256.slice(0, 12)}…</span>), checked
-            before anything runs and used exactly as published with no local reweighting &mdash;
-            calibration belongs upstream in the dataset, so whatever the file provides is what is
-            simulated here. The build comes from{" "}
-            <ExternalLink href="https://github.com/PolicyEngine/microcosm">microcosm</ExternalLink>
-            . {dataset.columns}
+            <strong>The dataset.</strong> {dataset.label}. It starts from the Family Resources
+            Survey and adds capital gains from HMRC statistics. It is used exactly as published,
+            with no reweighting in this dashboard.
           </li>
           <li>
-            <strong>Gains imputation.</strong> {dataset.observation}. Amounts are redrawn from
-            HMRC&apos;s Table 3 (size of gain by taxable income) so the top bands that carry most of
-            the tax are represented, and the weights reproduce Table 3&apos;s gains by taxable income
-            band, which sets the income tax band each gain falls in. Each liable gainer is assigned
-            a main asset type from HMRC Tables 7 and 8, with residential property gains written to
-            their own column, and gains qualifying for Business Asset Disposal Relief are imputed
-            and weighted to HMRC Table 4&apos;s bands, so the relief is charged on its own schedule.
+            <strong>How gains are added.</strong> Gain sizes are drawn from HMRC&apos;s Table 3
+            (size of gain by taxable income), so the largest gains, which carry most of the tax,
+            are represented and each gain falls in the right income tax band. Each gainer gets a
+            main asset type from HMRC Tables 7 and 8, with residential property gains kept
+            separate, and gains qualifying for Business Asset Disposal Relief or Investors&apos;
+            Relief are imputed from HMRC Table 4. Gains below the exempt amount follow the
+            Advani&ndash;Summers distribution within each band.
           </li>
           <li>
-            <strong>Gainers below the exempt amount.</strong> At the base year they owe nothing;
-            once the engine uprates gains past the frozen exempt amount they become taxpayers.{" "}
-            {dataset.notes} The Baseline tab reports them as entrants by uprating and shows every
-            figure with and without them.
+            <strong>Calibration.</strong> Household weights are set so the sample matches{" "}
+            {figures.targets ?? "a set of"} statistics, including HMRC&apos;s CGT totals and
+            size bands, gains by taxable income band, the relief&apos;s bands, residential property
+            gains, age and region.
           </li>
           <li>
-            <strong>Projection.</strong> Each file is one engine year ({metadata.projection.base_year}
-            ). The engine copies it forward to 2030 and uprates it year on year from its own
-            uprating indices: capital gains and the schedule components follow OBR GDP per
-            capita, household weights follow ONS population. Nothing CGT-specific enters the
-            projection; the factors actually applied are recorded in{" "}
-            <span className="font-mono text-xs">{metadata.projection.audit}</span> and
-            fingerprinted into every simulation id (
-            <span className="font-mono text-xs">{metadata.projection.fingerprint}</span>).
+            <strong>New taxpayers from growing gains.</strong> People with gains just below the
+            exempt amount
+            {Number.isFinite(exemptAmount) ? ` (£${exemptAmount.toLocaleString("en-GB")}, frozen)` : ""}{" "}
+            owe nothing in the base year, but some cross it as gains grow and start paying.
+            {figures.entrants ? (
+              <>
+                {" "}
+                The model adds about {figures.entrants.audit} such taxpayers by{" "}
+                {figures.entrants.year} (the dataset&apos;s own bound is {figures.entrants.bound}),
+                against HMRC&apos;s {figures.entrants.hmrc} taxpayers with gains of{" "}
+                {figures.entrants.band} in {figures.entrants.hmrcYear} (HMRC{" "}
+                {figures.entrants.table}).
+              </>
+            ) : (
+              <> {dataset.notes}</>
+            )}{" "}
+            The{" "}
+            <TabLink onNavigate={onNavigate} tab="baseline" section="entrants">
+              Baseline
+            </TabLink>{" "}
+            tab shows every figure with and without them.
+          </li>
+          <li>
+            <strong>Projecting to later years.</strong> The data describe one year,{" "}
+            {baseYearLabel}. Each later year grows capital gains in line with the OBR&apos;s
+            forecast of GDP per head and household weights in line with ONS population
+            projections. Nothing specific to CGT enters the projection.
           </li>
           {obrGaps.length ? (
             <li>
-              <strong>The projection against the OBR&apos;s forecast.</strong> Every year on this
-              dashboard uses the engine&apos;s own projection. The engine&apos;s baseline CGT
-              liability differs from the OBR&apos;s forecast of CGT receipts (
+              <strong>Comparison with the OBR&apos;s forecast.</strong> The model&apos;s baseline
+              CGT bill differs from the OBR&apos;s forecast of CGT receipts (
               {obrComparison.obr_receipts_source}) by{" "}
               {obrGaps.map((row) => `${signedGap(row.gap)} in ${row.year}`).join(", ")}. The two
-              measure different things: receipts arrive about a year after the liability they
-              settle, and the engine grows each year&apos;s gains from the {baseYearLabel} base year
-              by OBR GDP per capita, where the OBR forecasts receipts year by year.
+              measure different things: receipts arrive about a year after the tax they settle,
+              and the model grows gains smoothly from {baseYearLabel}, where the OBR forecasts
+              receipts year by year.
             </li>
           ) : null}
           <li>
-            <strong>Schedules.</strong> policyengine-uk {metadata.policyengine_uk_version}{" "}
-            charges residential property and Business Asset Disposal Relief gains on their own
-            schedules when a dataset records them. The reform takes residential property gains
-            to the same income tax rates and withdraws the relief, so qualifying gains (Investors&apos;
-            Relief included, which the engine&apos;s input merges with it) take the reformed main
-            rates, as in CenTax&apos;s rates-only estimate. Carried interest has been taxed as
-            income since 6 April 2026, outside CGT, so the reform and custom rates leave it
-            where it is. On a dataset without those columns the extra parameters are inert.
+            <strong>Which gains are taxed how.</strong> Under current law, residential property
+            gains and gains qualifying for Business Asset Disposal Relief (with Investors&apos;
+            Relief) are taxed on their own rate schedules. The reform charges residential property
+            gains at income tax rates like other gains and withdraws the relief, so qualifying
+            gains pay the new main rates, as in CenTax&apos;s rates-only estimate. Carried interest
+            has been taxed as income, outside CGT, since 6 April 2026, so it is unaffected.
           </li>
           <li>
-            <strong>Simulation.</strong> The reform runs through{" "}
+            <strong>Results by group.</strong> Budget figures and the breakdowns by income group,
+            household type and region are weighted totals over the simulated households.
+          </li>
+        </ul>
+        <TechnicalDetails>
+          <li>
+            Dataset file <span className={CODE}>{dataset.uri}</span>, sha256{" "}
+            <span className="font-mono">{dataset.sha256.slice(0, 12)}…</span>, checked before
+            any run.
+          </li>
+          <li>
+            Build record: {dataset.producer}. Built with{" "}
+            <ExternalLink href="https://github.com/PolicyEngine/microcosm">microcosm</ExternalLink>.
+          </li>
+          <li>{dataset.columns} On a dataset without these columns the schedule parameters are inert.</li>
+          {figures.entrants ? (
+            <li>
+              New taxpayers: the {figures.entrants.bound} bound is the dataset build&apos;s projection
+              fence; the {figures.entrants.audit} count is this repository&apos;s uprating audit on
+              policyengine-uk {metadata.policyengine_uk_version}.
+            </li>
+          ) : null}
+          <li>
+            Engine: policyengine-uk {metadata.policyengine_uk_version}, run through{" "}
             <ExternalLink href="https://github.com/PolicyEngine/policyengine.py">
               policyengine.py
             </ExternalLink>{" "}
-            {metadata.policyengine_version}, PolicyEngine&apos;s standard simulation wrapper:
-            budget and distributional outputs (income quintiles/quartiles, household type and
-            region) are weighted microdf aggregates over the simulation outputs. The 4.x
-            wrapper series is used because later releases certify one pinned engine version
-            and refuse to import alongside the engine release that carries the schedules.
+            {metadata.policyengine_version}; aggregates are weighted microdf sums. The 4.x
+            wrapper is used because later releases pin a single engine version that predates the
+            schedules.
           </li>
           <li>
-            <strong>Behavioural response.</strong> Applied through a policy simulation modifier
-            that registers the baseline branch, so the elasticity measures the true change in
-            marginal rates; the pipeline verifies the response is active before writing
-            results. Every case sets the engine&apos;s retention-rate parameter (
-            <span className="break-all font-mono text-xs">{metadata.elasticity_parameter}</span>) and
-            leaves its marginal-tax-rate parameter at zero (see below).
+            Projection indices:{" "}
+            {Object.entries(indices).map(([variable, path], i) => (
+              <span key={variable}>
+                {i ? "; " : ""}
+                <span className="font-mono">{variable}</span> by{" "}
+                <span className={CODE}>{path}</span>
+              </span>
+            ))}
+            . Factors applied are in{" "}
+            <span className="font-mono">{metadata.projection.audit}</span>, fingerprint{" "}
+            <span className="font-mono">{metadata.projection.fingerprint}</span> (part of every
+            simulation id).
           </li>
-        </ul>
+          <li>
+            Behavioural response: applied through a policy simulation modifier that registers the
+            baseline branch, so the change in marginal rates is measured against current law; the
+            pipeline checks the response is active before writing results. Each case sets{" "}
+            <span className={CODE}>{metadata.elasticity_parameter}</span> and leaves the
+            engine&apos;s marginal-tax-rate elasticity at zero.
+          </li>
+        </TechnicalDetails>
       </section>
 
       <section className="section-card scroll-mt-24" id="elasticity">
         <SectionHeading
-          title="Behavioural response: CenTax's elasticity, in CenTax's convention"
-          description="How realised gains respond to the share of each gain a taxpayer keeps."
+          title="How taxpayers respond to higher rates"
+          description="When CGT rates rise, people sell fewer assets or delay selling, so fewer gains are realised and taxed. The size of that response is the single biggest assumption behind the revenue estimates."
         />
-        <p className="text-sm leading-6 text-slate-600">
-          Arun Advani and <ExternalLink href={central.url}>CenTax</ExternalLink> apply one
-          aggregate elasticity to the CGT base as a whole, with respect to the{" "}
-          <em>retention rate</em> (1 − t), the share of gains a taxpayer keeps after tax (pp.{" "}
-          <ExternalLink href={centaxPage(33)}>32</ExternalLink> and{" "}
-          <ExternalLink href={centaxPage(38)}>37</ExternalLink>). The model takes their
-          convention but not their calculation: it applies the elasticity as a power to each
-          person&apos;s marginal retention rate. A person&apos;s marginal rate differs from an
-          aggregate rate, and away from 1.0, as at the sensitivity table&apos;s
-          0.5 and 2.0, the power differs from a linear reading of the elasticity. For each person,
-        </p>
-        <p className="my-3 rounded-lg bg-slate-50 p-4 text-center font-mono text-sm">
-          realised gains × ((1 − t₁) / (1 − t₀))<sup>e</sup>
-        </p>
-        <p className="text-sm leading-6 text-slate-600">
-          where t₀ and t₁ are the person&apos;s marginal rates on gains under current law and
-          under the reform, shared across the main, residential property and Business Asset
-          Disposal Relief schedules in proportion to the gains on each. The central case is
-          CenTax&apos;s {central.e_retention.toFixed(1)}, which they call &ldquo;our central
-          elasticity estimate&rdquo; (Advani, Lonsdale and Summers, 2024, p.{" "}
-          <ExternalLink href={central.url}>37</ExternalLink>). PolicyEngine UK adopts CenTax&apos;s central value as its default (policyengine-uk
-          2.134.0, PR{" "}
-          <ExternalLink href="https://github.com/PolicyEngine/policyengine-uk/pull/2419">#2419</ExternalLink>
-          ), and this dashboard sets the elasticity directly in every case. It is an assumption
-          for a package that also reforms the base, not an estimate for this rates-only reform,
-          so the{" "}
-          <TabLink onNavigate={onNavigate} tab="reform" section="sensitivity">
-            Reform
-          </TabLink>{" "}
-          tab&apos;s sensitivity table for equalisation shows CenTax&apos;s range and the
-          official HMRC/OBR elasticity described below beside it, with a case of no response.
-        </p>
-        <p className="mt-3 text-sm leading-6 text-slate-600">
-          CenTax&apos;s package removes the uplift at death and charges gains on departure,
-          closing two ways of deferring or avoiding the tax; this dashboard models neither. They
-          expect a larger response to a rate rise on the current base and advise against equalising rates without those reforms (Advani, Hughson
-          and Summers, <em>Taxes at the top</em>, CenTax, September 2026, p.{" "}
-          <ExternalLink href="https://www.nuffieldfoundation.org/wp-content/uploads/2023/03/Taxes-at-the-top-Understanding-what-high-earners-pay-and-options-for-reform.pdf#page=20">
-            17
-          </ExternalLink>
-          ).
-        </p>
+        <ul className={LIST}>
+          <li>
+            <strong>How it is measured.</strong> The response is an elasticity: how much realised
+            gains change when the share of each gain a taxpayer keeps after tax, 1 − t, changes.
+            This follows the convention of Advani, Lonsdale &amp; Summers (
+            <ExternalLink href={CENTAX_REPORT}>CenTax</ExternalLink>, 2024, pp.{" "}
+            <ExternalLink href={centaxPage(33)}>32</ExternalLink> and{" "}
+            <ExternalLink href={centaxPage(38)}>37</ExternalLink>).
+          </li>
+          <li>
+            <strong>How it is applied.</strong> For each person, realised gains are scaled by
+            <span className="my-3 block overflow-x-auto whitespace-nowrap rounded-lg bg-slate-50 px-1 py-3 text-center font-mono text-xs sm:p-4 sm:text-sm">
+              realised gains × ((1 − t₁) / (1 − t₀))<sup>e</sup>
+            </span>
+            where t₀ and t₁ are the person&apos;s marginal rates on gains under current law and
+            under the reform (averaged across the main, residential property and relief schedules
+            in proportion to their gains), and e is the elasticity.
+          </li>
+          <li>
+            <strong>Per person, not in aggregate.</strong> CenTax apply one elasticity to total
+            gains; this model applies it to each person&apos;s own marginal rate, so it takes
+            CenTax&apos;s convention but not their calculation. Because the elasticity is a power,
+            values away from 1.0, such as 0.5 and 2.0, also differ from a straight-line reading.
+          </li>
+          <li>
+            <strong>Central value: {central.e_retention.toFixed(1)}.</strong> This is CenTax&apos;s
+            &ldquo;central elasticity estimate&rdquo; (p.{" "}
+            <ExternalLink href={central.url}>37</ExternalLink>) and PolicyEngine UK&apos;s default.
+          </li>
+          <li>
+            <strong>Main caveat.</strong> CenTax chose that value for a package that also removes
+            the uplift at death and charges gains when people leave the UK, two ways of deferring
+            or avoiding the tax. This dashboard models neither. CenTax expect a larger response to
+            a rate rise on today&apos;s tax base and advise against equalising rates without those
+            reforms (Advani, Hughson &amp; Summers, <em>Taxes at the top</em>, CenTax, September
+            2026, p.{" "}
+            <ExternalLink href="https://www.nuffieldfoundation.org/wp-content/uploads/2023/03/Taxes-at-the-top-Understanding-what-high-earners-pay-and-options-for-reform.pdf#page=20">
+              17
+            </ExternalLink>
+            ).
+          </li>
+          <li>
+            <strong>Testing the assumption.</strong> The{" "}
+            <TabLink onNavigate={onNavigate} tab="reform" section="sensitivity">
+              Reform
+            </TabLink>{" "}
+            tab&apos;s sensitivity chart shows the result with no response, across CenTax&apos;s
+            range
+            {centaxRange ? ` (${centaxRange.lower.toFixed(1)} to ${centaxRange.upper.toFixed(1)})` : ""}
+            , and at the official HMRC/OBR value described below.
+          </li>
+        </ul>
+        <TechnicalDetails>
+          <li>
+            PolicyEngine UK adopted CenTax&apos;s central value as its default in policyengine-uk
+            2.134.0 (PR{" "}
+            <ExternalLink href="https://github.com/PolicyEngine/policyengine-uk/pull/2419">
+              #2419
+            </ExternalLink>
+            ); this dashboard still sets the elasticity explicitly in every case.
+          </li>
+        </TechnicalDetails>
       </section>
 
       <section className="section-card scroll-mt-24" id="elasticity-gap">
         <SectionHeading
-          title="The official elasticity and CenTax's"
-          description="Why HMRC's ready reckoner shows rate rises losing revenue where this dashboard's central case raises it."
+          title="Why official estimates differ"
+          description="HMRC and the OBR assume a much stronger response than CenTax, which is why HMRC's ready reckoner shows large rate rises losing revenue while this dashboard's central case raises it."
         />
-        <ul className="mt-2 list-disc space-y-2 pl-5 text-sm leading-6 text-slate-600">
+        <ul className={LIST}>
           <li>
-            <strong>The official assumption.</strong> HMRC and the OBR use a retention-rate
-            elasticity of {official.e_retention} for the main CGT rates and{" "}
-            {official.badr_e_retention} for gains qualifying for Business Asset Disposal Relief
-            (<ExternalLink href={`${official.url}#page=3`}>OBR</ExternalLink>,{" "}
+            <strong>The official values.</strong> HMRC and the OBR use {official.e_retention} for
+            the main CGT rates and {official.badr_e_retention} for gains qualifying for Business
+            Asset Disposal Relief (<ExternalLink href={`${official.url}#page=3`}>OBR</ExternalLink>,{" "}
             {formatPublished(official.published.slice(0, 7))}, para 1.9 and{" "}
-            <ExternalLink href={`${official.url}#page=5`}>Table</ExternalLink> 1.1; HMRC&apos;s{" "}
-            <ExternalLink href={`${official.url}#page=3`}>estimate</ExternalLink> from 1998 to 2018
-            is 4.0, para 1.10). The main figure is{" "}
+            <ExternalLink href={`${official.url}#page=5`}>Table</ExternalLink> 1.1). HMRC&apos;s own{" "}
+            <ExternalLink href={`${official.url}#page=3`}>estimate</ExternalLink> for 1998 to 2018
+            is 4.0 (para 1.10). The main value is{" "}
             {(official.e_retention / central.e_retention).toFixed(1)} times CenTax&apos;s central
-            case. The official case applies both: the engine gives gains qualifying for the relief
-            their own elasticity, and both kinds of gain respond to the same change in a
-            person&apos;s marginal rate.
+            one. The dashboard&apos;s official case uses both values, each on its own kind of gain.
           </li>
           <li>
-            <strong>Why the two differ.</strong> CenTax start from US evidence, about 1.5 five
-            years after a change (Agersnap and Zidar, 2021), and lower it to{" "}
-            {central.e_retention.toFixed(1)} for two reasons: their package removes the uplift at
-            death, which the US keeps; and equalisation brings income that was presented as gains
-            back into income tax, which estimates measured on the CGT base count as lost. CenTax make
-            no adjustment for the charge on departure, on the grounds that the US evidence already
-            reflects little scope to avoid the tax by emigrating. HMRC&apos;s figure is estimated from UK responses under the
-            current base.
+            <strong>Why they differ.</strong> HMRC&apos;s figure comes from UK responses under the
+            current tax base. CenTax start from US evidence of about 1.5 five years after a change
+            (Agersnap &amp; Zidar, 2021) and lower it to {central.e_retention.toFixed(1)} because
+            their package removes the uplift at death, which the US keeps, and because equalising
+            rates brings income that was presented as gains back into income tax, which estimates
+            based only on CGT count as lost. They make no adjustment for the charge on leaving the
+            UK, since the US evidence already reflects little scope to avoid the tax by emigrating.
           </li>
           <li>
-            <strong>What it does to a rate rise.</strong> Take a taxpayer whose marginal rate on
-            gains rises from 24% to 34%, as in the ready reckoner&apos;s largest row. At the central
-            elasticity, their realised gains fall by {percent(atCentral.gains)} and the revenue
-            those gains raise {atCentral.revenue >= 0 ? "rises" : "falls"} by{" "}
-            {percent(atCentral.revenue)}. At the official elasticity, realised gains fall by{" "}
-            {percent(atOfficial.gains)} and revenue {atOfficial.revenue >= 0 ? "rises" : "falls"} by{" "}
-            {percent(atOfficial.revenue)}, the direction HMRC&apos;s row shows. On a dataset, the
-            aggregate effect depends on where its taxpayers&apos; marginal rates on gains sit.
+            <strong>A worked example.</strong> Take a taxpayer whose marginal rate on gains rises
+            from 24% to 34%, the ready reckoner&apos;s largest row. At the central elasticity their
+            realised gains fall by {percent(atCentral.gains)} and the tax on them{" "}
+            {atCentral.revenue >= 0 ? "rises" : "falls"} by {percent(atCentral.revenue)}. At the
+            official elasticity gains fall by {percent(atOfficial.gains)} and the tax{" "}
+            {atOfficial.revenue >= 0 ? "rises" : "falls"} by {percent(atOfficial.revenue)}, the
+            direction HMRC&apos;s row shows. Across the whole dataset the effect depends on where
+            taxpayers&apos; marginal rates sit.
           </li>
           <li>
-            <strong>On this dataset.</strong>{" "}
-            The{" "}
+            <strong>Where to see it.</strong> The{" "}
             <TabLink onNavigate={onNavigate} tab="reform" section="sensitivity">
               Reform
             </TabLink>{" "}
-            tab&apos;s sensitivity table gives
-            the reform&apos;s first-year change in CGT revenue at each elasticity, and the
-            Benchmarks tab scores the ready reckoner&apos;s rows at the central and the official
-            one.
+            tab&apos;s sensitivity chart gives the reform&apos;s first-year revenue at each
+            elasticity, and the{" "}
+            <TabLink onNavigate={onNavigate} tab="benchmarks">
+              Benchmarks
+            </TabLink>{" "}
+            tab scores the ready reckoner&apos;s rows at the central and official values.
           </li>
         </ul>
       </section>
 
       <section className="section-card scroll-mt-24" id="explorer">
-        <SectionHeading title="Custom rates, run live" />
-        <ul className="mt-2 list-disc space-y-2 pl-5 text-sm leading-6 text-slate-600">
+        <SectionHeading
+          title="Custom rates"
+          description={`The Reform tab's Custom rates option lets you choose your own CGT rates and treatment of Business Asset Disposal Relief, and scores them on ${dataset.shortLabel} for every modelled year with the same model and assumptions as the main results.`}
+        />
+        <ul className={LIST}>
           <li>
-            <strong>Same pipeline, run live.</strong> The Reform tab&apos;s Custom rates option
-            scores a schedule of CGT rates and a treatment of Business Asset Disposal Relief you
-            choose on {dataset.shortLabel} for every modelled year. It runs the pipeline&apos;s own
-            code (the same pinned per-year datasets, cached baseline simulations, behavioural
-            response and impact calculations) on a Modal backend, or locally through the{" "}
-            <span className="font-mono text-xs">uk-cgt-reform-explore</span> command. Nothing
-            is precomputed or interpolated. Run live, equalisation with the relief withdrawn
-            builds the pipeline&apos;s own reform and reproduces its figures, so the tab shows the
-            precomputed results for that schedule at once and runs any other schedule live,
-            including equalisation with a value changed.
+            <strong>What you can change.</strong> The rates apply to both the main and the
+            residential property schedules, which have charged the same rates since 30 October
+            2024. The relief can be withdrawn, or kept at a whole-percentage-point rate no higher
+            than the additional rate with a lifetime limit of £500k, £1m (current law) or £10m
+            (the limit until March 2020).
           </li>
           <li>
-            <strong>Scope.</strong> The chosen rates reach the main schedule and the residential
-            property schedule, which have charged the same rates since 30 October 2024. Business
-            Asset Disposal Relief can be kept, at a whole-point rate no higher than the additional
-            rate and a lifetime limit of £500k, £1m (current law) or £10m (the limit until March
-            2020), or withdrawn.
+            <strong>How it runs.</strong> Each schedule is simulated in full; nothing is
+            interpolated. Equalisation with the relief withdrawn is the main reform, so its
+            results appear at once; any other schedule, including equalisation with one value
+            changed, runs live.
           </li>
           <li>
-            <strong>Cache.</strong> Every completed run is stored under a key made of the dataset
-            digest, the projection fingerprint, the engine and wrapper versions and the reform
-            fingerprint (the rates and the elasticity). Anyone who later asks for the same schedule
-            is served the stored result at once, and a change to the data or the engine can never
-            reuse a stale one.
+            <strong>Saved results.</strong> Every completed run is stored, so anyone who later
+            asks for the same schedule gets it at once. A change to the data or the model always
+            triggers a fresh run rather than reusing an old result.
           </li>
         </ul>
+        <TechnicalDetails>
+          <li>
+            Runs the pipeline&apos;s own code (the same pinned per-year datasets, cached baseline
+            simulations, behavioural response and impact calculations) on a Modal backend, or
+            locally with <span className="font-mono">uk-cgt-reform-explore</span>.
+          </li>
+          <li>
+            Cache key: dataset digest, projection fingerprint, engine and wrapper versions, and
+            the reform fingerprint (rates and elasticity).
+          </li>
+        </TechnicalDetails>
       </section>
     </div>
   );

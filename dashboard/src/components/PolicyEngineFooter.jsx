@@ -51,7 +51,7 @@ export default function PolicyEngineFooter() {
             </a>
           ))}
         </nav>
-        <p className="m-0 text-[13px] text-white/70 md:ml-auto">
+        <p className="m-0 text-[13px] text-white md:ml-auto">
           &copy; {new Date().getFullYear()} PolicyEngine
         </p>
       </div>

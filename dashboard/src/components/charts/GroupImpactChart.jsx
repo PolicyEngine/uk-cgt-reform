@@ -42,13 +42,13 @@ export default function GroupImpactChart({ groupsByYear, initialYear }) {
 
   return (
     <>
-      <div className="mb-4 flex flex-wrap gap-3">
+      <div className="mb-4 flex flex-wrap gap-2 sm:gap-3">
         <YearSelect years={years} value={groupYear} onChange={setGroupYear} />
         <LabelledSelect
           label="Group by"
           options={[
-            { value: "quintile", label: "Income quintiles" },
-            { value: "quartile", label: "Income quartiles" },
+            { value: "quintile", label: "Quintiles" },
+            { value: "quartile", label: "Quartiles" },
             { value: "household_type", label: "Household type" },
             { value: "region", label: "Region" },
           ]}
@@ -58,8 +58,8 @@ export default function GroupImpactChart({ groupsByYear, initialYear }) {
         <LabelledSelect
           label="Metric"
           options={[
-            { value: "absolute", label: "£ per household" },
-            { value: "relative", label: "% of income" },
+            { value: "absolute", label: "Average £" },
+            { value: "relative", label: "Average %" },
           ]}
           value={groupMetric}
           onChange={setGroupMetric}
@@ -137,15 +137,21 @@ export default function GroupImpactChart({ groupsByYear, initialYear }) {
   );
 }
 
-// How the groups are defined, for the Notes under the chart.
-export function GroupDefinitions() {
+// How the groups are defined, as bullets for the Notes under the chart; a
+// caller adds its own bullets as children.
+export function GroupDefinitions({ children }) {
   return (
-    <p>
-      Income groups are weighted quantiles of baseline household net income. Household types:
-      &ldquo;Pensioner&rdquo; households have no working-age adults; &ldquo;With children&rdquo;
-      households contain at least one child. Regional averages reflect where households holding
-      taxable gains live in the survey data and carry more sampling noise than the income groups;
-      households without an assigned area are excluded.
-    </p>
+    <ul className="list-disc space-y-1.5 pl-5">
+      <li>Income groups are weighted quantiles of household net income before the reform.</li>
+      <li>
+        &ldquo;Pensioner&rdquo; households have no working-age adults; &ldquo;With children&rdquo;
+        households contain at least one child.
+      </li>
+      <li>
+        Regional averages reflect where households with taxable gains live in the survey, so they
+        are noisier than the income groups; households without an assigned area are excluded.
+      </li>
+      {children}
+    </ul>
   );
 }
