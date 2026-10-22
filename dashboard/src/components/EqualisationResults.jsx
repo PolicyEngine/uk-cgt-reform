@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  formatElasticity,
   formatPct,
   formatPublished,
   formatSignedBn,
@@ -11,13 +10,12 @@ import {
 } from "../lib/formatters";
 import {
   BASELINE_SCHEDULE_RATES,
-  describeBadr,
+  badrLimitLabel,
   getBenchmarks,
   getBudget,
   getDatasetInfo,
   getEntrants,
   getFirstYear,
-  getFiveYearTotal,
   getIncomeChangeGroups,
   getIncomeChangeGroupsByYear,
   getReformSchedules,
@@ -27,8 +25,11 @@ import {
   getValidation,
 } from "../lib/dataHelpers";
 import BudgetChart from "./charts/BudgetChart";
-import GroupImpactChart from "./charts/GroupImpactChart";
-import { Card, MetricCard, Notes, TabLink, TableScroll, TipHeader } from "./controls";
+import GroupImpactChart, { GroupDefinitions } from "./charts/GroupImpactChart";
+import SensitivityChart from "./charts/SensitivityChart";
+import RateChangeChart from "./charts/RateChangeChart";
+import YieldChart from "./charts/YieldChart";
+import { Card, MetricCard, Notes, SourceLabel, SourceLink, TabLink } from "./controls";
 import SectionHeading from "./SectionHeading";
 
 // Where each sensitivity scenario's elasticity comes from: the static case
@@ -38,7 +39,15 @@ const CENTAX_SOURCE = {
   label: "Advani, Lonsdale & Summers (2024), CenTax",
   url: "https://centax.org.uk/wp-content/uploads/2024/10/AdvaniLonsdaleSummers2024_CGTReform.pdf#page=38",
 };
-const STATIC_SOURCE = { label: "None: taxpayers do not respond", url: null };
+
+const BADR_GUIDANCE = "https://www.gov.uk/business-asset-disposal-relief";
+const EXEMPT_AMOUNT = "https://www.gov.uk/capital-gains-tax/allowances";
+const HMRC_TABLE_4 =
+  "https://assets.publishing.service.gov.uk/media/6a7b242a347b198efd290ed7/Table_4_2026_Business_asset_disposal_and_investors_reliefs.ods";
+const OBR_EFO = "https://obr.uk/efo/economic-and-fiscal-outlook-march-2026/";
+const SAVINGS_PROPERTY_RATES =
+  "https://www.gov.uk/government/publications/changes-to-tax-rates-for-property-savings-and-dividend-income";
+const SCOTTISH_INCOME_TAX = "https://www.gov.uk/scottish-income-tax";
 
 function officialSource(official) {
   return {
@@ -49,32 +58,12 @@ function officialSource(official) {
   };
 }
 
-function SourceLink({ row, official }) {
-  let source = CENTAX_SOURCE;
-  if (row.e_retention === 0) source = STATIC_SOURCE;
-  else if (row.e_retention === official.e_retention) source = officialSource(official);
-  if (!source.url) return <td className="font-normal text-slate-500">{source.label}</td>;
-  return (
-    <td>
-      <a
-        href={source.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="font-normal text-[color:var(--pe-color-primary-600)] underline decoration-1 underline-offset-2 hover:opacity-80"
-      >
-        {source.label}
-      </a>
-    </td>
-  );
-}
-
 // The Reform tab's precomputed results: equalisation with income tax, as the
 // pipeline scored it, with the detail a live run does not produce (the yield
 // by schedule and the sensitivity to the elasticity).
 export default function EqualisationResults({ data, onNavigate, onChooseCustom }) {
   const budget = getBudget(data);
   const firstYear = getFirstYear(data);
-  const fiveYearTotal = getFiveYearTotal(data);
   const headlineGroups = getIncomeChangeGroups(data, firstYear);
   const sensitivity = getSensitivity(data);
   const { central, official, centax_range: centaxRange } = getBenchmarks(data).elasticities;
@@ -89,11 +78,15 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
     firstYearRow.cgt_change_from_entrants_bn / firstYearRow.gov_balance_change_bn;
   const recorded = (gains) => (gains > 0 ? "" : ` ${dataset.shortLabel} records no such gains, so this line is inert here.`);
   const topQuintile = headlineGroups.quintile[headlineGroups.quintile.length - 1];
+  // Quintiles hold equal numbers of households, so the top fifth's share of
+  // the total fall is its average over the sum of the five averages.
+  const topShare =
+    topQuintile.avg_change_gbp / headlineGroups.quintile.reduce((sum, group) => sum + group.avg_change_gbp, 0);
   const split = getScheduleSplit(data);
   // Equalisation with the relief kept: the step before it is withdrawn.
   const keptRelief = split.steps.find((row) => row.step === "residential");
   // The spread of the first-year yield across the behavioural cases in the
-  // sensitivity table (the static case excluded): the official case and
+  // sensitivity chart (the static case excluded): the official case and
   // CenTax's upper case can turn it negative.
   const behavioural = sensitivity.filter((row) => row.e_retention !== 0);
   const lowest = behavioural.reduce((a, b) => (b.revenue_2026_bn < a.revenue_2026_bn ? b : a));
@@ -102,305 +95,231 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
     row.e_retention === official.e_retention
       ? "the official HMRC/OBR elasticity"
       : `a retention elasticity of ${row.e_retention.toFixed(1)}`;
-  const pct = (rate) => formatPct(rate * 100, 0);
 
   return (
     <div className="space-y-6">
       <Card>
         <SectionHeading
           title={`Headline results, ${firstYear}`}
-          description={`Equalising CGT rates with income tax rates, at CenTax's central elasticity, on ${dataset.shortLabel}. Distributional figures cover all households.`}
+          description={
+            <>
+              The reform&apos;s first year, at{" "}
+              <SourceLink href={CENTAX_SOURCE.url}>CenTax&apos;s</SourceLink> central behavioural
+              response, on {dataset.shortLabel}. Distributional figures cover all households.
+            </>
+          }
         />
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className={`grid gap-4 ${topQuintile.share_affected_pct !== undefined ? "md:grid-cols-3" : "md:grid-cols-2"}`}>
           <MetricCard
-            label={`Change in government balance, ${firstYear}`}
+            label="Change in government balance"
             value={formatSignedBn(firstYearRow.gov_balance_change_bn, 1)}
             note="After taxpayers realise fewer gains."
-            tip={`Across the behavioural cases in the sensitivity table, the ${firstYear} change in CGT revenue runs from ${formatSignedBn(lowest.revenue_2026_bn, 1)} at ${caseName(lowest)} to ${formatSignedBn(highest.revenue_2026_bn, 1)} at ${caseName(highest)}.`}
+            tip={`Across the behavioural cases in the sensitivity chart, the first-year change in CGT revenue runs from ${formatSignedBn(lowest.revenue_2026_bn, 1)} at ${caseName(lowest)} to ${formatSignedBn(highest.revenue_2026_bn, 1)} at ${caseName(highest)}.`}
           />
           <MetricCard
-            label={`Five-year change in government balance, ${firstYear} to ${budget.at(-1).year}`}
-            value={formatSignedBn(fiveYearTotal, 1)}
-            note="Sum of the five modelled years."
+            label="Top fifth of households: average change in net income"
+            value={formatSignedCurrency(topQuintile.avg_change_gbp)}
+            note={`${formatSignedPct(topQuintile.relative_change_pct)} of net income; ${formatPct(100 * topShare, 0)} of the total fall in household income.`}
           />
-          <MetricCard
-            label={`Change in net income, top income quintile, ${firstYear}`}
-            value={formatSignedPct(topQuintile.relative_change_pct)}
-            note={`${formatSignedCurrency(topQuintile.avg_change_gbp)} per household on average.`}
-          />
+          {topQuintile.share_affected_pct !== undefined ? (
+            <MetricCard
+              label="Top fifth of households: share with lower net income"
+              value={formatPct(topQuintile.share_affected_pct, 1)}
+              note="Households in the top fifth whose net income falls."
+            />
+          ) : null}
         </div>
       </Card>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card className="min-w-0">
+        <Card className="flex min-w-0 flex-col">
           <SectionHeading
             title="Budgetary impact by year"
-            description="CGT revenue and the change in the government balance, by fiscal year."
+            description="Each bar shows the change in the government's balance in one fiscal year, after taxpayers realise fewer gains."
           />
           <BudgetChart budget={budget} />
-          <Notes>
+          <Notes className="mt-auto">
             <p>
-              Baseline revenue grows as the engine uprates the dataset to each year;{" "}
-              <TabLink onNavigate={onNavigate} tab="methodology" section="pathway">
-                the Methodology tab compares that projection with the OBR&apos;s forecast
-              </TabLink>
-              .
+              Baseline revenue grows as gains are uprated with the OBR&apos;s{" "}
+              <SourceLink href={OBR_EFO}>forecast</SourceLink> of GDP per head;{" "}
+              <TabLink onNavigate={onNavigate} tab="methodology" section="projection">
+                Methodology
+              </TabLink>{" "}
+              describes the projection.
             </p>
             {entrantShare > 0.05 ? (
               <p>
                 Entrants by uprating (
+                see the{" "}
                 <TabLink onNavigate={onNavigate} tab="baseline" section="entrants">
-                  see the Baseline tab
-                </TabLink>
-                ) contribute {formatSmallBn(firstYearRow.cgt_change_from_entrants_bn)} of the{" "}
-                {firstYear} change ({formatPct(100 * entrantShareOfChange, 0)}).
+                  Baseline
+                </TabLink>{" "}
+                tab
+                ) contribute {formatSmallBn(firstYearRow.cgt_change_from_entrants_bn)} of the
+                first-year change ({formatPct(100 * entrantShareOfChange, 0)}).
               </p>
             ) : null}
           </Notes>
         </Card>
 
-        <Card className="min-w-0">
+        <Card className="flex min-w-0 flex-col">
           <SectionHeading
             title="Change in household net income by income group"
-            description="Grouped by the household's position in the baseline income distribution."
+            description="Each bar shows the average change in net income for one group of households, ranked by income before the reform."
           />
-          <GroupImpactChart groupsByYear={getIncomeChangeGroupsByYear(data)} initialYear={firstYear} />
-          <Notes>
-            <p>
-              The switches group households by income quintile or quartile, household type or
-              region. Gains that taxpayers no longer realise in response to the higher rates count
-              as lower income in the year, alongside the extra tax paid, so the total fall in net
-              income exceeds the revenue raised.
-            </p>
+          <GroupImpactChart groupsByYear={getIncomeChangeGroupsByYear(data)} />
+          <Notes className="mt-auto">
+            <GroupDefinitions>
+              <li>
+                Gains that taxpayers no longer realise count as lower income, alongside the extra
+                tax paid, so the total fall in net income exceeds the revenue raised.
+              </li>
+            </GroupDefinitions>
           </Notes>
         </Card>
       </div>
 
-      {/* Both tables need the full width: side by side they wrap and scroll. */}
         <Card className="min-w-0">
           <SectionHeading
-            title={`Where the yield comes from, ${split.year}`}
-            description="The reform built up one schedule at a time."
+            title="Where the yield comes from"
+            description={
+              <>
+                Each bar adds the reform&apos;s parts one at a time in its first year, first with
+                no behavioural response and then with{" "}
+                <SourceLink href={CENTAX_SOURCE.url}>CenTax&apos;s</SourceLink> central response.
+              </>
+            }
           />
-          <TableScroll>
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Step</th>
-                <th className="num">Change in CGT, static</th>
-                <th className="num">Change in CGT, central elasticity</th>
-              </tr>
-            </thead>
-            <tbody>
-              {split.steps.map((row) => (
-                <tr key={row.step}>
-                  <td>{row.label}</td>
-                  <td className="num">{formatSignedBn(row.static_increment_bn, 1)}</td>
-                  <td className="num">{formatSignedBn(row.central_increment_bn, 1)}</td>
-                </tr>
-              ))}
-              <tr className="total">
-                <td>The reform</td>
-                <td className="num">{formatSignedBn(split.steps.at(-1).static_cgt_change_bn, 1)}</td>
-                <td className="num">{formatSignedBn(split.steps.at(-1).central_cgt_change_bn, 1)}</td>
-              </tr>
-            </tbody>
-          </table>
-          </TableScroll>
+          <YieldChart steps={split.steps} />
           <Notes>
+            <p>Each segment is what that step adds once the ones before it are in place.</p>
+            {validation.badr_gains_bn > 0 ? (
+              <p>
+                {dataset.shortLabel} charges gains qualifying for Business Asset Disposal{" "}
+                <SourceLink href={BADR_GUIDANCE}>Relief</SourceLink> on their own schedule; the{" "}
+                <TabLink onNavigate={onNavigate} tab="baseline" section="benchmarks">
+                  Baseline
+                </TabLink>{" "}
+                tab compares them with HMRC&apos;s{" "}
+                <SourceLink href={HMRC_TABLE_4}>statistics</SourceLink>.
+              </p>
+            ) : (
+              <p>
+                {dataset.shortLabel} records no gains that qualify for Business Asset Disposal{" "}
+                <SourceLink href={BADR_GUIDANCE}>Relief</SourceLink>, so withdrawing it
+                changes nothing here.
+              </p>
+            )}
             <p>
-              The main rates come first, then residential property gains, then withdrawing
-              Business Asset Disposal Relief. Each row is what that change adds once the rows above
-              it are in place, with no behavioural response and at the central elasticity.
-            </p>
-            <p>
-          {validation.badr_gains_bn > 0 ? (
-            <>
-              On {dataset.shortLabel}, the relief&apos;s qualifying gains are charged on their own
-              schedule;{" "}
-              <TabLink onNavigate={onNavigate} tab="baseline" section="benchmarks">
-                the Baseline tab compares them with HMRC&apos;s statistics
-              </TabLink>
-              .{" "}
-            </>
-          ) : (
-            <>
-              {dataset.shortLabel} records no gains that qualify for the relief, so withdrawing it
-              changes nothing here.{" "}
-            </>
-          )}
-          Equalising the rates while keeping the relief at current law changes CGT revenue by{" "}
-          {formatSignedBn(keptRelief.static_cgt_change_bn, 1)} before behaviour and{" "}
-          {formatSignedBn(keptRelief.central_cgt_change_bn, 1)} at the central elasticity.{" "}
-          <TabLink onNavigate={onChooseCustom}>Custom rates</TabLink> scores any rate for the
-          relief, or withdraws it, for every year.
+              Equalising the rates but keeping the relief changes CGT revenue by{" "}
+              {formatSignedBn(keptRelief.static_cgt_change_bn, 1)} with no behavioural response and{" "}
+              {formatSignedBn(keptRelief.central_cgt_change_bn, 1)} at the central elasticity;{" "}
+              <TabLink onNavigate={onChooseCustom}>Custom</TabLink> rates can score any rate for the
+              relief.
             </p>
           </Notes>
         </Card>
 
-        <Card className="min-w-0 scroll-mt-24" id="sensitivity">
-          <SectionHeading
-            title="Sensitivity to the behavioural elasticity"
-            description={`The ${firstYear} change in CGT revenue at each elasticity.`}
-          />
-        <TableScroll>
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Scenario</th>
-              <TipHeader
-                label="Elasticity, as applied"
-                tip="The elasticity of realised gains with respect to the retention rate (1 − t) that the engine applies, as each source states it: realised gains scale by ((1 − t₁) / (1 − t₀)) to the power e, with t the marginal rate on gains."
-              />
-              <TipHeader
-                className="num"
-                label={`Change in CGT revenue, ${firstYear}`}
-                tip="Change in capital gains tax revenue in the first year of the reform under this elasticity."
-              />
-              <th>Source</th>
-            </tr>
-          </thead>
-          <tbody>
-            {sensitivity.map((row) => (
-              <tr
-                key={row.name}
-                className={row.e_retention === central.e_retention ? "font-semibold" : ""}
-              >
-                <td>{row.name}</td>
-                <td>{formatElasticity(row)}</td>
-                <td className="num">{formatSignedBn(row.revenue_2026_bn)}</td>
-                <SourceLink row={row} official={official} />
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        </TableScroll>
+        <Card as="details" className="group min-w-0 scroll-mt-24" id="sensitivity">
+          <summary className="cursor-pointer select-none text-xl font-semibold tracking-tight text-slate-900 marker:text-[color:var(--pe-color-primary-600)]">
+            Sensitivity to the behavioural elasticity
+            <span className="ml-2 text-sm font-normal text-slate-500 group-open:hidden">
+              (expand to see how the result depends on taxpayers&apos; response)
+            </span>
+          </summary>
+          <p className="mb-5 mt-2 text-sm leading-6 text-slate-600">
+            Each bar shows the first-year change in CGT revenue under a different assumption about
+            how strongly taxpayers cut the gains they realise.
+          </p>
+          <SensitivityChart rows={sensitivity} centralRetention={central.e_retention} />
           <Notes>
           <p>
-            The revenue estimate depends on how strongly taxpayers reduce
-            realisations when rates rise. Each row re-runs the reform with a
-            different elasticity of realised gains with respect to the{" "}
+            Each bar re-runs the reform with a different elasticity of realised gains with respect
+            to the retention{" "}
             <TabLink onNavigate={onNavigate} tab="methodology" section="elasticity">
-              retention rate
+              rate
             </TabLink>{" "}
-            (1 − t). The bold row is this dashboard&apos;s central assumption,
-            CenTax&apos;s central {central.e_retention.toFixed(1)}; the rows either
-            side are CenTax&apos;s range, {centaxRange.lower.toFixed(1)} to{" "}
-            {centaxRange.upper.toFixed(1)}. The last row is the official HMRC/OBR
-            assumption.{" "}
-            <TabLink onNavigate={onNavigate} tab="methodology" section="elasticity-gap">
-              The Methodology tab explains how the official elasticity and CenTax&apos;s differ
-            </TabLink>{" "}
-            and{" "}
-            <TabLink onNavigate={onNavigate} tab="methodology" section="elasticity">
-              why CenTax expect a larger response to a rate rise on its own
-            </TabLink>
-            .{" "}
-            CenTax&apos;s range is
-            anchored on{" "}
+            (1 − t).
+          </p>
+          <p>
+            The dark bar is the dashboard&apos;s central assumption, CenTax&apos;s central{" "}
+            {central.e_retention.toFixed(1)}; the bars either side are CenTax&apos;s range,{" "}
+            {centaxRange.lower.toFixed(1)} to {centaxRange.upper.toFixed(1)}, from{" "}
+            <SourceLabel href={CENTAX_SOURCE.url} label="CenTax" />, anchored on{" "}
             <a
               href="https://www.aeaweb.org/articles?id=10.1257/aeri.20200535"
               target="_blank"
               rel="noopener noreferrer"
               className="underline decoration-1 underline-offset-2 hover:opacity-80"
             >
-              Agersnap &amp; Zidar (2021)
+              Agersnap
             </a>{" "}
-            and{" "}
+            &amp; Zidar (2021) and{" "}
             <a
               href="https://www.nber.org/papers/w28514"
               target="_blank"
               rel="noopener noreferrer"
               className="underline decoration-1 underline-offset-2 hover:opacity-80"
             >
-              Lavecchia &amp; Tazhitdinova (2024)
-            </a>
-            .
+              Lavecchia
+            </a>{" "}
+            &amp; Tazhitdinova (2024).
+          </p>
+          <p>
+            The last bar is the official HMRC/OBR assumption (
+            <SourceLabel href={officialSource(official).url} label="OBR" />, January 2025, para
+            1.9);{" "}
+            <TabLink onNavigate={onNavigate} tab="methodology" section="elasticity-gap">
+              Methodology
+            </TabLink>{" "}
+            describes both elasticities and the{" "}
+            <TabLink onNavigate={onNavigate} tab="methodology" section="elasticity">
+              scope
+            </TabLink>{" "}
+            of CenTax&apos;s central value.
           </p>
           </Notes>
         </Card>
 
       <Card as="details" className="group">
-        <summary className="cursor-pointer select-none font-semibold text-slate-800 marker:text-[color:var(--pe-color-primary-600)]">
-          What exactly does the reform change?
+        <summary className="cursor-pointer select-none text-xl font-semibold tracking-tight text-slate-900 marker:text-[color:var(--pe-color-primary-600)]">
+          What does the reform change?
           <span className="ml-2 text-sm font-normal text-slate-500 group-open:hidden">
             (expand for the full specification)
           </span>
         </summary>
         <div className="mt-4 space-y-3">
           <p className="text-sm leading-6 text-slate-600">
-            Effective from the {firstYear} fiscal year and held in place through {budget.at(-1).year}. All results on
-            this page compare this reform against current policy on the same baseline. The reformed
-            rates are the income tax rates on earnings; from April 2027 savings and property income
-            face 22%, 42% and 47% (the property rates in England, Wales and Northern Ireland), and
-            Scottish taxpayers&apos; earnings face Scotland&apos;s own bands, which the reform does not
-            follow.
+            Effective in every modelled year. All results on
+            this page compare this reform with current policy on the same baseline. The reformed
+            rates are the income tax rates on earnings; from April 2027 savings and property{" "}
+            <SourceLink href={SAVINGS_PROPERTY_RATES}>income</SourceLink> face 22%, 42% and 47% (the
+            property rates in England, Wales and Northern Ireland), and Scottish taxpayers&apos;
+            earnings face Scotland&apos;s own <SourceLink href={SCOTTISH_INCOME_TAX}>bands</SourceLink>,
+            which the reform does not follow. Residential property gains take the same rates, and the annual exempt{" "}
+            <SourceLink href={EXEMPT_AMOUNT}>amount</SourceLink> stays £3,000.
+            {recorded(validation.residential_property_gains_bn)}
           </p>
-          <TableScroll>
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Policy parameter</th>
-                <th>Baseline (current policy)</th>
-                <th>Reform</th>
-                <th>What it means</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Basic CGT rate</td>
-                <td>{formatPct(reform.basic_rate.baseline * 100, 0)}</td>
-                <td className="font-semibold">{formatPct(reform.basic_rate.reform * 100, 0)}</td>
-                <td>Gains falling in the basic income tax band are taxed at the {pct(reform.basic_rate.reform)} basic income tax rate.</td>
-              </tr>
-              <tr>
-                <td>Higher CGT rate</td>
-                <td>{formatPct(reform.higher_rate.baseline * 100, 0)}</td>
-                <td className="font-semibold">{formatPct(reform.higher_rate.reform * 100, 0)}</td>
-                <td>Gains in the higher band are taxed at the {pct(reform.higher_rate.reform)} higher income tax rate.</td>
-              </tr>
-              <tr>
-                <td>Additional CGT rate</td>
-                <td>{formatPct(reform.additional_rate.baseline * 100, 0)}</td>
-                <td className="font-semibold">{formatPct(reform.additional_rate.reform * 100, 0)}</td>
-                <td>Gains in the additional band (income over £125,140) are taxed at the {pct(reform.additional_rate.reform)} additional income tax rate.</td>
-              </tr>
-              <tr>
-                <td>Residential property CGT rates</td>
-                <td>
-                  {formatPct(BASELINE_SCHEDULE_RATES.residential_property.basic_rate * 100, 0)} /{" "}
-                  {formatPct(BASELINE_SCHEDULE_RATES.residential_property.higher_rate * 100, 0)}
-                </td>
-                <td className="font-semibold">
-                  {formatPct(schedules.residential_property.basic_rate * 100, 0)} /{" "}
-                  {formatPct(schedules.residential_property.higher_rate * 100, 0)} /{" "}
-                  {formatPct(schedules.residential_property.additional_rate * 100, 0)}
-                </td>
-                <td>
-                  Gains on UK residential property, charged on their own schedule, take the same
-                  income tax rates.{recorded(validation.residential_property_gains_bn)}
-                </td>
-              </tr>
-              <tr>
-                <td>Business Asset Disposal Relief</td>
-                <td>{describeBadr(BASELINE_SCHEDULE_RATES.badr)}</td>
-                <td className="font-semibold">{describeBadr(schedules.badr)}</td>
-                <td>
-                  {schedules.badr.withdrawn
-                    ? "Gains that qualify for the relief (Investors' Relief included) fall onto the main schedule at the reformed rates."
-                    : "Gains that qualify for the relief keep their own rate."}
-                  {recorded(validation.badr_gains_bn)}
-                </td>
-              </tr>
-              <tr>
-                <td>Annual exempt amount</td>
-                <td>£3,000</td>
-                <td>£3,000</td>
-                <td>Unchanged: the first £3,000 of gains each year stays tax-free.</td>
-              </tr>
-            </tbody>
-          </table>
-          </TableScroll>
+          <RateChangeChart
+            rows={[
+              { key: "basic", label: "Basic rate", baseline: reform.basic_rate.baseline, reform: reform.basic_rate.reform },
+              { key: "higher", label: "Higher rate", baseline: reform.higher_rate.baseline, reform: reform.higher_rate.reform },
+              {
+                key: "additional",
+                label: "Additional rate (income over £125,140)",
+                baseline: reform.additional_rate.baseline,
+                reform: reform.additional_rate.reform,
+              },
+              {
+                key: "badr",
+                label: "Business Asset Disposal Relief",
+                baseline: BASELINE_SCHEDULE_RATES.badr.rate,
+                reform: schedules.badr.withdrawn ? null : schedules.badr.rate,
+                baselineNote: `${badrLimitLabel(BASELINE_SCHEDULE_RATES.badr.lifetime_limit)} lifetime limit`,
+                reformNote: schedules.badr.withdrawn ? "gains pay the main rates" : undefined,
+              },
+            ]}
+          />
         </div>
       </Card>
     </div>

@@ -53,7 +53,7 @@ uplift at death and charges gains on departure, closing two ways of
 deferring or avoiding the tax, which this repo does not model. CenTax
 expect a larger response to a rate rise on the current base, and advise
 against equalising rates without the base reforms (*Taxes at the top*,
-September 2026, p.17); the upper end of the range and the official case
+September 2026, pp.17-18); the upper end of the range and the official case
 show how much of the yield rests on the assumption. The elasticity is
 medium-term and abstracts from short-run forestalling.
 """

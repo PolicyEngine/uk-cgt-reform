@@ -1,8 +1,10 @@
 "use client";
 
+import { useState } from "react";
+
 import {
   BASELINE_SCHEDULE_RATES,
-  describeBadr,
+  badrLimitLabel,
   getBudget,
   getEntrants,
   getFiveYearTotal,
@@ -22,20 +24,23 @@ import {
   READY_RECKONER,
   elasticityOption,
   readyReckonerRowFor,
-  sameBadr,
   sameElasticity,
 } from "../lib/schedule";
+import { colors } from "../lib/colors";
 import BudgetChart from "./charts/BudgetChart";
-import GroupImpactChart from "./charts/GroupImpactChart";
-import { Card, MetricCard, Notes, TabLink, TableScroll } from "./controls";
+import ChartLegend from "./charts/ChartLegend";
+import RateChangeChart from "./charts/RateChangeChart";
+import GroupImpactChart, { GroupDefinitions } from "./charts/GroupImpactChart";
+import { Card, MetricCard, Notes, SourceLink, TabLink } from "./controls";
 import SectionHeading from "./SectionHeading";
 
-const pct = (fraction) => formatPct(fraction * 100, 0);
+const EXEMPT_AMOUNT = "https://www.gov.uk/capital-gains-tax/allowances";
+
 const elasticityName = (e) => elasticityOption(e)?.label ?? `retention elasticity ${e}`;
 
 // Where a live run stands: a cache lookup for a shared link, a computation,
-// an error, or a finished run and whether the cache served it.
-export function StatusLine({ status, elapsedSeconds, error, result, datasetLabel }) {
+// or an error; a finished run shows its results instead.
+export function StatusLine({ status, error }) {
   if (status === "checking") {
     return (
       <p className="mt-4 text-sm leading-6 text-slate-600" role="status">
@@ -47,16 +52,20 @@ export function StatusLine({ status, elapsedSeconds, error, result, datasetLabel
     return (
       <p className="mt-4 text-sm leading-6 text-slate-600" role="status">
         Nobody has run this schedule yet, and a link does not start a computation on its own.
-        Press Calculate to compute it; it takes about half a minute.
+        Press Calculate to compute it; it should take 1–2 minutes.
       </p>
     );
   }
   if (status === "running") {
     return (
-      <p className="mt-4 text-sm leading-6 text-slate-600" role="status">
-        Running the five fiscal years on {datasetLabel}… {elapsedSeconds}s. A schedule nobody has
-        run before takes about half a minute; one that has been run before returns at once.
-      </p>
+      <div className="mt-6 flex flex-col items-center gap-3 py-6 text-center" role="status">
+        <span
+          aria-hidden="true"
+          className="h-8 w-8 animate-spin rounded-full border-[3px] border-slate-200 border-t-[color:var(--pe-color-primary-600)]"
+        />
+        <p className="text-base font-semibold text-slate-800">Processing…</p>
+        <p className="text-sm text-slate-500">This should take 1–2 minutes.</p>
+      </div>
     );
   }
   if (status === "error") {
@@ -66,126 +75,157 @@ export function StatusLine({ status, elapsedSeconds, error, result, datasetLabel
       </p>
     );
   }
-  if (status === "done" && result) {
-    const cache = result.metadata.cache ?? {};
-    const when = cache.computed_at ? new Date(cache.computed_at) : null;
-    return (
-      <p className="mt-4 text-sm leading-6 text-slate-600" role="status">
-        {cache.hit
-          ? `Served from the cache in ${elapsedSeconds}s; first computed ${when ? when.toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" }) : "earlier"}.`
-          : `Computed in ${elapsedSeconds}s. The result is cached, so anyone who runs this schedule again is served it at once.`}
-      </p>
-    );
-  }
   return null;
 }
 
-function SpecTable({ metadata }) {
+// This schedule against current law, as the rate chart the equalisation
+// results use: each band, then the relief.
+function ScheduleRates({ metadata }) {
   const baseline = metadata.baseline_rates;
   const reform = metadata.reform;
-  const changed = (band) => Math.abs(baseline[band] - reform[band]) > 1e-9;
+  const baselineBadr = metadata.baseline_badr ?? BASELINE_SCHEDULE_RATES.badr;
+  const reformBadr = metadata.reform_badr ?? BASELINE_SCHEDULE_RATES.badr;
   return (
-    <TableScroll>
-    <table className="data-table">
-      <thead>
-        <tr>
-          <th>Policy parameter</th>
-          <th>Current law</th>
-          <th>This schedule</th>
-          <th>What it means</th>
-        </tr>
-      </thead>
-      <tbody>
-        {BANDS.map((band) => (
-          <tr key={band.key}>
-            <td>{band.label.replace(" rate", " CGT rate")}</td>
-            <td>{pct(baseline[band.key])}</td>
-            <td className={changed(band.key) ? "font-semibold" : ""}>{pct(reform[band.key])}</td>
-            <td>{band.note}</td>
-          </tr>
-        ))}
-        <tr>
-          <td>Residential property CGT rates</td>
-          <td>
-            {pct(BASELINE_SCHEDULE_RATES.residential_property.basic_rate)} /{" "}
-            {pct(BASELINE_SCHEDULE_RATES.residential_property.higher_rate)}
-          </td>
-          <td className="font-semibold">
-            {pct(reform.basic_rate)} / {pct(reform.higher_rate)} / {pct(reform.additional_rate)}
-          </td>
-          <td>Gains on UK residential property, charged on their own schedule, take the same rates.</td>
-        </tr>
-        <tr>
-          <td>Business Asset Disposal Relief</td>
-          <td>{describeBadr(metadata.baseline_badr ?? BASELINE_SCHEDULE_RATES.badr)}</td>
-          <td className={metadata.reform_badr && !sameBadr(metadata.reform_badr, BADR_CURRENT_LAW) ? "font-semibold" : ""}>
-            {describeBadr(metadata.reform_badr ?? BASELINE_SCHEDULE_RATES.badr)}
-          </td>
-          <td>
-            {metadata.reform_badr?.withdrawn
-              ? "Gains that qualify for the relief (Investors' Relief included) take the main rates above."
-              : "Gains that qualify for the relief are charged at its rate, up to the lifetime limit."}
-          </td>
-        </tr>
-        <tr>
-          <td>Annual exempt amount</td>
-          <td>£3,000</td>
-          <td>£3,000</td>
-          <td>Unchanged: the first £3,000 of gains each year stays tax-free.</td>
-        </tr>
-      </tbody>
-    </table>
-    </TableScroll>
+    <>
+      <RateChangeChart
+        rows={[
+          ...BANDS.map((band) => ({
+            key: band.key,
+            label: band.label,
+            baseline: baseline[band.key],
+            reform: reform[band.key],
+          })),
+          {
+            key: "badr",
+            label: "Business Asset Disposal Relief",
+            baseline: baselineBadr.rate,
+            reform: reformBadr.withdrawn ? null : reformBadr.rate,
+            baselineNote: `${badrLimitLabel(baselineBadr.lifetime_limit)} lifetime limit`,
+            reformNote: reformBadr.withdrawn
+              ? "gains pay the main rates"
+              : `${badrLimitLabel(reformBadr.lifetime_limit)} lifetime limit`,
+          },
+        ]}
+      />
+    </>
   );
 }
 
 // HMRC's figures for the ready-reckoner row this run matches. HMRC reports
 // receipts, which arrive about a year after the liability, so each HMRC year
 // sits beside the run's liability a year earlier.
-function ReadyReckonerPanel({ row, result }) {
+// HMRC's receipts beside this run's change in the government balance, one
+// pair of bars per year, on one £m scale centred on £0.
+function ReckonerBars({ rows }) {
+  const [hover, setHover] = useState(null);
+  const max = Math.max(1, ...rows.flatMap((r) => [Math.abs(r.hmrc ?? 0), Math.abs(r.run ?? 0)]));
+  const series = [
+    { key: "hmrc", label: "HMRC receipts", fill: colors.gray[700], text: colors.gray[800] },
+    { key: "run", label: "This run, change in government balance", fill: colors.primary[600], text: colors.primary[700] },
+  ];
+  return (
+    <>
+      <ul className="space-y-4">
+        {rows.map((r) => (
+          <li key={r.key}>
+            <p className="mb-1 text-sm font-semibold text-slate-800">{r.label}</p>
+            {series.map((s) => {
+              const v = r[s.key];
+              const id = `${r.key}-${s.key}`;
+              // The longest bar takes 38% of the row, leaving room for its label.
+              const width = (38 * Math.abs(v ?? 0)) / max;
+              const end = v < 0 ? 50 - width : 50 + width;
+              return (
+                <div key={s.key} className="relative flex h-6 items-center">
+                  <span aria-hidden="true" className="absolute left-1/2 top-0 h-full w-px bg-slate-300" />
+                  <span
+                    tabIndex={0}
+                    aria-label={`${r.label}, ${s.label}: ${formatSignedMn(v)}`}
+                    onMouseEnter={() => setHover(id)}
+                    onMouseLeave={() => setHover(null)}
+                    onFocus={() => setHover(id)}
+                    onBlur={() => setHover(null)}
+                    className="absolute h-3.5 cursor-default rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--pe-color-primary-500)]"
+                    style={{
+                      background: s.fill,
+                      width: `${Math.max(width, 0.4)}%`,
+                      left: v < 0 ? `${50 - width}%` : "50%",
+                      opacity: hover && hover !== id ? 0.55 : 1,
+                    }}
+                  />
+                  <span
+                    aria-hidden="true"
+                    className="absolute text-xs font-semibold tabular-nums"
+                    style={{
+                      color: s.text,
+                      ...(v < 0 ? { right: `${50 + width}%`, marginRight: 6 } : { left: `${50 + width}%`, marginLeft: 6 }),
+                    }}
+                  >
+                    {formatSignedMn(v)}
+                  </span>
+                  {hover === id ? (
+                    <span
+                      role="tooltip"
+                      className="pointer-events-none absolute bottom-full z-20 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs shadow-lg"
+                      style={{ left: `${(50 + end) / 2}%` }}
+                    >
+                      <span className="block font-semibold text-slate-800">{r.label}</span>
+                      <span className="mt-0.5 flex items-center gap-1.5 text-slate-600">
+                        <span aria-hidden="true" className="inline-block h-2 w-2 rounded-sm" style={{ background: s.fill }} />
+                        {s.label}: <span className="font-semibold tabular-nums text-slate-900">{formatSignedMn(v)}</span>
+                      </span>
+                    </span>
+                  ) : null}
+                </div>
+              );
+            })}
+          </li>
+        ))}
+      </ul>
+      <ChartLegend items={series.map((s) => ({ label: s.label, fill: s.fill }))} />
+    </>
+  );
+}
+
+function ReadyReckonerPanel({ row, result, onNavigate }) {
   const liability = (year) =>
     1000 * result.budget.find((budgetRow) => budgetRow.year === year).gov_balance_change_bn;
   const [contextYear] = READY_RECKONER.hmrc_years;
   return (
-    <Card className="min-w-0">
-      <SectionHeading
-        title="HMRC ready reckoner"
-        description={`${row.label}: HMRC's receipts beside this run's liabilities a year earlier.`}
+    <Card as="details" className="group min-w-0">
+      <summary className="cursor-pointer select-none text-xl font-semibold tracking-tight text-slate-900 marker:text-[color:var(--pe-color-primary-600)]">
+        HMRC ready reckoner
+        <span className="ml-2 text-sm font-normal text-slate-500 group-open:hidden">
+          (expand to compare with HMRC&apos;s figures)
+        </span>
+      </summary>
+      <p className="mb-4 mt-2 text-sm leading-6 text-slate-600">
+        <>
+          {`${row.label}: `}
+          <SourceLink href={READY_RECKONER.url}>HMRC&apos;s</SourceLink>
+          {" receipts beside this run's change in the government balance a year earlier; bars left of £0 reduce revenue."}
+        </>
+      </p>
+      <ReckonerBars
+        rows={READY_RECKONER.lag.map((lag) => ({
+          key: lag.hmrc_year,
+          label: `HMRC ${lag.hmrc_year} receipts and this run's ${lag.model_year}`,
+          hmrc: row.hmrc_m[lag.hmrc_year],
+          run: liability(lag.model_year),
+        }))}
       />
-      <TableScroll>
-      <table className="data-table">
-        <thead>
-          <tr>
-            <th>Comparison</th>
-            <th className="num">HMRC receipts</th>
-            <th className="num">This run, change in government balance</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr className="text-slate-500">
-            <td>HMRC {contextYear} (receipts in the reform&apos;s first year)</td>
-            <td className="num">{formatSignedMn(row.hmrc_m[contextYear])}</td>
-            <td className="num">—</td>
-          </tr>
-          {READY_RECKONER.lag.map((lag) => (
-            <tr key={lag.hmrc_year}>
-              <td>
-                HMRC {lag.hmrc_year} against this run&apos;s {lag.model_year} liabilities
-              </td>
-              <td className="num font-semibold">{formatSignedMn(row.hmrc_m[lag.hmrc_year])}</td>
-              <td className="num">{formatSignedMn(liability(lag.model_year))}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      </TableScroll>
       <Notes>
         <p>
-          HMRC&apos;s figures ({READY_RECKONER.source}) are {READY_RECKONER.measure[0].toLowerCase()}
+          HMRC&apos;s <SourceLink href={READY_RECKONER.url}>figures</SourceLink> ({READY_RECKONER.source}) are {READY_RECKONER.measure[0].toLowerCase()}
           {READY_RECKONER.measure.slice(1)}, after behavioural responses; HMRC has deferred its 2026
-          edition, so they are provisional. HMRC reports receipts, which arrive about a year after
-          the liability. The Benchmarks tab scores every row at the central and the official
-          elasticity.
+          edition, so they are provisional. The{" "}
+          <TabLink onNavigate={onNavigate} tab="benchmarks">
+            Benchmarks
+          </TabLink>{" "}
+          tab scores every row at the central and official elasticities.
+        </p>
+        <p>
+          {`HMRC's ${contextYear} figure, receipts in the reform's first year: ${formatSignedMn(row.hmrc_m[contextYear])}.`}
         </p>
       </Notes>
     </Card>
@@ -196,8 +236,8 @@ function ReadyReckonerPanel({ row, result }) {
 // equalisation's, to the precision the cards show.
 function difference(value, reference) {
   const gap = value - reference;
-  if (Math.abs(gap) < 0.05) return "the same as";
-  return `${formatSignedBn(Math.abs(gap), 1)} ${gap > 0 ? "more than" : "less than"}`;
+  if (Math.abs(gap) < 0.05) return "the same";
+  return `${formatSignedBn(Math.abs(gap), 1)} ${gap > 0 ? "more" : "less"}`;
 }
 
 // The Reform tab's results for a schedule run live. Equalisation's own
@@ -207,6 +247,10 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
   const firstYear = result.budget[0].year;
   const firstRow = result.budget[0];
   const topQuintile = result.income_change_groups[firstYear].quintile.at(-1);
+  // Quintiles hold equal numbers of households, so the top fifth's share of
+  // the total fall is its average over the sum of the five averages.
+  const quintiles = result.income_change_groups[firstYear].quintile;
+  const topShare = topQuintile.avg_change_gbp / quintiles.reduce((sum, group) => sum + group.avg_change_gbp, 0);
   const resultE = result.metadata.elasticity;
   const reformBadr = result.metadata.reform_badr ?? BADR_CURRENT_LAW;
   const matchedRow = readyReckonerRowFor(result.metadata.reform, reformBadr);
@@ -219,84 +263,79 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
   };
   const likeForLike = sameElasticity(resultE, equalisation.elasticity);
   const bn = (value) => formatSignedBn(value, 1);
-  const reform = result.metadata.reform;
 
   return (
     <>
       <Card>
         <SectionHeading
           title={`Headline results, ${firstYear}`}
-          description={`${pct(reform.basic_rate)} / ${pct(reform.higher_rate)} / ${pct(reform.additional_rate)}, Business Asset Disposal Relief ${describeBadr(reformBadr).toLowerCase()}, on ${result.metadata.dataset_short_label}, ${elasticityName(resultE)}. Distributional figures cover all households.`}
+          description={
+            <>
+              {`On ${result.metadata.dataset_short_label}, ${elasticityName(resultE)}. `}
+              {likeForLike
+                ? `Compared with equalisation at the same response: ${difference(firstRow.gov_balance_change_bn, equalisation.revenue)} in the first year and ${difference(result.five_year_total_bn, equalisation.fiveYear)} over five years. `
+                : "Equalisation's results use another response, so they are not compared here. "}
+              <TabLink onNavigate={onShowEqualisation}>Show</TabLink> equalisation&apos;s results.
+            </>
+          }
         />
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className={`grid gap-4 ${topQuintile.share_affected_pct !== undefined ? "md:grid-cols-3" : "md:grid-cols-2"}`}>
           <MetricCard
-            label={`Change in government balance, ${firstYear}`}
+            label="Change in government balance"
             value={bn(firstRow.gov_balance_change_bn)}
             note={Number(resultE) === 0 ? "With no behavioural response." : "After the behavioural response."}
           />
           <MetricCard
-            label={`Five-year change in government balance, ${firstYear} to ${result.budget.at(-1).year}`}
-            value={bn(result.five_year_total_bn)}
-            note="Sum of the five modelled years."
+            label="Top fifth of households: average change in net income"
+            value={formatSignedCurrency(topQuintile.avg_change_gbp)}
+            note={`${formatSignedPct(topQuintile.relative_change_pct)} of net income; ${formatPct(100 * topShare, 0)} of the total fall in household income.`}
           />
-          <MetricCard
-            label={`Change in net income, top income quintile, ${firstYear}`}
-            value={formatSignedPct(topQuintile.relative_change_pct)}
-            note={`${formatSignedCurrency(topQuintile.avg_change_gbp)} per household on average.`}
-          />
+          {topQuintile.share_affected_pct !== undefined ? (
+            <MetricCard
+              label="Top fifth of households: share with lower net income"
+              value={formatPct(topQuintile.share_affected_pct, 1)}
+              note="Households in the top fifth whose net income falls."
+            />
+          ) : null}
         </div>
-        <p className="mt-4 text-sm leading-6 text-slate-600">
-          {likeForLike ? (
-            <>
-              At the same elasticity, this schedule&apos;s change in the government balance is{" "}
-              {difference(firstRow.gov_balance_change_bn, equalisation.revenue)} equalisation&apos;s in{" "}
-              {firstYear}, and {difference(result.five_year_total_bn, equalisation.fiveYear)} it over
-              the five years.{" "}
-            </>
-          ) : (
-            <>
-              Equalisation&apos;s precomputed results are at{" "}
-              {elasticityName(equalisation.elasticity)}, and this schedule ran at another
-              elasticity, so the two are not like for like.{" "}
-            </>
-          )}
-          <TabLink onNavigate={onShowEqualisation}>Show equalisation&apos;s results</TabLink>.
-        </p>
       </Card>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card className="min-w-0">
+        <Card className="flex min-w-0 flex-col">
           <SectionHeading
             title="Budgetary impact by year"
-            description="CGT revenue and the change in the government balance, by fiscal year."
+            description="Each bar shows the change in the government's balance in one fiscal year, after taxpayers realise fewer gains."
           />
           <BudgetChart budget={result.budget} />
           {entrantShare > 0.05 ? (
-            <Notes>
+            <Notes className="mt-auto">
               <p>
                 Entrants by uprating (
+                see the{" "}
                 <TabLink onNavigate={onNavigate} tab="baseline" section="entrants">
-                  see the Baseline tab
-                </TabLink>
-                ) contribute {formatSmallBn(firstRow.cgt_change_from_entrants_bn)} of the{" "}
-                {firstYear} change.
+                  Baseline
+                </TabLink>{" "}
+                tab
+                ) contribute {formatSmallBn(firstRow.cgt_change_from_entrants_bn)} of the
+                first-year change.
               </p>
             </Notes>
           ) : null}
         </Card>
 
-        <Card className="min-w-0">
+        <Card className="flex min-w-0 flex-col">
           <SectionHeading
             title="Change in household net income by income group"
-            description="Grouped by the household's position in the baseline income distribution."
+            description="Each bar shows the average change in net income for one group of households, ranked by income before the reform."
           />
-          <GroupImpactChart groupsByYear={result.income_change_groups} initialYear={firstYear} />
-          <Notes>
-            <p>
-              The switches group households by income quintile or quartile, household type or
-              region. Changes in the gains taxpayers realise in response to the new rates count as
-              changes in income in the year, alongside the change in tax paid.
-            </p>
+          <GroupImpactChart groupsByYear={result.income_change_groups} />
+          <Notes className="mt-auto">
+            <GroupDefinitions>
+              <li>
+                Changes in the gains taxpayers realise count as changes in income, alongside the
+                change in tax paid.
+              </li>
+            </GroupDefinitions>
           </Notes>
         </Card>
       </div>
@@ -304,34 +343,23 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
       {/* The specification's long text needs the full width, so the ready
           reckoner sits under it rather than beside it. */}
       <Card as="details" className="group min-w-0">
-        <summary className="cursor-pointer select-none font-semibold text-slate-800 marker:text-[color:var(--pe-color-primary-600)]">
-          What exactly does this schedule change?
+        <summary className="cursor-pointer select-none text-xl font-semibold tracking-tight text-slate-900 marker:text-[color:var(--pe-color-primary-600)]">
+          What does this schedule change?
           <span className="ml-2 text-sm font-normal text-slate-500 group-open:hidden">
             (expand for the full specification)
           </span>
         </summary>
         <div className="mt-4 space-y-3">
           <p className="text-sm leading-6 text-slate-600">
-            Effective from the {firstYear} fiscal year and held in place through{" "}
-            {result.budget.at(-1).year}. Current law is read from the installed engine for{" "}
-            {firstYear}.
+            Effective in every modelled year. Current law is read from the installed engine for
+            the first year. Residential property gains take the same rates, and the annual exempt{" "}
+            <SourceLink href={EXEMPT_AMOUNT}>amount</SourceLink> stays £3,000.
           </p>
-          <SpecTable metadata={result.metadata} />
+          <ScheduleRates metadata={result.metadata} />
         </div>
       </Card>
 
-      {matchedRow ? <ReadyReckonerPanel row={matchedRow} result={result} /> : null}
-
-      <p className="text-xs leading-5 text-slate-500">
-        Run on policyengine.py {result.metadata.policyengine_version} with policyengine-uk{" "}
-        {result.metadata.policyengine_uk_version}; reform fingerprint{" "}
-        <span className="font-mono">{result.metadata.reform_fingerprint}</span>, projection{" "}
-        <span className="font-mono">{result.metadata.projection.fingerprint}</span>
-        {result.metadata.timing?.total_seconds
-          ? `; ${result.metadata.timing.total_seconds}s of simulation`
-          : ""}
-        .
-      </p>
+      {matchedRow ? <ReadyReckonerPanel row={matchedRow} result={result} onNavigate={onNavigate} /> : null}
     </>
   );
 }

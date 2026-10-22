@@ -1,3 +1,6 @@
+import PolicyEngineFooter from "../src/components/PolicyEngineFooter";
+import PolicyEngineHeader from "../src/components/PolicyEngineHeader";
+
 import "./globals.css";
 
 export const metadata = {
@@ -9,7 +12,13 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      {/* A column at least the window's height, so the site footer sits at
+          the bottom and any spare space stays inside the page. */}
+      <body className="flex min-h-screen flex-col">
+        <PolicyEngineHeader />
+        <div className="flex flex-1 flex-col">{children}</div>
+        <PolicyEngineFooter />
+      </body>
     </html>
   );
 }

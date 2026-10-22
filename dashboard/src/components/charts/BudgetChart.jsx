@@ -5,7 +5,6 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
-  Legend,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -14,7 +13,9 @@ import {
 import { colors } from "../../lib/colors";
 import { formatSignedBn } from "../../lib/formatters";
 import ChartLogo from "../ChartLogo";
-import { Toggle } from "../controls";
+import ChartLegend from "./ChartLegend";
+import ChartTooltip, { TOOLTIP_PROPS } from "./ChartTooltip";
+import { LabelledSelect } from "../controls";
 
 const AXIS_STYLE = { fontSize: 12, fill: colors.gray[500] };
 
@@ -24,29 +25,39 @@ export default function BudgetChart({ budget }) {
   const [budgetView, setBudgetView] = useState("change");
   return (
     <>
-      <div className="mb-3 flex flex-wrap items-center gap-4">
-        <Toggle
-          options={[
-            { value: "levels", label: "Revenue levels" },
-            { value: "change", label: "Change vs baseline" },
-          ]}
-          value={budgetView}
-          onChange={setBudgetView}
-        />
+      <div className="mb-4 flex flex-wrap gap-3">
+        <div>
+          <LabelledSelect
+            label="Show"
+            options={[
+              { value: "change", label: "Change in government balance" },
+              { value: "levels", label: "CGT revenue, baseline and reform" },
+            ]}
+            value={budgetView}
+            onChange={setBudgetView}
+          />
+        </div>
       </div>
-      <div className="h-[380px] w-full">
+      <div className="h-[340px] w-full">
         <ResponsiveContainer>
-          <BarChart data={budget} margin={{ top: 10, right: 20, bottom: 5, left: 10 }}>
+          <BarChart data={budget} margin={{ top: 10, right: 20, bottom: 15, left: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke={colors.border.light} />
-            <XAxis dataKey="year" tick={AXIS_STYLE} />
+            <XAxis
+              dataKey="year"
+              tick={AXIS_STYLE}
+              label={{ value: "Fiscal year", position: "insideBottom", offset: -8, fontSize: 12 }}
+            />
             <YAxis
               tick={AXIS_STYLE}
-              tickFormatter={(v) => formatSignedBn(v)}
+              tickFormatter={(v) => formatSignedBn(v, 0)}
               tickLine={false}
               axisLine={false}
+              width={72}
             />
-            <Tooltip formatter={(v) => formatSignedBn(v)} />
-            <Legend />
+            <Tooltip
+              {...TOOLTIP_PROPS}
+              content={<ChartTooltip title={(year) => `Fiscal year ${year}`} format={(v) => formatSignedBn(v, 1)} />}
+            />
             {budgetView === "levels" ? (
               <>
                 <Bar
@@ -73,6 +84,14 @@ export default function BudgetChart({ budget }) {
           </BarChart>
         </ResponsiveContainer>
       </div>
+      {budgetView === "levels" ? (
+        <ChartLegend
+          items={[
+            { label: "Baseline CGT revenue", fill: colors.gray[400] },
+            { label: "Reform CGT revenue", fill: colors.primary[600] },
+          ]}
+        />
+      ) : null}
       <ChartLogo />
     </>
   );

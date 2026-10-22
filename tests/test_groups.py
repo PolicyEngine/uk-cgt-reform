@@ -1,9 +1,16 @@
 """Unit tests for the distributional grouping (microdf-native ranks)."""
 
 import numpy as np
+import pytest
 from microdf import MicroSeries
 
-from uk_cgt_reform.impacts import QUANTILE_LABELS, REGION_NAMES, entrant_mask
+from uk_cgt_reform.impacts import (
+    AFFECTED_LOSS_THRESHOLD_GBP,
+    QUANTILE_LABELS,
+    REGION_NAMES,
+    _group_rows,
+    entrant_mask,
+)
 
 # policyengine_uk's Region enum names, which every UK dataset's ``region``
 # household variable reports.
@@ -64,3 +71,47 @@ def test_entrant_mask_tolerates_float32_rounding_at_the_ceiling():
     ceiling = 3_000.0 * 1.074
     gains = np.array([ceiling * (1 + 5e-7)], dtype=np.float32)
     assert entrant_mask(gains, 3_000.0, ceiling).all()
+
+
+def test_share_affected_is_weighted_and_counts_only_losses_beyond_the_threshold():
+    # Group "a": a loss of £5 (weight 1), no change (weight 3).
+    # Group "b": a £0.50 loss, float noise below the threshold (weight 2), a
+    # gain (weight 1), and a £10 loss (weight 7).
+    gain = MicroSeries(
+        np.array([-5.0, 0.0, -0.5, 4.0, -10.0]), weights=np.array([1.0, 3.0, 2.0, 1.0, 7.0])
+    )
+    income = MicroSeries(np.full(5, 1_000.0), weights=gain.weights.values)
+    labels = np.array(["a", "a", "b", "b", "b"], dtype=object)
+    rows = {row["group"]: row for row in _group_rows(gain, income, labels, ["a", "b"])}
+    assert AFFECTED_LOSS_THRESHOLD_GBP == 1.0
+    assert rows["a"]["share_affected_pct"] == pytest.approx(100 * 1 / 4)
+    assert rows["b"]["share_affected_pct"] == pytest.approx(100 * 7 / 10)
+    # The averages it sits beside use the same weights.
+    assert rows["a"]["avg_change_gbp"] == pytest.approx(-5 / 4)
+    assert rows["b"]["avg_change_gbp"] == pytest.approx((-1.0 + 4.0 - 70.0) / 10)
+
+
+def test_share_affected_excludes_a_loss_of_exactly_the_threshold():
+    gain = MicroSeries(np.array([-1.0, -1.01]), weights=np.ones(2))
+    income = MicroSeries(np.full(2, 1_000.0), weights=np.ones(2))
+    labels = np.array(["a", "a"], dtype=object)
+    (row,) = _group_rows(gain, income, labels, ["a"])
+    assert row["share_affected_pct"] == pytest.approx(50.0)
+
+
+def test_share_affected_keeps_weights_under_a_row_mask():
+    # The region rows pass masked series (households without a region dropped).
+    gain = MicroSeries(np.array([-5.0, -5.0, 0.0]), weights=np.array([9.0, 1.0, 3.0]))
+    income = MicroSeries(np.full(3, 1_000.0), weights=gain.weights.values)
+    keep = np.array([False, True, True])
+    labels = np.array(["x", "x", "x"], dtype=object)
+    (row,) = _group_rows(gain[keep], income[keep], labels[keep], ["x"])
+    assert row["share_affected_pct"] == pytest.approx(100 * 1 / 4)
+
+
+def test_share_affected_is_zero_when_nobody_loses():
+    gain = MicroSeries(np.array([0.0, 2.0, -0.2]), weights=np.ones(3))
+    income = MicroSeries(np.full(3, 1_000.0), weights=np.ones(3))
+    labels = np.array(["a", "a", "a"], dtype=object)
+    (row,) = _group_rows(gain, income, labels, ["a"])
+    assert row["share_affected_pct"] == 0.0

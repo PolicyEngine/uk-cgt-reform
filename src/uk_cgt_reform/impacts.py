@@ -195,16 +195,35 @@ def budget_impact(
     return rows
 
 
+#: A household counts as affected by a reform when its net income falls by
+#: more than this many pounds a year. The £1 margin ignores float noise
+#: between two simulations of the same household (differences of pennies or
+#: less), not a real loss.
+AFFECTED_LOSS_THRESHOLD_GBP = 1.0
+
+
 def _group_rows(gain, base_income, labels, order) -> list[dict]:
-    """Weighted average and relative net-income change per group."""
+    """Weighted average and relative net-income change per group, and the
+    weighted share of the group's households whose net income falls by more
+    than ``AFFECTED_LOSS_THRESHOLD_GBP``."""
     avg = gain.groupby(labels).mean()
     total = gain.groupby(labels).sum()
     income = base_income.groupby(labels).sum()
+    # Weighted share losing out: the weight of households below the
+    # threshold over the group's total weight (the weights ``avg`` uses).
+    import pandas as pd
+
+    weights = np.asarray(gain.weights.values, dtype=float)
+    losing = np.asarray(gain.values, dtype=float) < -AFFECTED_LOSS_THRESHOLD_GBP
+    affected = (
+        pd.Series(weights * losing).groupby(labels).sum() / pd.Series(weights).groupby(labels).sum()
+    )
     return [
         {
             "group": str(group),
             "avg_change_gbp": float(avg.get(group, 0.0)),
             "relative_change_pct": float(100 * total.get(group, 0.0) / income.get(group)),
+            "share_affected_pct": float(100 * affected.get(group, 0.0)),
         }
         for group in order
         if group in set(labels)

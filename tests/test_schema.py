@@ -203,18 +203,40 @@ def fake_results(spec=CANDIDATE, scale: float = 1.0) -> dict:
         "income_change_groups": {
             label: {
                 "quintile": [
-                    {"group": g, "avg_change_gbp": 0.0, "relative_change_pct": 0.0}
+                    {
+                        "group": g,
+                        "avg_change_gbp": 0.0,
+                        "relative_change_pct": 0.0,
+                        "share_affected_pct": 0.0,
+                    }
                     for g in ["Lowest 20%", "20–40%", "40–60%", "60–80%", "Highest 20%"]
                 ],
                 "quartile": [
-                    {"group": g, "avg_change_gbp": 0.0, "relative_change_pct": 0.0}
+                    {
+                        "group": g,
+                        "avg_change_gbp": 0.0,
+                        "relative_change_pct": 0.0,
+                        "share_affected_pct": 0.0,
+                    }
                     for g in ["Lowest 25%", "25–50%", "50–75%", "Highest 25%"]
                 ],
                 "household_type": [
-                    {"group": g, "avg_change_gbp": 0.0, "relative_change_pct": 0.0}
+                    {
+                        "group": g,
+                        "avg_change_gbp": 0.0,
+                        "relative_change_pct": 0.0,
+                        "share_affected_pct": 0.0,
+                    }
                     for g in ["With children", "Pensioner", "Working-age, no children"]
                 ],
-                "region": [{"group": "London", "avg_change_gbp": 0.0, "relative_change_pct": 0.0}],
+                "region": [
+                    {
+                        "group": "London",
+                        "avg_change_gbp": 0.0,
+                        "relative_change_pct": 0.0,
+                        "share_affected_pct": 0.0,
+                    }
+                ],
             }
             for label in YEAR_LABELS
         },
@@ -285,6 +307,7 @@ def test_income_change_groups_keyed_by_fiscal_year():
         "group",
         "avg_change_gbp",
         "relative_change_pct",
+        "share_affected_pct",
     }
 
 

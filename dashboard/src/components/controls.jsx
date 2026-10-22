@@ -116,15 +116,16 @@ export function Toggle({ options, value, onChange, label, fullWidth = false }) {
   );
 }
 
-// A select with its label beside it (chart controls).
+// A chart control: a small label above a compact select. Several sit side
+// by side in a row of equal columns.
 export function LabelledSelect({ label, options, value, onChange }) {
   return (
-    <label className="inline-flex max-w-full flex-wrap items-center gap-2 text-sm font-semibold text-slate-600">
-      {label}
+    <label className="flex min-w-0 flex-col gap-1">
+      <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">{label}</span>
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className={`${FIELD} ${fieldBorder()} min-w-0 max-w-full pr-8 text-sm`}
+        className={`${FIELD} ${fieldBorder()} h-10 w-full min-w-0 pr-8 text-sm`}
       >
         {options.map((option) => (
           <option key={option.value} value={option.value}>
@@ -136,21 +137,11 @@ export function LabelledSelect({ label, options, value, onChange }) {
   );
 }
 
-export function YearSelect({ years, value, onChange }) {
-  return (
-    <LabelledSelect
-      label="Year"
-      options={years.map((year) => ({ value: year, label: year }))}
-      value={value}
-      onChange={onChange}
-    />
-  );
-}
-
 export function MetricCard({ label, value, note, tip }) {
   return (
-    <Card as="div" variant="inset">
-      <div className="flex items-start gap-2">
+    <Card as="div" variant="inset" className="flex flex-col">
+      {/* A two-line slot for the label, so values line up across a row. */}
+      <div className="flex items-start gap-2 md:min-h-[2.5rem]">
         <p className="text-sm font-semibold leading-snug text-slate-700">{label}</p>
         {tip ? <InfoTip label={`About ${label.toLowerCase()}`}>{tip}</InfoTip> : null}
       </div>
@@ -168,14 +159,17 @@ export function TipHeader({ label, tip, className = "" }) {
   );
 }
 
-// Longer explanations for a section, collapsed under its content.
-export function Notes({ children }) {
+// Longer explanations for a section, collapsed under its content, as bullets.
+export function Notes({ children, className = "" }) {
   return (
-    <details className="group mt-4 border-t border-slate-200 pt-3">
+    <details className={`group mt-4 border-t border-slate-200 pt-3 ${className}`}>
       <summary className="cursor-pointer select-none text-sm font-semibold text-slate-600 marker:text-[color:var(--pe-color-primary-600)]">
         Notes
       </summary>
-      <div className="mt-2 space-y-2 text-sm leading-6 text-slate-600">{children}</div>
+      {/* Each paragraph reads as a bullet; a list passed in keeps its own. */}
+      <div className="mt-2 list-disc space-y-1.5 pl-5 text-sm leading-6 text-slate-600 [&>p]:list-item [&>ul]:-ml-5">
+        {children}
+      </div>
     </details>
   );
 }
@@ -191,6 +185,36 @@ export function SourceLink({ href, children }) {
     >
       {children}
     </a>
+  );
+}
+
+// A source label from the data, with one word linked: the first publisher
+// named in it (so "Advani, Lonsdale & Summers (2024), CenTax" links "CenTax"),
+// or its first word if it names none. The rest of the label is plain text.
+const PUBLISHERS = ["CenTax", "OBR", "HMRC", "IFS", "ONS", "JRF", "Rowntree", "CPS", "NBER"];
+export function splitSourceLabel(label = "") {
+  let best = null;
+  for (const name of PUBLISHERS) {
+    const match = new RegExp(`\\b${name}\\b`).exec(label);
+    if (match && (best === null || match.index < best.index)) best = match;
+  }
+  if (best === null) best = /[\p{L}\p{N}]+/u.exec(label);
+  if (best === null) return { before: "", word: label, after: "" };
+  return {
+    before: label.slice(0, best.index),
+    word: best[0],
+    after: label.slice(best.index + best[0].length),
+  };
+}
+
+export function SourceLabel({ href, label }) {
+  const { before, word, after } = splitSourceLabel(label);
+  return (
+    <>
+      {before}
+      <SourceLink href={href}>{word}</SourceLink>
+      {after}
+    </>
   );
 }
 

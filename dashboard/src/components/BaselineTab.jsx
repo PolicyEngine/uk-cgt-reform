@@ -3,7 +3,9 @@
 import { useEffect } from "react";
 import { formatBn, formatCount, formatPct, formatSmallBn } from "../lib/formatters";
 import { getDatasetInfo, getEntrants, getFirstYear, getValidation } from "../lib/dataHelpers";
-import { TableScroll } from "./controls";
+import { MetricCard, SourceLink } from "./controls";
+import BenchmarkChart, { parseBenchmark } from "./charts/BenchmarkChart";
+import ScheduleChart from "./charts/ScheduleChart";
 import SectionHeading from "./SectionHeading";
 
 // External benchmarks the baseline is compared with. These are published
@@ -24,6 +26,11 @@ const TABLE_4 =
   "https://assets.publishing.service.gov.uk/media/6a7b242a347b198efd290ed7/Table_4_2026_Business_asset_disposal_and_investors_reliefs.ods";
 const T4_2023 = "HMRC CGT statistics 2026 release, Table 4 (2023-24, individuals)";
 const T4_2024 = "HMRC CGT statistics 2026 release, Table 4 (2024-25, provisional, individuals)";
+const CGT_STATISTICS = "https://www.gov.uk/government/statistics/capital-gains-tax-statistics";
+const FRS = "https://www.gov.uk/government/collections/family-resources-survey--2";
+const EXEMPT_AMOUNT = "https://www.gov.uk/capital-gains-tax/allowances";
+const BADR_GUIDANCE = "https://www.gov.uk/business-asset-disposal-relief";
+const CGT_RATES = "https://www.gov.uk/capital-gains-tax/rates";
 
 const BENCHMARKS = {
   totalGains: {
@@ -74,43 +81,14 @@ const BENCHMARKS = {
   },
 };
 
-function BenchmarkCell({ benchmark }) {
-  if (!benchmark) {
-    return <td className="text-slate-400">—</td>;
-  }
-  return (
-    <td>
-      <a
-        href={benchmark.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="underline decoration-1 underline-offset-2 hover:opacity-80"
-        title={benchmark.source}
-      >
-        {benchmark.value}
-      </a>
-    </td>
-  );
-}
-
-function BenchmarkRow({ label, model, benchmark, muted = false }) {
-  return (
-    <tr className={muted ? "text-slate-500" : ""}>
-      <td className={muted ? "pl-6" : ""}>{label}</td>
-      <td>{model}</td>
-      <BenchmarkCell benchmark={benchmark.y2023} />
-      <BenchmarkCell benchmark={benchmark.y2024} />
-    </tr>
-  );
-}
-
-const NO_BENCHMARK = { y2023: null, y2024: null };
-
 export default function BaselineTab({ data, anchor }) {
   // Other tabs link to a section here (``anchor``); the tab mounts after
   // navigation, so the scroll is replayed once it has.
   useEffect(() => {
-    if (anchor) document.getElementById(anchor)?.scrollIntoView();
+    if (!anchor) return;
+    const element = document.getElementById(anchor);
+    if (element?.tagName === "DETAILS") element.open = true;
+    element?.scrollIntoView();
   }, [anchor]);
 
   const validation = getValidation(data);
@@ -118,9 +96,40 @@ export default function BaselineTab({ data, anchor }) {
   const entrants = getEntrants(data);
   const firstYear = getFirstYear(data);
   const entrantShare = entrants.count / validation.cgt_taxpayers;
-  const schedules = [
-    ["Residential property", validation.residential_property_gains_bn],
-    ["Business Asset Disposal Relief", validation.badr_gains_bn],
+  const bench = (group, key, label, unit, model) => ({
+    group,
+    key,
+    label,
+    unit,
+    model,
+    hmrc2024: parseBenchmark(BENCHMARKS[key].y2024?.value),
+  });
+  const benchmarkRows = [
+    bench("Overall", "totalGains", "Total taxable gains", "bn", validation.total_gains_bn),
+    bench("Overall", "taxpayers", "CGT taxpayers", "count", validation.cgt_taxpayers),
+    bench("Overall", "liability", "Baseline CGT liability", "bn", validation.baseline_cgt_revenue_bn),
+    bench("Large gains", "shareOver1m", "Share of gains from gains of £1m or more", "pct", validation.share_gains_over_1m_pct),
+    bench("Large gains", "shareOver5m", "Share of gains from gains of £5m or more", "pct", validation.share_gains_over_5m_pct),
+    bench("Large gains", "taxpayersOver500k", "Taxpayers with gains over £500k", "count", validation.taxpayers_over_500k),
+    bench("Large gains", "gainsOver500k", "Gains held by taxpayers with gains over £500k", "bn", validation.gains_over_500k_bn),
+    bench("Large gains", "gainsOver5m", "Gains held in the £5m-and-over band", "bn", validation.gains_over_5m_bn),
+    bench("Business Asset Disposal Relief", "badrClaimants", "People with qualifying gains", "count", validation.badr_claimants),
+    bench("Business Asset Disposal Relief", "badrGains", "Qualifying gains", "bn", validation.badr_gains_bn),
+  ];
+  // A tiny share still reads as a number: "0.47%", "0.006%", "<0.001%".
+  const formatShare = (share) => {
+    const pct = 100 * share;
+    if (pct < 0.001) return "<0.001%";
+    return `${pct.toPrecision(pct < 1 ? 1 : 2)}%`;
+  };
+  const entrantRows = [
+    { key: "taxpayers", label: "Taxpayers", unit: "count", total: validation.cgt_taxpayers, entrants: entrants.count },
+    { key: "gains", label: "Taxable gains", unit: "bn", total: validation.total_gains_bn, entrants: entrants.gains_bn },
+    { key: "liability", label: "Baseline CGT liability", unit: "bn", total: validation.baseline_cgt_revenue_bn, entrants: entrants.cgt_bn },
+  ];
+  const scheduleRows = [
+    { key: "residential", label: "Residential property", gainsBn: validation.residential_property_gains_bn },
+    { key: "badr", label: "Business Asset Disposal Relief", gainsBn: validation.badr_gains_bn },
   ];
 
   return (
@@ -129,138 +138,53 @@ export default function BaselineTab({ data, anchor }) {
         <SectionHeading
           size="lg"
           title="Baseline estimation"
-          description={`The Family Resources Survey records few capital gains, so the dataset imputes them from HMRC administrative data and calibrates household weights to HMRC's CGT statistics. This analysis uses ${dataset.shortLabel} exactly as published, with no local reweighting (the Methodology tab describes the build). The tables below show the fit for the first simulated year and the two features that most affect how its numbers read: the entrants by uprating and the schedule components.`}
+          description={
+            <>
+              The Family Resources <SourceLink href={FRS}>Survey</SourceLink> records few capital
+              gains, so the dataset imputes them from HMRC data and weights households to
+              HMRC&apos;s CGT <SourceLink href={CGT_STATISTICS}>statistics</SourceLink>. The charts
+              below check that fit and two features that affect how the figures read.
+            </>
+          }
         />
       </div>
 
       <section className="section-card scroll-mt-24" id="benchmarks">
         <SectionHeading
-          title="Model versus external benchmarks"
-          description={`PolicyEngine's baseline for ${firstYear} on ${dataset.shortLabel}, alongside HMRC's statistics for the 2023-24 tax year (revised) and the provisional 2024-25 tax year, both from the 2026 release. The dataset calibrates its base year to one HMRC year (${dataset.observation}) and the engine uprates it to the simulated years. The ${firstYear} liability sits further above HMRC's 2024-25 figure than the gains do because 2024-25 charged most gains at 10% and 20% until 30 October 2024, and the relief at 10%, while ${firstYear} charges 18% and 24% all year and the relief at 18%.`}
+          title="Model and HMRC statistics"
+          description={
+            <>
+              PolicyEngine&apos;s {firstYear} baseline beside HMRC&apos;s{" "}
+              <SourceLink href={CGT_STATISTICS}>statistics</SourceLink> for 2024-25 (provisional).{" "}
+              {`Liabilities are higher relative to gains in ${firstYear} because CGT `}
+              <SourceLink href={CGT_RATES}>rates</SourceLink>
+              {" rose from 10% and 20% to 18% and 24% partway through 2024-25."}
+            </>
+          }
         />
-        <TableScroll>
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Quantity</th>
-              <th>PolicyEngine ({dataset.shortLabel}, {firstYear})</th>
-              <th>HMRC, 2023-24 (revised)</th>
-              <th>HMRC, 2024-25 (provisional)</th>
-            </tr>
-          </thead>
-          <tbody>
-            <BenchmarkRow
-              label="Total taxable gains"
-              model={formatBn(validation.total_gains_bn)}
-              benchmark={BENCHMARKS.totalGains}
-            />
-            <BenchmarkRow
-              label="of which held by entrants by uprating"
-              model={formatSmallBn(entrants.gains_bn)}
-              benchmark={NO_BENCHMARK}
-              muted
-            />
-            <BenchmarkRow
-              label="CGT taxpayers (gains above the exempt amount)"
-              model={formatCount(validation.cgt_taxpayers)}
-              benchmark={BENCHMARKS.taxpayers}
-            />
-            <BenchmarkRow
-              label="of which entrants by uprating"
-              model={formatCount(entrants.count)}
-              benchmark={NO_BENCHMARK}
-              muted
-            />
-            <BenchmarkRow
-              label="Baseline CGT liability"
-              model={formatBn(validation.baseline_cgt_revenue_bn)}
-              benchmark={BENCHMARKS.liability}
-            />
-            <BenchmarkRow
-              label="of which paid by entrants by uprating"
-              model={formatSmallBn(entrants.cgt_bn)}
-              benchmark={NO_BENCHMARK}
-              muted
-            />
-            <BenchmarkRow
-              label="Share of gains from gains of £1m or more"
-              model={formatPct(validation.share_gains_over_1m_pct, 0)}
-              benchmark={BENCHMARKS.shareOver1m}
-            />
-            <BenchmarkRow
-              label="Share of gains from gains of £5m or more"
-              model={formatPct(validation.share_gains_over_5m_pct, 0)}
-              benchmark={BENCHMARKS.shareOver5m}
-            />
-            <BenchmarkRow
-              label="Taxpayers with gains over £500k"
-              model={formatCount(validation.taxpayers_over_500k)}
-              benchmark={BENCHMARKS.taxpayersOver500k}
-            />
-            <BenchmarkRow
-              label="Gains held by taxpayers with gains over £500k"
-              model={formatBn(validation.gains_over_500k_bn)}
-              benchmark={BENCHMARKS.gainsOver500k}
-            />
-            <BenchmarkRow
-              label="Gains held in the £5m-and-over band"
-              model={formatBn(validation.gains_over_5m_bn)}
-              benchmark={BENCHMARKS.gainsOver5m}
-            />
-            <BenchmarkRow
-              label="People with gains qualifying for BADR"
-              model={formatCount(validation.badr_claimants)}
-              benchmark={BENCHMARKS.badrClaimants}
-            />
-            <BenchmarkRow
-              label="Gains qualifying for BADR"
-              model={formatBn(validation.badr_gains_bn)}
-              benchmark={BENCHMARKS.badrGains}
-            />
-          </tbody>
-        </table>
-        </TableScroll>
+        <BenchmarkChart rows={benchmarkRows} modelLabel={`PolicyEngine (${dataset.shortLabel}, ${firstYear})`} />
       </section>
 
-      <section className="section-card scroll-mt-24" id="entrants">
-        <SectionHeading
-          title="Entrants by uprating"
-          description={`The annual exempt amount is frozen at £${entrants.exempt_amount_gbp.toLocaleString("en-GB")} while the engine uprates gains with GDP per capita, so a person whose base-year gains sit at or below the exempt amount can cross it in a later year and count as a CGT taxpayer with a few hundred pounds of taxable gain. Entrants are persons whose pre-response gains in ${firstYear} exceed the exempt amount but not £${Math.round(entrants.ceiling_gbp).toLocaleString("en-GB")}, the base-year exempt amount carried forward by the uprating, so they were not taxpayers in the base year. Nothing is removed or edited; the figures are reported so a reader can net them out.`}
-        />
-        <TableScroll>
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Quantity, {firstYear}</th>
-              <th>All CGT taxpayers</th>
-              <th>Entrants by uprating</th>
-              <th>Excluding entrants</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Taxpayers</td>
-              <td>{formatCount(validation.cgt_taxpayers)}</td>
-              <td>
-                {formatCount(entrants.count)} ({formatPct(100 * entrantShare, 0)})
-              </td>
-              <td>{formatCount(validation.cgt_taxpayers_excluding_entrants)}</td>
-            </tr>
-            <tr>
-              <td>Taxable gains</td>
-              <td>{formatBn(validation.total_gains_bn)}</td>
-              <td>{formatSmallBn(entrants.gains_bn)}</td>
-              <td>{formatBn(validation.total_gains_excluding_entrants_bn)}</td>
-            </tr>
-            <tr>
-              <td>Baseline CGT liability</td>
-              <td>{formatBn(validation.baseline_cgt_revenue_bn)}</td>
-              <td>{formatSmallBn(entrants.cgt_bn)}</td>
-              <td>{formatBn(validation.baseline_cgt_revenue_bn - entrants.cgt_bn)}</td>
-            </tr>
-          </tbody>
-        </table>
-        </TableScroll>
+      <details className="section-card group scroll-mt-24" id="entrants">
+        <summary className="cursor-pointer select-none text-xl font-semibold tracking-tight text-slate-900 marker:text-[color:var(--pe-color-primary-600)]">
+          Entrants by uprating
+        </summary>
+        <div className="mb-5 mt-2 text-sm leading-6 text-slate-600">
+          <>
+              The exempt <SourceLink href={EXEMPT_AMOUNT}>amount</SourceLink>{" "}
+              {`stays at £${entrants.exempt_amount_gbp.toLocaleString("en-GB")} while gains grow with the economy, so some people with gains below it become CGT taxpayers in later years. These entrants, with ${firstYear} gains between £${entrants.exempt_amount_gbp.toLocaleString("en-GB")} and £${Math.round(entrants.ceiling_gbp).toLocaleString("en-GB")}, are shown separately so they can be netted out.${entrantShare > 0.05 ? "" : " They are under 5% of taxpayers, so the headline counts read as taxpayers in the ordinary sense."}`}
+            </>
+        </div>
+        <div className="grid gap-4 md:grid-cols-3">
+          {entrantRows.map((row) => (
+            <MetricCard
+              key={row.key}
+              label={`${row.label} from entrants`}
+              value={row.unit === "count" ? formatCount(row.entrants) : formatSmallBn(row.entrants)}
+              note={`Of ${row.unit === "count" ? formatCount(row.total) : formatBn(row.total, 1)} in all (${formatShare(row.entrants / row.total)}).`}
+            />
+          ))}
+        </div>
         {entrantShare > 0.05 ? (
           <p className="note-card mt-4 rounded-lg p-4 text-sm leading-6 text-slate-600">
             <span className="note-eyebrow block text-xs font-semibold uppercase tracking-wide">
@@ -268,44 +192,30 @@ export default function BaselineTab({ data, anchor }) {
             </span>
             On this dataset {formatPct(100 * entrantShare, 0)} of the {firstYear} CGT taxpayers
             are entrants by uprating. {dataset.notes} The share of people the reform touches,
-            and every count in this tab, is dominated by that group; the gains and liability
-            totals are not, because each entrant carries only a few hundred pounds above the
+            and every count in this tab, mostly reflects that group; the gains and liability
+            totals do not, because each entrant has a few hundred pounds of gains above the
             exempt amount.
           </p>
-        ) : (
-          <p className="mt-4 text-sm leading-6 text-slate-600">
-            Entrants are a small share of this dataset&apos;s taxpayers, so the headline counts
-            read as taxpayers in the ordinary sense.
-          </p>
-        )}
-      </section>
+        ) : null}
+      </details>
 
-      <section className="section-card scroll-mt-24" id="schedules">
-        <SectionHeading
-          title="Schedule components"
-          description={`policyengine-uk charges residential property and Business Asset Disposal Relief gains on their own schedules when a dataset records them. Gains recorded on each schedule in ${firstYear}, before any behavioural response.`}
-        />
-        <TableScroll>
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Schedule</th>
-              <th>Gains, {firstYear}</th>
-              <th>Recorded in {dataset.shortLabel}?</th>
-            </tr>
-          </thead>
-          <tbody>
-            {schedules.map(([name, gains]) => (
-              <tr key={name}>
-                <td>{name}</td>
-                <td>{formatBn(gains)}</td>
-                <td>{gains > 0 ? "Yes" : "No: charged on the main schedule"}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        </TableScroll>
-      </section>
+      <details className="section-card group scroll-mt-24" id="schedules">
+        <summary className="cursor-pointer select-none text-xl font-semibold tracking-tight text-slate-900 marker:text-[color:var(--pe-color-primary-600)]">
+          Schedule components
+        </summary>
+        <div className="mb-5 mt-2 text-sm leading-6 text-slate-600">
+          <>
+              <SourceLink href="https://github.com/PolicyEngine/policyengine-uk">
+                policyengine-uk
+              </SourceLink>{" "}
+              charges residential property and Business Asset Disposal{" "}
+              <SourceLink href={BADR_GUIDANCE}>Relief</SourceLink> gains on their own schedules
+              when a dataset records them. Gains recorded on each schedule in {firstYear}, before
+              any behavioural response.
+            </>
+        </div>
+        <ScheduleChart rows={scheduleRows} datasetLabel={dataset.shortLabel} />
+      </details>
     </div>
   );
 }
