@@ -270,6 +270,13 @@ export default function ReformTab({ data, datasetKey, onNavigate, anchor }) {
                 <TabLink onNavigate={() => showEqualisation("sensitivity")}>sensitivity</TabLink>{" "}
                 chart in the results shows other values.
               </li>
+              <li>
+                Not modelled: an exit charge or people moving in or out of the UK; see{" "}
+                <TabLink onNavigate={onNavigate} tab="methodology" section="not-modelled">
+                  Methodology
+                </TabLink>
+                .
+              </li>
             </ul>
           ),
         }
@@ -287,6 +294,13 @@ export default function ReformTab({ data, datasetKey, onNavigate, anchor }) {
               </li>
               <li>Each run uses the same pipeline as the equalisation results.</li>
               <li>Completed runs are stored, so a schedule run before shows at once.</li>
+              <li>
+                Not modelled: an exit charge or people moving in or out of the UK; see{" "}
+                <TabLink onNavigate={onNavigate} tab="methodology" section="not-modelled">
+                  Methodology
+                </TabLink>
+                .
+              </li>
             </ul>
           ),
         };

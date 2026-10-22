@@ -219,10 +219,11 @@ function ReadyReckonerPanel({ row, result, onNavigate }) {
           HMRC&apos;s <SourceLink href={READY_RECKONER.url}>figures</SourceLink> ({READY_RECKONER.source}) are {READY_RECKONER.measure[0].toLowerCase()}
           {READY_RECKONER.measure.slice(1)}, after behavioural responses; HMRC has deferred its 2026
           edition, so they are provisional. The{" "}
-          <TabLink onNavigate={onNavigate} tab="benchmarks">
-            Benchmarks
+          <TabLink onNavigate={onNavigate} tab="baseline" section="ready-reckoner">
+            Baseline
           </TabLink>{" "}
-          tab scores every row at the central and official elasticities.
+          tab scores every row at the central elasticity, CenTax&apos;s upper value and the official
+          one.
         </p>
         <p>
           {`HMRC's ${contextYear} figure, receipts in the reform's first year: ${formatSignedMn(row.hmrc_m[contextYear])}.`}
@@ -310,12 +311,10 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
           {entrantShare > 0.05 ? (
             <Notes className="mt-auto">
               <p>
-                Entrants by uprating (
-                see the{" "}
-                <TabLink onNavigate={onNavigate} tab="baseline" section="entrants">
-                  Baseline
-                </TabLink>{" "}
-                tab
+                Entrants by uprating (see{" "}
+                <TabLink onNavigate={onNavigate} tab="methodology" section="new-taxpayers">
+                  Methodology
+                </TabLink>
                 ) contribute {formatSmallBn(firstRow.cgt_change_from_entrants_bn)} of the
                 first-year change.
               </p>

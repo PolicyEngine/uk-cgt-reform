@@ -106,7 +106,7 @@ fingerprint `6c3580c6082e`.
 | Share of gains from gains of £1m or more | 67% | HMRC Table 2: 61% (2023-24), 65% (2024-25) |
 | Taxpayers with gains over £500k | 37.1k | HMRC Table 2: 19k (2023-24), 33k (2024-25) |
 | Largest single gain | £566m | none: HMRC's top band is £5m and over (2k taxpayers, £23.6bn in 2023-24; 3k, £48.5bn in 2024-25) |
-| Static yield (e = 0) | +£26.0bn | JRF (2026): about £13bn, static, equalisation alone (see [Benchmarks](#benchmarks)) |
+| Static yield (e = 0) | +£26.0bn | JRF (2026): around £13bn, static, equalisation alone (see [Benchmarks](#benchmarks)) |
 | of which the relief withdrawn (static) | +£5.0bn | none |
 | Uplift from equalising at 2019/20 rules (static) | +130% | CenTax (2024), Table 3: +139% on 2019/20 data |
 | Yield, CenTax lower (retention 0.5) | +£17.6bn | none |
@@ -179,14 +179,14 @@ taxpayers.
 
 ## Benchmarks
 
-The dashboard's Benchmarks tab and the results file's `benchmarks` block
+The dashboard's Baseline tab (its comparisons) and the results file's `benchmarks` block
 set this repo's figures beside published estimates of the same reform or
 the same kind of rate change (issue #7). `comparison.py` holds every
 external figure with its source, locator, scope, year and basis.
 
 - **JRF (2026), static equalisation.** [Rebuilding living standards and
   economic security](https://www.jrf.org.uk/income-savings-and-debt/rebuilding-living-standards-and-economic-security)
-  puts equalisation at about £13bn in 2026/27 and £17bn in 2029/30 (2026/27
+  puts equalisation at around £13bn in 2026/27, rising to £17bn in 2029/30 (2026/27
   prices), applying HMRC's CGT statistics by income band to the OBR's March
   2026 receipts projection: an implied uplift of about 60% in 2026-27. This
   repo's static uplift is 90% (about a fifth of the static yield comes from
@@ -212,7 +212,8 @@ external figure with its source, locator, scope, year and basis.
 - **HMRC's ready reckoner (June 2025).** Seven rows (higher rate +1, +5 and
   +10 points; lower rate +1 and +5 points; the Business Asset Disposal Relief
   rate +1 and +5 points) are scored through the live-run code at the
-  central and the official elasticity, comparing HMRC's receipts in 2027-28
+  central elasticity, CenTax's upper value (2.0) and the official one,
+  comparing HMRC's receipts in 2027-28
   and 2028-29 with this repo's liabilities a year earlier. The official case
   applies 3.6 to main-rate gains and 1.4 to gains qualifying for the relief,
   in every row. For the relief at 19% HMRC shows +£135m
@@ -683,7 +684,7 @@ pinned 2.141.9 (2.100.0 was the first release whose local-authority enum
 carries the April 2023 unitary authorities it records). Each release can move the projection fingerprint, so
 changing the pin is a deliberate re-pin that regenerates the results. A run needs the per-year builds, twenty-four stored simulations (baseline,
 central and static reform for every year, three more sensitivity cases, the
-CenTax counterfactual pair and four schedule-split steps) and twenty-eight
+CenTax counterfactual pair and four schedule-split steps) and forty-two
 in-memory ready-reckoner runs; a run with the stored outputs in place spends
 most of its time on the ready-reckoner runs. Copy
 `data/cgt_equalisation_results.json` into `dashboard/public/data/` for the

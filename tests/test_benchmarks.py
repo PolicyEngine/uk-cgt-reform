@@ -14,11 +14,13 @@ from uk_cgt_reform.comparison import (
     EXTERNAL_ROW_KEYS,
     JRF_STATIC,
     READY_RECKONER,
+    READY_RECKONER_ELASTICITIES,
     SENSITIVITY_CASES,
     UNITS,
     price_factors,
     ready_reckoner_block,
 )
+from uk_cgt_reform.explore import ELASTICITY_OPTIONS
 from uk_cgt_reform.impacts import (
     REGION_NAMES,
     UNASSIGNED_REGION,
@@ -208,3 +210,28 @@ def test_ready_reckoner_rows_are_pinned():
 def test_ready_reckoner_block_refuses_unscored_rows():
     with pytest.raises(ValueError, match="not scored"):
         ready_reckoner_block({})
+
+
+def test_ready_reckoner_elasticities_are_explorer_options():
+    # Central (1.0), CenTax's upper value (2.0) and the official case (3.6),
+    # each keyed by the rate explorer's id for the same elasticity.
+    assert READY_RECKONER_ELASTICITIES == {
+        "centax_central": 1.0,
+        "centax_upper": 2.0,
+        "official": 3.6,
+    }
+    options = {o["id"]: o["e_retention"] for o in ELASTICITY_OPTIONS}
+    assert all(options[eid] == e for eid, e in READY_RECKONER_ELASTICITIES.items())
+
+
+def test_ready_reckoner_block_lists_every_elasticity():
+    scores = {
+        row["id"]: {
+            eid: {lag["model_year"]: 0.0 for lag in READY_RECKONER["lag"]}
+            for eid in READY_RECKONER_ELASTICITIES
+        }
+        for row in READY_RECKONER["rows"]
+    }
+    block = ready_reckoner_block(scores)
+    assert block["elasticity_ids"] == ["centax_central", "centax_upper", "official"]
+    assert all(set(row["model_m"]) == set(READY_RECKONER_ELASTICITIES) for row in block["rows"])

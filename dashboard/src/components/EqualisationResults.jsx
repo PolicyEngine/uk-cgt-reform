@@ -149,12 +149,10 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
             </p>
             {entrantShare > 0.05 ? (
               <p>
-                Entrants by uprating (
-                see the{" "}
-                <TabLink onNavigate={onNavigate} tab="baseline" section="entrants">
-                  Baseline
-                </TabLink>{" "}
-                tab
+                Entrants by uprating (see{" "}
+                <TabLink onNavigate={onNavigate} tab="methodology" section="new-taxpayers">
+                  Methodology
+                </TabLink>
                 ) contribute {formatSmallBn(firstYearRow.cgt_change_from_entrants_bn)} of the
                 first-year change ({formatPct(100 * entrantShareOfChange, 0)}).
               </p>

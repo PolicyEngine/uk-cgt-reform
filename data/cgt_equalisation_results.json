@@ -1404,7 +1404,7 @@
           "details": {
             "method": "HMRC CGT statistics by income band applied to the OBR March 2026 CGT projection, adjusted for carried interest and BADR; grouped data, no behavioural response"
           },
-          "note": "About \u00a313bn."
+          "note": "Around \u00a313bn."
         },
         {
           "id": "jrf_2026_static_2029_30",
@@ -1422,7 +1422,7 @@
           "details": {
             "method": "HMRC CGT statistics by income band applied to the OBR March 2026 CGT projection, adjusted for carried interest and BADR; grouped data, no behavioural response"
           },
-          "note": "About \u00a317bn."
+          "note": "\u00a317bn."
         }
       ]
     },
@@ -1824,6 +1824,7 @@
       ],
       "elasticity_ids": [
         "centax_central",
+        "centax_upper",
         "official"
       ],
       "model_measure": "Change in government balance, \u00a3m, on this repo's liabilities in the model year, with each row's rates and relief (the main and residential rates move together; the BADR rows move the relief's rate), the official case applying 3.6 to main-rate gains and 1.4 to gains qualifying for the relief",
@@ -1850,6 +1851,10 @@
             "centax_central": {
               "2026-27": 655.1126102013245,
               "2027-28": 682.1976952405395
+            },
+            "centax_upper": {
+              "2026-27": 280.538833913147,
+              "2027-28": 292.5986315956726
             },
             "official": {
               "2026-27": -249.48087378552248,
@@ -1880,6 +1885,10 @@
               "2026-27": 2975.0262787939455,
               "2027-28": 3097.7834056184083
             },
+            "centax_upper": {
+              "2026-27": 973.776755407959,
+              "2027-28": 991.2057920756836
+            },
             "official": {
               "2026-27": -1761.0254959523315,
               "2027-28": -1835.0272850609438
@@ -1908,6 +1917,10 @@
             "centax_central": {
               "2026-27": 5276.725222859803,
               "2027-28": 5460.170009142212
+            },
+            "centax_upper": {
+              "2026-27": 955.063193204895,
+              "2027-28": 968.5630583700868
             },
             "official": {
               "2026-27": -4460.062486120209,
@@ -1938,6 +1951,10 @@
               "2026-27": 36.2878066321106,
               "2027-28": 35.86022223980713
             },
+            "centax_upper": {
+              "2026-27": 33.1562836552124,
+              "2027-28": 32.80497296435547
+            },
             "official": {
               "2026-27": 28.227907242248534,
               "2027-28": 27.996004228729248
@@ -1966,6 +1983,10 @@
             "centax_central": {
               "2026-27": 178.11959115734862,
               "2027-28": 176.0572125924072
+            },
+            "centax_upper": {
+              "2026-27": 160.17330737402344,
+              "2027-28": 158.52585206744385
             },
             "official": {
               "2026-27": 134.12965478198242,
@@ -1996,6 +2017,10 @@
               "2026-27": 166.51661842663574,
               "2027-28": 171.1113243955078
             },
+            "centax_upper": {
+              "2026-27": 139.84862785119628,
+              "2027-28": 144.5913017192383
+            },
             "official": {
               "2026-27": 155.81011203259277,
               "2027-28": 160.4635846977539
@@ -2024,6 +2049,10 @@
             "centax_central": {
               "2026-27": 804.164389736084,
               "2027-28": 827.3031499379882
+            },
+            "centax_upper": {
+              "2026-27": 650.723253557373,
+              "2027-28": 674.7181092263183
             },
             "official": {
               "2026-27": 741.626183621521,

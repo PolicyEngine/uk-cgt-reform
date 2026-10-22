@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { getBenchmarks, getDatasetInfo, getFirstYear, getMetadata } from "../lib/dataHelpers";
-import { formatPct, formatPublished } from "../lib/formatters";
+import { formatBn, formatCount, formatPct, formatPublished, formatSmallBn } from "../lib/formatters";
 import { TabLink } from "./controls";
 import SectionHeading from "./SectionHeading";
 
@@ -196,6 +196,9 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
   const { central, official } = getBenchmarks(data).elasticities;
   const centaxRange = getBenchmarks(data).elasticities.centax_range;
   const exemptAmount = data.validation?.entrants_by_uprating?.exempt_amount_gbp;
+  // Entrants by uprating in the first year, beside the whole taxpayer base.
+  const validation = data.validation;
+  const entrants = validation?.entrants_by_uprating;
   const baseYear = metadata.projection.base_year;
   const baseYearLabel = `${baseYear}-${String(baseYear + 1).slice(2)}`;
   // The ready reckoner's largest row: the higher rate from 24% to 34%.
@@ -309,7 +312,7 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
           }
         />
 
-        <Topic title="New taxpayers from growing gains">
+        <Topic title="New taxpayers from growing gains" id="new-taxpayers">
           <p>
             Some people have gains below the exempt{" "}
             <ExternalLink href={EXEMPT_AMOUNT}>amount</ExternalLink>
@@ -327,12 +330,10 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
               </>
             ) : (
               dataset.notes
-            )}{" "}
-            The{" "}
-            <TabLink onNavigate={onNavigate} tab="baseline" section="entrants">
-              Baseline
-            </TabLink>{" "}
-            tab shows every figure with and without them.
+            )}
+            {entrants
+              ? ` In ${firstYear} they are ${formatCount(entrants.count)} of ${formatCount(validation.cgt_taxpayers)} CGT taxpayers (${formatPct((100 * entrants.count) / validation.cgt_taxpayers, 1)}) and ${formatSmallBn(entrants.gains_bn)} of ${formatBn(validation.total_gains_bn, 1)} in taxable gains.`
+              : ""}
           </p>
         </Topic>
 
@@ -419,9 +420,10 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
             <p>
               CenTax&apos;s central value applies to a package that also ends the uplift at death,
               under which gains on assets held until death are not taxed, and taxes gains when
-              people leave the UK. This dashboard models the rate changes only. CenTax estimate a
-              larger behavioural response when rates change without those measures, and state that
-              they would not equalise rates without them (Advani, Hughson &amp; Summers,{" "}
+              people leave the UK; this dashboard models the rate changes only (see{" "}
+              <TabLink onNavigate={() => openSection("not-modelled")}>below</TabLink>). CenTax
+              estimate a larger behavioural response when rates change without those measures, and
+              state that they would not equalise rates without them (Advani, Hughson &amp; Summers,{" "}
               <em>Taxes at the top</em>, CenTax, September 2026, pp.{" "}
               <ExternalLink href={taxesAtTheTopPage(19)}>17</ExternalLink>&ndash;
               <ExternalLink href={taxesAtTheTopPage(20)}>18</ExternalLink>).
@@ -429,6 +431,16 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
           </div>
         </aside>
 
+        <Topic title="What the model leaves out" id="not-modelled">
+          <ul className="list-disc space-y-1 pl-5">
+            <li>No exit charge: gains are not taxed when people leave the UK.</li>
+            <li>
+              No migration response: the number and mix of taxpayers do not change with the
+              reform; any effect of people leaving or arriving is not modelled beyond what the
+              elasticity captures.
+            </li>
+          </ul>
+        </Topic>
       </section>
 
       <details className="section-card group scroll-mt-24" id="elasticity-gap">
@@ -528,10 +540,11 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
             </TabLink>{" "}
             tab&apos;s sensitivity chart gives the reform&apos;s first-year revenue at each
             elasticity, and the{" "}
-            <TabLink onNavigate={onNavigate} tab="benchmarks">
-              Benchmarks
+            <TabLink onNavigate={onNavigate} tab="baseline" section="ready-reckoner">
+              Baseline
             </TabLink>{" "}
-            tab scores the ready reckoner&apos;s rows at the central and official values.
+            tab scores the ready reckoner&apos;s rows at the central value, CenTax&apos;s upper value
+            and the official one.
           </p>
         </Topic>
       </details>

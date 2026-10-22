@@ -16,7 +16,7 @@ so the dashboard can say how comparable it is:
   base broadening: context only, a different scope.
 - HMRC's ready reckoner (June 2025): post-behavioural yields of +1/+5/+10pp
   on the higher rate and +1/+5pp on the lower rate, scored here at the
-  central and the official elasticity.
+  central elasticity, CenTax's upper value (2.0) and the official one.
 - The official elasticity itself (OBR, January 2025): retention 3.6.
 """
 
@@ -111,7 +111,7 @@ JRF_STATIC = [
         value=13.0,
         unit="gbp_bn",
         details={"method": JRF_METHOD},
-        note="About £13bn.",
+        note="Around £13bn.",
     ),
     _external(
         id="jrf_2026_static_2029_30",
@@ -127,7 +127,7 @@ JRF_STATIC = [
         value=17.0,
         unit="gbp_bn",
         details={"method": JRF_METHOD},
-        note="About £17bn.",
+        note="£17bn.",
     ),
 ]
 
@@ -318,11 +318,17 @@ OFFICIAL_ELASTICITY_SOURCE = {
     ),
 }
 
-# The elasticity cases the ready-reckoner rows are scored at. The official
-# case is the same in every row: 3.6 for main-rate gains and 1.4 for gains
-# qualifying for the relief (OBR, January 2025, para 1.9;
+# The elasticity cases the ready-reckoner rows are scored at, keyed by the
+# rate explorer's option ids: CenTax's central value, the upper end of their
+# range (Advani, Lonsdale and Summers 2024, Table 6) and the official case.
+# The official case is the same in every row: 3.6 for main-rate gains and
+# 1.4 for gains qualifying for the relief (OBR, January 2025, para 1.9;
 # ``reform.elasticity_assignment``).
-READY_RECKONER_ELASTICITIES = {"centax_central": ELASTICITY, "official": OFFICIAL_ELASTICITY}
+READY_RECKONER_ELASTICITIES = {
+    "centax_central": ELASTICITY,
+    "centax_upper": CENTAX_UPPER_ELASTICITY,
+    "official": OFFICIAL_ELASTICITY,
+}
 
 
 def _rates(basic: float, higher: float, additional: float) -> dict:

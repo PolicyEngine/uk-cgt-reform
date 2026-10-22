@@ -24,10 +24,10 @@ const SHORT = { static: "Static", obr: "On OBR receipts", jrf: "JRF" };
 
 const isNum = (v) => v !== null && v !== undefined && Number.isFinite(Number(v));
 
-// "About £13bn." → "about £13bn": JRF's own wording, from the results file.
+// "Around £13bn." → "around £13bn": JRF's own wording, from the results file.
 function jrfText(note, value) {
   const text = (note ?? "").trim().replace(/\.$/, "");
-  return text ? `${text[0].toLowerCase()}${text.slice(1)}` : `about ${formatBn(value, 0)}`;
+  return text ? `${text[0].toLowerCase()}${text.slice(1)}` : formatBn(value, 0);
 }
 
 // The props from the results file's `benchmarks.static_equalisation` block.

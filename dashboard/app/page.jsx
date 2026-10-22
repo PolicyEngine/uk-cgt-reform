@@ -3,7 +3,6 @@
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import BaselineTab from "../src/components/BaselineTab";
-import BenchmarksTab from "../src/components/BenchmarksTab";
 import MethodologyTab from "../src/components/MethodologyTab";
 import ReformTab from "../src/components/ReformTab";
 import { getDatasetInfo } from "../src/lib/dataHelpers";
@@ -19,13 +18,14 @@ const BOLD = "font-semibold text-slate-900";
 const TAB_OPTIONS = [
   { id: "reform", label: "Reform" },
   { id: "baseline", label: "Baseline" },
-  { id: "benchmarks", label: "Benchmarks" },
   { id: "methodology", label: "Methodology" },
 ];
 
 // Links from before the Reform tab merged the Reform impacts and Rate
-// explorer tabs open the Reform tab, which reads their schedule.
-const LEGACY_TABS = { explorer: "reform" };
+// explorer tabs open the Reform tab, which reads their schedule; links to the
+// old Benchmarks tab open the Baseline tab at its comparisons.
+const LEGACY_TABS = { explorer: "reform", benchmarks: "baseline" };
+const LEGACY_ANCHORS = { benchmarks: "comparisons" };
 
 function getInitialTab(tabParam) {
   if (LEGACY_TABS[tabParam]) return LEGACY_TABS[tabParam];
@@ -40,7 +40,7 @@ function Dashboard() {
   const router = useRouter();
 
   const [activeTab, setActiveTab] = useState(() => getInitialTab(searchParams.get("tab")));
-  const [anchor, setAnchor] = useState(null);
+  const [anchor, setAnchor] = useState(() => LEGACY_ANCHORS[searchParams.get("tab")] ?? null);
   const data = results;
   const dataset = getDatasetInfo(data);
 
@@ -81,7 +81,7 @@ function Dashboard() {
     <div className="app-shell flex flex-1 flex-col">
       <header className="title-row">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4 md:px-8">
-          <h1>Capital gains tax reform dashboard</h1>
+          <h1>Capital gains tax reform analysis</h1>
         </div>
       </header>
 
@@ -101,7 +101,7 @@ function Dashboard() {
 
         <nav
           aria-label="Dashboard sections"
-          className="tab-strip mb-8 mt-8 flex max-w-full gap-6 overflow-x-auto border-b border-slate-200 sm:gap-8"
+          className="tab-strip mb-8 mt-8 flex max-w-full flex-wrap gap-x-6 border-b border-slate-200 sm:gap-x-8"
         >
           {TAB_OPTIONS.map((tab) => (
             <button
@@ -122,7 +122,6 @@ function Dashboard() {
 
         {activeTab === "reform" && <ReformTab data={data} datasetKey={dataset.key} anchor={anchor} onNavigate={handleNavigate} />}
         {activeTab === "baseline" && <BaselineTab data={data} anchor={anchor} onNavigate={handleNavigate} />}
-        {activeTab === "benchmarks" && <BenchmarksTab data={data} onNavigate={handleNavigate} />}
         {activeTab === "methodology" && <MethodologyTab data={data} anchor={anchor} onNavigate={handleNavigate} />}
 
         <div aria-hidden="true" className="h-10 shrink-0" />

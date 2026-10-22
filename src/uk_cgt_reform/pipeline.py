@@ -19,7 +19,8 @@ adjusting anything away.
 The results also carry a ``benchmarks`` block (issue #7): the
 static reform by year beside JRF's estimate, a static re-score at CenTax's
 2019/20 rules beside its Tables 3 and 8, and HMRC's ready-reckoner rows
-scored at the central and the official elasticity (``comparison.py``).
+scored at the central elasticity, CenTax's upper value (2.0) and the
+official one (``comparison.py``).
 """
 
 from __future__ import annotations

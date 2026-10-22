@@ -46,7 +46,6 @@ const PE = "PolicyEngine";
 const percent = (rate) => `${Math.round(rate * 100)}%`;
 // "Exchequer receipts in £m ..." reads as the rest of a sentence.
 const lowerFirst = (text) => `${text[0].toLowerCase()}${text.slice(1)}`;
-const noStop = (text) => text.replace(/\.$/, "");
 // "Higher rate +10pp (18% / 34% / 34%)" → "higher rate +10pp".
 const shortRow = (label) => lowerFirst(label.replace(/\s*\(.*\)\s*$/, ""));
 const isNum = (v) => v !== null && v !== undefined && Number.isFinite(Number(v));
@@ -61,28 +60,6 @@ function Takeaway({ lead, children }) {
 
 // ---- At a glance: one line per section, every number from the data. ----
 
-function jrfGlance(block) {
-  const byYear = Object.fromEntries(block.by_year.map((row) => [row.year, row]));
-  const first = block.external.find((row) => isNum(byYear[row.year]?.uplift_on_obr_receipts_real_bn));
-  if (!first) return null;
-  return {
-    id: "jrf",
-    title: (
-      <>
-        Before behaviour: PolicyEngine and <SourceLink href={first.url}>JRF</SourceLink>
-      </>
-    ),
-    value: `${formatBn(byYear[first.year].uplift_on_obr_receipts_real_bn, 1)} · ${formatBn(first.value, 0)}`,
-    detail: (
-      <>
-        {`${first.year}, in 2026/27 prices. ${PE}'s uplift applied to the `}
-        <SourceLink href={OBR_EFO}>OBR&apos;s</SourceLink>
-        {" receipts; JRF's figure is approximate."}
-      </>
-    ),
-  };
-}
-
 function packageRange(rows) {
   const values = rows
     .filter((row) => !row.derived)
@@ -91,33 +68,26 @@ function packageRange(rows) {
   return values.length ? [Math.min(...values), Math.max(...values)] : null;
 }
 
-// Rows on which the two elasticities give opposite signs in every year pair,
-// and the one of them with the widest gap.
-function reckonerSplit(rr) {
-  const split = rr.rows.filter((row) =>
-    rr.pairs.every((p) => {
-      const v = row.values[p.key];
-      return isNum(v.central) && isNum(v.official) && Math.sign(v.central) !== Math.sign(v.official);
-    }),
-  );
-  const pair = rr.pairs[0];
-  const widest = [...split].sort(
-    (a, b) =>
-      Math.abs(b.values[pair.key].central - b.values[pair.key].official) -
-      Math.abs(a.values[pair.key].central - a.values[pair.key].official),
-  )[0];
-  return { split, widest, pair };
-}
-
-function AtAGlance({ benchmarks, rr, elasticities }) {
+// `baseline`: the Baseline tab's model and HMRC figures, { modelYear,
+// hmrcYear, url, gains: { model, hmrc }, liability: { model, hmrc } }, the
+// HMRC values as the benchmark chart shows them ("£119.3bn").
+function AtAGlance({ benchmarks, baseline }) {
   const centax = benchmarks.centax_2019_20_rules;
   const range = packageRange(buildPackageRows(benchmarks.centax_package_context));
-  const { widest, pair } = reckonerSplit(rr);
-  const v = widest?.values[pair.key];
-  // £m from the reckoner block as "+£5.3bn" / "−£4.5bn".
-  const bnFromM = (m) => formatSignedBn(m / 1000, 1);
+  const hmrcLink = baseline && <SourceLink href={baseline.url}>HMRC</SourceLink>;
   const items = [
-    jrfGlance(benchmarks.static_equalisation),
+    baseline && {
+      id: "baseline-gains",
+      title: <>Taxable gains: PolicyEngine and {hmrcLink}</>,
+      value: `${formatBn(baseline.gains.model, 1)} · ${baseline.gains.hmrc}`,
+      detail: `${PE} ${baseline.modelYear} and HMRC ${baseline.hmrcYear}.`,
+    },
+    baseline && {
+      id: "baseline-liability",
+      title: <>CGT liability: PolicyEngine and {hmrcLink}</>,
+      value: `${formatBn(baseline.liability.model, 1)} · ${baseline.liability.hmrc}`,
+      detail: `${PE} ${baseline.modelYear} and HMRC ${baseline.hmrcYear}; rates rose partway through 2024-25.`,
+    },
     {
       id: "centax-2019-20",
       title: (
@@ -137,18 +107,6 @@ function AtAGlance({ benchmarks, rr, elasticities }) {
       ),
       value: `${formatBn(range[0], 1)}–${formatBn(range[1], 1)}`,
       detail: "After behaviour, for a wider reform of the CGT base, so not like-for-like.",
-    },
-    widest && {
-      title: `${widest.label.replace(/\s*\(.*\)\s*$/, "")}: central and official response`,
-      value: `${bnFromM(v.central)} · ${bnFromM(v.official)}`,
-      id: "ready-reckoner",
-      detail: (
-        <>
-          {`${PE}'s change in revenue at ${elasticities.central.e_retention.toFixed(1)} and ${elasticities.official.e_retention}. `}
-          <SourceLink href={benchmarks.ready_reckoner.url}>HMRC</SourceLink>
-          {`: ${bnFromM(v.hmrc)} (${pair.hmrcYear} receipts).`}
-        </>
-      ),
     },
   ].filter(Boolean);
   return (
@@ -303,31 +261,55 @@ function CentaxPackage({ rows, onNavigate }) {
 
 function ReadyReckoner({ block, dataset, elasticities, rr, onNavigate }) {
   const firstYear = block.hmrc_years[0];
+  const central = elasticities.central.e_retention.toFixed(1);
+  const official = elasticities.official.e_retention;
+  // CenTax's upper value, described from the rows themselves: whether it
+  // raises revenue in every row and pair, and by less than the central case.
+  const upper = elasticities.centax_range.upper.toFixed(1);
+  const upperValues = rr.rows.flatMap((row) => rr.pairs.map((p) => row.values[p.key]));
+  const upperRises = upperValues.every((v) => isNum(v.upper) && v.upper > 0);
+  const upperBelowCentral = upperValues.every((v) => isNum(v.upper) && v.upper < v.central);
+  const upperClause =
+    upperRises && upperBelowCentral
+      ? ` At CenTax's upper value (${upper}) revenue still rises in every row, by less than at ${central}.`
+      : "";
   const [pairKey, setPairKey] = useState(rr.pairs[0]?.key);
   return (
-    <section className="section-card">
+    <section className="section-card scroll-mt-24" id="ready-reckoner">
       <SectionHeading
         title="Small rate changes: HMRC's ready reckoner"
         action={
           rr.pairs.length > 1 ? (
-            <select
-              aria-label="HMRC receipts year"
-              value={pairKey}
-              onChange={(event) => setPairKey(event.target.value)}
-              className="h-8 rounded-md border border-slate-300 bg-white pl-2 pr-7 text-sm font-medium text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--pe-color-primary-500)]"
-            >
-              {rr.pairs.map((p) => (
-                <option key={p.key} value={p.key}>
-                  {p.hmrcYear}
-                </option>
-              ))}
-            </select>
+            <label className="flex items-center gap-2">
+              <span className="text-xs text-slate-500">HMRC receipts</span>
+              <span className="relative inline-flex">
+                <select
+                  aria-label="HMRC receipts year"
+                  value={pairKey}
+                  onChange={(event) => setPairKey(event.target.value)}
+                  className="h-8 cursor-pointer appearance-none rounded-md border border-slate-200 bg-slate-50 pl-3 pr-8 text-sm font-medium tabular-nums text-slate-800 transition-colors hover:border-slate-300 hover:bg-white focus:outline-none focus:ring-2 focus:ring-[color:var(--pe-color-primary-500)]"
+                >
+                  {rr.pairs.map((p) => (
+                    <option key={p.key} value={p.key}>
+                      {p.hmrcYear}
+                    </option>
+                  ))}
+                </select>
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 12 12"
+                  className="pointer-events-none absolute right-2.5 top-1/2 h-3 w-3 -translate-y-1/2 text-slate-500"
+                >
+                  <path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </span>
+            </label>
           ) : null
         }
         description={
           <>
             <SourceLink href={block.url}>HMRC&apos;s</SourceLink>
-            {` (June 2025) receipts from small rate changes, beside ${PE}'s change a year earlier at the central and official elasticities. Bars left of £0 reduce revenue.`}
+            {` (June 2025) receipts from small rate changes, beside ${PE}'s change a year earlier at the central elasticity, CenTax's upper value and the official one. Bars left of £0 reduce revenue.`}
           </>
         }
       />
@@ -339,44 +321,42 @@ function ReadyReckoner({ block, dataset, elasticities, rr, onNavigate }) {
         labels={{
           hmrc: "HMRC",
           central: `${PE}, central (${elasticities.central.e_retention.toFixed(1)})`,
+          upper: `${PE}, CenTax upper (${elasticities.centax_range.upper.toFixed(1)})`,
           official: `${PE}, official (${elasticities.official.e_retention}; ${elasticities.official.badr_e_retention} relief)`,
         }}
       />
       <Notes>
         <p>
-          {`A rate rise takes more tax from each gain still sold, but people sell fewer assets; each bar is the net. At ${elasticities.central.e_retention.toFixed(1)} the extra tax per gain is larger than the fall in sales; at ${elasticities.official.e_retention} the fall in sales is larger. The rate that raises the most is 1 / (1 + elasticity): about ${Math.round(100 / (1 + elasticities.official.e_retention))}% at ${elasticities.official.e_retention}, below today's 24% higher rate, and ${Math.round(100 / (1 + elasticities.central.e_retention))}% at ${elasticities.central.e_retention.toFixed(1)}.`}
+          {`Why bars point different ways: a higher rate raises more tax on each gain sold, but fewer gains are sold. With a weaker response (${central}) the first effect is larger, so revenue rises; with a stronger one (${official}) the second is larger on the higher-rate rows, so revenue falls there.${upperClause}`}
         </p>
         <p>
-          {PE}&apos;s figures are the change in government balance, as in the{" "}
+          HMRC&apos;s figures are receipts in £m, including knock-on income tax and SDLT, and arrive
+          a year after the tax is owed; {PE}&apos;s are the change in the government balance in the
+          year, as for custom rates in the{" "}
           <TabLink onNavigate={onNavigate} tab="reform">
             Reform
           </TabLink>{" "}
-          tab&apos;s custom rates;{" "}
+          tab.{" "}
           <TabLink onNavigate={onNavigate} tab="methodology" section="elasticity-gap">
             Methodology
           </TabLink>{" "}
-          describes both elasticities.
+          describes the elasticities.
         </p>
         <p>
-          HMRC&apos;s figures are {lowerFirst(block.measure).replace(/\.$/, "")}. {block.note.replace(/\s+$/, "")}{" "}
-          Source: <SourceLabel href={block.url} label={block.source} />, {block.locator}.
+          Rows raise the named rate from April 2026; higher-rate rows move the higher and additional
+          rates together; HMRC says rows can&apos;t be scaled. HMRC delayed its 2026 edition, so
+          these are provisional. Source: <SourceLink href={block.url}>HMRC</SourceLink>,{" "}
+          {formatPublished(block.published).replace(/^\d+\s+/, "")}.
         </p>
         <p>
-          {`HMRC's first-year (${firstYear}) receipts: `}
+          {`HMRC's first-year (${firstYear}) figures: `}
           {block.rows.map((row, i) => (
             <span key={row.id}>
               {i > 0 ? "; " : ""}
-              {noStop(row.label)}{" "}
+              {shortRow(row.label)}{" "}
               <span className="whitespace-nowrap">{formatSignedMn(row.hmrc_m[firstYear])}</span>
             </span>
           ))}
-          {". Not scored: "}
-          {block.excluded
-            .map((row) => {
-              const reason = noStop(row.reason);
-              return `${row.hmrc_label} (${reason[0].toLowerCase()}${reason.slice(1)})`;
-            })
-            .join("; ")}
           .
         </p>
       </Notes>
@@ -384,27 +364,31 @@ function ReadyReckoner({ block, dataset, elasticities, rr, onNavigate }) {
   );
 }
 
-export default function BenchmarksTab({ data, onNavigate }) {
+// The Baseline tab's comparisons: the intro and at-a-glance row, then
+// `children` (the tab's own check against HMRC's statistics), then each
+// comparison with a published estimate.
+export default function BenchmarksTab({ data, onNavigate, baselineGlance, children }) {
   const benchmarks = getBenchmarks(data);
   const dataset = getDatasetInfo(data);
   const elasticities = benchmarks.elasticities;
   const rr = buildReckonerRows(benchmarks.ready_reckoner, elasticities.central.id, elasticities.official.id);
   return (
-    <div className="space-y-6">
-      <section>
+    <div id="comparisons" className="scroll-mt-24 space-y-6">
+      <section className="pt-2">
         <SectionHeading
           size="lg"
           title="How these results compare with other estimates"
           description={
             <>
-              {`Published estimates that score the same reform, or the same kind of rate change, next to ${PE}'s figures on `}
+              {`HMRC's statistics for the baseline, and published estimates that score the same reform or the same kind of rate change, next to ${PE}'s figures on `}
               <DatasetName label={dataset.shortLabel} />
               {" on the same basis. Estimates that cover a wider package are shown separately as context."}
             </>
           }
         />
       </section>
-      <AtAGlance benchmarks={benchmarks} rr={rr} elasticities={elasticities} />
+      <AtAGlance benchmarks={benchmarks} baseline={baselineGlance} />
+      {children}
       <StaticEqualisation block={benchmarks.static_equalisation} dataset={dataset} />
       <CentaxRegions block={benchmarks.centax_2019_20_rules} dataset={dataset} />
       <CentaxPackage rows={benchmarks.centax_package_context} onNavigate={onNavigate} />
