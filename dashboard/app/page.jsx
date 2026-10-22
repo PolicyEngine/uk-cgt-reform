@@ -92,7 +92,8 @@ function Dashboard() {
             <strong className={BOLD}>government revenue</strong> and{" "}
             <strong className={BOLD}>household incomes</strong>. Its headline reform,{" "}
             <strong className={BOLD}>taxing gains at income tax rates</strong> and withdrawing
-            Business Asset Disposal Relief, has been{" "}
+            Business Asset Disposal{" "}
+            <a href="https://www.gov.uk/business-asset-disposal-relief" target="_blank" rel="noopener noreferrer" className={LINK}>Relief</a>, has been{" "}
             <a href="https://ifs.org.uk/sites/default/files/2024-10/Captial-gains-tax-reform.pdf" target="_blank" rel="noopener noreferrer" className={LINK}>debated</a>{" "}
             in the UK; a <strong className={BOLD}>custom option</strong> scores any other set of rates.
           </p>

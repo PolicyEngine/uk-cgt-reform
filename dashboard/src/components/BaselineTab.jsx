@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { formatBn, formatCount, formatPct, formatSmallBn } from "../lib/formatters";
 import { getDatasetInfo, getEntrants, getFirstYear, getValidation } from "../lib/dataHelpers";
-import { TableScroll } from "./controls";
+import { SourceLink, TableScroll } from "./controls";
 import SectionHeading from "./SectionHeading";
 
 // External benchmarks the baseline is compared with. These are published
@@ -24,6 +24,10 @@ const TABLE_4 =
   "https://assets.publishing.service.gov.uk/media/6a7b242a347b198efd290ed7/Table_4_2026_Business_asset_disposal_and_investors_reliefs.ods";
 const T4_2023 = "HMRC CGT statistics 2026 release, Table 4 (2023-24, individuals)";
 const T4_2024 = "HMRC CGT statistics 2026 release, Table 4 (2024-25, provisional, individuals)";
+const CGT_STATISTICS = "https://www.gov.uk/government/statistics/capital-gains-tax-statistics";
+const FRS = "https://www.gov.uk/government/collections/family-resources-survey--2";
+const EXEMPT_AMOUNT = "https://www.gov.uk/capital-gains-tax/allowances";
+const BADR_GUIDANCE = "https://www.gov.uk/business-asset-disposal-relief";
 
 const BENCHMARKS = {
   totalGains: {
@@ -129,14 +133,27 @@ export default function BaselineTab({ data, anchor }) {
         <SectionHeading
           size="lg"
           title="Baseline estimation"
-          description={`The Family Resources Survey records few capital gains, so the dataset imputes them from HMRC data and weights households to HMRC's CGT statistics. The tables below check that fit and two features that affect how the figures read.`}
+          description={
+            <>
+              The Family Resources <SourceLink href={FRS}>Survey</SourceLink> records few capital
+              gains, so the dataset imputes them from HMRC data and weights households to
+              HMRC&apos;s CGT <SourceLink href={CGT_STATISTICS}>statistics</SourceLink>. The tables
+              below check that fit and two features that affect how the figures read.
+            </>
+          }
         />
       </div>
 
       <section className="section-card scroll-mt-24" id="benchmarks">
         <SectionHeading
           title="Model versus external benchmarks"
-          description={`PolicyEngine's ${firstYear} baseline beside HMRC's statistics for 2023-24 and, provisionally, 2024-25. Liabilities are higher relative to gains in ${firstYear} because CGT rates rose from 10% and 20% to 18% and 24% partway through 2024-25.`}
+          description={
+            <>
+              PolicyEngine&apos;s {firstYear} baseline beside HMRC&apos;s{" "}
+              <SourceLink href={CGT_STATISTICS}>statistics</SourceLink> for 2023-24 and,
+              provisionally, 2024-25. {`Liabilities are higher relative to gains in ${firstYear} because CGT rates rose from 10% and 20% to 18% and 24% partway through 2024-25.`}
+            </>
+          }
         />
         <TableScroll>
         <table className="data-table">
@@ -225,7 +242,12 @@ export default function BaselineTab({ data, anchor }) {
       <section className="section-card scroll-mt-24" id="entrants">
         <SectionHeading
           title="Entrants by uprating"
-          description={`The exempt amount stays at £${entrants.exempt_amount_gbp.toLocaleString("en-GB")} while gains grow with the economy, so some people with small gains become CGT taxpayers in later years. These entrants, with ${firstYear} gains between £${entrants.exempt_amount_gbp.toLocaleString("en-GB")} and £${Math.round(entrants.ceiling_gbp).toLocaleString("en-GB")}, are shown separately so they can be netted out.`}
+          description={
+            <>
+              The exempt <SourceLink href={EXEMPT_AMOUNT}>amount</SourceLink>{" "}
+              {`stays at £${entrants.exempt_amount_gbp.toLocaleString("en-GB")} while gains grow with the economy, so some people with small gains become CGT taxpayers in later years. These entrants, with ${firstYear} gains between £${entrants.exempt_amount_gbp.toLocaleString("en-GB")} and £${Math.round(entrants.ceiling_gbp).toLocaleString("en-GB")}, are shown separately so they can be netted out.`}
+            </>
+          }
         />
         <TableScroll>
         <table className="data-table">
@@ -283,7 +305,17 @@ export default function BaselineTab({ data, anchor }) {
       <section className="section-card scroll-mt-24" id="schedules">
         <SectionHeading
           title="Schedule components"
-          description={`policyengine-uk charges residential property and Business Asset Disposal Relief gains on their own schedules when a dataset records them. Gains recorded on each schedule in ${firstYear}, before any behavioural response.`}
+          description={
+            <>
+              <SourceLink href="https://github.com/PolicyEngine/policyengine-uk">
+                policyengine-uk
+              </SourceLink>{" "}
+              charges residential property and Business Asset Disposal{" "}
+              <SourceLink href={BADR_GUIDANCE}>Relief</SourceLink> gains on their own schedules
+              when a dataset records them. Gains recorded on each schedule in {firstYear}, before
+              any behavioural response.
+            </>
+          }
         />
         <TableScroll>
         <table className="data-table">

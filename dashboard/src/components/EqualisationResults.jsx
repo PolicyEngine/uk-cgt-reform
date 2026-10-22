@@ -29,7 +29,7 @@ import GroupImpactChart, { GroupDefinitions } from "./charts/GroupImpactChart";
 import SensitivityChart from "./charts/SensitivityChart";
 import RateChangeChart, { RateChangeCaption } from "./charts/RateChangeChart";
 import YieldChart from "./charts/YieldChart";
-import { Card, MetricCard, Notes, SourceLabel, TabLink } from "./controls";
+import { Card, MetricCard, Notes, SourceLabel, SourceLink, TabLink } from "./controls";
 import SectionHeading from "./SectionHeading";
 
 // Where each sensitivity scenario's elasticity comes from: the static case
@@ -39,6 +39,11 @@ const CENTAX_SOURCE = {
   label: "Advani, Lonsdale & Summers (2024), CenTax",
   url: "https://centax.org.uk/wp-content/uploads/2024/10/AdvaniLonsdaleSummers2024_CGTReform.pdf#page=38",
 };
+
+const BADR_GUIDANCE = "https://www.gov.uk/business-asset-disposal-relief";
+const EXEMPT_AMOUNT = "https://www.gov.uk/capital-gains-tax/allowances";
+const HMRC_TABLE_4 =
+  "https://assets.publishing.service.gov.uk/media/6a7b242a347b198efd290ed7/Table_4_2026_Business_asset_disposal_and_investors_reliefs.ods";
 
 function officialSource(official) {
   return {
@@ -92,7 +97,13 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
       <Card>
         <SectionHeading
           title="Headline results"
-          description={`In ${firstYear}, the reform's first year, at CenTax's central behavioural response, on ${dataset.shortLabel}. Distributional figures cover all households.`}
+          description={
+            <>
+              In {firstYear}, the reform&apos;s first year, at{" "}
+              <SourceLink href={CENTAX_SOURCE.url}>CenTax&apos;s</SourceLink> central behavioural
+              response, on {dataset.shortLabel}. Distributional figures cover all households.
+            </>
+          }
         />
         <div className={`grid gap-4 ${topQuintile.share_affected_pct !== undefined ? "md:grid-cols-3" : "md:grid-cols-2"}`}>
           <MetricCard
@@ -109,7 +120,7 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
           {topQuintile.share_affected_pct !== undefined ? (
             <MetricCard
               label="Top-fifth households with lower net income"
-              value={formatPct(topQuintile.share_affected_pct, 0)}
+              value={formatPct(topQuintile.share_affected_pct, 1)}
               note="Households whose net income falls under the reform."
             />
           ) : null}
@@ -166,13 +177,19 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
         <Card className="min-w-0">
           <SectionHeading
             title="Where the yield comes from"
-            description="Each bar adds the reform's parts one at a time in its first year, first with no behavioural response and then with CenTax's central response."
+            description={
+              <>
+                Each bar adds the reform&apos;s parts one at a time in its first year, first with
+                no behavioural response and then with{" "}
+                <SourceLink href={CENTAX_SOURCE.url}>CenTax&apos;s</SourceLink> central response.
+              </>
+            }
           />
           <YieldChart steps={split.steps} />
           <Notes>
             <p>
               The main rates come first, then residential property gains, then withdrawing
-              Business Asset Disposal Relief. Each segment is what that change adds once the ones
+              Business Asset Disposal <SourceLink href={BADR_GUIDANCE}>Relief</SourceLink>. Each segment is what that change adds once the ones
               before it are in place, with no behavioural response and at the central elasticity.
             </p>
             <p>
@@ -183,7 +200,8 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
               <TabLink onNavigate={onNavigate} tab="baseline" section="benchmarks">
                 Baseline
               </TabLink>{" "}
-              tab compares them with HMRC&apos;s statistics.{" "}
+              tab compares them with HMRC&apos;s{" "}
+              <SourceLink href={HMRC_TABLE_4}>statistics</SourceLink>.{" "}
             </>
           ) : (
             <>
@@ -262,7 +280,7 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
         </Card>
 
       <Card as="details" className="group">
-        <summary className="cursor-pointer select-none font-semibold text-slate-800 marker:text-[color:var(--pe-color-primary-600)]">
+        <summary className="cursor-pointer select-none text-xl font-semibold tracking-tight text-slate-900 marker:text-[color:var(--pe-color-primary-600)]">
           What exactly does the reform change?
           <span className="ml-2 text-sm font-normal text-slate-500 group-open:hidden">
             (expand for the full specification)
@@ -302,7 +320,9 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
           <RateChangeCaption
             items={[
               `Residential property gains take the same rates as the main ones.${recorded(validation.residential_property_gains_bn)}`,
-              "The annual exempt amount stays £3,000.",
+              <>
+                The annual exempt <SourceLink href={EXEMPT_AMOUNT}>amount</SourceLink> stays £3,000.
+              </>,
             ]}
           />
         </div>

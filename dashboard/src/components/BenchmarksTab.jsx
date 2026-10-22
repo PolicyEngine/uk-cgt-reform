@@ -8,7 +8,7 @@ import {
   formatSignedBn,
   formatSignedMn,
 } from "../lib/formatters";
-import { MetricCard, SourceLabel, TabLink, TipHeader } from "./controls";
+import { MetricCard, SourceLabel, SourceLink, TabLink, TipHeader } from "./controls";
 import SectionHeading from "./SectionHeading";
 
 // Published estimates next to this dataset's own figures on the same basis
@@ -20,6 +20,11 @@ function formatUplift(value) {
   const sign = value < 0 ? "−" : "+";
   return `${sign}${Math.abs(value).toFixed(0)}%`;
 }
+
+const CGT_STATISTICS = "https://www.gov.uk/government/statistics/capital-gains-tax-statistics";
+const OBR_EFO = "https://obr.uk/efo/economic-and-fiscal-outlook-march-2026/";
+const BADR_GUIDANCE = "https://www.gov.uk/business-asset-disposal-relief";
+const EXEMPT_AMOUNT = "https://www.gov.uk/capital-gains-tax/allowances";
 
 const percent = (rate) => `${Math.round(rate * 100)}%`;
 // "Exchequer receipts in £m ..." reads as the rest of a sentence.
@@ -36,7 +41,15 @@ function StaticEqualisation({ block, dataset }) {
     <section className="section-card">
       <SectionHeading
         title="Equalisation before behavioural responses: JRF (2026)"
-        description={`The Joseph Rowntree Foundation estimates that equalising CGT with income tax rates raises about £${jrf["2026-27"].value.toFixed(0)}bn in 2026-27 and £${jrf["2029-30"].value.toFixed(0)}bn in 2029-30 (2026/27 prices) before any behavioural response. It applies HMRC's CGT statistics by income band to the OBR's March 2026 CGT projection. Because that method scales the OBR's receipts, the last model column applies ${dataset.shortLabel}'s static uplift to the same OBR receipts, which separates the uplift from the dataset's own baseline level.`}
+        description={
+          <>
+            {`The Joseph Rowntree Foundation estimates that equalising CGT with income tax rates raises about £${jrf["2026-27"].value.toFixed(0)}bn in 2026-27 and £${jrf["2029-30"].value.toFixed(0)}bn in 2029-30 (2026/27 prices) before any behavioural response.`}{" "}
+            It applies HMRC&apos;s CGT <SourceLink href={CGT_STATISTICS}>statistics</SourceLink> by
+            income band to the OBR&apos;s March 2026 CGT{" "}
+            <SourceLink href={OBR_EFO}>projection</SourceLink>.{" "}
+            {`Because that method scales the OBR's receipts, the last model column applies ${dataset.shortLabel}'s static uplift to the same OBR receipts, which separates the uplift from the dataset's own baseline level.`}
+          </>
+        }
       />
       <div className="table-scroll mt-4 overflow-x-auto">
         <table className="data-table">
@@ -99,7 +112,15 @@ function CentaxRegions({ block, dataset }) {
     <section className="section-card">
       <SectionHeading
         title="Equalisation at 2019/20 rules: CenTax (2024)"
-        description={`CenTax's rates-only estimate starts from 2019/20 rules: main rates of ${percent(rules.main.basic_rate)} and ${percent(rules.main.higher_rate)}, ${percent(rules.residential_property.basic_rate)} and ${percent(rules.residential_property.higher_rate)} for residential property and carried interest, ${percent(rules.badr.rate)} under Business Asset Disposal Relief, and a £${rules.annual_exempt_amount.toLocaleString("en-GB")} exempt amount. To compare like with like, this dashboard applies those rules to ${dataset.shortLabel}'s 2026-27 data, with no behavioural response, and equalises from there.`}
+        description={
+          <>
+            {`CenTax's rates-only estimate starts from 2019/20 rules: main rates of ${percent(rules.main.basic_rate)} and ${percent(rules.main.higher_rate)}, ${percent(rules.residential_property.basic_rate)} and ${percent(rules.residential_property.higher_rate)} for residential property and carried interest, ${percent(rules.badr.rate)} under Business Asset Disposal`}{" "}
+            <SourceLink href={BADR_GUIDANCE}>Relief</SourceLink>, and a £
+            {rules.annual_exempt_amount.toLocaleString("en-GB")} exempt{" "}
+            <SourceLink href={EXEMPT_AMOUNT}>amount</SourceLink>.{" "}
+            {`To compare like with like, this dashboard applies those rules to ${dataset.shortLabel}'s 2026-27 data, with no behavioural response, and equalises from there.`}
+          </>
+        }
       />
       <div className="mt-4 grid gap-4 md:grid-cols-2">
         <MetricCard
@@ -217,7 +238,7 @@ function CentaxPackage({ rows, onNavigate }) {
   );
 }
 
-function ReadyReckoner({ block, dataset, elasticities }) {
+function ReadyReckoner({ block, dataset, elasticities, onNavigate }) {
   const [first, second] = block.lag;
   const centralLabel = `Central (retention ${elasticities.central.e_retention.toFixed(1)})`;
   const officialLabel = `Official (retention ${elasticities.official.e_retention}; ${elasticities.official.badr_e_retention} for BADR gains)`;
@@ -269,8 +290,11 @@ function ReadyReckoner({ block, dataset, elasticities }) {
       <p className="mt-3 text-xs leading-5 text-slate-500">
         Source: <SourceLabel href={block.url} label={block.source} />, {block.locator}. {block.note}{" "}
         HMRC&apos;s figures are {lowerFirst(block.measure)}; the model figures are the change in
-        government balance on its own data, in the scope of the Reform tab&apos;s custom rates (main and residential
-        rates and the relief). Not scored:{" "}
+        government balance on its own data, in the scope of the{" "}
+        <TabLink onNavigate={onNavigate} tab="reform">
+          Reform
+        </TabLink>{" "}
+        tab&apos;s custom rates (main and residential rates and the relief). Not scored:{" "}
         {block.excluded
           .map((row) => {
             const reason = row.reason.replace(/\.$/, "");
@@ -302,6 +326,7 @@ export default function BenchmarksTab({ data, onNavigate }) {
         block={benchmarks.ready_reckoner}
         dataset={dataset}
         elasticities={benchmarks.elasticities}
+        onNavigate={onNavigate}
       />
       <section className="note-card rounded-lg p-4 text-sm leading-6 text-slate-600">
         <p className="note-eyebrow">Why the elasticity matters</p>

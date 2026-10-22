@@ -22,6 +22,7 @@ import { Card, Pill, TEXT_BUTTON, TabLink, cardClass } from "./controls";
 
 const CENTAX_URL =
   "https://centax.org.uk/wp-content/uploads/2024/10/AdvaniLonsdaleSummers2024_CGTReform.pdf#page=38";
+const BADR_GUIDANCE = "https://www.gov.uk/business-asset-disposal-relief";
 const POLICY_TITLES = { equalise: "Equalise with income tax", custom: "Custom rates" };
 
 // One policy in the chooser: an inset card that selects it (or, selected,
@@ -246,7 +247,13 @@ export default function ReformTab({ data, datasetKey, onNavigate, anchor }) {
           content: (
             <ul className="list-disc space-y-1.5 pl-5 text-sm leading-6 text-slate-600">
               <li>Each CGT rate rises to the matching income tax rate.</li>
-              <li>Business Asset Disposal Relief is withdrawn, so qualifying gains take the new rates.</li>
+              <li>
+                Business Asset Disposal{" "}
+                <a href={BADR_GUIDANCE} target="_blank" rel="noopener noreferrer" className="underline decoration-1 underline-offset-2 hover:opacity-80">
+                  Relief
+                </a>{" "}
+                is withdrawn, so qualifying gains take the new rates.
+              </li>
               <li>
                 Taxpayers realise fewer gains, using CenTax&apos;s central{" "}
                 <a href={CENTAX_URL} target="_blank" rel="noopener noreferrer" className="underline decoration-1 underline-offset-2 hover:opacity-80">
@@ -268,7 +275,13 @@ export default function ReformTab({ data, datasetKey, onNavigate, anchor }) {
           content: (
             <ul className="list-disc space-y-1.5 pl-5 text-sm leading-6 text-slate-600">
               <li>The chosen rates apply to the main schedule and to residential property gains.</li>
-              <li>Business Asset Disposal Relief can be kept, at a chosen rate and lifetime limit, or withdrawn.</li>
+              <li>
+                Business Asset Disposal{" "}
+                <a href={BADR_GUIDANCE} target="_blank" rel="noopener noreferrer" className="underline decoration-1 underline-offset-2 hover:opacity-80">
+                  Relief
+                </a>{" "}
+                can be kept, at a chosen rate and lifetime limit, or withdrawn.
+              </li>
               <li>Each run uses the same pipeline as the equalisation results.</li>
               <li>Completed runs are stored, so a schedule run before shows at once.</li>
             </ul>

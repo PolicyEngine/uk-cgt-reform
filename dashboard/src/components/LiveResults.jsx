@@ -27,7 +27,7 @@ import {
 } from "../lib/schedule";
 import BudgetChart from "./charts/BudgetChart";
 import GroupImpactChart, { GroupDefinitions } from "./charts/GroupImpactChart";
-import { Card, MetricCard, Notes, TabLink, TableScroll } from "./controls";
+import { Card, MetricCard, Notes, SourceLink, TabLink, TableScroll } from "./controls";
 import SectionHeading from "./SectionHeading";
 
 const pct = (fraction) => formatPct(fraction * 100, 0);
@@ -142,7 +142,7 @@ function SpecTable({ metadata }) {
 // HMRC's figures for the ready-reckoner row this run matches. HMRC reports
 // receipts, which arrive about a year after the liability, so each HMRC year
 // sits beside the run's liability a year earlier.
-function ReadyReckonerPanel({ row, result }) {
+function ReadyReckonerPanel({ row, result, onNavigate }) {
   const liability = (year) =>
     1000 * result.budget.find((budgetRow) => budgetRow.year === year).gov_balance_change_bn;
   const [contextYear] = READY_RECKONER.hmrc_years;
@@ -181,10 +181,14 @@ function ReadyReckonerPanel({ row, result }) {
       </TableScroll>
       <Notes>
         <p>
-          HMRC&apos;s figures ({READY_RECKONER.source}) are {READY_RECKONER.measure[0].toLowerCase()}
+          HMRC&apos;s <SourceLink href={READY_RECKONER.url}>figures</SourceLink> ({READY_RECKONER.source}) are {READY_RECKONER.measure[0].toLowerCase()}
           {READY_RECKONER.measure.slice(1)}, after behavioural responses; HMRC has deferred its 2026
           edition, so they are provisional. HMRC reports receipts, which arrive about a year after
-          the liability. The Benchmarks tab scores every row at the central and the official
+          the liability. The{" "}
+          <TabLink onNavigate={onNavigate} tab="benchmarks">
+            Benchmarks
+          </TabLink>{" "}
+          tab scores every row at the central and the official
           elasticity.
         </p>
       </Notes>
@@ -246,7 +250,7 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
           {topQuintile.share_affected_pct !== undefined ? (
             <MetricCard
               label="Top-fifth households with lower net income"
-              value={formatPct(topQuintile.share_affected_pct, 0)}
+              value={formatPct(topQuintile.share_affected_pct, 1)}
               note="Households whose net income falls under the reform."
             />
           ) : null}
@@ -313,7 +317,7 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
       {/* The specification's long text needs the full width, so the ready
           reckoner sits under it rather than beside it. */}
       <Card as="details" className="group min-w-0">
-        <summary className="cursor-pointer select-none font-semibold text-slate-800 marker:text-[color:var(--pe-color-primary-600)]">
+        <summary className="cursor-pointer select-none text-xl font-semibold tracking-tight text-slate-900 marker:text-[color:var(--pe-color-primary-600)]">
           What exactly does this schedule change?
           <span className="ml-2 text-sm font-normal text-slate-500 group-open:hidden">
             (expand for the full specification)
@@ -328,7 +332,7 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
         </div>
       </Card>
 
-      {matchedRow ? <ReadyReckonerPanel row={matchedRow} result={result} /> : null}
+      {matchedRow ? <ReadyReckonerPanel row={matchedRow} result={result} onNavigate={onNavigate} /> : null}
     </>
   );
 }

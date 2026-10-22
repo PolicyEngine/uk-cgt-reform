@@ -54,6 +54,29 @@ const CENTAX_REPORT =
   "https://centax.org.uk/wp-content/uploads/2024/10/AdvaniLonsdaleSummers2024_CGTReform.pdf";
 const centaxPage = (pdfPage) => `${CENTAX_REPORT}#page=${pdfPage}`;
 
+// Official sources named in the text.
+const FRS = "https://www.gov.uk/government/collections/family-resources-survey--2";
+const CGT_STATISTICS = "https://www.gov.uk/government/statistics/capital-gains-tax-statistics";
+const HMRC_TABLE_3 =
+  "https://assets.publishing.service.gov.uk/media/6a85a2e654bcee010d51454b/Table_3_2026_Size_of_gain_by_income.ods";
+const HMRC_TABLE_7 =
+  "https://assets.publishing.service.gov.uk/media/6a7b2487423b0bdba0290ecb/Table_7_2026_Statistics_by_asset_type_in_the_2023_to_2024_tax_year.ods";
+const HMRC_TABLE_8 =
+  "https://assets.publishing.service.gov.uk/media/6a7b24a6423b0bdba0290ecc/Table_8_2026_Statistics_on_UK_residential_property.ods";
+const HMRC_TABLE_2 =
+  "https://assets.publishing.service.gov.uk/media/6a7b240b423b0bdba0290eca/Table_2_2026_Size_of_gain.ods";
+const HMRC_TABLE_4 =
+  "https://assets.publishing.service.gov.uk/media/6a7b242a347b198efd290ed7/Table_4_2026_Business_asset_disposal_and_investors_reliefs.ods";
+const BADR_GUIDANCE = "https://www.gov.uk/business-asset-disposal-relief";
+const INVESTORS_RELIEF = "https://www.gov.uk/government/publications/investors-relief-2020-hs308";
+const EXEMPT_AMOUNT = "https://www.gov.uk/capital-gains-tax/allowances";
+const OBR_EFO = "https://obr.uk/efo/economic-and-fiscal-outlook-march-2026/";
+const ONS_PROJECTIONS =
+  "https://www.ons.gov.uk/peoplepopulationandcommunity/populationandmigration/populationprojections";
+const READY_RECKONER_URL =
+  "https://assets.publishing.service.gov.uk/media/68552862b46781eacfd71d71/June_2025_TRR_ODS__1_.ods";
+const AGERSNAP_ZIDAR = "https://www.aeaweb.org/articles?id=10.1257/aeri.20200535";
+
 // The dataset's own notes carry the figures the plain-language text needs;
 // pull them out so nothing is hardcoded, and fall back to the note itself.
 function datasetFigures(dataset) {
@@ -137,17 +160,22 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
         />
         <ul className={LIST}>
           <li>
-            <strong>The dataset.</strong> {dataset.label}. It starts from the Family Resources
-            Survey and adds capital gains from HMRC statistics. It is used exactly as published,
+            <strong>The dataset.</strong> {dataset.label}. It starts from the Family Resources{" "}
+            <ExternalLink href={FRS}>Survey</ExternalLink> and adds capital gains from HMRC{" "}
+            <ExternalLink href={CGT_STATISTICS}>statistics</ExternalLink>. It is used exactly as published,
             with no reweighting in this dashboard.
           </li>
           <li>
-            <strong>How gains are added.</strong> Gain sizes are drawn from HMRC&apos;s Table 3
-            (size of gain by taxable income), so the largest gains, which carry most of the tax,
+            <strong>How gains are added.</strong> Gain sizes are drawn from HMRC&apos;s Table{" "}
+            <ExternalLink href={HMRC_TABLE_3}>3</ExternalLink> (size of gain by taxable income), so the largest gains, which carry most of the tax,
             are represented and each gain falls in the right income tax band. Each gainer gets a
-            main asset type from HMRC Tables 7 and 8, with residential property gains kept
-            separate, and gains qualifying for Business Asset Disposal Relief or Investors&apos;
-            Relief are imputed from HMRC Table 4. Gains below the exempt amount follow the
+            main asset type from HMRC Tables <ExternalLink href={HMRC_TABLE_7}>7</ExternalLink>{" "}
+            and <ExternalLink href={HMRC_TABLE_8}>8</ExternalLink>, with residential property
+            gains kept separate, and gains qualifying for Business Asset Disposal{" "}
+            <ExternalLink href={BADR_GUIDANCE}>Relief</ExternalLink> or Investors&apos;{" "}
+            <ExternalLink href={INVESTORS_RELIEF}>Relief</ExternalLink> are imputed from HMRC
+            Table <ExternalLink href={HMRC_TABLE_4}>4</ExternalLink>. Gains below the exempt{" "}
+            <ExternalLink href={EXEMPT_AMOUNT}>amount</ExternalLink> follow the
             Advani&ndash;Summers distribution within each band.
           </li>
           <li>
@@ -167,8 +195,8 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
                 The model adds about {figures.entrants.audit} such taxpayers by{" "}
                 {figures.entrants.year} (the dataset&apos;s own bound is {figures.entrants.bound}),
                 against HMRC&apos;s {figures.entrants.hmrc} taxpayers with gains of{" "}
-                {figures.entrants.band} in {figures.entrants.hmrcYear} (HMRC{" "}
-                {figures.entrants.table}).
+                {figures.entrants.band} in {figures.entrants.hmrcYear} (
+                <ExternalLink href={HMRC_TABLE_2}>HMRC</ExternalLink> {figures.entrants.table}).
               </>
             ) : (
               <> {dataset.notes}</>
@@ -182,13 +210,14 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
           <li>
             <strong>Projecting to later years.</strong> The data describe one year,{" "}
             {baseYearLabel}. Each later year grows capital gains in line with the OBR&apos;s
-            forecast of GDP per head and household weights in line with ONS population
-            projections. Nothing specific to CGT enters the projection.
+            forecast of GDP per head and household weights in line with ONS population{" "}
+            <ExternalLink href={ONS_PROJECTIONS}>projections</ExternalLink>. Nothing specific to CGT enters the projection.
           </li>
           {obrGaps.length ? (
             <li>
               <strong>Comparison with the OBR&apos;s forecast.</strong> The model&apos;s baseline
-              CGT bill differs from the OBR&apos;s forecast of CGT receipts (
+              CGT bill differs from the OBR&apos;s{" "}
+              <ExternalLink href={OBR_EFO}>forecast</ExternalLink> of CGT receipts (
               {obrComparison.obr_receipts_source}) by{" "}
               {obrGaps.map((row) => `${signedGap(row.gap)} in ${row.year}`).join(", ")}. The two
               measure different things: receipts arrive about a year after the tax they settle,
@@ -201,7 +230,8 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
             gains and gains qualifying for Business Asset Disposal Relief (with Investors&apos;
             Relief) are taxed on their own rate schedules. The reform charges residential property
             gains at income tax rates like other gains and withdraws the relief, so qualifying
-            gains pay the new main rates, as in CenTax&apos;s rates-only estimate. Carried interest
+            gains pay the new main rates, as in{" "}
+            <ExternalLink href={CENTAX_REPORT}>CenTax&apos;s</ExternalLink> rates-only estimate. Carried interest
             has been taxed as income, outside CGT, since 6 April 2026, so it is unaffected.
           </li>
           <li>
@@ -228,11 +258,16 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
             </li>
           ) : null}
           <li>
-            Engine: policyengine-uk {metadata.policyengine_uk_version}, run through{" "}
+            Engine:{" "}
+            <ExternalLink href="https://github.com/PolicyEngine/policyengine-uk">
+              policyengine-uk
+            </ExternalLink>{" "}
+            {metadata.policyengine_uk_version}, run through{" "}
             <ExternalLink href="https://github.com/PolicyEngine/policyengine.py">
               policyengine.py
             </ExternalLink>{" "}
-            {metadata.policyengine_version}; aggregates are weighted microdf sums. The 4.x
+            {metadata.policyengine_version}; aggregates are weighted{" "}
+            <ExternalLink href="https://github.com/PolicyEngine/microdf">microdf</ExternalLink> sums. The 4.x
             wrapper is used because later releases pin a single engine version that predates the
             schedules.
           </li>
@@ -332,7 +367,14 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
       <section className="section-card scroll-mt-24" id="elasticity-gap">
         <SectionHeading
           title="Why official estimates differ"
-          description="HMRC and the OBR assume a much stronger response than CenTax, which is why HMRC's ready reckoner shows large rate rises losing revenue while this dashboard's central case raises it."
+          description={
+            <>
+              HMRC and the OBR assume a much stronger response than CenTax, which is why
+              HMRC&apos;s ready <ExternalLink href={READY_RECKONER_URL}>reckoner</ExternalLink>{" "}
+              shows large rate rises losing revenue while this dashboard&apos;s central case
+              raises it.
+            </>
+          }
         />
         <ul className={LIST}>
           <li>
@@ -349,7 +391,7 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
           <li>
             <strong>Why they differ.</strong> HMRC&apos;s figure comes from UK responses under the
             current tax base. CenTax start from US evidence of about 1.5 five years after a change
-            (Agersnap &amp; Zidar, 2021) and lower it to {central.e_retention.toFixed(1)} because
+            (<ExternalLink href={AGERSNAP_ZIDAR}>Agersnap</ExternalLink> &amp; Zidar, 2021) and lower it to {central.e_retention.toFixed(1)} because
             their package removes the uplift at death, which the US keeps, and because equalising
             rates brings income that was presented as gains back into income tax, which estimates
             based only on CGT count as lost. They make no adjustment for the charge on leaving the
@@ -383,7 +425,17 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
       <section className="section-card scroll-mt-24" id="explorer">
         <SectionHeading
           title="Custom rates"
-          description={`The Reform tab's Custom rates option lets you choose your own CGT rates and treatment of Business Asset Disposal Relief, and scores them on ${dataset.shortLabel} for every modelled year with the same model and assumptions as the main results.`}
+          description={
+            <>
+              The{" "}
+              <TabLink onNavigate={onNavigate} tab="reform">
+                Reform
+              </TabLink>{" "}
+              tab&apos;s Custom rates option lets you choose your own CGT rates and treatment of
+              Business Asset Disposal Relief, and scores them on {dataset.shortLabel} for every
+              modelled year with the same model and assumptions as the main results.
+            </>
+          }
         />
         <ul className={LIST}>
           <li>
