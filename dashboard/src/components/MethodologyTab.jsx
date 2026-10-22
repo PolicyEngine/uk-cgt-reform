@@ -19,7 +19,6 @@ function ExternalLink({ href, children }) {
   );
 }
 
-const CODE = "break-all font-mono text-xs";
 
 // The auditable identifiers behind a section (build ids, file digests,
 // parameter paths, versions), collapsed so the main text stays readable.
@@ -236,7 +235,6 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
 
   const firstYear = getFirstYear(data);
   const lastYear = data.budget.at(-1).year;
-  const indices = metadata.projection.indices ?? {};
 
   return (
     <div className="space-y-6">
@@ -320,39 +318,6 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
           </p>
         </Topic>
 
-        <TechnicalDetails>
-          <li>
-            Dataset file <span className={CODE}>{dataset.uri}</span>, sha256{" "}
-            <span className="font-mono">{dataset.sha256.slice(0, 12)}…</span>, checked before
-            any run.
-          </li>
-          <li>
-            Build record: {dataset.producer}. Built with{" "}
-            <ExternalLink href="https://github.com/PolicyEngine/microcosm">microcosm</ExternalLink>.
-          </li>
-          <li>{dataset.columns} On a dataset without these columns the schedule parameters are inert.</li>
-          <li>
-            Engine:{" "}
-            <ExternalLink href="https://github.com/PolicyEngine/policyengine-uk">
-              policyengine-uk
-            </ExternalLink>{" "}
-            {metadata.policyengine_uk_version}, run through{" "}
-            <ExternalLink href="https://github.com/PolicyEngine/policyengine.py">
-              policyengine.py
-            </ExternalLink>{" "}
-            {metadata.policyengine_version}; aggregates are weighted{" "}
-            <ExternalLink href="https://github.com/PolicyEngine/microdf">microdf</ExternalLink> sums. The 4.x
-            wrapper is used because later releases pin a single engine version that predates the
-            schedules.
-          </li>
-          <li>
-            Behavioural response: applied through a policy simulation modifier that registers the
-            baseline branch, so the change in marginal rates is measured against current law; the
-            pipeline checks the response is active before writing results. Each case sets{" "}
-            <span className={CODE}>{metadata.elasticity_parameter}</span> and leaves the
-            engine&apos;s marginal-tax-rate elasticity at zero.
-          </li>
-        </TechnicalDetails>
       </section>
 
       <section className="section-card scroll-mt-24" id="projection">
@@ -425,32 +390,6 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
           </Topic>
         ) : null}
 
-        <TechnicalDetails>
-          <li>
-            Projection indices:{" "}
-            {Object.entries(indices).map(([variable, path], i) => (
-              <span key={variable}>
-                {i ? "; " : ""}
-                <span className="font-mono">{variable}</span> by{" "}
-                <span className={CODE}>{path}</span>
-              </span>
-            ))}
-            . Factors applied are in{" "}
-            <span className="font-mono">{metadata.projection.audit}</span>, fingerprint{" "}
-            <span className="font-mono">{metadata.projection.fingerprint}</span> (part of every
-            simulation id).
-          </li>
-          {figures.entrants ? (
-            <li>
-              New taxpayers: the {figures.entrants.bound} bound is the dataset build&apos;s projection
-              fence; the {figures.entrants.audit} count is this repository&apos;s uprating audit on{" "}
-              <ExternalLink href="https://github.com/PolicyEngine/policyengine-uk">
-                policyengine-uk
-              </ExternalLink>{" "}
-              {metadata.policyengine_uk_version}.
-            </li>
-          ) : null}
-        </TechnicalDetails>
       </section>
 
       <section className="section-card scroll-mt-24" id="elasticity">
