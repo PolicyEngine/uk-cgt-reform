@@ -10,7 +10,7 @@ import {
 } from "../lib/formatters";
 import {
   BASELINE_SCHEDULE_RATES,
-  describeBadr,
+  badrLimitLabel,
   getBenchmarks,
   getBudget,
   getDatasetInfo,
@@ -27,8 +27,9 @@ import {
 import BudgetChart from "./charts/BudgetChart";
 import GroupImpactChart, { GroupDefinitions } from "./charts/GroupImpactChart";
 import SensitivityChart from "./charts/SensitivityChart";
+import RateChangeChart, { RateChangeCaption } from "./charts/RateChangeChart";
 import YieldChart from "./charts/YieldChart";
-import { Card, MetricCard, Notes, SourceLabel, TabLink, TableScroll } from "./controls";
+import { Card, MetricCard, Notes, SourceLabel, TabLink } from "./controls";
 import SectionHeading from "./SectionHeading";
 
 // Where each sensitivity scenario's elasticity comes from: the static case
@@ -85,7 +86,6 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
     row.e_retention === official.e_retention
       ? "the official HMRC/OBR elasticity"
       : `a retention elasticity of ${row.e_retention.toFixed(1)}`;
-  const pct = (rate) => formatPct(rate * 100, 0);
 
   return (
     <div className="space-y-6">
@@ -277,71 +277,34 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
             Scottish taxpayers&apos; earnings face Scotland&apos;s own bands, which the reform does not
             follow.
           </p>
-          <TableScroll>
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Policy parameter</th>
-                <th>Baseline (current policy)</th>
-                <th>Reform</th>
-                <th>What it means</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Basic CGT rate</td>
-                <td>{formatPct(reform.basic_rate.baseline * 100, 0)}</td>
-                <td className="font-semibold">{formatPct(reform.basic_rate.reform * 100, 0)}</td>
-                <td>Gains falling in the basic income tax band are taxed at the {pct(reform.basic_rate.reform)} basic income tax rate.</td>
-              </tr>
-              <tr>
-                <td>Higher CGT rate</td>
-                <td>{formatPct(reform.higher_rate.baseline * 100, 0)}</td>
-                <td className="font-semibold">{formatPct(reform.higher_rate.reform * 100, 0)}</td>
-                <td>Gains in the higher band are taxed at the {pct(reform.higher_rate.reform)} higher income tax rate.</td>
-              </tr>
-              <tr>
-                <td>Additional CGT rate</td>
-                <td>{formatPct(reform.additional_rate.baseline * 100, 0)}</td>
-                <td className="font-semibold">{formatPct(reform.additional_rate.reform * 100, 0)}</td>
-                <td>Gains in the additional band (income over £125,140) are taxed at the {pct(reform.additional_rate.reform)} additional income tax rate.</td>
-              </tr>
-              <tr>
-                <td>Residential property CGT rates</td>
-                <td>
-                  {formatPct(BASELINE_SCHEDULE_RATES.residential_property.basic_rate * 100, 0)} /{" "}
-                  {formatPct(BASELINE_SCHEDULE_RATES.residential_property.higher_rate * 100, 0)}
-                </td>
-                <td className="font-semibold">
-                  {formatPct(schedules.residential_property.basic_rate * 100, 0)} /{" "}
-                  {formatPct(schedules.residential_property.higher_rate * 100, 0)} /{" "}
-                  {formatPct(schedules.residential_property.additional_rate * 100, 0)}
-                </td>
-                <td>
-                  Gains on UK residential property, charged on their own schedule, take the same
-                  income tax rates.{recorded(validation.residential_property_gains_bn)}
-                </td>
-              </tr>
-              <tr>
-                <td>Business Asset Disposal Relief</td>
-                <td>{describeBadr(BASELINE_SCHEDULE_RATES.badr)}</td>
-                <td className="font-semibold">{describeBadr(schedules.badr)}</td>
-                <td>
-                  {schedules.badr.withdrawn
-                    ? "Gains that qualify for the relief (Investors' Relief included) fall onto the main schedule at the reformed rates."
-                    : "Gains that qualify for the relief keep their own rate."}
-                  {recorded(validation.badr_gains_bn)}
-                </td>
-              </tr>
-              <tr>
-                <td>Annual exempt amount</td>
-                <td>£3,000</td>
-                <td>£3,000</td>
-                <td>Unchanged: the first £3,000 of gains each year stays tax-free.</td>
-              </tr>
-            </tbody>
-          </table>
-          </TableScroll>
+          <RateChangeChart
+            rows={[
+              { key: "basic", label: "Basic rate", baseline: reform.basic_rate.baseline, reform: reform.basic_rate.reform },
+              { key: "higher", label: "Higher rate", baseline: reform.higher_rate.baseline, reform: reform.higher_rate.reform },
+              {
+                key: "additional",
+                label: "Additional rate (income over £125,140)",
+                baseline: reform.additional_rate.baseline,
+                reform: reform.additional_rate.reform,
+              },
+              {
+                key: "badr",
+                label: "Business Asset Disposal Relief",
+                baseline: BASELINE_SCHEDULE_RATES.badr.rate,
+                reform: schedules.badr.withdrawn ? null : schedules.badr.rate,
+                baselineNote: `up to a ${badrLimitLabel(BASELINE_SCHEDULE_RATES.badr.lifetime_limit)} lifetime limit`,
+                reformNote: schedules.badr.withdrawn
+                  ? "qualifying gains, Investors' Relief included, take the main rates above"
+                  : undefined,
+              },
+            ]}
+          />
+          <RateChangeCaption
+            items={[
+              `Residential property gains take the same rates as the main ones.${recorded(validation.residential_property_gains_bn)}`,
+              "The annual exempt amount stays £3,000.",
+            ]}
+          />
         </div>
       </Card>
     </div>
