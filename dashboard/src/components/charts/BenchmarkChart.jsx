@@ -1,18 +1,19 @@
 "use client";
 
-import { Bar, BarChart, Cell, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { colors } from "../../lib/colors";
 import { formatBn, formatCount, formatPct } from "../../lib/formatters";
 import ChartLogo from "../ChartLogo";
 
-// The three columns of the benchmark table, in the table's order.
+// The three estimates compared on each row, drawn as dots on one line: the
+// model filled teal, HMRC's revised year as a grey ring, its provisional
+// year as a solid grey dot, so overlapping dots stay distinguishable.
 const SERIES = [
-  { key: "model", fill: colors.primary[600], text: colors.primary[700], weight: 700 },
-  { key: "hmrc2023", label: "HMRC, 2023-24 (revised)", fill: colors.gray[300], text: colors.gray[600], weight: 500 },
-  { key: "hmrc2024", label: "HMRC, 2024-25 (provisional)", fill: colors.gray[500], text: colors.gray[700], weight: 500 },
+  { key: "model", color: colors.primary[600], text: colors.primary[700], ring: false, size: 14 },
+  { key: "hmrc2023", label: "HMRC, 2023-24 (revised)", color: colors.gray[400], text: colors.gray[600], ring: true, size: 12 },
+  { key: "hmrc2024", label: "HMRC, 2024-25 (provisional)", color: colors.gray[600], text: colors.gray[700], ring: false, size: 10 },
 ];
 
-// How each unit's values read on a bar. Values arrive in their natural unit:
+// How each unit's values read. Values arrive in their natural unit:
 // "bn" in £bn, "count" in people, "pct" in percent (0–100).
 const FORMATS = {
   bn: (v) => formatBn(v, 1),
@@ -20,11 +21,8 @@ const FORMATS = {
   pct: (v) => formatPct(v, 0),
 };
 
-const BAR_SIZE = 18;
-const PANEL_HEIGHT = 3 * BAR_SIZE + 2 * 8 + 8;
-
 // A published figure as the table prints it ("£66.6bn", "382k", "61%") read
-// back into the panel's natural unit: £bn, people or percent.
+// back into the row's natural unit: £bn, people or percent.
 export function parseBenchmark(text) {
   if (text === null || text === undefined) return null;
   const s = String(text).replace(/[£,\s]/g, "");
@@ -36,102 +34,111 @@ export function parseBenchmark(text) {
   return n;
 }
 
-function ValueLabel({ x, y, width, height, index, data, format }) {
-  const d = data[index];
-  if (!d || !Number.isFinite(d.value)) return null;
-  const s = SERIES[index];
+function Dot({ series, left }) {
   return (
-    <text
-      x={x + Math.max(width, 0) + 6}
-      y={y + height / 2}
-      textAnchor="start"
-      dominantBaseline="central"
-      pointerEvents="none"
-      fontSize={12}
-      fontWeight={s.weight}
-      fill={s.text}
-    >
-      {format(d.value)}
-    </text>
+    <span
+      aria-hidden="true"
+      className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
+      style={{
+        left: `${left}%`,
+        width: series.size,
+        height: series.size,
+        background: series.ring ? "#FFFFFF" : series.color,
+        border: `2px solid ${series.color}`,
+        zIndex: series.key === "model" ? 2 : 1,
+      }}
+    />
   );
 }
 
-function PanelTooltip({ active, payload, format }) {
-  if (!active || !payload?.length) return null;
-  const d = payload[0].payload;
-  return (
-    <div className="rounded-md border border-slate-200 bg-white px-3 py-2 text-xs shadow-sm">
-      <p className="font-semibold text-slate-900">{d.label}</p>
-      <p className="mt-0.5 tabular-nums text-slate-700">{Number.isFinite(d.value) ? format(d.value) : "—"}</p>
-    </div>
-  );
+// Columns: quantity, the three values, the gap to HMRC's latest year, and
+// the dot strip (0 at the left). Below `md` a row stacks.
+const GRID = "md:grid-cols-[minmax(0,13rem)_repeat(3,5.5rem)_5rem_minmax(0,1fr)]";
+
+function gapToLatest(row) {
+  if (!Number.isFinite(row.model) || !Number.isFinite(row.hmrc2024) || row.hmrc2024 === 0) return null;
+  // Shares compare in points; everything else as a percentage difference.
+  if (row.unit === "pct") {
+    const pp = Math.round(row.model - row.hmrc2024);
+    return `${pp > 0 ? "+" : pp < 0 ? "−" : ""}${Math.abs(pp)} pp`;
+  }
+  const rel = Math.round(100 * (row.model / row.hmrc2024 - 1));
+  return `${rel > 0 ? "+" : rel < 0 ? "−" : ""}${Math.abs(rel)}%`;
 }
 
-function Panel({ row, labels }) {
+function Row({ row, seriesLabels }) {
   const format = FORMATS[row.unit] ?? ((v) => String(v));
-  const data = SERIES.map((s) => {
-    const raw = row[s.key];
-    const value = raw === null || raw === undefined ? NaN : Number(raw);
-    return { key: s.key, label: labels[s.key], value: Number.isFinite(value) ? value : NaN };
-  });
-  const values = data.map((d) => d.value).filter(Number.isFinite);
-  // Shares sit on a full 0–100% scale; levels on their own, with room past
-  // the longest bar for its label.
-  const max = row.unit === "pct" ? 100 : Math.max(...values, 0) * 1.32 || 1;
-  const summary = `${row.label}: ${data
-    .map((d) => `${d.label} ${Number.isFinite(d.value) ? format(d.value) : "not available"}`)
-    .join("; ")}`;
+  const values = SERIES.map((s) => row[s.key]).filter(Number.isFinite);
+  // Shares sit on 0–100%; other rows scale to their largest value.
+  const max = row.unit === "pct" ? 100 : Math.max(...values) * 1.1 || 1;
+  const left = (v) => Math.min(100, Math.max(0, (100 * v) / max));
+  const summary = SERIES.filter((s) => Number.isFinite(row[s.key]))
+    .map((s) => `${seriesLabels[s.key]} ${format(row[s.key])}`)
+    .join(", ");
+  const gap = gapToLatest(row);
   return (
-    <div role="listitem" aria-label={summary} className="rounded-lg border border-slate-100 bg-white px-3 pb-2 pt-3">
-      <p className="text-sm font-semibold sm:min-h-[2.5rem] leading-5 text-slate-800">{row.label}</p>
-      <div aria-hidden="true" style={{ height: PANEL_HEIGHT }} className="w-full">
-        <ResponsiveContainer>
-          <BarChart data={data} layout="vertical" margin={{ top: 4, right: 4, bottom: 4, left: 0 }} barCategoryGap={4}>
-            <XAxis type="number" domain={[0, max]} hide />
-            <YAxis type="category" dataKey="key" hide />
-            <Tooltip cursor={{ fill: colors.gray[100] }} content={<PanelTooltip format={format} />} />
-            <Bar dataKey="value" barSize={BAR_SIZE} radius={[0, 4, 4, 0]} isAnimationActive={false}>
-              {data.map((d, i) => (
-                <Cell key={d.key} fill={SERIES[i].fill} />
-              ))}
-              <LabelList dataKey="value" content={<ValueLabel data={data} format={format} />} />
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+    <li className={`grid grid-cols-3 items-center gap-x-3 gap-y-1.5 border-t border-slate-100 py-3 ${GRID}`}>
+      <span className="col-span-3 text-sm font-medium text-slate-800 md:col-span-1">{row.label}</span>
+      {SERIES.map((s) => (
+        <span key={s.key} className="text-sm tabular-nums md:text-right" style={{ color: s.text, fontWeight: s.key === "model" ? 700 : 500 }}>
+          <span className="block text-[10px] font-medium uppercase tracking-wide text-slate-400 md:hidden">
+            {s.key === "model" ? "PolicyEngine" : s.key === "hmrc2023" ? "HMRC 23-24" : "HMRC 24-25"}
+          </span>
+          {Number.isFinite(row[s.key]) ? format(row[s.key]) : "—"}
+        </span>
+      ))}
+      <span className="hidden text-right text-xs tabular-nums text-slate-500 md:block">{gap ?? ""}</span>
+      <div className="relative col-span-3 h-5 md:col-span-1" role="img" aria-label={`${row.label}: ${summary}`}>
+        <span aria-hidden="true" className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-slate-200" />
+        <span aria-hidden="true" className="absolute left-0 top-1/2 h-2 w-px -translate-y-1/2 bg-slate-300" />
+        {SERIES.map((s) =>
+          Number.isFinite(row[s.key]) ? <Dot key={s.key} series={s} left={left(row[s.key])} /> : null,
+        )}
       </div>
-    </div>
+    </li>
   );
 }
 
-// The model's baseline beside HMRC's published figures, as small multiples:
-// one panel per quantity, each on its own scale, the three sources as bars.
-//
-// Props:
-//   rows: [{ key, label, unit: "bn" | "count" | "pct", model, hmrc2023, hmrc2024 }]
-//     values in the unit's natural scale (£bn, people, percent 0–100);
-//     a null value draws no bar.
-//   modelLabel: legend text for the PolicyEngine series.
-export default function BenchmarkChart({ rows, modelLabel = "PolicyEngine" }) {
-  const labels = { model: modelLabel, hmrc2023: SERIES[1].label, hmrc2024: SERIES[2].label };
+// The model's baseline against HMRC's published years, one row per quantity,
+// each on its own scale. `rows`: [{ key, label, unit: "bn" | "count" | "pct",
+// model, hmrc2023, hmrc2024 }]; `modelLabel` names the model series.
+export default function BenchmarkChart({ rows, modelLabel }) {
+  const seriesLabels = { model: modelLabel, hmrc2023: SERIES[1].label, hmrc2024: SERIES[2].label };
   return (
     <>
-      <ul className="mb-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600">
+      <ul className="mb-2 flex flex-wrap gap-x-5 gap-y-1 text-xs text-slate-600">
         {SERIES.map((s) => (
           <li key={s.key} className="flex items-center gap-1.5">
-            <span className="inline-block h-3 w-3 rounded-sm" style={{ background: s.fill }} />
-            {labels[s.key]}
+            <span
+              aria-hidden="true"
+              className="inline-block rounded-full"
+              style={{
+                width: 10,
+                height: 10,
+                background: s.ring ? "#FFFFFF" : s.color,
+                border: `2px solid ${s.color}`,
+              }}
+            />
+            {seriesLabels[s.key]}
           </li>
         ))}
       </ul>
       <div
-        role="list"
-        aria-label="PolicyEngine baseline against HMRC statistics"
-        className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3"
+        aria-hidden="true"
+        className={`hidden gap-x-3 border-b border-slate-200 pb-2 text-xs font-semibold text-slate-500 md:grid ${GRID}`}
       >
-        {rows.map((row) => (
-          <Panel key={row.key} row={row} labels={labels} />
-        ))}
+        <span>Quantity</span>
+        <span className="text-right">PolicyEngine</span>
+        <span className="text-right">HMRC 2023-24</span>
+        <span className="text-right">HMRC 2024-25</span>
+        <span className="text-right">vs 2024-25</span>
+        <span>Compared (0 at left)</span>
       </div>
+      <ul>
+        {rows.map((row) => (
+          <Row key={row.key} row={row} seriesLabels={seriesLabels} />
+        ))}
+      </ul>
       <ChartLogo />
     </>
   );
