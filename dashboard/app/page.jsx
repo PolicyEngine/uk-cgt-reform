@@ -90,19 +90,10 @@ function Dashboard() {
         <div className="animate-[fadeIn_0.4s_ease-out]">
           <p className="text-lg leading-8 text-slate-800">
             This dashboard estimates how changing UK capital gains tax rates would affect
-            government revenue and household incomes. Its headline reform sets CGT rates equal to
-            income tax rates and withdraws Business Asset Disposal Relief; a custom option scores
-            any other set of rates. The IFS{" "}
-            <a href="https://ifs.org.uk/sites/default/files/2024-10/Captial-gains-tax-reform.pdf" target="_blank" rel="noopener noreferrer" className={LINK}>advocates</a>{" "}
-            aligning tax rates on gains and income alongside reforms to the tax base, and CenTax{" "}
-            <a href="https://centax.org.uk/reform-capital-gains-tax-to-make-it-fairer-and-more-efficient-and-raise-14bn/" target="_blank" rel="noopener noreferrer" className={LINK}>estimates</a>{" "}
-            that a package of reforms including equal rates would raise revenue. The Centre for
-            Policy Studies{" "}
-            <a href="https://cps.org.uk/media/post/2026/governments-own-stats-say-burnham-would-be-wrong-to-raise-capital-gains-tax/" target="_blank" rel="noopener noreferrer" className={LINK}>cites</a>{" "}
-            HMRC estimates that a large rise in the higher rate would reduce receipts, and Tax Policy
-            Associates{" "}
-            <a href="https://taxpolicy.org.uk/2026/10/06/cgt-reform-dead/" target="_blank" rel="noopener noreferrer" className={LINK}>argues</a>{" "}
-            that speculation before the Budget has reduced what a reform could raise.
+            government revenue and household incomes. Its headline reform, taxing gains at income
+            tax rates and withdrawing Business Asset Disposal Relief, has been{" "}
+            <a href="https://www.cityam.com/healey-rejects-calls-to-equalise-capital-gains-and-income-tax-rates/" target="_blank" rel="noopener noreferrer" className={LINK}>debated</a>{" "}
+            ahead of the Budget; a custom option scores any other set of rates.
           </p>
         </div>
 
