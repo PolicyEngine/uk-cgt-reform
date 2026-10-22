@@ -28,7 +28,7 @@ const POLICY_TITLES = { equalise: "Equalise with income tax", custom: "Custom ra
 // One policy in the chooser: an inset card that selects it (or, selected,
 // closes its panel), with a radio-style mark and a call to action so it
 // reads as a choice. The selected policy's parameters open in a box below.
-function PolicyTile({ id, sentence, pills, speed, selected, onSelect }) {
+function PolicyTile({ id, sentence, pills, selected, onSelect }) {
   return (
     <button
       type="button"
@@ -50,12 +50,13 @@ function PolicyTile({ id, sentence, pills, speed, selected, onSelect }) {
       </span>
       <span className="pr-10 text-lg font-semibold text-slate-900">{POLICY_TITLES[id]}</span>
       <span className="mt-1.5 block text-sm leading-6 text-slate-600">{sentence}</span>
-      <span className="mt-3 flex flex-wrap gap-2">
-        {pills.map((pill) => (
-          <Pill key={pill}>{pill}</Pill>
-        ))}
-        <Pill tone={speed.instant ? "teal" : "amber"}>{speed.label}</Pill>
-      </span>
+      {pills.length ? (
+        <span className="mt-3 flex flex-wrap gap-2">
+          {pills.map((pill) => (
+            <Pill key={pill}>{pill}</Pill>
+          ))}
+        </span>
+      ) : null}
       <span className="mt-auto pt-5 text-sm">
         {selected ? (
           <span className="font-semibold text-[color:var(--pe-color-primary-700)]">✓ Selected</span>
@@ -69,7 +70,7 @@ function PolicyTile({ id, sentence, pills, speed, selected, onSelect }) {
 
 // Once a policy is chosen the two tiles become tabs side by side, joined
 // to the open panel: the other tab replaces the panel with its policy.
-function PolicyTab({ id, sentence, speed, selected, onSelect }) {
+function PolicyTab({ id, sentence, selected, onSelect }) {
   return (
     <button
       type="button"
@@ -89,7 +90,6 @@ function PolicyTab({ id, sentence, speed, selected, onSelect }) {
         <span className={`text-base font-semibold ${selected ? "text-slate-900" : "text-slate-700"}`}>
           {POLICY_TITLES[id]}
         </span>
-        <Pill tone={speed.instant ? "teal" : "amber"}>{speed.label}</Pill>
       </span>
       <span className="mt-0.5 hidden text-sm leading-6 text-slate-500 sm:block">{sentence}</span>
     </button>
@@ -229,13 +229,11 @@ export default function ReformTab({ data, datasetKey, onNavigate, anchor }) {
       id: "equalise",
       sentence: "Set each CGT rate to the matching income tax rate.",
       pills: [equaliseRates, equaliseRelief],
-      speed: { instant: true, label: "Instant" },
     },
     {
       id: "custom",
       sentence: "Choose your own CGT rates, relief and behavioural response.",
       pills: [],
-      speed: { instant: false, label: "Live run, 1–2 min" },
     },
   ];
 
@@ -311,7 +309,6 @@ export default function ReformTab({ data, datasetKey, onNavigate, anchor }) {
                   key={option.id}
                   id={option.id}
                   sentence={option.sentence}
-                  speed={option.speed}
                   selected={policy === option.id}
                   onSelect={() => policy !== option.id && select(option.id)}
                 />
@@ -363,7 +360,6 @@ export default function ReformTab({ data, datasetKey, onNavigate, anchor }) {
                 id={option.id}
                 sentence={option.sentence}
                 pills={option.pills}
-                speed={option.speed}
                 selected={false}
                 onSelect={() => select(option.id)}
               />
