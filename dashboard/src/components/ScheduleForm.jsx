@@ -146,7 +146,7 @@ function SubTabs({ steps, current, onSelect }) {
 // One sub-tab's content, with a line saying what it sets.
 function Step({ id, intro, tip, tipLabel, children }) {
   return (
-    <section id={`step-${id}`} role="tabpanel" aria-labelledby={`step-tab-${id}`} className="min-h-[15rem]">
+    <section id={`step-${id}`} role="tabpanel" aria-labelledby={`step-tab-${id}`}>
       <p className="mb-4 text-sm leading-6 text-slate-600">
         {intro}
         {tip ? (
@@ -386,7 +386,7 @@ export default function ScheduleForm({ form, onChange, onCalculate, running, onN
         </Step>
       ) : null}
 
-      <div className="mt-6 flex justify-end">
+      <div className="mt-4 flex justify-end">
         {next ? (
           <button type="submit" className={`${PRIMARY_BUTTON} w-full sm:w-auto`}>
             Next →
