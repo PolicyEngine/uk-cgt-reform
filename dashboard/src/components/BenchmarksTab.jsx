@@ -197,12 +197,9 @@ function CentaxRegions({ block, dataset }) {
     <section className="section-card">
       <SectionHeading
         title="At 2019/20 rules: CenTax"
-        description={`Each region's share of baseline CGT: ${PE} applies CenTax's 2019/20 rules to ${dataset.shortLabel}'s 2026-27 data with no behavioural response, against CenTax's (2024) estimate on 2019/20 data.`}
+        description={`Each region's share of baseline CGT: ${PE} applies CenTax's 2019/20 rules to ${dataset.shortLabel}'s 2026-27 data with no behavioural response, against CenTax's (2024) estimate on 2019/20 data. The shares line up closely: each region is within ${shareGap.toFixed(1)} percentage points of CenTax's.`}
       />
       <RegionalComparisonChart rows={rows} peLabel={PE} centaxLabel="CenTax 2024" />
-      <Takeaway lead="The regional shares line up closely.">
-        {`Each region's share is within ${shareGap.toFixed(1)} percentage points of CenTax's.`}
-      </Takeaway>
       <Notes>
         <p>
           {`Nationally, CGT at 2019/20 rules rises from ${formatBn(national.baseline_cgt_bn, 1)} to ${formatBn(national.reform_cgt_bn, 1)} on 2026-27 data (current law: ${formatBn(national.current_law_cgt_bn, 1)}). CenTax's rates-only figure is +${formatBn(external.details.change_bn, 1)} on a ${formatBn(external.details.baseline_bn, 1)} baseline in 2019/20.`}
