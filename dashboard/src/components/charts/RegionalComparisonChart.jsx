@@ -118,7 +118,6 @@ function Panel({ panel, rows, labels }) {
   const domain = getTickDomain(ticks);
   return (
     <figure className="min-w-0">
-      <figcaption className="mb-1 text-sm font-semibold text-slate-800">{panel.title}</figcaption>
       <div className="flex" aria-hidden="true">
         <span className={`hidden sm:block ${NAME_COL}`} />
         <div className="min-w-0 flex-1">

@@ -1,23 +1,22 @@
 "use client";
 
-import { Bar, BarChart, CartesianGrid, Cell, LabelList, ReferenceLine, ResponsiveContainer, XAxis, YAxis } from "recharts";
 import { getNiceTicks, getTickDomain } from "../../lib/chartUtils";
 import { colors } from "../../lib/colors";
-import { formatBn, formatSignedBn } from "../../lib/formatters";
+import { formatBn } from "../../lib/formatters";
 import ChartLogo from "../ChartLogo";
 import ChartLegend from "./ChartLegend";
-import { EndLabel, RowAxis, SignedBar, rowHeight } from "./benchmarkRows";
 
-const MARGIN = { top: 2, right: 64, bottom: 2, left: 16 };
-const YEAR_COL = "w-16 shrink-0";
-const BAR_SIZE = 14;
-const GAP = 3;
+// The three estimates compared each year, as dots on one £bn line: the
+// model's own static change, the model's uplift applied to the OBR's
+// receipts (JRF's method), and JRF's published figure as a diamond.
+const SERIES = [
+  { key: "static", fill: colors.primary[600], text: colors.primary[700], size: 14, marker: "dot" },
+  { key: "obr", fill: colors.primary[300], text: colors.primary[700], size: 12, marker: "dot" },
+  { key: "jrf", fill: colors.gray[800], text: colors.gray[800], size: 11, marker: "diamond" },
+];
 
-const SERIES = {
-  static: { fill: colors.primary[600], text: colors.primary[700], weight: 700 },
-  obr: { fill: colors.primary[300], text: colors.primary[700], weight: 600 },
-  jrf: { fill: colors.gray[800], text: colors.gray[800], weight: 700 },
-};
+// Year, the three values, then the dot strip; a row stacks below `md`.
+const GRID = "md:grid-cols-[4.5rem_repeat(3,6.5rem)_minmax(0,1fr)]";
 
 const isNum = (v) => v !== null && v !== undefined && Number.isFinite(Number(v));
 
@@ -39,110 +38,116 @@ export function buildJrfRows(block) {
   }));
 }
 
-// JRF's figure is a point estimate: a thin stem from £0 and a diamond.
-function JrfShape({ x, y, width, height, payload }) {
-  if (!payload?.hasValue) return null;
-  const end = x + width;
-  const cy = y + height / 2;
-  const r = height / 2 + 1;
+const textFor = (row, key) => (key === "jrf" ? row.jrfLabel : formatBn(row[key], 1));
+
+// One marker on the strip, with its value shown on hover or focus.
+function Marker({ series, left, label }) {
   return (
-    <g>
-      <line x1={x} x2={end} y1={cy} y2={cy} stroke={colors.gray[500]} strokeWidth={1.5} />
-      <path d={`M${end} ${cy - r} L${end + r} ${cy} L${end} ${cy + r} L${end - r} ${cy} Z`} fill={SERIES.jrf.fill} />
-    </g>
+    <span
+      tabIndex={0}
+      className="group absolute top-1/2 -translate-x-1/2 -translate-y-1/2 cursor-default focus:outline-none"
+      style={{ left: `${left}%`, zIndex: series.key === "static" ? 2 : 1 }}
+    >
+      <span
+        aria-hidden="true"
+        className="block"
+        style={{
+          width: series.size,
+          height: series.size,
+          background: series.fill,
+          borderRadius: series.marker === "dot" ? "9999px" : 2,
+          transform: series.marker === "diamond" ? "rotate(45deg)" : undefined,
+          border: "1.5px solid #FFFFFF",
+        }}
+      />
+      <span
+        role="tooltip"
+        className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 hidden -translate-x-1/2 whitespace-nowrap rounded-md bg-slate-900 px-2 py-1 text-xs text-white shadow group-hover:block group-focus:block"
+      >
+        {label}
+      </span>
+    </span>
   );
 }
 
-function BarShape(props) {
-  return props.payload?.series === "jrf" ? <JrfShape {...props} /> : <SignedBar {...props} />;
-}
-
-function RowLabel({ data, ...props }) {
-  const d = data[props.index];
-  if (!d) return null;
-  const style = SERIES[d.series];
-  // The diamond overhangs the end of its stem.
-  const shift = d.series === "jrf" ? BAR_SIZE / 2 + 3 : 0;
-  return (
-    <EndLabel
-      {...props}
-      width={props.width + shift}
-      value={d.value}
-      text={d.text}
-      color={style.text}
-      weight={style.weight}
-    />
-  );
-}
-
-function YearChart({ row, domain, ticks }) {
-  const data = ["static", "obr", "jrf"]
-    .filter((series) => isNum(row[series]))
-    .map((series) => ({
-      series,
-      value: Number(row[series]),
-      hasValue: true,
-      text: series === "jrf" ? row.jrfLabel : formatSignedBn(row[series], 1),
-    }));
-  return (
-    <div style={{ height: rowHeight(data.length, BAR_SIZE, GAP) }} className="w-full">
-      <ResponsiveContainer>
-        <BarChart data={data} layout="vertical" margin={MARGIN} barCategoryGap={GAP}>
-          <XAxis type="number" domain={domain} ticks={ticks} hide />
-          <YAxis type="category" dataKey="series" hide />
-          <CartesianGrid strokeDasharray="3 3" stroke={colors.border.light} horizontal={false} />
-          <ReferenceLine x={0} stroke={colors.gray[400]} />
-          <Bar dataKey="value" barSize={BAR_SIZE} shape={<BarShape />} isAnimationActive={false}>
-            {data.map((d) => (
-              <Cell key={d.series} fill={SERIES[d.series].fill} />
-            ))}
-            <LabelList dataKey="value" content={<RowLabel data={data} />} />
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
-  );
-}
-
-// The static change from equalising by year, in 2026/27 prices: the model's
-// own change, the model's uplift applied to the OBR's receipts, and JRF's
-// figure where it publishes one (a diamond; no mark in other years).
-// `rows`: buildJrfRows(block); `labels`: { static, obr, jrf } legend text.
+// Each year's static change in 2026/27 prices: the model's own figure, the
+// model's uplift applied to the OBR's receipts, and JRF's estimate where it
+// published one. `rows`: buildJrfRows(block); `labels`: { static, obr, jrf }.
 export default function JrfComparisonChart({ rows, labels }) {
-  const max = Math.max(0, ...rows.flatMap((r) => [r.static, r.obr, r.jrf].filter(isNum).map(Number)));
+  const max = Math.max(0, ...rows.flatMap((r) => SERIES.map((s) => r[s.key]).filter(isNum).map(Number)));
   const ticks = getNiceTicks([0, max], 4);
-  const domain = getTickDomain(ticks);
+  const [, top] = getTickDomain(ticks);
+  const left = (v) => Math.min(100, Math.max(0, (100 * v) / (top || 1)));
   return (
     <>
-      <div className="flex">
-        <span className={YEAR_COL} />
-        <div className="min-w-0 flex-1">
-          <RowAxis domain={domain} ticks={ticks} format={(v) => formatBn(v, 0)} margin={MARGIN} />
-        </div>
-      </div>
-      <div role="list" aria-label="Static change from equalising by year">
-        {rows.map((row) => (
-          <div
-            key={row.year}
-            role="listitem"
-            aria-label={`${row.year}: ${labels.static} ${formatSignedBn(row.static, 1)}, ${labels.obr} ${
-              isNum(row.obr) ? formatSignedBn(row.obr, 1) : "none"
-            }${row.jrfLabel ? `, ${labels.jrf} ${row.jrfLabel}` : ""}`}
-            className="flex items-center border-b border-slate-100 py-2 last:border-b-0"
-          >
-            <p className={`${YEAR_COL} text-sm font-semibold leading-5 text-slate-800`}>{row.year}</p>
-            <div aria-hidden="true" className="min-w-0 flex-1">
-              <YearChart row={row} domain={domain} ticks={ticks} />
-            </div>
-          </div>
+      <div
+        aria-hidden="true"
+        className={`hidden items-end gap-x-3 border-b border-slate-200 pb-2 text-xs font-semibold text-slate-500 md:grid ${GRID}`}
+      >
+        <span>Year</span>
+        {SERIES.map((s) => (
+          <span key={s.key} className="text-right leading-snug">
+            {labels[s.key]}
+          </span>
         ))}
+        <span className="relative h-4">
+          {ticks.map((t) => (
+            <span key={t} className="absolute -translate-x-1/2 font-normal" style={{ left: `${left(t)}%` }}>
+              {formatBn(t, 0)}
+            </span>
+          ))}
+        </span>
       </div>
+      <ul>
+        {rows.map((row) => {
+          const summary = SERIES.filter((s) => isNum(row[s.key]))
+            .map((s) => `${labels[s.key]} ${textFor(row, s.key)}`)
+            .join(", ");
+          return (
+            <li
+              key={row.year}
+              className={`grid grid-cols-3 items-center gap-x-3 gap-y-1.5 border-b border-slate-100 py-3 last:border-b-0 ${GRID}`}
+            >
+              <span className="col-span-3 text-sm font-semibold text-slate-800 md:col-span-1">{row.year}</span>
+              {SERIES.map((s) => (
+                <span
+                  key={s.key}
+                  className="text-sm tabular-nums md:text-right"
+                  style={{ color: s.text, fontWeight: s.key === "static" ? 700 : 500 }}
+                >
+                  <span className="block text-[10px] font-medium uppercase tracking-wide text-slate-400 md:hidden">
+                    {labels[s.key]}
+                  </span>
+                  {isNum(row[s.key]) ? textFor(row, s.key) : "—"}
+                </span>
+              ))}
+              <div className="relative col-span-3 h-5 md:col-span-1" role="img" aria-label={`${row.year}: ${summary}`}>
+                <span aria-hidden="true" className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-slate-200" />
+                {ticks.map((t) => (
+                  <span
+                    key={t}
+                    aria-hidden="true"
+                    className="absolute top-0 h-full border-l border-dashed border-slate-200"
+                    style={{ left: `${left(t)}%` }}
+                  />
+                ))}
+                {SERIES.map((s) =>
+                  isNum(row[s.key]) ? (
+                    <Marker
+                      key={s.key}
+                      series={s}
+                      left={left(Number(row[s.key]))}
+                      label={`${labels[s.key]}: ${textFor(row, s.key)}`}
+                    />
+                  ) : null,
+                )}
+              </div>
+            </li>
+          );
+        })}
+      </ul>
       <ChartLegend
-        items={[
-          { label: labels.static, fill: SERIES.static.fill },
-          { label: labels.obr, fill: SERIES.obr.fill },
-          { label: labels.jrf, fill: SERIES.jrf.fill, marker: "diamond" },
-        ]}
+        items={SERIES.map((s) => ({ label: labels[s.key], fill: s.fill, marker: s.marker }))}
       />
       <ChartLogo />
     </>
