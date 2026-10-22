@@ -193,16 +193,15 @@ function CentaxRegions({ block, dataset }) {
   const rules = block.rules.baseline;
   const rows = buildRegionRows(block.regions);
   const shareGap = Math.max(...rows.map((r) => Math.abs(r.baseline_share_pct - r.centax_baseline_share_pct)));
-  const upliftGap = Math.max(...rows.map((r) => Math.abs(r.uplift_pct - r.centax_uplift_pct)));
   return (
     <section className="section-card">
       <SectionHeading
         title="At 2019/20 rules: CenTax"
-        description={`Each region's share of baseline CGT and its uplift from equalising: ${PE} applies CenTax's 2019/20 rules to ${dataset.shortLabel}'s 2026-27 data with no behavioural response, against CenTax's (2024) estimate on 2019/20 data.`}
+        description={`Each region's share of baseline CGT: ${PE} applies CenTax's 2019/20 rules to ${dataset.shortLabel}'s 2026-27 data with no behavioural response, against CenTax's (2024) estimate on 2019/20 data.`}
       />
       <RegionalComparisonChart rows={rows} peLabel={PE} centaxLabel="CenTax 2024" />
-      <Takeaway lead="Shares line up more closely than uplifts.">
-        {`Each region's share is within ${shareGap.toFixed(1)} percentage points of CenTax's; the uplifts differ by up to ${Math.round(upliftGap)} points.`}
+      <Takeaway lead="The regional shares line up closely.">
+        {`Each region's share is within ${shareGap.toFixed(1)} percentage points of CenTax's.`}
       </Takeaway>
       <Notes>
         <p>

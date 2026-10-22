@@ -37,21 +37,11 @@ const PANELS = [
     fromZero: true,
     tickCount: 4,
   },
-  {
-    key: "uplift",
-    title: "Uplift from equalising",
-    pe: "uplift_pct",
-    centax: "centax_uplift_pct",
-    format: formatUplift,
-    tickFormat: (v) => formatPct(v, 0),
-    fromZero: false,
-    tickCount: 3,
-  },
 ];
 
 // The props from `benchmarks.centax_2019_20_rules.regions`, largest share of
 // baseline CGT first (the dataset's share), so the regions that carry most of
-// the comparison lead and both panels share one order. The file keeps
+// the comparison lead. The file keeps
 // CenTax's Table 8 order (the standard regional list).
 export function buildRegionRows(regions) {
   const rows = regions.map((row) => ({
@@ -157,14 +147,13 @@ function Panel({ panel, rows, labels }) {
 }
 
 // Region by region, the dataset against CenTax (2024) at 2019/20 rules:
-// each region's share of baseline CGT and its uplift from equalising, one
-// dot per source. Each row carries its values as an aria-label; the drawing
+// each region's share of baseline CGT, one dot per source. Each row carries its values as an aria-label; the drawing
 // itself is hidden from screen readers. `rows`: buildRegionRows(regions).
 export default function RegionalComparisonChart({ rows, peLabel = "PolicyEngine", centaxLabel = "CenTax 2024" }) {
   const labels = { pe: peLabel, centax: centaxLabel };
   return (
     <>
-      <div className="grid gap-x-8 gap-y-6 md:grid-cols-2">
+      <div>
         {PANELS.map((panel) => (
           <Panel key={panel.key} panel={panel} rows={rows} labels={labels} />
         ))}
