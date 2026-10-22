@@ -101,17 +101,17 @@ function Dashboard() {
 
         <nav
           aria-label="Dashboard sections"
-          className="tab-strip mb-8 mt-8 inline-flex max-w-full flex-wrap gap-1 rounded-xl border border-slate-300 bg-white p-1 shadow-sm"
+          className="tab-strip mb-8 mt-8 flex max-w-full gap-6 overflow-x-auto border-b border-slate-200 sm:gap-8"
         >
           {TAB_OPTIONS.map((tab) => (
             <button
               key={tab.id}
               type="button"
               aria-current={activeTab === tab.id ? "page" : undefined}
-              className={`rounded-lg px-3 py-2 text-sm font-semibold transition-colors sm:px-5 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--pe-color-primary-500)] sm:text-base ${
+              className={`-mb-px shrink-0 border-b-2 pb-3 pt-1 text-base transition-colors focus:outline-none focus-visible:text-[color:var(--pe-color-primary-700)] sm:text-lg ${
                 activeTab === tab.id
-                  ? "bg-[color:var(--pe-color-primary-600)] text-white"
-                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                  ? "border-[color:var(--pe-color-primary-600)] font-bold text-slate-900"
+                  : "border-transparent font-medium text-slate-500 hover:border-slate-300 hover:text-slate-800"
               }`}
               onClick={() => handleTabChange(tab.id)}
             >

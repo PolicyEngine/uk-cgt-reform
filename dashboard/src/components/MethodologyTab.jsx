@@ -20,8 +20,6 @@ function ExternalLink({ href, children }) {
 }
 
 const CODE = "break-all font-mono text-xs";
-const LINK =
-  "font-semibold text-[color:var(--pe-color-primary-600)] underline decoration-1 underline-offset-2 hover:opacity-80";
 
 // The auditable identifiers behind a section (build ids, file digests,
 // parameter paths, versions), collapsed so the main text stays readable.
@@ -199,7 +197,9 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
   useEffect(() => {
     const target = anchor ?? window.location.hash.slice(1);
     if (target) {
-      document.getElementById(target)?.scrollIntoView();
+      const element = document.getElementById(target);
+      if (element?.tagName === "DETAILS") element.open = true;
+      element?.scrollIntoView();
     }
   }, [anchor]);
 
@@ -230,23 +230,6 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
 
   return (
     <div className="space-y-6">
-      <nav
-        aria-label="On this page"
-        className="flex flex-wrap items-baseline gap-x-5 gap-y-1 px-1 text-sm text-slate-500"
-      >
-        <span>On this page</span>
-        {[
-          ["pathway", "Data"],
-          ["projection", "Projection"],
-          ["elasticity", "Response"],
-          ["explorer", "Rates"],
-        ].map(([id, word]) => (
-          <a key={id} href={`#${id}`} className={LINK}>
-            {word}
-          </a>
-        ))}
-      </nav>
-
       <section className="section-card scroll-mt-24" id="pathway">
         <SectionHeading
           title="Data and simulation"
@@ -568,18 +551,17 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
         </TechnicalDetails>
       </section>
 
-      <section className="section-card scroll-mt-24" id="elasticity-gap">
-        <SectionHeading
-          title="Why official estimates differ"
-          description={
-            <p className="">
-              HMRC and the OBR assume a much stronger response than CenTax. That is why HMRC&apos;s
-              ready <ExternalLink href={READY_RECKONER_URL}>reckoner</ExternalLink>, its table of
-              costings for rate changes, shows large rate rises losing revenue. This
-              dashboard&apos;s central case raises revenue instead.
-            </p>
-          }
-        />
+      <details className="section-card group scroll-mt-24" id="elasticity-gap">
+        <summary className="cursor-pointer select-none text-xl font-semibold tracking-tight text-slate-900 marker:text-[color:var(--pe-color-primary-600)]">
+          Why official estimates differ
+        </summary>
+          <p className="mt-3 text-sm leading-6 text-slate-600">
+            HMRC and the OBR assume a much stronger response than CenTax. That is why HMRC&apos;s
+            ready <ExternalLink href={READY_RECKONER_URL}>reckoner</ExternalLink>, its table of
+            costings for rate changes, shows large rate rises losing revenue. This
+            dashboard&apos;s central case raises revenue instead.
+          </p>
+
 
         <div className="grid gap-3 text-sm sm:grid-cols-2">
           <ValueCard label="CenTax central" value={central.e_retention.toFixed(1)}>
@@ -684,24 +666,23 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
             tab scores the ready reckoner&apos;s rows at the central and official values.
           </p>
         </Topic>
-      </section>
+      </details>
 
-      <section className="section-card scroll-mt-24" id="explorer">
-        <SectionHeading
-          title="Custom rates"
-          description={
-            <p className="">
-              The{" "}
-              <TabLink onNavigate={onNavigate} tab="reform">
-                Reform
-              </TabLink>{" "}
-              tab&apos;s Custom rates option lets you set your own CGT rates and your own
-              treatment of Business Asset Disposal Relief. It scores them on{" "}
-              {dataset.shortLabel} for every modelled year, with the same model and assumptions
-              as the main results.
-            </p>
-          }
-        />
+      <details className="section-card group scroll-mt-24" id="explorer">
+        <summary className="cursor-pointer select-none text-xl font-semibold tracking-tight text-slate-900 marker:text-[color:var(--pe-color-primary-600)]">
+          Custom rates
+        </summary>
+          <p className="mt-3 text-sm leading-6 text-slate-600">
+            The{" "}
+            <TabLink onNavigate={onNavigate} tab="reform">
+              Reform
+            </TabLink>{" "}
+            tab&apos;s Custom rates option lets you set your own CGT rates and your own
+            treatment of Business Asset Disposal Relief. It scores them on{" "}
+            {dataset.shortLabel} for every modelled year, with the same model and assumptions
+            as the main results.
+          </p>
+
 
         <Topic title="What you can change">
           <p>
@@ -739,7 +720,7 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
             the reform fingerprint (rates and elasticity).
           </li>
         </TechnicalDetails>
-      </section>
+      </details>
     </div>
   );
 }
