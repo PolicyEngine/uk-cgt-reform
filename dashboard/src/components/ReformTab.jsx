@@ -280,35 +280,30 @@ export default function ReformTab({ data, datasetKey, onNavigate, anchor }) {
                 About this {policy === "equalise" ? "reform" : "option"}
               </summary>
               {policy === "equalise" ? (
-                <p className="mt-3 text-sm leading-6 text-slate-600">
-                  Current law taxes capital gains at lower rates than income. The reform aligns each
-                  CGT rate with the corresponding income tax rate from {firstYear} and withdraws
-                  Business Asset Disposal Relief, so gains that qualify for it take the new rates too,
-                  as in CenTax&apos;s rates-only estimate. Taxpayers respond by realising fewer gains,
-                  modelled with{" "}
-                  <a
-                    href={CENTAX_URL}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="underline decoration-1 underline-offset-2 hover:opacity-80"
-                  >
-                    CenTax&apos;s central elasticity
-                  </a>{" "}
-                  with respect to the share of each gain they keep, applied in that form. CenTax
-                  estimate that elasticity for a wider package of CGT reforms;{" "}
-                  <TabLink onNavigate={onNavigate} tab="methodology" section="elasticity">
-                    the Methodology tab sets out what that means for a rates-only reform
-                  </TabLink>
-                  , and the sensitivity table in the results shows the yield at other elasticities.
-                </p>
+                <ul className="mt-3 list-disc space-y-1.5 pl-5 text-sm leading-6 text-slate-600">
+                  <li>Each CGT rate rises to the matching income tax rate from {firstYear}.</li>
+                  <li>Business Asset Disposal Relief is withdrawn, so qualifying gains take the new rates.</li>
+                  <li>
+                    Taxpayers realise fewer gains, using CenTax&apos;s central{" "}
+                    <a href={CENTAX_URL} target="_blank" rel="noopener noreferrer" className="underline decoration-1 underline-offset-2 hover:opacity-80">
+                      elasticity
+                    </a>
+                    .
+                  </li>
+                  <li>
+                    <TabLink onNavigate={onNavigate} tab="methodology" section="elasticity">
+                      Methodology
+                    </TabLink>{" "}
+                    explains that elasticity; the sensitivity table in the results shows other values.
+                  </li>
+                </ul>
               ) : (
-                <p className="mt-3 text-sm leading-6 text-slate-600">
-                  The chosen rates apply to the main schedule and to residential property gains.
-                  Business Asset Disposal Relief can be kept, at a rate and lifetime limit you choose,
-                  or withdrawn. A schedule runs through the same pipeline as the precomputed
-                  equalisation results, and every completed run is cached, so a schedule anyone has
-                  run before is served at once.
-                </p>
+                <ul className="mt-3 list-disc space-y-1.5 pl-5 text-sm leading-6 text-slate-600">
+                  <li>The chosen rates apply to the main schedule and to residential property gains.</li>
+                  <li>Business Asset Disposal Relief can be kept, at a chosen rate and lifetime limit, or withdrawn.</li>
+                  <li>Each run uses the same pipeline as the equalisation results.</li>
+                  <li>Completed runs are stored, so a schedule run before shows at once.</li>
+                </ul>
               )}
             </details>
           </>
