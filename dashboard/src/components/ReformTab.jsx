@@ -235,7 +235,7 @@ export default function ReformTab({ data, datasetKey, onNavigate, anchor }) {
       id: "custom",
       sentence: "Choose your own CGT rates, relief and behavioural response.",
       pills: [],
-      speed: { instant: false, label: "Live run, ~30s" },
+      speed: { instant: false, label: "Live run, 1–2 min" },
     },
   ];
 
@@ -352,7 +352,6 @@ export default function ReformTab({ data, datasetKey, onNavigate, anchor }) {
                 elapsedSeconds={elapsedSeconds}
                 error={error}
                 result={result}
-                datasetLabel={dataset.shortLabel}
               />
             ) : null}
           </>

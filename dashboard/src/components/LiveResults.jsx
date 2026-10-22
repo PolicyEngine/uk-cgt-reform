@@ -39,7 +39,7 @@ const elasticityName = (e) => elasticityOption(e)?.label ?? `retention elasticit
 
 // Where a live run stands: a cache lookup for a shared link, a computation,
 // an error, or a finished run and whether the cache served it.
-export function StatusLine({ status, elapsedSeconds, error, result, datasetLabel }) {
+export function StatusLine({ status, elapsedSeconds, error, result }) {
   if (status === "checking") {
     return (
       <p className="mt-4 text-sm leading-6 text-slate-600" role="status">
@@ -51,16 +51,20 @@ export function StatusLine({ status, elapsedSeconds, error, result, datasetLabel
     return (
       <p className="mt-4 text-sm leading-6 text-slate-600" role="status">
         Nobody has run this schedule yet, and a link does not start a computation on its own.
-        Press Calculate to compute it; it takes about half a minute.
+        Press Calculate to compute it; it should take 1–2 minutes.
       </p>
     );
   }
   if (status === "running") {
     return (
-      <p className="mt-4 text-sm leading-6 text-slate-600" role="status">
-        Running the five fiscal years on {datasetLabel}… {elapsedSeconds}s. A schedule nobody has
-        run before takes about half a minute; one that has been run before returns at once.
-      </p>
+      <div className="mt-6 flex flex-col items-center gap-3 py-6 text-center" role="status">
+        <span
+          aria-hidden="true"
+          className="h-8 w-8 animate-spin rounded-full border-[3px] border-slate-200 border-t-[color:var(--pe-color-primary-600)]"
+        />
+        <p className="text-base font-semibold text-slate-800">Processing…</p>
+        <p className="text-sm text-slate-500">This should take 1–2 minutes.</p>
+      </div>
     );
   }
   if (status === "error") {
