@@ -6,13 +6,14 @@ import { getNiceTicks, getTickDomain } from "../../lib/chartUtils";
 import { colors } from "../../lib/colors";
 import { formatSignedMn } from "../../lib/formatters";
 import ChartLogo from "../ChartLogo";
-import { Toggle } from "../controls";
-import { EndLabel, RowAxis, SeriesLegend, SignedBar, rowHeight } from "./benchmarkRows";
+import ChartLegend from "./ChartLegend";
+import { LabelledSelect } from "../controls";
+import { EndLabel, RowAxis, SignedBar, rowHeight } from "./benchmarkRows";
 
 // Both sides hold a value label: rows point either way from £0.
 const MARGIN = { top: 2, right: 70, bottom: 2, left: 70 };
-const BAR_SIZE = 12;
-const GAP = 3;
+const BAR_SIZE = 14;
+const GAP = 4;
 
 const SERIES = {
   hmrc: { fill: colors.gray[700], text: colors.gray[800], weight: 700 },
@@ -29,7 +30,7 @@ export function buildReckonerRows(block, centralId = "centax_central", officialI
   const pairs = block.lag.map((lag, i) => ({
     key: String(i),
     label: lag.hmrc_year,
-    caption: `HMRC's receipts in ${lag.hmrc_year} against the model's liabilities in ${lag.model_year}.`,
+    caption: `HMRC's receipts in ${lag.hmrc_year} against PolicyEngine's liabilities in ${lag.model_year}.`,
     hmrcYear: lag.hmrc_year,
     modelYear: lag.model_year,
   }));
@@ -106,8 +107,8 @@ export default function ReadyReckonerChart({ pairs, rows, labels }) {
   return (
     <>
       {pairs.length > 1 ? (
-        <div className="mb-3 max-w-full">
-          <Toggle
+        <div className="mb-1 w-full max-w-xs">
+          <LabelledSelect
             label="HMRC receipts year"
             options={pairs.map((p) => ({ value: p.key, label: p.label }))}
             value={current.key}
@@ -115,14 +116,7 @@ export default function ReadyReckonerChart({ pairs, rows, labels }) {
           />
         </div>
       ) : null}
-      <p className="mb-3 text-xs leading-5 text-slate-500">{current.caption}</p>
-      <SeriesLegend
-        items={ORDER.map((s) => ({
-          label: labels[s],
-          fill: SERIES[s].fill,
-          opacity: SERIES[s].opacity,
-        }))}
-      />
+      <p className="mb-4 text-xs leading-5 text-slate-500">{current.caption}</p>
       <RowAxis domain={domain} ticks={ticks} format={tick} margin={MARGIN} />
       <div role="list" aria-label={`Ready reckoner rows, ${current.label}`}>
         {rows.map((row) => {
@@ -142,6 +136,13 @@ export default function ReadyReckonerChart({ pairs, rows, labels }) {
           );
         })}
       </div>
+      <ChartLegend
+        items={ORDER.map((s) => ({
+          label: labels[s],
+          fill: SERIES[s].fill,
+          opacity: SERIES[s].opacity,
+        }))}
+      />
       <ChartLogo />
     </>
   );

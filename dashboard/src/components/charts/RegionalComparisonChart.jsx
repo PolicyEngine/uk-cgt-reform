@@ -5,7 +5,8 @@ import { getNiceTicks, getTickDomain } from "../../lib/chartUtils";
 import { colors } from "../../lib/colors";
 import { formatPct } from "../../lib/formatters";
 import ChartLogo from "../ChartLogo";
-import { RowAxis, SeriesLegend } from "./benchmarkRows";
+import ChartLegend from "./ChartLegend";
+import { RowAxis } from "./benchmarkRows";
 
 const MINUS = "−";
 // Room for a value label beside the outer dot on either side.
@@ -48,16 +49,19 @@ const PANELS = [
   },
 ];
 
-// The props from `benchmarks.centax_2019_20_rules.regions`, in the file's
-// order (CenTax's table order).
+// The props from `benchmarks.centax_2019_20_rules.regions`, largest share of
+// baseline CGT first (the dataset's share), so the regions that carry most of
+// the comparison lead and both panels share one order. The file keeps
+// CenTax's Table 8 order (the standard regional list).
 export function buildRegionRows(regions) {
-  return regions.map((row) => ({
+  const rows = regions.map((row) => ({
     region: row.region,
     baseline_share_pct: row.baseline_share_pct,
     centax_baseline_share_pct: row.centax_baseline_share_pct,
     uplift_pct: row.uplift_pct,
     centax_uplift_pct: row.centax_uplift_pct,
   }));
+  return rows.sort((a, b) => Number(b.baseline_share_pct) - Number(a.baseline_share_pct));
 }
 
 // A connector between the two dots, each dot's value on its outer side.
@@ -112,7 +116,7 @@ function RowChart({ d, domain, ticks, format }) {
   );
 }
 
-function Panel({ panel, rows }) {
+function Panel({ panel, rows, labels }) {
   const data = rows.map((row) => {
     const pe = Number(row[panel.pe]);
     const cx = Number(row[panel.centax]);
@@ -131,11 +135,18 @@ function Panel({ panel, rows }) {
           <RowAxis domain={domain} ticks={ticks} format={panel.tickFormat} margin={MARGIN} />
         </div>
       </div>
-      <div aria-hidden="true">
+      <div role="list" aria-label={panel.title}>
         {data.map((d) => (
-          <div key={d.region} className="border-b border-slate-100 py-1 last:border-b-0 sm:flex sm:items-center">
-            <p className={`${NAME_COL} text-xs leading-4 text-slate-700`}>{d.region}</p>
-            <div className="min-w-0 flex-1">
+          <div
+            key={d.region}
+            role="listitem"
+            aria-label={`${d.region}: ${labels.pe} ${panel.format(d.pe)}, ${labels.centax} ${panel.format(d.cx)}`}
+            className="border-b border-slate-100 py-1 last:border-b-0 sm:flex sm:items-center"
+          >
+            <p aria-hidden="true" className={`${NAME_COL} text-xs leading-4 text-slate-700`}>
+              {d.region}
+            </p>
+            <div aria-hidden="true" className="min-w-0 flex-1">
               <RowChart d={d} domain={domain} ticks={ticks} format={panel.format} />
             </div>
           </div>
@@ -147,32 +158,23 @@ function Panel({ panel, rows }) {
 
 // Region by region, the dataset against CenTax (2024) at 2019/20 rules:
 // each region's share of baseline CGT and its uplift from equalising, one
-// dot per source. `rows`: buildRegionRows(regions); `peLabel` names the
-// dataset in the legend.
-export default function RegionalComparisonChart({ rows, peLabel, centaxLabel = "CenTax (2024)" }) {
+// dot per source. Each row carries its values as an aria-label; the drawing
+// itself is hidden from screen readers. `rows`: buildRegionRows(regions).
+export default function RegionalComparisonChart({ rows, peLabel = "PolicyEngine", centaxLabel = "CenTax 2024" }) {
+  const labels = { pe: peLabel, centax: centaxLabel };
   return (
     <>
-      <SeriesLegend
+      <div className="grid gap-x-8 gap-y-6 md:grid-cols-2">
+        {PANELS.map((panel) => (
+          <Panel key={panel.key} panel={panel} rows={rows} labels={labels} />
+        ))}
+      </div>
+      <ChartLegend
         items={[
           { label: peLabel, fill: PE.fill, marker: "dot" },
           { label: centaxLabel, fill: CENTAX.fill, marker: "dot" },
         ]}
       />
-      <ul className="sr-only">
-        {rows.map((row) => (
-          <li key={row.region}>
-            {`${row.region}: share of baseline CGT ${formatPct(row.baseline_share_pct, 1)} (${peLabel}) and ${formatPct(
-              row.centax_baseline_share_pct,
-              1,
-            )} (${centaxLabel}); uplift ${formatUplift(row.uplift_pct)} and ${formatUplift(row.centax_uplift_pct)}`}
-          </li>
-        ))}
-      </ul>
-      <div className="grid gap-x-8 gap-y-6 md:grid-cols-2">
-        {PANELS.map((panel) => (
-          <Panel key={panel.key} panel={panel} rows={rows} />
-        ))}
-      </div>
       <ChartLogo />
     </>
   );

@@ -5,7 +5,8 @@ import { getNiceTicks, getTickDomain } from "../../lib/chartUtils";
 import { colors } from "../../lib/colors";
 import { formatBn } from "../../lib/formatters";
 import ChartLogo from "../ChartLogo";
-import { EndLabel, RowAxis, SeriesLegend, SignedBar } from "./benchmarkRows";
+import ChartLegend from "./ChartLegend";
+import { EndLabel, RowAxis, SignedBar } from "./benchmarkRows";
 
 const MARGIN = { top: 2, right: 112, bottom: 2, left: 14 };
 const BAR_SIZE = 16;
@@ -149,7 +150,7 @@ function RowChart({ row, domain, ticks }) {
 
 // CenTax's estimates after behavioural responses, one row each, on one £bn
 // scale; Table 6's range across its elasticities is drawn as a range.
-// `rows`: buildPackageRows(benchmarks.centax_package_context).
+// `rows`: buildPackageRows(benchmarks.centax_package_context). Legend below.
 export default function PackageEstimatesChart({ rows }) {
   const values = rows.flatMap((r) => (r.points ? r.points.map((p) => p.value) : [r.value])).filter(isNum);
   const ticks = getNiceTicks([0, Math.max(0, ...values)], 4);
@@ -157,14 +158,6 @@ export default function PackageEstimatesChart({ rows }) {
   const anyDerived = rows.some((r) => r.derived);
   return (
     <>
-      <SeriesLegend
-        items={[
-          { label: "CenTax estimate", fill: CENTAX.fill },
-          ...(anyDerived
-            ? [{ label: "PolicyEngine derivation from CenTax's tables", fill: DERIVED.fill, stroke: DERIVED.stroke, dashed: true }]
-            : []),
-        ]}
-      />
       <RowAxis domain={domain} ticks={ticks} format={(v) => formatBn(v, 0)} margin={MARGIN} />
       <div role="list" aria-label="CenTax package estimates after behavioural responses">
         {rows.map((row) => (
@@ -191,6 +184,14 @@ export default function PackageEstimatesChart({ rows }) {
           </div>
         ))}
       </div>
+      <ChartLegend
+        items={[
+          { label: "CenTax estimate", fill: CENTAX.fill },
+          ...(anyDerived
+            ? [{ label: "Derived by PolicyEngine from CenTax's tables", fill: DERIVED.fill, stroke: DERIVED.stroke, dashed: true }]
+            : []),
+        ]}
+      />
       <ChartLogo />
     </>
   );

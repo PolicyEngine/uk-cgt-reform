@@ -5,7 +5,8 @@ import { getNiceTicks, getTickDomain } from "../../lib/chartUtils";
 import { colors } from "../../lib/colors";
 import { formatBn, formatSignedBn } from "../../lib/formatters";
 import ChartLogo from "../ChartLogo";
-import { EndLabel, RowAxis, SeriesLegend, SignedBar, rowHeight } from "./benchmarkRows";
+import ChartLegend from "./ChartLegend";
+import { EndLabel, RowAxis, SignedBar, rowHeight } from "./benchmarkRows";
 
 const MARGIN = { top: 2, right: 64, bottom: 2, left: 16 };
 const YEAR_COL = "w-16 shrink-0";
@@ -113,13 +114,6 @@ export default function JrfComparisonChart({ rows, labels }) {
   const domain = getTickDomain(ticks);
   return (
     <>
-      <SeriesLegend
-        items={[
-          { label: labels.static, fill: SERIES.static.fill },
-          { label: labels.obr, fill: SERIES.obr.fill },
-          { label: labels.jrf, fill: SERIES.jrf.fill, marker: "diamond" },
-        ]}
-      />
       <div className="flex">
         <span className={YEAR_COL} />
         <div className="min-w-0 flex-1">
@@ -143,6 +137,13 @@ export default function JrfComparisonChart({ rows, labels }) {
           </div>
         ))}
       </div>
+      <ChartLegend
+        items={[
+          { label: labels.static, fill: SERIES.static.fill },
+          { label: labels.obr, fill: SERIES.obr.fill },
+          { label: labels.jrf, fill: SERIES.jrf.fill, marker: "diamond" },
+        ]}
+      />
       <ChartLogo />
     </>
   );

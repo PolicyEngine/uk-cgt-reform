@@ -6,47 +6,10 @@ import { colors } from "../../lib/colors";
 // Shared parts of the Benchmarks tab's row charts: each item is one row with
 // its label above and a small horizontal bar chart below, and every row uses
 // the same scale and the same horizontal margins, so bars line up down the
-// column under one axis drawn at the top.
+// column under one axis drawn at the top. Legends come from ChartLegend,
+// below each chart.
 
 export const AXIS_STYLE = { fontSize: 12, fill: colors.gray[500] };
-
-// The legend sits above the chart, as in the other charts. `marker` is
-// "bar" (a square), "dot" or "diamond".
-export function SeriesLegend({ items }) {
-  return (
-    <ul className="mb-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600">
-      {items.map((item) => (
-        <li key={item.label} className="flex items-center gap-1.5">
-          <LegendMarker {...item} />
-          {item.label}
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-function LegendMarker({ marker = "bar", fill, opacity, stroke, dashed }) {
-  if (marker === "dot") {
-    return <span className="inline-block h-3 w-3 rounded-full" style={{ background: fill }} />;
-  }
-  if (marker === "diamond") {
-    return (
-      <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
-        <path d="M6 0.5 L11.5 6 L6 11.5 L0.5 6 Z" fill={fill} />
-      </svg>
-    );
-  }
-  return (
-    <span
-      className="inline-block h-3 w-3 rounded-sm"
-      style={{
-        background: fill,
-        opacity,
-        border: stroke ? `1.5px ${dashed ? "dashed" : "solid"} ${stroke}` : undefined,
-      }}
-    />
-  );
-}
 
 // The shared axis, drawn once above the rows with the rows' margins. Its one
 // dummy value sits at the domain's start, so a domain that does not include
