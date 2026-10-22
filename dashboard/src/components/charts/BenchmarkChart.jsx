@@ -4,12 +4,11 @@ import { colors } from "../../lib/colors";
 import { formatBn, formatCount, formatPct } from "../../lib/formatters";
 import ChartLogo from "../ChartLogo";
 
-// The three estimates compared on each row, drawn as dots on one line: the
-// model filled teal, HMRC's revised year as a grey ring, its provisional
-// year as a solid grey dot, so overlapping dots stay distinguishable.
+// The two estimates compared on each row, drawn as dots on one line: the
+// model filled teal and HMRC's latest (provisional) year a smaller grey dot,
+// so overlapping dots stay distinguishable.
 const SERIES = [
   { key: "model", color: colors.primary[600], text: colors.primary[700], ring: false, size: 14 },
-  { key: "hmrc2023", label: "HMRC, 2023-24 (revised)", color: colors.gray[400], text: colors.gray[600], ring: true, size: 12 },
   { key: "hmrc2024", label: "HMRC, 2024-25 (provisional)", color: colors.gray[600], text: colors.gray[700], ring: false, size: 10 },
 ];
 
@@ -53,7 +52,7 @@ function Dot({ series, left }) {
 
 // Columns: quantity, the three values, the gap to HMRC's latest year, and
 // the dot strip (0 at the left). Below `md` a row stacks.
-const GRID = "md:grid-cols-[minmax(0,13rem)_repeat(3,5.5rem)_5rem_minmax(0,1fr)]";
+const GRID = "md:grid-cols-[minmax(0,13rem)_repeat(2,6rem)_5rem_minmax(0,1fr)]";
 
 function gapToLatest(row) {
   if (!Number.isFinite(row.model) || !Number.isFinite(row.hmrc2024) || row.hmrc2024 === 0) return null;
@@ -77,12 +76,12 @@ function Row({ row, seriesLabels }) {
     .join(", ");
   const gap = gapToLatest(row);
   return (
-    <li className={`grid grid-cols-3 items-center gap-x-3 gap-y-1.5 border-t border-slate-100 py-3 ${GRID}`}>
-      <span className="col-span-3 text-sm font-medium text-slate-800 md:col-span-1">{row.label}</span>
+    <li className={`grid grid-cols-2 items-center gap-x-3 gap-y-1.5 border-t border-slate-100 py-3 ${GRID}`}>
+      <span className="col-span-2 text-sm font-medium text-slate-800 md:col-span-1">{row.label}</span>
       {SERIES.map((s) => (
         <span key={s.key} className="text-sm tabular-nums md:text-right" style={{ color: s.text, fontWeight: s.key === "model" ? 700 : 500 }}>
           <span className="block text-[10px] font-medium uppercase tracking-wide text-slate-400 md:hidden">
-            {s.key === "model" ? "PolicyEngine" : s.key === "hmrc2023" ? "HMRC 23-24" : "HMRC 24-25"}
+            {s.key === "model" ? "PolicyEngine" : "HMRC 2024-25"}
           </span>
           {Number.isFinite(row[s.key]) ? format(row[s.key]) : "—"}
         </span>
@@ -92,7 +91,7 @@ function Row({ row, seriesLabels }) {
           <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold tabular-nums text-slate-700">{gap}</span>
         ) : null}
       </span>
-      <div className="relative col-span-3 h-5 md:col-span-1" role="img" aria-label={`${row.label}: ${summary}`}>
+      <div className="relative col-span-2 h-5 md:col-span-1" role="img" aria-label={`${row.label}: ${summary}`}>
         <span aria-hidden="true" className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-slate-200" />
         <span aria-hidden="true" className="absolute left-0 top-1/2 h-2 w-px -translate-y-1/2 bg-slate-300" />
         {SERIES.map((s) =>
@@ -105,11 +104,11 @@ function Row({ row, seriesLabels }) {
 
 // The model's baseline against HMRC's published years, one row per quantity,
 // each on its own scale, under group headings. `rows`: [{ key, label, group?,
-// unit: "bn" | "count" | "pct", model, hmrc2023, hmrc2024 }]; `modelLabel`
+// unit: "bn" | "count" | "pct", model, hmrc2024 }]; `modelLabel`
 // names the model series. The gap column compares the model with HMRC's
 // latest year (in points for shares).
 export default function BenchmarkChart({ rows, modelLabel }) {
-  const seriesLabels = { model: modelLabel, hmrc2023: SERIES[1].label, hmrc2024: SERIES[2].label };
+  const seriesLabels = { model: modelLabel, hmrc2024: SERIES[1].label };
   // Rows sharing a `group` sit under one heading, in the order given.
   const groups = [];
   for (const row of rows) {
@@ -126,7 +125,6 @@ export default function BenchmarkChart({ rows, modelLabel }) {
       >
         <span>Quantity</span>
         <span className="text-right">PolicyEngine</span>
-        <span className="text-right">HMRC 2023-24</span>
         <span className="text-right">HMRC 2024-25</span>
         <span className="text-right">Difference</span>
         <span>On one scale, from 0</span>
@@ -141,7 +139,7 @@ export default function BenchmarkChart({ rows, modelLabel }) {
           </ul>
         </section>
       ))}
-      <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-slate-600">
+      <ul className="mt-3 flex flex-wrap justify-center gap-x-5 gap-y-1 text-xs text-slate-600">
         {SERIES.map((s) => (
           <li key={s.key} className="flex items-center gap-1.5">
             <span

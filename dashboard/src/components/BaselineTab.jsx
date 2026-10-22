@@ -98,7 +98,6 @@ export default function BaselineTab({ data, anchor }) {
     label,
     unit,
     model,
-    hmrc2023: parseBenchmark(BENCHMARKS[key].y2023?.value),
     hmrc2024: parseBenchmark(BENCHMARKS[key].y2024?.value),
   });
   const benchmarkRows = [
@@ -152,8 +151,8 @@ export default function BaselineTab({ data, anchor }) {
           description={
             <>
               PolicyEngine&apos;s {firstYear} baseline beside HMRC&apos;s{" "}
-              <SourceLink href={CGT_STATISTICS}>statistics</SourceLink> for 2023-24 and,
-              provisionally, 2024-25. {`Liabilities are higher relative to gains in ${firstYear} because CGT rates rose from 10% and 20% to 18% and 24% partway through 2024-25.`}
+              <SourceLink href={CGT_STATISTICS}>statistics</SourceLink> for 2024-25 (provisional).{" "}
+              {`Liabilities are higher relative to gains in ${firstYear} because CGT rates rose from 10% and 20% to 18% and 24% partway through 2024-25.`}
             </>
           }
         />
