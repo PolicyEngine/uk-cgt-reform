@@ -126,7 +126,16 @@ function Dashboard() {
         {activeTab === "methodology" && <MethodologyTab data={data} anchor={anchor} onNavigate={handleNavigate} />}
 
         <footer className="mt-12 border-t border-slate-200 pt-6 text-center text-xs leading-5 text-slate-500">
-          Built with{" "}
+          Replication code:{" "}
+          <a
+            href="https://github.com/PolicyEngine/uk-cgt-reform"
+            target="_blank"
+            rel="noreferrer"
+            className="font-semibold text-[color:var(--pe-color-primary-700)] underline decoration-1 underline-offset-2 hover:opacity-80"
+          >
+            PolicyEngine/uk-cgt-reform
+          </a>
+          {" · "}
           <a href="https://github.com/PolicyEngine/policyengine.py" target="_blank" rel="noreferrer" className={LINK}>
             policyengine.py
           </a>
