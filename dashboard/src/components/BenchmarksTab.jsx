@@ -50,9 +50,9 @@ function jrfGlance(block) {
   const first = block.external.find((row) => isNum(byYear[row.year]?.uplift_on_obr_receipts_real_bn));
   if (!first) return null;
   return {
-    title: "Before behaviour, against JRF",
-    value: `${formatBn(byYear[first.year].uplift_on_obr_receipts_real_bn, 1)} vs about ${formatBn(first.value, 0)}`,
-    detail: `${first.year}, 2026/27 prices: ${PE}'s uplift applied to the OBR's receipts, against JRF's estimate.`,
+    title: "Before behaviour: PolicyEngine vs JRF",
+    value: `${formatBn(byYear[first.year].uplift_on_obr_receipts_real_bn, 1)} vs ${formatBn(first.value, 0)}`,
+    detail: `${first.year}, in 2026/27 prices. ${PE}'s uplift applied to the OBR's receipts; JRF's figure is approximate.`,
   };
 }
 
@@ -91,19 +91,19 @@ function AtAGlance({ benchmarks, rr, elasticities }) {
   const items = [
     jrfGlance(benchmarks.static_equalisation),
     {
-      title: "At 2019/20 rules, against CenTax",
+      title: "At 2019/20 rules: PolicyEngine vs CenTax",
       value: `${formatUplift(centax.national.uplift_pct)} vs ${formatUplift(centax.external.value)}`,
-      detail: `How much equalising raises CGT: ${PE}'s data against CenTax's estimate.`,
+      detail: "How much equalising raises CGT, before behaviour.",
     },
     range && {
-      title: "CenTax's wider package",
+      title: "CenTax's wider package (context)",
       value: `${formatBn(range[0], 1)}–${formatBn(range[1], 1)}`,
-      detail: "After behaviour, for a wider reform of the CGT base: context, not like-for-like.",
+      detail: "After behaviour, for a wider reform of the CGT base, so not like-for-like.",
     },
     widest && {
-      title: "Small rate changes",
-      value: `${sign(v.central)} at ${elasticities.central.e_retention.toFixed(1)}, ${sign(v.official)} at ${elasticities.official.e_retention}`,
-      detail: `${shortRow(widest.label).replace(/^./, (c) => c.toUpperCase())} (${pair.hmrcYear} receipts): the sign depends on how strongly people respond. HMRC shows a ${sign(v.hmrc)}.`,
+      title: `Higher rate +10pp: ${elasticities.central.e_retention.toFixed(1)} vs ${elasticities.official.e_retention} response`,
+      value: `${sign(v.central)} vs ${sign(v.official)}`,
+      detail: `The sign depends on how strongly people respond. HMRC shows a ${sign(v.hmrc)} (${pair.hmrcYear} receipts).`,
     },
   ].filter(Boolean);
   return (
@@ -111,11 +111,11 @@ function AtAGlance({ benchmarks, rr, elasticities }) {
       <h2 id="benchmarks-glance" className="text-xl font-semibold tracking-tight text-slate-900">
         At a glance
       </h2>
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {items.map((item) => (
-          <div key={item.title} className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
-            <p className="text-sm font-semibold text-slate-700">{item.title}</p>
-            <p className="mt-1 text-2xl font-bold tabular-nums text-slate-900 first-letter:uppercase">{item.value}</p>
+          <div key={item.title} className="flex flex-col rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+            <p className="text-xs font-semibold leading-snug text-slate-600 md:min-h-[2.25rem]">{item.title}</p>
+            <p className="mt-1 text-xl font-bold tabular-nums text-slate-900 first-letter:uppercase">{item.value}</p>
             <p className="mt-1 text-xs leading-5 text-slate-500">{item.detail}</p>
           </div>
         ))}
