@@ -259,13 +259,13 @@ export default function ReformTab({ data, datasetKey, onNavigate, anchor }) {
                 <a href={CENTAX_URL} target="_blank" rel="noopener noreferrer" className="underline decoration-1 underline-offset-2 hover:opacity-80">
                   elasticity
                 </a>
-                .
-              </li>
-              <li>
+                .{" "}
                 <TabLink onNavigate={onNavigate} tab="methodology" section="elasticity">
                   Methodology
                 </TabLink>{" "}
-                explains that elasticity; the sensitivity chart in the results shows other values.
+                explains that elasticity; the{" "}
+                <TabLink onNavigate={() => showEqualisation("sensitivity")}>sensitivity</TabLink>{" "}
+                chart in the results shows other values.
               </li>
             </ul>
           ),

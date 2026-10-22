@@ -135,10 +135,30 @@ function Dashboard() {
           >
             PolicyEngine/uk-cgt-reform
           </a>
-          {data?.metadata?.policyengine_version
-            ? ` · policyengine.py ${data.metadata.policyengine_version} with policyengine-uk ${data.metadata.policyengine_uk_version}`
-            : ""}
-          {` · ${dataset.label}`}
+          {data?.metadata?.policyengine_version ? (
+            <>
+              {" · "}
+              <a href="https://github.com/PolicyEngine/policyengine.py" target="_blank" rel="noreferrer" className={LINK}>
+                policyengine.py
+              </a>
+              {` ${data.metadata.policyengine_version} with `}
+              <a href="https://github.com/PolicyEngine/policyengine-uk" target="_blank" rel="noreferrer" className={LINK}>
+                policyengine-uk
+              </a>
+              {` ${data.metadata.policyengine_uk_version}`}
+            </>
+          ) : null}
+          {" · "}
+          {dataset.label?.startsWith("Microcosm") ? (
+            <>
+              <a href="https://github.com/PolicyEngine/microcosm" target="_blank" rel="noreferrer" className={LINK}>
+                Microcosm
+              </a>
+              {dataset.label.slice("Microcosm".length)}
+            </>
+          ) : (
+            dataset.label
+          )}
         </footer>
       </main>
     </div>

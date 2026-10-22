@@ -21,9 +21,15 @@ import {
   InfoTip,
   PRIMARY_BUTTON,
   Pill,
+  SourceLink,
   TabLink,
   fieldBorder,
 } from "./controls";
+
+// The sources of the elasticities the select offers.
+const CENTAX_ELASTICITY =
+  "https://centax.org.uk/wp-content/uploads/2024/10/AdvaniLonsdaleSummers2024_CGTReform.pdf#page=38";
+const OBR_COSTING = "https://obr.uk/docs/dlm_uploads/CGT-supplementary-release-Jan-2025.pdf";
 
 // One short line under each rate; the band's full note sits in its tooltip.
 const BAND_HINTS = {
@@ -367,7 +373,9 @@ export default function ScheduleForm({ form, onChange, onCalculate, running, onN
                 {elasticity ? splitLabel(elasticity.label).detail : ""}
               </p>
               <p className={`mt-2 ${HINT}`}>
-                From no response, through CenTax&apos;s estimates, to the HMRC/OBR official assumption;{" "}
+                From no response, through <SourceLink href={CENTAX_ELASTICITY}>CenTax&apos;s</SourceLink>{" "}
+                estimates, to the HMRC/OBR official{" "}
+                <SourceLink href={OBR_COSTING}>assumption</SourceLink>;{" "}
                 <TabLink onNavigate={onNavigate} tab="methodology" section="elasticity">
                   Methodology
                 </TabLink>{" "}

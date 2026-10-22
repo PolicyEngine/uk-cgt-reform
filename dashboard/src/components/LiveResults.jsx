@@ -30,6 +30,10 @@ import GroupImpactChart, { GroupDefinitions } from "./charts/GroupImpactChart";
 import { Card, MetricCard, Notes, SourceLink, TabLink, TableScroll } from "./controls";
 import SectionHeading from "./SectionHeading";
 
+const BADR_GUIDANCE = "https://www.gov.uk/business-asset-disposal-relief";
+const INVESTORS_RELIEF = "https://www.gov.uk/government/publications/investors-relief-2020-hs308";
+const EXEMPT_AMOUNT = "https://www.gov.uk/capital-gains-tax/allowances";
+
 const pct = (fraction) => formatPct(fraction * 100, 0);
 const elasticityName = (e) => elasticityOption(e)?.label ?? `retention elasticity ${e}`;
 
@@ -116,19 +120,29 @@ function SpecTable({ metadata }) {
           <td>Gains on UK residential property, charged on their own schedule, take the same rates.</td>
         </tr>
         <tr>
-          <td>Business Asset Disposal Relief</td>
+          <td>
+            Business Asset Disposal <SourceLink href={BADR_GUIDANCE}>Relief</SourceLink>
+          </td>
           <td>{describeBadr(metadata.baseline_badr ?? BASELINE_SCHEDULE_RATES.badr)}</td>
           <td className={metadata.reform_badr && !sameBadr(metadata.reform_badr, BADR_CURRENT_LAW) ? "font-semibold" : ""}>
             {describeBadr(metadata.reform_badr ?? BASELINE_SCHEDULE_RATES.badr)}
           </td>
           <td>
             {metadata.reform_badr?.withdrawn
-              ? "Gains that qualify for the relief (Investors' Relief included) take the main rates above."
+              ? (
+                <>
+                  Gains that qualify for the relief (Investors&apos;{" "}
+                  <SourceLink href={INVESTORS_RELIEF}>Relief</SourceLink> included) take the main
+                  rates above.
+                </>
+              )
               : "Gains that qualify for the relief are charged at its rate, up to the lifetime limit."}
           </td>
         </tr>
         <tr>
-          <td>Annual exempt amount</td>
+          <td>
+            Annual exempt <SourceLink href={EXEMPT_AMOUNT}>amount</SourceLink>
+          </td>
           <td>£3,000</td>
           <td>£3,000</td>
           <td>Unchanged: the first £3,000 of gains each year stays tax-free.</td>
@@ -150,7 +164,13 @@ function ReadyReckonerPanel({ row, result, onNavigate }) {
     <Card className="min-w-0">
       <SectionHeading
         title="HMRC ready reckoner"
-        description={`${row.label}: HMRC's receipts beside this run's liabilities a year earlier.`}
+        description={
+          <>
+            {`${row.label}: `}
+            <SourceLink href={READY_RECKONER.url}>HMRC&apos;s</SourceLink>
+            {" receipts beside this run's liabilities a year earlier."}
+          </>
+        }
       />
       <TableScroll>
       <table className="data-table">
@@ -234,7 +254,13 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
       <Card>
         <SectionHeading
           title="Headline results"
-          description={`In ${firstYear}, the reform's first year: ${pct(reform.basic_rate)} / ${pct(reform.higher_rate)} / ${pct(reform.additional_rate)}, Business Asset Disposal Relief ${describeBadr(reformBadr).toLowerCase()}, on ${result.metadata.dataset_short_label}, ${elasticityName(resultE)}. Distributional figures cover all households.`}
+          description={
+            <>
+              {`In ${firstYear}, the reform's first year: ${pct(reform.basic_rate)} / ${pct(reform.higher_rate)} / ${pct(reform.additional_rate)}, Business Asset Disposal `}
+              <SourceLink href={BADR_GUIDANCE}>Relief</SourceLink>
+              {` ${describeBadr(reformBadr).toLowerCase()}, on ${result.metadata.dataset_short_label}, ${elasticityName(resultE)}. Distributional figures cover all households.`}
+            </>
+          }
         />
         <div className={`grid gap-4 ${topQuintile.share_affected_pct !== undefined ? "md:grid-cols-3" : "md:grid-cols-2"}`}>
           <MetricCard

@@ -44,6 +44,10 @@ const BADR_GUIDANCE = "https://www.gov.uk/business-asset-disposal-relief";
 const EXEMPT_AMOUNT = "https://www.gov.uk/capital-gains-tax/allowances";
 const HMRC_TABLE_4 =
   "https://assets.publishing.service.gov.uk/media/6a7b242a347b198efd290ed7/Table_4_2026_Business_asset_disposal_and_investors_reliefs.ods";
+const OBR_EFO = "https://obr.uk/efo/economic-and-fiscal-outlook-march-2026/";
+const SAVINGS_PROPERTY_RATES =
+  "https://www.gov.uk/government/publications/changes-to-tax-rates-for-property-savings-and-dividend-income";
+const SCOTTISH_INCOME_TAX = "https://www.gov.uk/scottish-income-tax";
 
 function officialSource(official) {
   return {
@@ -137,10 +141,11 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
           <Notes className="mt-auto">
             <p>
               Baseline revenue grows as the engine uprates the dataset to each year; the{" "}
-              <TabLink onNavigate={onNavigate} tab="methodology" section="pathway">
+              <TabLink onNavigate={onNavigate} tab="methodology" section="projection">
                 Methodology
               </TabLink>{" "}
-              tab compares that projection with the OBR&apos;s forecast.
+              tab compares that projection with the OBR&apos;s{" "}
+              <SourceLink href={OBR_EFO}>forecast</SourceLink>.
             </p>
             {entrantShare > 0.05 ? (
               <p>
@@ -291,10 +296,11 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
           <p className="text-sm leading-6 text-slate-600">
             Effective in every modelled year. All results on
             this page compare this reform against current policy on the same baseline. The reformed
-            rates are the income tax rates on earnings; from April 2027 savings and property income
-            face 22%, 42% and 47% (the property rates in England, Wales and Northern Ireland), and
-            Scottish taxpayers&apos; earnings face Scotland&apos;s own bands, which the reform does not
-            follow.
+            rates are the income tax rates on earnings; from April 2027 savings and property{" "}
+            <SourceLink href={SAVINGS_PROPERTY_RATES}>income</SourceLink> face 22%, 42% and 47% (the
+            property rates in England, Wales and Northern Ireland), and Scottish taxpayers&apos;
+            earnings face Scotland&apos;s own <SourceLink href={SCOTTISH_INCOME_TAX}>bands</SourceLink>,
+            which the reform does not follow.
           </p>
           <RateChangeChart
             rows={[
