@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "generated": "2026-10-21",
+    "generated": "2026-10-22",
     "policyengine_version": "4.22.3",
     "policyengine_uk_version": "2.141.9",
     "dataset": "hf://policyengine/populace-uk-private/microcosm_uk_2024_25.h5@52f48aa177944b7d07c3f25403f1fddbcd1a74af",
@@ -359,128 +359,152 @@
         {
           "group": "Lowest 20%",
           "avg_change_gbp": -3.4686158498657083,
-          "relative_change_pct": -0.01645973029427314
+          "relative_change_pct": -0.01645973029427314,
+          "share_affected_pct": 0.25094738320573984
         },
         {
           "group": "20\u201340%",
           "avg_change_gbp": -8.973144993073715,
-          "relative_change_pct": -0.023382375719920877
+          "relative_change_pct": -0.023382375719920877,
+          "share_affected_pct": 0.4091986899388219
         },
         {
           "group": "40\u201360%",
           "avg_change_gbp": -13.310913956763462,
-          "relative_change_pct": -0.024894324710947862
+          "relative_change_pct": -0.024894324710947862,
+          "share_affected_pct": 0.7088586032590685
         },
         {
           "group": "60\u201380%",
           "avg_change_gbp": -62.04580936931107,
-          "relative_change_pct": -0.08617886081156752
+          "relative_change_pct": -0.08617886081156752,
+          "share_affected_pct": 1.542952900907772
         },
         {
           "group": "Highest 20%",
           "avg_change_gbp": -7697.212859675588,
-          "relative_change_pct": -5.385521025837484
+          "relative_change_pct": -5.385521025837484,
+          "share_affected_pct": 6.7861496095456
         }
       ],
       "quartile": [
         {
           "group": "Lowest 25%",
           "avg_change_gbp": -4.143638061507137,
-          "relative_change_pct": -0.017694039859267017
+          "relative_change_pct": -0.017694039859267017,
+          "share_affected_pct": 0.3188616684454454
         },
         {
           "group": "25\u201350%",
           "avg_change_gbp": -7.686691063454055,
-          "relative_change_pct": -0.017535053992877515
+          "relative_change_pct": -0.017535053992877515,
+          "share_affected_pct": 0.35947934301858553
         },
         {
           "group": "50\u201375%",
           "avg_change_gbp": -33.45583948486416,
-          "relative_change_pct": -0.05183519155417532
+          "relative_change_pct": -0.05183519155417532,
+          "share_affected_pct": 1.1494688030822886
         },
         {
           "group": "Highest 25%",
           "avg_change_gbp": -6182.470902148525,
-          "relative_change_pct": -4.73797640211149
+          "relative_change_pct": -4.73797640211149,
+          "share_affected_pct": 5.930817953902971
         }
       ],
       "household_type": [
         {
           "group": "With children",
           "avg_change_gbp": -1524.8668806460835,
-          "relative_change_pct": -1.73395190220349
+          "relative_change_pct": -1.73395190220349,
+          "share_affected_pct": 1.6429643717005786
         },
         {
           "group": "Pensioner",
           "avg_change_gbp": -1137.1024987712246,
-          "relative_change_pct": -2.4503787186397017
+          "relative_change_pct": -2.4503787186397017,
+          "share_affected_pct": 1.9224757062235274
         },
         {
           "group": "Working-age, no children",
           "avg_change_gbp": -1789.463194065543,
-          "relative_change_pct": -2.8835185252698596
+          "relative_change_pct": -2.8835185252698596,
+          "share_affected_pct": 2.1243394249151755
         }
       ],
       "region": [
         {
           "group": "North East",
           "avg_change_gbp": -456.90602103046433,
-          "relative_change_pct": -0.8380130312571972
+          "relative_change_pct": -0.8380130312571972,
+          "share_affected_pct": 0.9916246256818485
         },
         {
           "group": "North West",
           "avg_change_gbp": -1019.825592900253,
-          "relative_change_pct": -1.7083637413854893
+          "relative_change_pct": -1.7083637413854893,
+          "share_affected_pct": 1.3211221724096127
         },
         {
           "group": "Yorkshire and the Humber",
           "avg_change_gbp": -1122.9501490983323,
-          "relative_change_pct": -1.8641637746238424
+          "relative_change_pct": -1.8641637746238424,
+          "share_affected_pct": 1.4061466531982199
         },
         {
           "group": "East Midlands",
           "avg_change_gbp": -1095.1269308434344,
-          "relative_change_pct": -1.8442215740171932
+          "relative_change_pct": -1.8442215740171932,
+          "share_affected_pct": 1.5077261695920086
         },
         {
           "group": "West Midlands",
           "avg_change_gbp": -854.8927460999545,
-          "relative_change_pct": -1.4024841593554382
+          "relative_change_pct": -1.4024841593554382,
+          "share_affected_pct": 1.3699898484382564
         },
         {
           "group": "East of England",
           "avg_change_gbp": -1646.6345135524566,
-          "relative_change_pct": -2.360333225495509
+          "relative_change_pct": -2.360333225495509,
+          "share_affected_pct": 2.230660361359699
         },
         {
           "group": "London",
           "avg_change_gbp": -3402.816883075618,
-          "relative_change_pct": -3.8452847577074287
+          "relative_change_pct": -3.8452847577074287,
+          "share_affected_pct": 2.9559058865445604
         },
         {
           "group": "South East",
           "avg_change_gbp": -2487.4601141503754,
-          "relative_change_pct": -3.314780917110062
+          "relative_change_pct": -3.314780917110062,
+          "share_affected_pct": 2.9365938223201176
         },
         {
           "group": "South West",
           "avg_change_gbp": -1511.9899784026295,
-          "relative_change_pct": -2.466216842695637
+          "relative_change_pct": -2.466216842695637,
+          "share_affected_pct": 2.403554197459909
         },
         {
           "group": "Wales",
           "avg_change_gbp": -644.9957124073175,
-          "relative_change_pct": -1.1813642097593076
+          "relative_change_pct": -1.1813642097593076,
+          "share_affected_pct": 1.2604513725591173
         },
         {
           "group": "Scotland",
           "avg_change_gbp": -815.2516513502861,
-          "relative_change_pct": -1.4924258895851497
+          "relative_change_pct": -1.4924258895851497,
+          "share_affected_pct": 1.4049574560869198
         },
         {
           "group": "Northern Ireland",
           "avg_change_gbp": -822.7621446401466,
-          "relative_change_pct": -1.5166085812464924
+          "relative_change_pct": -1.5166085812464924,
+          "share_affected_pct": 1.219786487881505
         }
       ]
     },
@@ -489,128 +513,152 @@
         {
           "group": "Lowest 20%",
           "avg_change_gbp": -3.610321224088414,
-          "relative_change_pct": -0.017059462772222415
+          "relative_change_pct": -0.017059462772222415,
+          "share_affected_pct": 0.2460293685339815
         },
         {
           "group": "20\u201340%",
           "avg_change_gbp": -9.439835209563453,
-          "relative_change_pct": -0.024335550389956145
+          "relative_change_pct": -0.024335550389956145,
+          "share_affected_pct": 0.426374695725547
         },
         {
           "group": "40\u201360%",
           "avg_change_gbp": -11.113754485965712,
-          "relative_change_pct": -0.02052582823612405
+          "relative_change_pct": -0.02052582823612405,
+          "share_affected_pct": 0.6158996619367285
         },
         {
           "group": "60\u201380%",
           "avg_change_gbp": -60.51909067966033,
-          "relative_change_pct": -0.08282817568159637
+          "relative_change_pct": -0.08282817568159637,
+          "share_affected_pct": 1.5920449568588255
         },
         {
           "group": "Highest 20%",
           "avg_change_gbp": -7957.907013617687,
-          "relative_change_pct": -5.464423864207978
+          "relative_change_pct": -5.464423864207978,
+          "share_affected_pct": 6.828529925329728
         }
       ],
       "quartile": [
         {
           "group": "Lowest 25%",
           "avg_change_gbp": -4.343238170614057,
-          "relative_change_pct": -0.0184431302172494
+          "relative_change_pct": -0.0184431302172494,
+          "share_affected_pct": 0.31691998908713537
         },
         {
           "group": "25\u201350%",
           "avg_change_gbp": -8.451090989565039,
-          "relative_change_pct": -0.019058658606922418
+          "relative_change_pct": -0.019058658606922418,
+          "share_affected_pct": 0.38896704942401356
         },
         {
           "group": "50\u201375%",
           "avg_change_gbp": -32.50982512801614,
-          "relative_change_pct": -0.049677929763480684
+          "relative_change_pct": -0.049677929763480684,
+          "share_affected_pct": 1.1171984088581248
         },
         {
           "group": "Highest 25%",
           "avg_change_gbp": -6390.333593040905,
-          "relative_change_pct": -4.807890248396295
+          "relative_change_pct": -4.807890248396295,
+          "share_affected_pct": 5.944582471443343
         }
       ],
       "household_type": [
         {
           "group": "With children",
           "avg_change_gbp": -1575.7715540121487,
-          "relative_change_pct": -1.7644019056558773
+          "relative_change_pct": -1.7644019056558773,
+          "share_affected_pct": 1.6452980577703276
         },
         {
           "group": "Pensioner",
           "avg_change_gbp": -1188.6112064283714,
-          "relative_change_pct": -2.517068298419625
+          "relative_change_pct": -2.517068298419625,
+          "share_affected_pct": 1.9170456753294152
         },
         {
           "group": "Working-age, no children",
           "avg_change_gbp": -1831.0856628946112,
-          "relative_change_pct": -2.922447817828933
+          "relative_change_pct": -2.922447817828933,
+          "share_affected_pct": 2.1270718197401957
         }
       ],
       "region": [
         {
           "group": "North East",
           "avg_change_gbp": -472.84274733031805,
-          "relative_change_pct": -0.8555672074008573
+          "relative_change_pct": -0.8555672074008573,
+          "share_affected_pct": 0.9939452686781132
         },
         {
           "group": "North West",
           "avg_change_gbp": -1055.1924117493224,
-          "relative_change_pct": -1.7432972862813083
+          "relative_change_pct": -1.7432972862813083,
+          "share_affected_pct": 1.3227427129831046
         },
         {
           "group": "Yorkshire and the Humber",
           "avg_change_gbp": -1160.7773770003955,
-          "relative_change_pct": -1.9029100090312585
+          "relative_change_pct": -1.9029100090312585,
+          "share_affected_pct": 1.4082323824379983
         },
         {
           "group": "East Midlands",
           "avg_change_gbp": -1131.5864527688054,
-          "relative_change_pct": -1.8792657172926146
+          "relative_change_pct": -1.8792657172926146,
+          "share_affected_pct": 1.5095342872739639
         },
         {
           "group": "West Midlands",
           "avg_change_gbp": -884.159361788532,
-          "relative_change_pct": -1.4291493223735463
+          "relative_change_pct": -1.4291493223735463,
+          "share_affected_pct": 1.3714984213577261
         },
         {
           "group": "East of England",
           "avg_change_gbp": -1704.7835872669027,
-          "relative_change_pct": -2.4065529440959144
+          "relative_change_pct": -2.4065529440959144,
+          "share_affected_pct": 2.232213498028919
         },
         {
           "group": "London",
           "avg_change_gbp": -3510.0060471410866,
-          "relative_change_pct": -3.8969666552519118
+          "relative_change_pct": -3.8969666552519118,
+          "share_affected_pct": 2.9602344172425985
         },
         {
           "group": "South East",
           "avg_change_gbp": -2570.728218382395,
-          "relative_change_pct": -3.3714130845812074
+          "relative_change_pct": -3.3714130845812074,
+          "share_affected_pct": 2.938931425065763
         },
         {
           "group": "South West",
           "avg_change_gbp": -1563.573903813694,
-          "relative_change_pct": -2.5161171852822544
+          "relative_change_pct": -2.5161171852822544,
+          "share_affected_pct": 2.4060443426964504
         },
         {
           "group": "Wales",
           "avg_change_gbp": -666.0299752538656,
-          "relative_change_pct": -1.2036547220161589
+          "relative_change_pct": -1.2036547220161589,
+          "share_affected_pct": 1.2622786942181894
         },
         {
           "group": "Scotland",
           "avg_change_gbp": -842.933846561013,
-          "relative_change_pct": -1.5195861018555306
+          "relative_change_pct": -1.5195861018555306,
+          "share_affected_pct": 1.4084603188624683
         },
         {
           "group": "Northern Ireland",
           "avg_change_gbp": -851.1113446224184,
-          "relative_change_pct": -1.5455096928798417
+          "relative_change_pct": -1.5455096928798417,
+          "share_affected_pct": 1.2209526999926943
         }
       ]
     },
@@ -619,128 +667,152 @@
         {
           "group": "Lowest 20%",
           "avg_change_gbp": -3.896501552790681,
-          "relative_change_pct": -0.018272965830544424
+          "relative_change_pct": -0.018272965830544424,
+          "share_affected_pct": 0.2459134362633049
         },
         {
           "group": "20\u201340%",
           "avg_change_gbp": -9.987310751336882,
-          "relative_change_pct": -0.02540146116279384
+          "relative_change_pct": -0.02540146116279384,
+          "share_affected_pct": 0.43375408623938005
         },
         {
           "group": "40\u201360%",
           "avg_change_gbp": -11.72064259048651,
-          "relative_change_pct": -0.0213439755761346
+          "relative_change_pct": -0.0213439755761346,
+          "share_affected_pct": 0.6162090434073753
         },
         {
           "group": "60\u201380%",
           "avg_change_gbp": -59.08928751500317,
-          "relative_change_pct": -0.07972891019380215
+          "relative_change_pct": -0.07972891019380215,
+          "share_affected_pct": 1.5135613193472381
         },
         {
           "group": "Highest 20%",
           "avg_change_gbp": -8213.46480116732,
-          "relative_change_pct": -5.542986183223981
+          "relative_change_pct": -5.542986183223981,
+          "share_affected_pct": 6.912444210114732
         }
       ],
       "quartile": [
         {
           "group": "Lowest 25%",
           "avg_change_gbp": -4.687085241371191,
-          "relative_change_pct": -0.019731400453774323
+          "relative_change_pct": -0.019731400453774323,
+          "share_affected_pct": 0.31793314940531725
         },
         {
           "group": "25\u201350%",
           "avg_change_gbp": -8.97853514075911,
-          "relative_change_pct": -0.019970674056613322
+          "relative_change_pct": -0.019970674056613322,
+          "share_affected_pct": 0.3972132156289417
         },
         {
           "group": "50\u201375%",
           "avg_change_gbp": -33.27093568818158,
-          "relative_change_pct": -0.05012020720528941
+          "relative_change_pct": -0.05012020720528941,
+          "share_affected_pct": 1.110652376723209
         },
         {
           "group": "Highest 25%",
           "avg_change_gbp": -6592.822569349942,
-          "relative_change_pct": -4.876971609730619
+          "relative_change_pct": -4.876971609730619,
+          "share_affected_pct": 5.952427730615785
         }
       ],
       "household_type": [
         {
           "group": "With children",
           "avg_change_gbp": -1625.6727803178892,
-          "relative_change_pct": -1.7949553327933592
+          "relative_change_pct": -1.7949553327933592,
+          "share_affected_pct": 1.6478574683330103
         },
         {
           "group": "Pensioner",
           "avg_change_gbp": -1156.9537697957383,
-          "relative_change_pct": -2.42720635029805
+          "relative_change_pct": -2.42720635029805,
+          "share_affected_pct": 1.9217919044042293
         },
         {
           "group": "Working-age, no children",
           "avg_change_gbp": -1918.3848398388786,
-          "relative_change_pct": -3.012025723874812
+          "relative_change_pct": -3.012025723874812,
+          "share_affected_pct": 2.127433287642195
         }
       ],
       "region": [
         {
           "group": "North East",
           "avg_change_gbp": -488.4651559979831,
-          "relative_change_pct": -0.8719307175012291
+          "relative_change_pct": -0.8719307175012291,
+          "share_affected_pct": 0.9989660346267639
         },
         {
           "group": "North West",
           "avg_change_gbp": -1089.7033479216807,
-          "relative_change_pct": -1.7779771191551106
+          "relative_change_pct": -1.7779771191551106,
+          "share_affected_pct": 1.325207717948633
         },
         {
           "group": "Yorkshire and the Humber",
           "avg_change_gbp": -1198.594702500798,
-          "relative_change_pct": -1.9357036899795634
+          "relative_change_pct": -1.9357036899795634,
+          "share_affected_pct": 1.411124041229
         },
         {
           "group": "East Midlands",
           "avg_change_gbp": -1168.3407629726587,
-          "relative_change_pct": -1.9134815582209541
+          "relative_change_pct": -1.9134815582209541,
+          "share_affected_pct": 1.5122620726543867
         },
         {
           "group": "West Midlands",
           "avg_change_gbp": -913.0660137810349,
-          "relative_change_pct": -1.4539034268610584
+          "relative_change_pct": -1.4539034268610584,
+          "share_affected_pct": 1.3733568469609028
         },
         {
           "group": "East of England",
           "avg_change_gbp": -1757.2275556145303,
-          "relative_change_pct": -2.4443172567919755
+          "relative_change_pct": -2.4443172567919755,
+          "share_affected_pct": 2.233632957152727
         },
         {
           "group": "London",
           "avg_change_gbp": -3620.0740032464932,
-          "relative_change_pct": -3.9512884934571493
+          "relative_change_pct": -3.9512884934571493,
+          "share_affected_pct": 2.9630061660928746
         },
         {
           "group": "South East",
           "avg_change_gbp": -2652.0102422578047,
-          "relative_change_pct": -3.4243140481663215
+          "relative_change_pct": -3.4243140481663215,
+          "share_affected_pct": 2.9415407591110183
         },
         {
           "group": "South West",
           "avg_change_gbp": -1613.7759352950761,
-          "relative_change_pct": -2.5572210238758752
+          "relative_change_pct": -2.5572210238758752,
+          "share_affected_pct": 2.410697627784172
         },
         {
           "group": "Wales",
           "avg_change_gbp": -687.5054544424177,
-          "relative_change_pct": -1.2249927859238603
+          "relative_change_pct": -1.2249927859238603,
+          "share_affected_pct": 1.265055943237923
         },
         {
           "group": "Scotland",
           "avg_change_gbp": -870.2610417457722,
-          "relative_change_pct": -1.545541702863975
+          "relative_change_pct": -1.545541702863975,
+          "share_affected_pct": 1.4095991502204999
         },
         {
           "group": "Northern Ireland",
           "avg_change_gbp": -878.8037815003565,
-          "relative_change_pct": -1.5725113843890453
+          "relative_change_pct": -1.5725113843890453,
+          "share_affected_pct": 1.2229817591573278
         }
       ]
     },
@@ -749,128 +821,152 @@
         {
           "group": "Lowest 20%",
           "avg_change_gbp": -5.744182571921405,
-          "relative_change_pct": -0.026615774637117527
+          "relative_change_pct": -0.026615774637117527,
+          "share_affected_pct": 0.2811833173987317
         },
         {
           "group": "20\u201340%",
           "avg_change_gbp": -9.111684025196976,
-          "relative_change_pct": -0.022849260688018583
+          "relative_change_pct": -0.022849260688018583,
+          "share_affected_pct": 0.3981186899231668
         },
         {
           "group": "40\u201360%",
           "avg_change_gbp": -12.059919272390735,
-          "relative_change_pct": -0.021649310340585103
+          "relative_change_pct": -0.021649310340585103,
+          "share_affected_pct": 0.5980090874711278
         },
         {
           "group": "60\u201380%",
           "avg_change_gbp": -62.3720214827768,
-          "relative_change_pct": -0.08296790248596336
+          "relative_change_pct": -0.08296790248596336,
+          "share_affected_pct": 1.5273034981832445
         },
         {
           "group": "Highest 20%",
           "avg_change_gbp": -8446.599579447387,
-          "relative_change_pct": -5.606802533338854
+          "relative_change_pct": -5.606802533338854,
+          "share_affected_pct": 6.915136456605193
         }
       ],
       "quartile": [
         {
           "group": "Lowest 25%",
           "avg_change_gbp": -4.9133233519234025,
-          "relative_change_pct": -0.020421917445602452
+          "relative_change_pct": -0.020421917445602452,
+          "share_affected_pct": 0.31343112846047566
         },
         {
           "group": "25\u201350%",
           "avg_change_gbp": -8.972787477057832,
-          "relative_change_pct": -0.019674550629990354
+          "relative_change_pct": -0.019674550629990354,
+          "share_affected_pct": 0.38415585138930847
         },
         {
           "group": "50\u201375%",
           "avg_change_gbp": -35.56266362271169,
-          "relative_change_pct": -0.05279567241433467
+          "relative_change_pct": -0.05279567241433467,
+          "share_affected_pct": 1.1051414438542908
         },
         {
           "group": "Highest 25%",
           "avg_change_gbp": -6794.1709155186,
-          "relative_change_pct": -4.940978055368367
+          "relative_change_pct": -4.940978055368367,
+          "share_affected_pct": 5.982675485325991
         }
       ],
       "household_type": [
         {
           "group": "With children",
           "avg_change_gbp": -1674.702952278904,
-          "relative_change_pct": -1.8235447404268224
+          "relative_change_pct": -1.8235447404268224,
+          "share_affected_pct": 1.6498964354881531
         },
         {
           "group": "Pensioner",
           "avg_change_gbp": -1194.062756600224,
-          "relative_change_pct": -2.4659314922985933
+          "relative_change_pct": -2.4659314922985933,
+          "share_affected_pct": 1.923183815091472
         },
         {
           "group": "Working-age, no children",
           "avg_change_gbp": -1976.8988763431364,
-          "relative_change_pct": -3.052008884498625
+          "relative_change_pct": -3.052008884498625,
+          "share_affected_pct": 2.1291286174879533
         }
       ],
       "region": [
         {
           "group": "North East",
           "avg_change_gbp": -503.5914841734505,
-          "relative_change_pct": -0.8861222227851614
+          "relative_change_pct": -0.8861222227851614,
+          "share_affected_pct": 1.0007859195200148
         },
         {
           "group": "North West",
           "avg_change_gbp": -1123.591344623047,
-          "relative_change_pct": -1.8060110338698465
+          "relative_change_pct": -1.8060110338698465,
+          "share_affected_pct": 1.3265832842822762
         },
         {
           "group": "Yorkshire and the Humber",
           "avg_change_gbp": -1237.3385697829435,
-          "relative_change_pct": -1.9678333043877592
+          "relative_change_pct": -1.9678333043877592,
+          "share_affected_pct": 1.4117664320759882
         },
         {
           "group": "East Midlands",
           "avg_change_gbp": -1204.3593536703102,
-          "relative_change_pct": -1.9440690226640849
+          "relative_change_pct": -1.9440690226640849,
+          "share_affected_pct": 1.514590378746534
         },
         {
           "group": "West Midlands",
           "avg_change_gbp": -942.4581271711787,
-          "relative_change_pct": -1.4786276313052649
+          "relative_change_pct": -1.4786276313052649,
+          "share_affected_pct": 1.3757198894589011
         },
         {
           "group": "East of England",
           "avg_change_gbp": -1811.0598246997156,
-          "relative_change_pct": -2.48040045131203
+          "relative_change_pct": -2.48040045131203,
+          "share_affected_pct": 2.2375102585302953
         },
         {
           "group": "London",
           "avg_change_gbp": -3727.6824890659836,
-          "relative_change_pct": -4.000181932084534
+          "relative_change_pct": -4.000181932084534,
+          "share_affected_pct": 2.9641432473816494
         },
         {
           "group": "South East",
           "avg_change_gbp": -2731.936398056426,
-          "relative_change_pct": -3.4721793623365373
+          "relative_change_pct": -3.4721793623365373,
+          "share_affected_pct": 2.9428097856715127
         },
         {
           "group": "South West",
           "avg_change_gbp": -1665.0709610748784,
-          "relative_change_pct": -2.5977495386863128
+          "relative_change_pct": -2.5977495386863128,
+          "share_affected_pct": 2.412398321967186
         },
         {
           "group": "Wales",
           "avg_change_gbp": -708.4622425018512,
-          "relative_change_pct": -1.2450199469350967
+          "relative_change_pct": -1.2450199469350967,
+          "share_affected_pct": 1.266253229484689
         },
         {
           "group": "Scotland",
           "avg_change_gbp": -898.1110450516338,
-          "relative_change_pct": -1.5693588010135437
+          "relative_change_pct": -1.5693588010135437,
+          "share_affected_pct": 1.411193290275107
         },
         {
           "group": "Northern Ireland",
           "avg_change_gbp": -905.9571043118531,
-          "relative_change_pct": -1.5969253068657583
+          "relative_change_pct": -1.5969253068657583,
+          "share_affected_pct": 1.2245888521085189
         }
       ]
     },
@@ -879,128 +975,152 @@
         {
           "group": "Lowest 20%",
           "avg_change_gbp": -6.062623790153908,
-          "relative_change_pct": -0.027731333762669792
+          "relative_change_pct": -0.027731333762669792,
+          "share_affected_pct": 0.2779345568625309
         },
         {
           "group": "20\u201340%",
           "avg_change_gbp": -8.59406114384507,
-          "relative_change_pct": -0.02123126704169993
+          "relative_change_pct": -0.02123126704169993,
+          "share_affected_pct": 0.3931141236849419
         },
         {
           "group": "40\u201360%",
           "avg_change_gbp": -13.663914667395234,
-          "relative_change_pct": -0.024140795437559377
+          "relative_change_pct": -0.024140795437559377,
+          "share_affected_pct": 0.6013456890626102
         },
         {
           "group": "60\u201380%",
           "avg_change_gbp": -65.96408124299407,
-          "relative_change_pct": -0.08626444092459927
+          "relative_change_pct": -0.08626444092459927,
+          "share_affected_pct": 1.531348551792349
         },
         {
           "group": "Highest 20%",
           "avg_change_gbp": -8739.609499152479,
-          "relative_change_pct": -5.682499912668621
+          "relative_change_pct": -5.682499912668621,
+          "share_affected_pct": 6.936111988236569
         }
       ],
       "quartile": [
         {
           "group": "Lowest 25%",
           "avg_change_gbp": -5.180009536674629,
-          "relative_change_pct": -0.02122634445826039
+          "relative_change_pct": -0.02122634445826039,
+          "share_affected_pct": 0.3140817416364194
         },
         {
           "group": "25\u201350%",
           "avg_change_gbp": -9.421236072906648,
-          "relative_change_pct": -0.020334374970181153
+          "relative_change_pct": -0.020334374970181153,
+          "share_affected_pct": 0.38021460526851786
         },
         {
           "group": "50\u201375%",
           "avg_change_gbp": -37.78135844982144,
-          "relative_change_pct": -0.05516453538281207
+          "relative_change_pct": -0.05516453538281207,
+          "share_affected_pct": 1.1051222683960638
         },
         {
           "group": "Highest 25%",
           "avg_change_gbp": -7015.124693224161,
-          "relative_change_pct": -5.00341023252513
+          "relative_change_pct": -5.00341023252513,
+          "share_affected_pct": 5.993681187830661
         }
       ],
       "household_type": [
         {
           "group": "With children",
           "avg_change_gbp": -1727.9841017006038,
-          "relative_change_pct": -1.8516512976668127
+          "relative_change_pct": -1.8516512976668127,
+          "share_affected_pct": 1.6517192641061562
         },
         {
           "group": "Pensioner",
           "avg_change_gbp": -1235.715457222225,
-          "relative_change_pct": -2.510059812238866
+          "relative_change_pct": -2.510059812238866,
+          "share_affected_pct": 1.92439039572628
         },
         {
           "group": "Working-age, no children",
           "avg_change_gbp": -2041.0364028092404,
-          "relative_change_pct": -3.090140896293163
+          "relative_change_pct": -3.090140896293163,
+          "share_affected_pct": 2.131500576800461
         }
       ],
       "region": [
         {
           "group": "North East",
           "avg_change_gbp": -520.1202601277885,
-          "relative_change_pct": -0.9004506567369797
+          "relative_change_pct": -0.9004506567369797,
+          "share_affected_pct": 1.0016692378986354
         },
         {
           "group": "North West",
           "avg_change_gbp": -1160.3406466807771,
-          "relative_change_pct": -1.8336008865169657
+          "relative_change_pct": -1.8336008865169657,
+          "share_affected_pct": 1.3276356062960921
         },
         {
           "group": "Yorkshire and the Humber",
           "avg_change_gbp": -1279.977362899748,
-          "relative_change_pct": -1.9999473320402221
+          "relative_change_pct": -1.9999473320402221,
+          "share_affected_pct": 1.4145071101631146
         },
         {
           "group": "East Midlands",
           "avg_change_gbp": -1243.6767884959784,
-          "relative_change_pct": -1.9742418882259096
+          "relative_change_pct": -1.9742418882259096,
+          "share_affected_pct": 1.5184511388898374
         },
         {
           "group": "West Midlands",
           "avg_change_gbp": -975.5320953159397,
-          "relative_change_pct": -1.5053003502211566
+          "relative_change_pct": -1.5053003502211566,
+          "share_affected_pct": 1.377619559181491
         },
         {
           "group": "East of England",
           "avg_change_gbp": -1871.8756483367054,
-          "relative_change_pct": -2.5192943125774514
+          "relative_change_pct": -2.5192943125774514,
+          "share_affected_pct": 2.23918369479834
         },
         {
           "group": "London",
           "avg_change_gbp": -3847.5548705306715,
-          "relative_change_pct": -4.049882906055533
+          "relative_change_pct": -4.049882906055533,
+          "share_affected_pct": 2.965020252585857
         },
         {
           "group": "South East",
           "avg_change_gbp": -2817.7897000346616,
-          "relative_change_pct": -3.516855689516736
+          "relative_change_pct": -3.516855689516736,
+          "share_affected_pct": 2.9461224377266637
         },
         {
           "group": "South West",
           "avg_change_gbp": -1720.4310056926938,
-          "relative_change_pct": -2.637587214170583
+          "relative_change_pct": -2.637587214170583,
+          "share_affected_pct": 2.4143689823307697
         },
         {
           "group": "Wales",
           "avg_change_gbp": -731.7721320415521,
-          "relative_change_pct": -1.2657023193355827
+          "relative_change_pct": -1.2657023193355827,
+          "share_affected_pct": 1.267281135643224
         },
         {
           "group": "Scotland",
           "avg_change_gbp": -928.0572776300794,
-          "relative_change_pct": -1.5919104632746168
+          "relative_change_pct": -1.5919104632746168,
+          "share_affected_pct": 1.4128742575148918
         },
         {
           "group": "Northern Ireland",
           "avg_change_gbp": -935.8738256853734,
-          "relative_change_pct": -1.621561351844014
+          "relative_change_pct": -1.621561351844014,
+          "share_affected_pct": 1.2259997745691091
         }
       ]
     }
