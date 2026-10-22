@@ -2,6 +2,7 @@
 
 import {
   BASELINE_SCHEDULE_RATES,
+  badrLimitLabel,
   describeBadr,
   getBudget,
   getEntrants,
@@ -22,16 +23,17 @@ import {
   READY_RECKONER,
   elasticityOption,
   readyReckonerRowFor,
-  sameBadr,
   sameElasticity,
 } from "../lib/schedule";
+import { colors } from "../lib/colors";
 import BudgetChart from "./charts/BudgetChart";
+import ChartLegend from "./charts/ChartLegend";
+import RateChangeChart, { RateChangeCaption } from "./charts/RateChangeChart";
 import GroupImpactChart, { GroupDefinitions } from "./charts/GroupImpactChart";
-import { Card, MetricCard, Notes, SourceLink, TabLink, TableScroll } from "./controls";
+import { Card, MetricCard, Notes, SourceLink, TabLink } from "./controls";
 import SectionHeading from "./SectionHeading";
 
 const BADR_GUIDANCE = "https://www.gov.uk/business-asset-disposal-relief";
-const INVESTORS_RELIEF = "https://www.gov.uk/government/publications/investors-relief-2020-hs308";
 const EXEMPT_AMOUNT = "https://www.gov.uk/capital-gains-tax/allowances";
 
 const pct = (fraction) => formatPct(fraction * 100, 0);
@@ -77,78 +79,105 @@ export function StatusLine({ status, error }) {
   return null;
 }
 
-function SpecTable({ metadata }) {
+// This schedule against current law, as the rate chart the equalisation
+// results use: each band, then the relief.
+function ScheduleRates({ metadata }) {
   const baseline = metadata.baseline_rates;
   const reform = metadata.reform;
-  const changed = (band) => Math.abs(baseline[band] - reform[band]) > 1e-9;
+  const baselineBadr = metadata.baseline_badr ?? BASELINE_SCHEDULE_RATES.badr;
+  const reformBadr = metadata.reform_badr ?? BASELINE_SCHEDULE_RATES.badr;
   return (
-    <TableScroll>
-    <table className="data-table">
-      <thead>
-        <tr>
-          <th>Policy parameter</th>
-          <th>Current law</th>
-          <th>This schedule</th>
-          <th>What it means</th>
-        </tr>
-      </thead>
-      <tbody>
-        {BANDS.map((band) => (
-          <tr key={band.key}>
-            <td>{band.label.replace(" rate", " CGT rate")}</td>
-            <td>{pct(baseline[band.key])}</td>
-            <td className={changed(band.key) ? "font-semibold" : ""}>{pct(reform[band.key])}</td>
-            <td>{band.note}</td>
-          </tr>
-        ))}
-        <tr>
-          <td>Residential property CGT rates</td>
-          <td>
-            {pct(BASELINE_SCHEDULE_RATES.residential_property.basic_rate)} /{" "}
-            {pct(BASELINE_SCHEDULE_RATES.residential_property.higher_rate)}
-          </td>
-          <td className="font-semibold">
-            {pct(reform.basic_rate)} / {pct(reform.higher_rate)} / {pct(reform.additional_rate)}
-          </td>
-          <td>Gains on UK residential property, charged on their own schedule, take the same rates.</td>
-        </tr>
-        <tr>
-          <td>
-            Business Asset Disposal <SourceLink href={BADR_GUIDANCE}>Relief</SourceLink>
-          </td>
-          <td>{describeBadr(metadata.baseline_badr ?? BASELINE_SCHEDULE_RATES.badr)}</td>
-          <td className={metadata.reform_badr && !sameBadr(metadata.reform_badr, BADR_CURRENT_LAW) ? "font-semibold" : ""}>
-            {describeBadr(metadata.reform_badr ?? BASELINE_SCHEDULE_RATES.badr)}
-          </td>
-          <td>
-            {metadata.reform_badr?.withdrawn
-              ? (
-                <>
-                  Gains that qualify for the relief (Investors&apos;{" "}
-                  <SourceLink href={INVESTORS_RELIEF}>Relief</SourceLink> included) take the main
-                  rates above.
-                </>
-              )
-              : "Gains that qualify for the relief are charged at its rate, up to the lifetime limit."}
-          </td>
-        </tr>
-        <tr>
-          <td>
-            Annual exempt <SourceLink href={EXEMPT_AMOUNT}>amount</SourceLink>
-          </td>
-          <td>£3,000</td>
-          <td>£3,000</td>
-          <td>Unchanged: the first £3,000 of gains each year stays tax-free.</td>
-        </tr>
-      </tbody>
-    </table>
-    </TableScroll>
+    <>
+      <RateChangeChart
+        rows={[
+          ...BANDS.map((band) => ({
+            key: band.key,
+            label: band.label,
+            baseline: baseline[band.key],
+            reform: reform[band.key],
+          })),
+          {
+            key: "badr",
+            label: "Business Asset Disposal Relief",
+            baseline: baselineBadr.rate,
+            reform: reformBadr.withdrawn ? null : reformBadr.rate,
+            baselineNote: `${badrLimitLabel(baselineBadr.lifetime_limit)} lifetime limit`,
+            reformNote: reformBadr.withdrawn
+              ? "gains pay the main rates"
+              : `${badrLimitLabel(reformBadr.lifetime_limit)} lifetime limit`,
+          },
+        ]}
+      />
+      <RateChangeCaption
+        items={[
+          <>
+            Residential property gains take the same rates, and the annual exempt{" "}
+            <SourceLink href={EXEMPT_AMOUNT}>amount</SourceLink> stays £3,000.
+          </>,
+        ]}
+      />
+    </>
   );
 }
 
 // HMRC's figures for the ready-reckoner row this run matches. HMRC reports
 // receipts, which arrive about a year after the liability, so each HMRC year
 // sits beside the run's liability a year earlier.
+// HMRC's receipts beside this run's change in the government balance, one
+// pair of bars per year, on one £m scale centred on £0.
+function ReckonerBars({ rows }) {
+  const max = Math.max(1, ...rows.flatMap((r) => [Math.abs(r.hmrc ?? 0), Math.abs(r.run ?? 0)]));
+  const series = [
+    { key: "hmrc", label: "HMRC receipts", fill: colors.gray[700], text: colors.gray[800] },
+    { key: "run", label: "This run, change in government balance", fill: colors.primary[600], text: colors.primary[700] },
+  ];
+  return (
+    <>
+      <ul className="space-y-4">
+        {rows.map((r) => (
+          <li key={r.key}>
+            <p className="mb-1 text-sm font-semibold text-slate-800">{r.label}</p>
+            {series.map((s) => {
+              const v = r[s.key];
+              const width = (50 * Math.abs(v ?? 0)) / max;
+              return (
+                <div key={s.key} className="group relative flex h-6 items-center" tabIndex={0}>
+                  <span aria-hidden="true" className="absolute left-1/2 top-0 h-full w-px bg-slate-300" />
+                  <span
+                    aria-hidden="true"
+                    className="absolute h-3.5 rounded"
+                    style={{
+                      background: s.fill,
+                      width: `${width}%`,
+                      left: v < 0 ? `${50 - width}%` : "50%",
+                    }}
+                  />
+                  <span
+                    className="absolute text-xs font-semibold tabular-nums"
+                    style={{
+                      color: s.text,
+                      ...(v < 0 ? { right: `${50 + width}%`, marginRight: 6 } : { left: `${50 + width}%`, marginLeft: 6 }),
+                    }}
+                  >
+                    {formatSignedMn(v)}
+                  </span>
+                  <span
+                    role="tooltip"
+                    className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1 hidden -translate-x-1/2 whitespace-nowrap rounded-md bg-slate-900 px-2 py-1 text-xs text-white shadow group-hover:block group-focus:block"
+                  >
+                    {`${s.label}: ${formatSignedMn(v)}`}
+                  </span>
+                </div>
+              );
+            })}
+          </li>
+        ))}
+      </ul>
+      <ChartLegend items={series.map((s) => ({ label: s.label, fill: s.fill }))} />
+    </>
+  );
+}
+
 function ReadyReckonerPanel({ row, result, onNavigate }) {
   const liability = (year) =>
     1000 * result.budget.find((budgetRow) => budgetRow.year === year).gov_balance_change_bn;
@@ -161,37 +190,18 @@ function ReadyReckonerPanel({ row, result, onNavigate }) {
           <>
             {`${row.label}: `}
             <SourceLink href={READY_RECKONER.url}>HMRC&apos;s</SourceLink>
-            {" receipts beside this run's liabilities a year earlier."}
+            {" receipts beside this run's change in the government balance a year earlier; bars left of £0 lose revenue."}
           </>
         }
       />
-      <TableScroll>
-      <table className="data-table">
-        <thead>
-          <tr>
-            <th>Comparison</th>
-            <th className="num">HMRC receipts</th>
-            <th className="num">This run, change in government balance</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr className="text-slate-500">
-            <td>HMRC {contextYear} (receipts in the reform&apos;s first year)</td>
-            <td className="num">{formatSignedMn(row.hmrc_m[contextYear])}</td>
-            <td className="num">—</td>
-          </tr>
-          {READY_RECKONER.lag.map((lag) => (
-            <tr key={lag.hmrc_year}>
-              <td>
-                HMRC {lag.hmrc_year} against this run&apos;s {lag.model_year} liabilities
-              </td>
-              <td className="num font-semibold">{formatSignedMn(row.hmrc_m[lag.hmrc_year])}</td>
-              <td className="num">{formatSignedMn(liability(lag.model_year))}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      </TableScroll>
+      <ReckonerBars
+        rows={READY_RECKONER.lag.map((lag) => ({
+          key: lag.hmrc_year,
+          label: `HMRC ${lag.hmrc_year} receipts vs this run's ${lag.model_year}`,
+          hmrc: row.hmrc_m[lag.hmrc_year],
+          run: liability(lag.model_year),
+        }))}
+      />
       <Notes>
         <p>
           HMRC&apos;s <SourceLink href={READY_RECKONER.url}>figures</SourceLink> ({READY_RECKONER.source}) are {READY_RECKONER.measure[0].toLowerCase()}
@@ -203,6 +213,9 @@ function ReadyReckonerPanel({ row, result, onNavigate }) {
           </TabLink>{" "}
           tab scores every row at the central and the official
           elasticity.
+        </p>
+        <p>
+          {`HMRC's ${contextYear} figure, receipts in the reform's first year: ${formatSignedMn(row.hmrc_m[contextYear])}.`}
         </p>
       </Notes>
     </Card>
@@ -347,7 +360,7 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
             Effective in every modelled year. Current law is read from the installed engine for
             the first year.
           </p>
-          <SpecTable metadata={result.metadata} />
+          <ScheduleRates metadata={result.metadata} />
         </div>
       </Card>
 

@@ -16,7 +16,10 @@ const SERIES = [
 ];
 
 // Year, the three values, then the dot strip; a row stacks below `md`.
-const GRID = "md:grid-cols-[4.5rem_repeat(3,6.5rem)_minmax(0,1fr)]";
+const GRID = "md:grid-cols-[4.5rem_repeat(3,6.5rem)_minmax(0,1fr)] md:gap-x-5";
+
+// Column headings; the legend below names each series in full.
+const SHORT = { static: "Static", obr: "On OBR receipts", jrf: "JRF" };
 
 const isNum = (v) => v !== null && v !== undefined && Number.isFinite(Number(v));
 
@@ -87,12 +90,16 @@ export default function JrfComparisonChart({ rows, labels }) {
         <span>Year</span>
         {SERIES.map((s) => (
           <span key={s.key} className="text-right leading-snug">
-            {labels[s.key]}
+            {SHORT[s.key]}
           </span>
         ))}
         <span className="relative h-4">
-          {ticks.map((t) => (
-            <span key={t} className="absolute -translate-x-1/2 font-normal" style={{ left: `${left(t)}%` }}>
+          {ticks.map((t, i) => (
+            <span
+              key={t}
+              className={`absolute font-normal ${i === 0 ? "" : i === ticks.length - 1 ? "-translate-x-full" : "-translate-x-1/2"}`}
+              style={{ left: `${left(t)}%` }}
+            >
               {formatBn(t, 0)}
             </span>
           ))}
@@ -116,7 +123,7 @@ export default function JrfComparisonChart({ rows, labels }) {
                   style={{ color: s.text, fontWeight: s.key === "static" ? 700 : 500 }}
                 >
                   <span className="block text-[10px] font-medium uppercase tracking-wide text-slate-400 md:hidden">
-                    {labels[s.key]}
+                    {SHORT[s.key]}
                   </span>
                   {isNum(row[s.key]) ? textFor(row, s.key) : "—"}
                 </span>
