@@ -79,12 +79,12 @@ function Dashboard() {
     <div className="app-shell min-h-screen">
       <PolicyEngineHeader />
       <header className="title-row">
-        <div className="mx-auto flex max-w-[96rem] items-center justify-between px-6 py-4 md:px-8">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4 md:px-8">
           <h1>Capital gains tax reform dashboard</h1>
         </div>
       </header>
 
-      <main className="relative z-[1] mx-auto max-w-[96rem] px-6 py-10 md:px-8 md:py-12">
+      <main className="relative z-[1] mx-auto max-w-6xl px-6 py-10 md:px-8 md:py-12">
         <div className="animate-[fadeIn_0.4s_ease-out]">
           <p className="text-lg leading-8 text-slate-800">
             This dashboard estimates how changing UK capital gains tax rates would affect

@@ -19,11 +19,10 @@ import {
   readyReckonerRowFor,
 } from "../lib/schedule";
 import {
-  Card,
-  CardTitle,
   FIELD,
   FieldLabel,
   HINT,
+  InfoTip,
   PRIMARY_BUTTON,
   TEXT_BUTTON,
   Pill,
@@ -105,33 +104,67 @@ function ChangeChip({ value, reference }) {
   const number = Number(value);
   if (value === "" || !Number.isFinite(number)) return null;
   const gap = Math.round((number - reference * 100) * 100) / 100;
-  if (gap === 0) return null;
+  if (gap === 0) return <span className="text-sm text-slate-400">No change</span>;
   return <Pill tone="teal">{`${gap > 0 ? "+" : "−"}${Math.abs(gap)} pp`}</Pill>;
 }
 
-function RateCard({ band, value, onChange, error }) {
-  const id = `rate-${band.key}`;
+// One labelled block of the panel. Blocks are separated by rules, not boxed.
+function FormSection({ id, title, tip, className = "", children }) {
   return (
-    <Card as="div" variant="inset">
-      <CardTitle htmlFor={id} tip={band.note} tipLabel={`About the ${band.label.toLowerCase()}`}>
-        {band.label}
-      </CardTitle>
-      <PercentInput
-        id={id}
-        value={value}
-        onChange={onChange}
-        invalid={Boolean(error)}
-        describedBy={error ? `${id}-error` : `${id}-hint`}
-      />
-      <div id={`${id}-hint`} className={`mt-2 flex flex-wrap items-center justify-between gap-2 ${HINT}`}>
-        <span>{BAND_HINTS[band.key]}</span>
-        <span className="flex items-center gap-2">
-          <span>Current law {formatPct(CURRENT_LAW.rates[band.key] * 100, 0)}</span>
-          <ChangeChip value={value} reference={CURRENT_LAW.rates[band.key]} />
-        </span>
+    <section aria-labelledby={id} className={`py-5 ${className}`}>
+      <div className="mb-3 flex items-center gap-2">
+        <h3 id={id} className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+          {title}
+        </h3>
+        {tip ? <InfoTip label={`About ${title.toLowerCase()}`}>{tip}</InfoTip> : null}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+// The rates table's columns: band, the reform's rate, current law, change.
+// Below `sm` a row wraps to the band over the input and its comparison.
+const RATE_GRID = "grid grid-cols-2 items-center gap-x-4 gap-y-2 sm:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.6fr)]";
+
+function RateRow({ band, value, onChange, error }) {
+  const id = `rate-${band.key}`;
+  const currentLaw = formatPct(CURRENT_LAW.rates[band.key] * 100, 0);
+  return (
+    <div className="border-t border-slate-200 py-3">
+      <div className={RATE_GRID}>
+        <div className="col-span-2 sm:col-span-1">
+          <div className="flex items-center gap-2">
+            <label htmlFor={id} className="text-sm font-semibold text-slate-800">
+              {band.label}
+            </label>
+            <InfoTip label={`About the ${band.label.toLowerCase()}`}>{band.note}</InfoTip>
+          </div>
+          <p id={`${id}-hint`} className={HINT}>
+            {BAND_HINTS[band.key]}
+          </p>
+        </div>
+        <div className="max-w-[10rem]">
+          <PercentInput
+            id={id}
+            value={value}
+            onChange={onChange}
+            invalid={Boolean(error)}
+            describedBy={error ? `${id}-error` : `${id}-hint`}
+          />
+        </div>
+        <div className="flex items-center gap-2 sm:contents">
+          <span className="text-sm tabular-nums text-slate-600">
+            <span className="sm:hidden">Current law </span>
+            {currentLaw}
+          </span>
+          <span>
+            <ChangeChip value={value} reference={CURRENT_LAW.rates[band.key]} />
+          </span>
+        </div>
       </div>
       {error ? <FieldError id={`${id}-error`}>{error}</FieldError> : null}
-    </Card>
+    </div>
   );
 }
 
@@ -140,8 +173,8 @@ const DOTS = {
   live: "bg-amber-500",
 };
 
-// One policy's parameters as a grid of cards (start from, rates, relief,
-// behavioural response), with a footer bar: what Calculate will do
+// One policy's parameters as one panel of ruled sections (start from, rates
+// table, relief beside behavioural response), with a footer bar: what Calculate will do
 // (`status`: a tone, a text and an optional action) and the Calculate
 // button. `showPresets` adds the "Start from" card (presets and HMRC
 // ready-reckoner rows). It is a form, so Enter in an input calculates;
@@ -161,138 +194,150 @@ export default function ScheduleForm({ form, onChange, showPresets, onCalculate,
   };
 
   return (
-    <form onSubmit={submit} noValidate className="space-y-4">
-      {showPresets ? (
-        <Card as="div" variant="inset">
-          <CardTitle>Start from</CardTitle>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <FieldLabel htmlFor="preset">Preset</FieldLabel>
-              <Select
-                id="preset"
-                describedBy="preset-hint"
-                value={presetFor(check)}
-                onChange={(id) => {
-                  const chosen = PRESETS.find((candidate) => candidate.id === id);
-                  if (chosen) load(chosen);
-                }}
-                options={[
-                  ...PRESETS.map((candidate) => ({ value: candidate.id, label: candidate.label })),
-                  { value: "custom", label: "Custom" },
-                ]}
-              />
-              <p id="preset-hint" className={`mt-2 ${HINT}`}>Fills in the rates and the relief below.</p>
-            </div>
-            <div>
-              <FieldLabel htmlFor="ready-reckoner">HMRC ready-reckoner row</FieldLabel>
-              <Select
-                id="ready-reckoner"
-                describedBy="ready-reckoner-hint"
-                value={readyReckonerRow}
-                onChange={(id) => {
-                  const chosen = READY_RECKONER.rows.find((row) => row.id === id);
-                  if (chosen) load(chosen);
-                }}
-                options={[
-                  { value: "none", label: "None" },
-                  ...READY_RECKONER.rows.map((row) => ({ value: row.id, label: row.label })),
-                ]}
-              />
-              <p id="ready-reckoner-hint" className={`mt-2 ${HINT}`}>
-                A row of HMRC&apos;s published ready reckoner, compared in the results.
-              </p>
-            </div>
-          </div>
-        </Card>
-      ) : null}
-
-      <div className="grid gap-4 md:grid-cols-3">
-        {BANDS.map((band) => (
-          <RateCard
-            key={band.key}
-            band={band}
-            value={form.percents[band.key]}
-            onChange={(value) => set({ percents: { ...form.percents, [band.key]: value } })}
-            error={errorFor(band.key)}
-          />
-        ))}
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card as="div" variant="inset" className="md:col-span-2">
-          <CardTitle id="badr-title" tip={BADR_NOTE}>
-            Business Asset Disposal Relief
-          </CardTitle>
-          <Toggle
-            label="Business Asset Disposal Relief"
-            fullWidth
-            options={[
-              { value: "keep", label: "Keep" },
-              { value: "withdraw", label: "Withdraw" },
-            ]}
-            value={form.badrForm.mode}
-            onChange={(mode) => setBadr({ mode })}
-          />
-          {form.badrForm.mode === "keep" ? (
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+    <form onSubmit={submit} noValidate>
+      <div className="divide-y divide-slate-200 [&>*:first-child]:pt-0">
+        {showPresets ? (
+          <FormSection id="start-from-title" title="Start from">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <FieldLabel htmlFor="badr-rate">Rate</FieldLabel>
-                <PercentInput
-                  id="badr-rate"
-                  min={0}
-                  value={form.badrForm.rate}
-                  onChange={(rate) => setBadr({ rate })}
-                  invalid={Boolean(errorFor("badr_rate"))}
-                  describedBy={errorFor("badr_rate") ? "badr-rate-error" : undefined}
-                />
-              </div>
-              <div>
-                <FieldLabel htmlFor="badr-limit">Lifetime limit</FieldLabel>
+                <FieldLabel htmlFor="preset">Preset</FieldLabel>
                 <Select
-                  id="badr-limit"
-                  value={String(form.badrForm.limit)}
-                  onChange={(value) => setBadr({ limit: Number(value) })}
-                  options={BADR_LIMITS.map((limit) => ({ value: String(limit), label: badrLimitLabel(limit) }))}
+                  id="preset"
+                  describedBy="preset-hint"
+                  value={presetFor(check)}
+                  onChange={(id) => {
+                    const chosen = PRESETS.find((candidate) => candidate.id === id);
+                    if (chosen) load(chosen);
+                  }}
+                  options={[
+                    ...PRESETS.map((candidate) => ({ value: candidate.id, label: candidate.label })),
+                    { value: "custom", label: "Custom" },
+                  ]}
                 />
+                <p id="preset-hint" className={`mt-1.5 ${HINT}`}>Fills in the rates and the relief below.</p>
+              </div>
+              <div>
+                <FieldLabel htmlFor="ready-reckoner">HMRC ready-reckoner row</FieldLabel>
+                <Select
+                  id="ready-reckoner"
+                  describedBy="ready-reckoner-hint"
+                  value={readyReckonerRow}
+                  onChange={(id) => {
+                    const chosen = READY_RECKONER.rows.find((row) => row.id === id);
+                    if (chosen) load(chosen);
+                  }}
+                  options={[
+                    { value: "none", label: "None" },
+                    ...READY_RECKONER.rows.map((row) => ({ value: row.id, label: row.label })),
+                  ]}
+                />
+                <p id="ready-reckoner-hint" className={`mt-1.5 ${HINT}`}>
+                  A row of HMRC&apos;s published ready reckoner, compared in the results.
+                </p>
               </div>
             </div>
-          ) : null}
-          {errorFor("badr_rate") ? <FieldError id="badr-rate-error">{errorFor("badr_rate")}</FieldError> : null}
-          <p className={`mt-2 ${HINT}`}>
-            Current law {describeBadr(BADR_CURRENT_LAW).toLowerCase()}
-            {form.badrForm.mode === "withdraw" ? "; withdrawn, qualifying gains take the main rates." : "."}
-          </p>
-          {check.reliefAboveBasic ? (
-            <p className="mt-2 text-xs leading-5 text-amber-800">
-              The relief&apos;s {formatPct(check.badr.rate * 100, 0)} is above the basic rate of{" "}
-              {formatPct(check.rates.basic_rate * 100, 0)}. In law the relief is claimed, and a taxpayer
-              whose qualifying gains fall in the basic rate band would not claim it; the model charges
-              it anyway, so it overstates the tax on those gains.
-            </p>
-          ) : null}
-        </Card>
+          </FormSection>
+        ) : null}
 
-        <Card as="div" variant="inset">
-          <CardTitle htmlFor="elasticity" tip={ELASTICITY_NOTE}>
-            Behavioural response
-          </CardTitle>
-          <Select
-            id="elasticity"
-            value={String(form.elasticity)}
-            onChange={(value) => set({ elasticity: Number(value) })}
-            describedBy="elasticity-detail"
-            options={ELASTICITIES.map((option) => ({
-              value: String(option.e_retention),
-              label: splitLabel(option.label).name,
-            }))}
-          />
-          <p id="elasticity-detail" className={`mt-2 ${HINT}`}>
-            {elasticity ? splitLabel(elasticity.label).detail : ""}
-          </p>
-        </Card>
+        <FormSection id="rates-title" title="CGT rates">
+          <div
+            aria-hidden="true"
+            className={`${RATE_GRID} hidden pb-2 text-xs font-semibold text-slate-500 sm:grid`}
+          >
+            <span>Band</span>
+            <span>Reform</span>
+            <span>Current law</span>
+            <span>Change</span>
+          </div>
+          {BANDS.map((band) => (
+            <RateRow
+              key={band.key}
+              band={band}
+              value={form.percents[band.key]}
+              onChange={(value) => set({ percents: { ...form.percents, [band.key]: value } })}
+              error={errorFor(band.key)}
+            />
+          ))}
+        </FormSection>
+
+        <div className="grid md:grid-cols-2 md:gap-8">
+          <FormSection id="badr-title" title="Business Asset Disposal Relief" tip={BADR_NOTE}>
+            <Toggle
+              label="Business Asset Disposal Relief"
+              fullWidth
+              options={[
+                { value: "keep", label: "Keep" },
+                { value: "withdraw", label: "Withdraw" },
+              ]}
+              value={form.badrForm.mode}
+              onChange={(mode) => setBadr({ mode })}
+            />
+            {form.badrForm.mode === "keep" ? (
+              <div className="mt-4 grid grid-cols-2 gap-4">
+                <div>
+                  <FieldLabel htmlFor="badr-rate">Rate</FieldLabel>
+                  <PercentInput
+                    id="badr-rate"
+                    min={0}
+                    value={form.badrForm.rate}
+                    onChange={(rate) => setBadr({ rate })}
+                    invalid={Boolean(errorFor("badr_rate"))}
+                    describedBy={errorFor("badr_rate") ? "badr-rate-error" : undefined}
+                  />
+                </div>
+                <div>
+                  <FieldLabel htmlFor="badr-limit">Lifetime limit</FieldLabel>
+                  <Select
+                    id="badr-limit"
+                    value={String(form.badrForm.limit)}
+                    onChange={(value) => setBadr({ limit: Number(value) })}
+                    options={BADR_LIMITS.map((limit) => ({ value: String(limit), label: badrLimitLabel(limit) }))}
+                  />
+                </div>
+              </div>
+            ) : null}
+            {errorFor("badr_rate") ? <FieldError id="badr-rate-error">{errorFor("badr_rate")}</FieldError> : null}
+            <p className={`mt-2 ${HINT}`}>
+              Current law {describeBadr(BADR_CURRENT_LAW).toLowerCase()}
+              {form.badrForm.mode === "withdraw" ? "; withdrawn, qualifying gains take the main rates." : "."}
+            </p>
+            {check.reliefAboveBasic ? (
+              <p className="mt-2 text-xs leading-5 text-amber-800">
+                The relief&apos;s {formatPct(check.badr.rate * 100, 0)} is above the basic rate of{" "}
+                {formatPct(check.rates.basic_rate * 100, 0)}. In law the relief is claimed, and a taxpayer
+                whose qualifying gains fall in the basic rate band would not claim it; the model charges
+                it anyway, so it overstates the tax on those gains.
+              </p>
+            ) : null}
+          </FormSection>
+
+          <FormSection
+            id="elasticity-title"
+            title="Behavioural response"
+            tip={ELASTICITY_NOTE}
+            className="border-t border-slate-200 md:border-t-0"
+          >
+            <label htmlFor="elasticity" className="sr-only">
+              Behavioural response
+            </label>
+            <Select
+              id="elasticity"
+              value={String(form.elasticity)}
+              onChange={(value) => set({ elasticity: Number(value) })}
+              describedBy="elasticity-detail"
+              options={ELASTICITIES.map((option) => ({
+                value: String(option.e_retention),
+                label: splitLabel(option.label).name,
+              }))}
+            />
+            <p id="elasticity-detail" className={`mt-2 ${HINT}`}>
+              {elasticity ? splitLabel(elasticity.label).detail : ""}
+            </p>
+          </FormSection>
+        </div>
       </div>
 
-      <div className="flex flex-col gap-4 border-t border-slate-200 pt-5 sm:flex-row sm:items-center sm:justify-between">
+      <div className="-mx-5 -mb-5 mt-1 flex flex-col gap-4 rounded-b-xl border-t border-slate-200 bg-slate-50 px-5 py-4 sm:-mx-6 sm:-mb-6 sm:flex-row sm:px-6 sm:items-center sm:justify-between">
         <p className="flex items-start gap-2 text-sm leading-6 text-slate-600" role="status">
           <span aria-hidden="true" className={`mt-2 inline-block h-2 w-2 shrink-0 rounded-full ${DOTS[status.tone]}`} />
           <span>
