@@ -179,13 +179,13 @@ function StaticEqualisation({ block, dataset }) {
         title="Before behaviour: JRF's estimate"
         description={
           <>
-            {`The static change in CGT from equalising with income tax rates, by year in 2026/27 prices: ${PE}'s own figure on `}
-            <DatasetName label={dataset.shortLabel} />
-            {`, ${PE}'s uplift applied to the `}
+            {"Static change from equalising, by year, in 2026/27 prices. "}
+            <SourceLink href={source.url}>JRF</SourceLink>
+            {" scales the "}
             <SourceLink href={OBR_EFO}>OBR&apos;s</SourceLink>
-            {" receipts, and "}
-            <SourceLink href={source.url}>JRF&apos;s</SourceLink>
-            {` (2026) published figures. Compare the light dots with the diamonds: JRF also scales the OBR's receipts, so that pair shares a method; the dark dots are ${PE}'s own liabilities.`}
+            {` receipts, as the light dots do; the dark dots are ${PE}'s own liabilities on `}
+            <DatasetName label={dataset.shortLabel} />
+            {"."}
           </>
         }
       />
@@ -325,7 +325,6 @@ function CentaxPackage({ rows, onNavigate }) {
 
 function ReadyReckoner({ block, dataset, elasticities, rr, onNavigate }) {
   const firstYear = block.hmrc_years[0];
-  const agree = rr.rows.length - reckonerSplit(rr).split.length;
   const [pairKey, setPairKey] = useState(rr.pairs[0]?.key);
   return (
     <section className="section-card">
@@ -350,9 +349,7 @@ function ReadyReckoner({ block, dataset, elasticities, rr, onNavigate }) {
         description={
           <>
             <SourceLink href={block.url}>HMRC&apos;s</SourceLink>
-            {` (June 2025) receipts effect of small CGT rate changes after behavioural responses, next to ${PE}'s change on `}
-            <DatasetName label={dataset.shortLabel} />
-            {` at the central and official elasticities. Each row sets HMRC's receipts in the chosen year against ${PE}'s liabilities a year earlier. Bars left of £0 lose revenue; the two elasticities give the same sign on ${agree} of ${rr.rows.length} rows.`}
+            {` (June 2025) receipts from small rate changes, beside ${PE}'s change a year earlier at the central and official elasticities. Bars left of £0 lose revenue.`}
           </>
         }
       />

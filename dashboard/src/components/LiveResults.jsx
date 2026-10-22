@@ -5,7 +5,6 @@ import { useState } from "react";
 import {
   BASELINE_SCHEDULE_RATES,
   badrLimitLabel,
-  describeBadr,
   getBudget,
   getEntrants,
   getFiveYearTotal,
@@ -35,10 +34,8 @@ import GroupImpactChart, { GroupDefinitions } from "./charts/GroupImpactChart";
 import { Card, MetricCard, Notes, SourceLink, TabLink } from "./controls";
 import SectionHeading from "./SectionHeading";
 
-const BADR_GUIDANCE = "https://www.gov.uk/business-asset-disposal-relief";
 const EXEMPT_AMOUNT = "https://www.gov.uk/capital-gains-tax/allowances";
 
-const pct = (fraction) => formatPct(fraction * 100, 0);
 const elasticityName = (e) => elasticityOption(e)?.label ?? `retention elasticity ${e}`;
 
 // Where a live run stands: a cache lookup for a shared link, a computation,
@@ -241,8 +238,8 @@ function ReadyReckonerPanel({ row, result, onNavigate }) {
 // equalisation's, to the precision the cards show.
 function difference(value, reference) {
   const gap = value - reference;
-  if (Math.abs(gap) < 0.05) return "the same as";
-  return `${formatSignedBn(Math.abs(gap), 1)} ${gap > 0 ? "more than" : "less than"}`;
+  if (Math.abs(gap) < 0.05) return "the same";
+  return `${formatSignedBn(Math.abs(gap), 1)} ${gap > 0 ? "more" : "less"}`;
 }
 
 // The Reform tab's results for a schedule run live. Equalisation's own
@@ -268,7 +265,6 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
   };
   const likeForLike = sameElasticity(resultE, equalisation.elasticity);
   const bn = (value) => formatSignedBn(value, 1);
-  const reform = result.metadata.reform;
 
   return (
     <>
@@ -277,23 +273,10 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
           title="Headline results"
           description={
             <>
-              {`In ${firstYear}, the reform's first year: ${pct(reform.basic_rate)} / ${pct(reform.higher_rate)} / ${pct(reform.additional_rate)}, Business Asset Disposal `}
-              <SourceLink href={BADR_GUIDANCE}>Relief</SourceLink>
-              {` ${describeBadr(reformBadr).toLowerCase()}, on ${result.metadata.dataset_short_label}, ${elasticityName(resultE)}. Distributional figures cover all households. `}
-              {likeForLike ? (
-                <>
-                  At the same elasticity, this schedule&apos;s change in the government balance is{" "}
-                  {difference(firstRow.gov_balance_change_bn, equalisation.revenue)} equalisation&apos;s in{" "}
-                  {firstYear}, and {difference(result.five_year_total_bn, equalisation.fiveYear)} it over
-                  the five years.{" "}
-                </>
-              ) : (
-                <>
-                  Equalisation&apos;s precomputed results are at{" "}
-                  {elasticityName(equalisation.elasticity)}, and this schedule ran at another
-                  elasticity, so the two are not like for like.{" "}
-                </>
-              )}
+              {`${firstYear}, on ${result.metadata.dataset_short_label}, ${elasticityName(resultE)}. `}
+              {likeForLike
+                ? `Against equalisation at the same response: ${difference(firstRow.gov_balance_change_bn, equalisation.revenue)} in ${firstYear} and ${difference(result.five_year_total_bn, equalisation.fiveYear)} over five years. `
+                : "Equalisation's results use another response, so they are not compared here. "}
               <TabLink onNavigate={onShowEqualisation}>Show</TabLink> equalisation&apos;s results.
             </>
           }
