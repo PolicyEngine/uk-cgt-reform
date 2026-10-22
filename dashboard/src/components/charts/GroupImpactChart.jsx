@@ -10,12 +10,14 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { getNiceTicks, getTickDomain } from "../../lib/chartUtils";
 import { colors } from "../../lib/colors";
 import { formatSignedCurrency, formatSignedPct } from "../../lib/formatters";
 import ChartLogo from "../ChartLogo";
 import { LabelledSelect, YearSelect } from "../controls";
 
 const AXIS_STYLE = { fontSize: 12, fill: colors.gray[500] };
+
 
 // Change in household net income by income quantile, household type or
 // region, for a chosen year. `groupsByYear` is the pipeline's
@@ -31,12 +33,17 @@ export default function GroupImpactChart({ groupsByYear, initialYear }) {
   const groups = groupsByYear[groupYear] ?? groupsByYear[years[0]];
   const isRelative = groupMetric === "relative";
   const metricKey = isRelative ? "relative_change_pct" : "avg_change_gbp";
-  // Regions are ordered by impact (largest loss first); the quantile and
-  // household-type groupings keep their natural order.
+  // Regions and household types are ordered by impact (largest loss first);
+  // the quantile groupings keep their income order.
   const chartData =
-    grouping === "region"
-      ? [...groups.region].sort((a, b) => a[metricKey] - b[metricKey])
+    grouping === "region" || grouping === "household_type"
+      ? [...groups[grouping]].sort((a, b) => a[metricKey] - b[metricKey])
       : groups[grouping];
+  // The value axis always includes £0, so bar lengths read as true sizes,
+  // on round ticks.
+  const values = chartData.map((d) => d[metricKey]);
+  const ticks = getNiceTicks([Math.min(0, ...values), Math.max(0, ...values)], 5);
+  const domain = getTickDomain(ticks);
   const metricName = isRelative ? "Relative net income change" : "Average change per household";
   const formatMetric = (v) => (isRelative ? formatSignedPct(v, 1) : formatSignedCurrency(v));
 
@@ -77,6 +84,8 @@ export default function GroupImpactChart({ groupsByYear, initialYear }) {
               <>
                 <XAxis
                   type="number"
+                  domain={domain}
+                  ticks={ticks}
                   tick={AXIS_STYLE}
                   tickFormatter={formatMetric}
                   tickLine={false}
@@ -108,6 +117,8 @@ export default function GroupImpactChart({ groupsByYear, initialYear }) {
                   }
                 />
                 <YAxis
+                  domain={domain}
+                  ticks={ticks}
                   tick={AXIS_STYLE}
                   tickFormatter={formatMetric}
                   tickLine={false}

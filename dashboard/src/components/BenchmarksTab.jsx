@@ -34,9 +34,6 @@ const noStop = (text) => text.replace(/\.$/, "");
 // "Higher rate +10pp (18% / 34% / 34%)" → "higher rate +10pp".
 const shortRow = (label) => lowerFirst(label.replace(/\s*\(.*\)\s*$/, ""));
 const isNum = (v) => v !== null && v !== undefined && Number.isFinite(Number(v));
-const listWords = (items) =>
-  items.length < 2 ? items.join("") : `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
-const compare = (a, b) => (Math.abs(a - b) < 0.05 * Math.abs(b) ? "in line with" : a > b ? "above" : "below");
 
 function Takeaway({ lead, children }) {
   return (
@@ -50,19 +47,13 @@ function Takeaway({ lead, children }) {
 
 function jrfGlance(block) {
   const byYear = Object.fromEntries(block.by_year.map((row) => [row.year, row]));
-  const pairs = block.external
-    .filter((row) => isNum(byYear[row.year]?.uplift_on_obr_receipts_real_bn))
-    .map((row) => ({ year: row.year, jrf: row.value, pe: byYear[row.year].uplift_on_obr_receipts_real_bn }));
-  if (!pairs.length) return null;
-  const sides = [...new Set(pairs.map((p) => compare(p.pe, p.jrf)))];
-  return (
-    <>
-      applied to the OBR&apos;s receipts, {PE}&apos;s static uplift gives{" "}
-      {listWords(pairs.map((p) => `${formatBn(p.pe, 1)} in ${p.year}`))}
-      {sides.length === 1 ? `, ${sides[0]} ` : ", against "}
-      JRF&apos;s estimates of about {listWords(pairs.map((p) => formatBn(p.jrf, 0)))}.
-    </>
-  );
+  const first = block.external.find((row) => isNum(byYear[row.year]?.uplift_on_obr_receipts_real_bn));
+  if (!first) return null;
+  return {
+    title: "Before behaviour, against JRF",
+    value: `${formatBn(byYear[first.year].uplift_on_obr_receipts_real_bn, 1)} vs about ${formatBn(first.value, 0)}`,
+    detail: `${first.year}, 2026/27 prices: ${PE}'s uplift applied to the OBR's receipts, against JRF's estimate.`,
+  };
 }
 
 function packageRange(rows) {
@@ -95,46 +86,40 @@ function AtAGlance({ benchmarks, rr, elasticities }) {
   const centax = benchmarks.centax_2019_20_rules;
   const range = packageRange(buildPackageRows(benchmarks.centax_package_context));
   const { widest, pair } = reckonerSplit(rr);
+  const v = widest?.values[pair.key];
+  const sign = (x) => (x < 0 ? "loss" : "gain");
   const items = [
-    { lead: "Before behaviour:", body: jrfGlance(benchmarks.static_equalisation) },
+    jrfGlance(benchmarks.static_equalisation),
     {
-      lead: "At 2019/20 rules:",
-      body: `equalising raises CGT by ${formatUplift(centax.national.uplift_pct)} on ${PE}'s data, against ${formatUplift(centax.external.value)} in CenTax's estimate.`,
+      title: "At 2019/20 rules, against CenTax",
+      value: `${formatUplift(centax.national.uplift_pct)} vs ${formatUplift(centax.external.value)}`,
+      detail: `How much equalising raises CGT: ${PE}'s data against CenTax's estimate.`,
     },
     range && {
-      lead: "CenTax's package:",
-      body: `its estimates after behaviour (${formatBn(range[0], 1)} to ${formatBn(range[1], 1)}) cost a wider reform of the CGT base, so they are context rather than like-for-like.`,
+      title: "CenTax's wider package",
+      value: `${formatBn(range[0], 1)}–${formatBn(range[1], 1)}`,
+      detail: "After behaviour, for a wider reform of the CGT base: context, not like-for-like.",
     },
     widest && {
-      lead: "Small rate changes:",
-      body: (() => {
-        const v = widest.values[pair.key];
-        const sign = (x) => (x < 0 ? "a loss" : "a gain");
-        const official = `${PE} at the official elasticity (${elasticities.official.e_retention})`;
-        const central = `the central one (${elasticities.central.e_retention.toFixed(1)})`;
-        const first =
-          Math.sign(v.hmrc) === Math.sign(v.official)
-            ? `HMRC and ${official} show ${sign(v.official)}`
-            : `HMRC shows ${sign(v.hmrc)} and ${official} ${sign(v.official)}`;
-        return `for the ${shortRow(widest.label)} row (${pair.hmrcYear} receipts), ${first}, while ${central} shows ${sign(v.central)}: the sign depends on the elasticity.`;
-      })(),
+      title: "Small rate changes",
+      value: `${sign(v.central)} at ${elasticities.central.e_retention.toFixed(1)}, ${sign(v.official)} at ${elasticities.official.e_retention}`,
+      detail: `${shortRow(widest.label).replace(/^./, (c) => c.toUpperCase())} (${pair.hmrcYear} receipts): the sign depends on how strongly people respond. HMRC shows a ${sign(v.hmrc)}.`,
     },
-  ].filter((item) => item && item.body);
+  ].filter(Boolean);
   return (
     <section className="section-card" aria-labelledby="benchmarks-glance">
       <h2 id="benchmarks-glance" className="text-xl font-semibold tracking-tight text-slate-900">
         At a glance
       </h2>
-      <ul className="mt-3 space-y-2 text-sm leading-6 text-slate-700">
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
         {items.map((item) => (
-          <li key={item.lead} className="flex gap-2">
-            <span aria-hidden="true" className="mt-2.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[color:var(--pe-color-primary-600)]" />
-            <span>
-              <strong className="font-semibold text-slate-900">{item.lead}</strong> {item.body}
-            </span>
-          </li>
+          <div key={item.title} className="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+            <p className="text-sm font-semibold text-slate-700">{item.title}</p>
+            <p className="mt-1 text-2xl font-bold tabular-nums text-slate-900 first-letter:uppercase">{item.value}</p>
+            <p className="mt-1 text-xs leading-5 text-slate-500">{item.detail}</p>
+          </div>
         ))}
-      </ul>
+      </div>
     </section>
   );
 }

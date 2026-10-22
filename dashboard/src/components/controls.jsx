@@ -150,8 +150,9 @@ export function YearSelect({ years, value, onChange }) {
 
 export function MetricCard({ label, value, note, tip }) {
   return (
-    <Card as="div" variant="inset">
-      <div className="flex items-start gap-2">
+    <Card as="div" variant="inset" className="flex flex-col">
+      {/* A two-line slot for the label, so values line up across a row. */}
+      <div className="flex items-start gap-2 md:min-h-[2.5rem]">
         <p className="text-sm font-semibold leading-snug text-slate-700">{label}</p>
         {tip ? <InfoTip label={`About ${label.toLowerCase()}`}>{tip}</InfoTip> : null}
       </div>

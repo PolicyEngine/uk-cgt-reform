@@ -243,15 +243,15 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
             note={Number(resultE) === 0 ? "With no behavioural response." : "After the behavioural response."}
           />
           <MetricCard
-            label="Average change in net income, top fifth of households"
+            label="Top fifth of households: average change in net income"
             value={formatSignedCurrency(topQuintile.avg_change_gbp)}
             note={`${formatSignedPct(topQuintile.relative_change_pct)} of net income; ${formatPct(100 * topShare, 0)} of the total fall in household income.`}
           />
           {topQuintile.share_affected_pct !== undefined ? (
             <MetricCard
-              label="Top-fifth households with lower net income"
+              label="Top fifth of households: share with lower net income"
               value={formatPct(topQuintile.share_affected_pct, 1)}
-              note="Households whose net income falls under the reform."
+              note="Households in the top fifth whose net income falls."
             />
           ) : null}
         </div>
