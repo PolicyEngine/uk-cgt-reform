@@ -15,6 +15,7 @@ import results from "../public/data/cgt_equalisation_results.json";
 // writes one results file, for the one registered dataset.
 
 const LINK = "underline decoration-1 underline-offset-2 hover:opacity-80";
+const BOLD = "font-semibold text-slate-900";
 
 const TAB_OPTIONS = [
   { id: "reform", label: "Reform" },
@@ -89,11 +90,13 @@ function Dashboard() {
       <main className="relative z-[1] mx-auto max-w-6xl px-6 py-10 md:px-8 md:py-12">
         <div className="animate-[fadeIn_0.4s_ease-out]">
           <p className="text-lg leading-8 text-slate-800">
-            This dashboard estimates how changing UK capital gains tax rates would affect
-            government revenue and household incomes. Its headline reform, taxing gains at income
-            tax rates and withdrawing Business Asset Disposal Relief, has been{" "}
+            This dashboard estimates how changing UK capital gains tax rates would affect{" "}
+            <strong className={BOLD}>government revenue</strong> and{" "}
+            <strong className={BOLD}>household incomes</strong>. Its headline reform,{" "}
+            <strong className={BOLD}>taxing gains at income tax rates</strong> and withdrawing
+            Business Asset Disposal Relief, has been{" "}
             <a href="https://ifs.org.uk/sites/default/files/2024-10/Captial-gains-tax-reform.pdf" target="_blank" rel="noopener noreferrer" className={LINK}>debated</a>{" "}
-            in the UK; a custom option scores any other set of rates.
+            in the UK; a <strong className={BOLD}>custom option</strong> scores any other set of rates.
           </p>
         </div>
 
