@@ -30,7 +30,6 @@ export function buildReckonerRows(block, centralId = "centax_central", officialI
   const pairs = block.lag.map((lag, i) => ({
     key: String(i),
     label: lag.hmrc_year,
-    caption: `HMRC's receipts in ${lag.hmrc_year} against PolicyEngine's liabilities in ${lag.model_year}.`,
     hmrcYear: lag.hmrc_year,
     modelYear: lag.model_year,
   }));
@@ -116,7 +115,6 @@ export default function ReadyReckonerChart({ pairs, rows, labels }) {
           />
         </div>
       ) : null}
-      <p className="mb-4 text-xs leading-5 text-slate-500">{current.caption}</p>
       <RowAxis domain={domain} ticks={ticks} format={tick} margin={MARGIN} />
       <div role="list" aria-label={`Ready reckoner rows, ${current.label}`}>
         {rows.map((row) => {

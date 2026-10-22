@@ -288,7 +288,7 @@ function ReadyReckoner({ block, dataset, elasticities, rr, onNavigate }) {
     <section className="section-card">
       <SectionHeading
         title="Small rate changes: HMRC's ready reckoner"
-        description={`HMRC's (June 2025) receipts effect of small CGT rate changes after behavioural responses, next to ${PE}'s change on ${dataset.shortLabel} at the central and official elasticities.`}
+        description={`HMRC's (June 2025) receipts effect of small CGT rate changes after behavioural responses, next to ${PE}'s change on ${dataset.shortLabel} at the central and official elasticities. Each row sets HMRC's receipts in the chosen year against ${PE}'s liabilities a year earlier. Bars left of £0 lose revenue; the two elasticities give the same sign on ${agree} of ${rr.rows.length} rows.`}
       />
       <ReadyReckonerChart
         pairs={rr.pairs}
@@ -299,9 +299,6 @@ function ReadyReckoner({ block, dataset, elasticities, rr, onNavigate }) {
           official: `${PE}, official (${elasticities.official.e_retention}; ${elasticities.official.badr_e_retention} relief)`,
         }}
       />
-      <Takeaway lead="Bars left of £0 lose revenue.">
-        {`The two elasticities give the same sign on ${agree} of ${rr.rows.length} rows; each bar's value is printed beside it, so the small rows read too.`}
-      </Takeaway>
       <Notes>
         <p>
           Source: <SourceLabel href={block.url} label={block.source} />, {block.locator}.
