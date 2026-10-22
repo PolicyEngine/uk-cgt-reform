@@ -16,6 +16,7 @@ import { colors } from "../../lib/colors";
 import { formatSignedBn } from "../../lib/formatters";
 import ChartLogo from "../ChartLogo";
 import ChartLegend from "./ChartLegend";
+import { TOOLTIP_PROPS, TooltipCard } from "./ChartTooltip";
 
 const AXIS_STYLE = { fontSize: 12, fill: colors.gray[500] };
 const fmt = (v) => formatSignedBn(v, 1);
@@ -110,23 +111,15 @@ function YieldTooltip({ active, payload, label, steps }) {
   const row = payload[0].payload;
   const caseLabel = CASES.find((c) => c.key === label)?.label.join(" ") ?? label;
   return (
-    <div className="w-[230px] rounded-md border border-slate-200 bg-white px-3 py-2 text-xs shadow-sm">
-      <p className="mb-1 font-semibold text-slate-900">{caseLabel}</p>
-      {steps.map((step, i) => (
-        <p key={step.step} className="flex items-start gap-2 py-0.5 text-slate-700">
-          <span
-            className="mt-0.5 inline-block h-2.5 w-2.5 shrink-0 rounded-sm"
-            style={{ background: styleFor(step, i).fill }}
-          />
-          <span className="flex-1 leading-snug">{step.label}</span>
-          <span className="whitespace-nowrap tabular-nums font-medium">{fmt(row[step.step])}</span>
-        </p>
-      ))}
-      <p className="mt-1 flex justify-between border-t border-slate-100 pt-1 font-semibold text-slate-900">
-        <span>Total</span>
-        <span className="tabular-nums">{fmt(row.total)}</span>
-      </p>
-    </div>
+    <TooltipCard
+      title={caseLabel}
+      rows={steps.map((step, i) => ({
+        label: step.label,
+        value: fmt(row[step.step]),
+        color: styleFor(step, i).fill,
+      }))}
+      footer={{ label: "Total", value: fmt(row.total) }}
+    />
   );
 }
 
@@ -190,10 +183,7 @@ export default function YieldChart({ steps }) {
               axisLine={false}
             />
             <ReferenceLine x={0} stroke={colors.gray[400]} />
-            <Tooltip
-              cursor={{ fill: colors.gray[100] }}
-              content={<YieldTooltip steps={steps} />}
-            />
+            <Tooltip {...TOOLTIP_PROPS} content={<YieldTooltip steps={steps} />} />
             {steps.map((step, i) => {
               const style = styleFor(step, i);
               const isLast = i === steps.length - 1;

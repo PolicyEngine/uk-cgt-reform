@@ -8,6 +8,7 @@ import {
   LabelList,
   ReferenceLine,
   ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
@@ -15,13 +16,20 @@ import { colors } from "../../lib/colors";
 import { formatPct } from "../../lib/formatters";
 import ChartLogo from "../ChartLogo";
 import ChartLegend from "./ChartLegend";
+import { TOOLTIP_PROPS, TooltipCard } from "./ChartTooltip";
 
 const AXIS_STYLE = { fontSize: 12, fill: colors.gray[500] };
 const MINUS = "−";
 
-// Every row shares one 0–50% scale, so bars compare across rows.
-const DOMAIN = [0, 0.5];
-const TICKS = [0, 0.1, 0.2, 0.3, 0.4, 0.5];
+// Every row shares one scale from 0, so bars compare across rows: at least
+// 0–50%, extended in 10-point steps to hold the largest rate (custom
+// schedules can reach 75%), with a tick every 10 points.
+export function rateScale(rows) {
+  const rates = rows.flatMap((r) => [r.baseline, r.reform]).filter(isRate).map(Number);
+  const top = Math.max(0.5, Math.ceil(Math.max(0, ...rates) * 10 - 1e-9) / 10);
+  const ticks = Array.from({ length: Math.round(top * 10) + 1 }, (_, i) => i / 10);
+  return { domain: [0, top], ticks };
+}
 // Identical horizontal margins on every row chart and on the axis chart keep
 // the gridlines and bar origins aligned down the column. The right margin
 // holds the value label past a bar that ends near 50%.
@@ -88,6 +96,7 @@ function BarShape({ x, y, width, height, fill, payload }) {
           y={y + height / 2}
           textAnchor="middle"
           dominantBaseline="central"
+          pointerEvents="none"
           fontSize={11.5}
           fontWeight={600}
           fill={colors.gray[700]}
@@ -99,6 +108,7 @@ function BarShape({ x, y, width, height, fill, payload }) {
             x={x + w + 8}
             y={y + height / 2}
             dominantBaseline="central"
+            pointerEvents="none"
             fontSize={12}
             fill={colors.gray[600]}
           >
@@ -145,7 +155,20 @@ function BarLabel({ x, y, width, height, index, data }) {
   );
 }
 
-function RowChart({ row }) {
+// The hovered bar: its series and rate (with any note), under the row label.
+function RowTooltip({ active, payload, title }) {
+  if (!active || !payload?.length) return null;
+  const d = payload[0].payload;
+  const value = d.withdrawn ? "Withdrawn" : d.hasValue ? pct(d.value) : "None";
+  return (
+    <TooltipCard
+      title={title}
+      rows={[{ label: SERIES[d.series].label, value: d.note ? `${value} · ${d.note}` : value, color: SERIES[d.series].fill }]}
+    />
+  );
+}
+
+function RowChart({ row, domain, ticks }) {
   const data = ["baseline", "reform"].map((series) => {
     const raw = row[series];
     const hasValue = isRate(raw);
@@ -163,10 +186,11 @@ function RowChart({ row }) {
     <div style={{ height: ROW_CHART_HEIGHT }} className="w-full">
       <ResponsiveContainer>
         <BarChart data={data} layout="vertical" margin={MARGIN} barCategoryGap={3}>
-          <XAxis type="number" domain={DOMAIN} ticks={TICKS} hide />
+          <XAxis type="number" domain={domain} ticks={ticks} hide />
           <YAxis type="category" dataKey="series" hide />
           <CartesianGrid strokeDasharray="3 3" stroke={colors.border.light} horizontal={false} />
           <ReferenceLine x={0} stroke={colors.gray[400]} />
+          <Tooltip {...TOOLTIP_PROPS} content={<RowTooltip title={row.label} />} />
           <Bar dataKey="value" barSize={BAR_SIZE} shape={<BarShape />} isAnimationActive={false}>
             {data.map((d) => (
               <Cell key={d.series} fill={SERIES[d.series].fill} />
@@ -179,15 +203,15 @@ function RowChart({ row }) {
   );
 }
 
-function AxisChart() {
+function AxisChart({ domain, ticks }) {
   return (
     <div className="h-[26px] w-full">
       <ResponsiveContainer>
         <BarChart data={[{ v: 0 }]} layout="vertical" margin={{ ...MARGIN, top: 0, bottom: 0 }}>
           <XAxis
             type="number"
-            domain={DOMAIN}
-            ticks={TICKS}
+            domain={domain}
+            ticks={ticks}
             tick={AXIS_STYLE}
             tickFormatter={pct}
             tickLine={false}
@@ -205,15 +229,16 @@ function AxisChart() {
 }
 
 // Current law against the reform, one item per row: a grey and a teal bar on
-// a shared 0–50% scale, the value past each bar (with any short note), and
+// a shared scale from 0 (at least 0–50%), the value past each bar (with any short note), and
 // the change in points.
 // `rows`: [{ key, label, baseline, reform, baselineNote?, reformNote? }] with
 // rates as fractions; a null reform value marks a withdrawn item.
 export default function RateChangeChart({ rows }) {
+  const { domain, ticks } = rateScale(rows);
   return (
     <>
       <div aria-hidden="true">
-        <AxisChart />
+        <AxisChart domain={domain} ticks={ticks} />
       </div>
       <div role="list" aria-label="Rates under current law and the reform">
         {rows.map((row) => {
@@ -232,7 +257,7 @@ export default function RateChangeChart({ rows }) {
                 <ChangeChip baseline={row.baseline} reform={row.reform} />
               </div>
               <div aria-hidden="true">
-                <RowChart row={row} />
+                <RowChart row={row} domain={domain} ticks={ticks} />
               </div>
             </div>
           );

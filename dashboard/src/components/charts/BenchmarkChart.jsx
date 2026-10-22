@@ -3,13 +3,17 @@
 import { colors } from "../../lib/colors";
 import { formatBn, formatCount, formatPct } from "../../lib/formatters";
 import ChartLogo from "../ChartLogo";
+import ChartLegend from "./ChartLegend";
+import { HoverTip } from "./ChartTooltip";
 
-// The two estimates compared on each row, drawn as dots on one line: the
-// model filled teal and HMRC's latest (provisional) year a smaller grey dot,
-// so overlapping dots stay distinguishable.
+// The two estimates compared on each row, drawn as a dumbbell on one line,
+// styled as RegionalComparisonChart's: the model a teal dot, HMRC's latest
+// (provisional) year a grey dot drawn under it, so teal shows when they
+// meet, joined by a grey connector.
+const DOT_R = 5;
 const SERIES = [
-  { key: "model", color: colors.primary[600], text: colors.primary[700], ring: false, size: 14 },
-  { key: "hmrc2024", label: "HMRC, 2024-25 (provisional)", color: colors.gray[600], text: colors.gray[700], ring: false, size: 10 },
+  { key: "model", color: colors.primary[600], text: colors.primary[700] },
+  { key: "hmrc2024", label: "HMRC, 2024-25 (provisional)", color: colors.gray[400], text: colors.gray[600] },
 ];
 
 // How each unit's values read. Values arrive in their natural unit:
@@ -33,20 +37,27 @@ export function parseBenchmark(text) {
   return n;
 }
 
-function Dot({ series, left }) {
+// One dot on the strip, with its series and value shown on hover or focus.
+function Dot({ series, left, label }) {
   return (
-    <span
-      aria-hidden="true"
-      className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
-      style={{
-        left: `${left}%`,
-        width: series.size,
-        height: series.size,
-        background: series.ring ? "#FFFFFF" : series.color,
-        border: `2px solid ${series.color}`,
-        zIndex: series.key === "model" ? 2 : 1,
-      }}
-    />
+    <HoverTip
+      label={label}
+      align={left > 60 ? "end" : left < 40 ? "start" : "center"}
+      className={`absolute top-1/2 -translate-x-1/2 -translate-y-1/2 hover:z-20 focus:z-20 ${series.key === "model" ? "z-[2]" : "z-[1]"}`}
+      style={{ left: `${left}%` }}
+    >
+      <span
+        aria-hidden="true"
+        className="block rounded-full"
+        style={{
+          // An r=5 circle with a 1px white stroke, as in the regional chart.
+          width: 2 * DOT_R + 1,
+          height: 2 * DOT_R + 1,
+          background: series.color,
+          border: "1px solid #FFFFFF",
+        }}
+      />
+    </HoverTip>
   );
 }
 
@@ -75,6 +86,14 @@ function Row({ row, seriesLabels }) {
     .map((s) => `${seriesLabels[s.key]} ${format(row[s.key])}`)
     .join(", ");
   const gap = gapToLatest(row);
+  // Where the dots overlap, HMRC's sits under the teal one and cannot be
+  // hovered, so the teal dot's tooltip names both values.
+  const overlap =
+    Number.isFinite(row.model) && Number.isFinite(row.hmrc2024) && Math.abs(left(row.model) - left(row.hmrc2024)) < 3;
+  const dotLabel = (s) => {
+    const own = `${seriesLabels[s.key]}: ${format(row[s.key])}`;
+    return overlap && s.key === "model" ? `${own} · ${seriesLabels.hmrc2024}: ${format(row.hmrc2024)}` : own;
+  };
   return (
     <li className={`grid grid-cols-2 items-center gap-x-3 gap-y-1.5 border-t border-slate-100 py-3 ${GRID}`}>
       <span className="col-span-2 text-sm font-medium text-slate-800 md:col-span-1">{row.label}</span>
@@ -94,8 +113,28 @@ function Row({ row, seriesLabels }) {
       <div className="relative col-span-2 h-5 md:col-span-1" role="img" aria-label={`${row.label}: ${summary}`}>
         <span aria-hidden="true" className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-slate-200" />
         <span aria-hidden="true" className="absolute left-0 top-1/2 h-2 w-px -translate-y-1/2 bg-slate-300" />
-        {SERIES.map((s) =>
-          Number.isFinite(row[s.key]) ? <Dot key={s.key} series={s} left={left(row[s.key])} /> : null,
+        {Number.isFinite(row.model) && Number.isFinite(row.hmrc2024) ? (
+          <span
+            aria-hidden="true"
+            className="absolute top-1/2 -translate-y-1/2"
+            style={{
+              left: `${Math.min(left(row.model), left(row.hmrc2024))}%`,
+              width: `${Math.abs(left(row.model) - left(row.hmrc2024))}%`,
+              height: 2,
+              background: colors.gray[300],
+            }}
+          />
+        ) : null}
+        {/* HMRC under PolicyEngine, so the teal dot shows when they meet. */}
+        {[SERIES[1], SERIES[0]].map((s) =>
+          Number.isFinite(row[s.key]) ? (
+            <Dot
+              key={s.key}
+              series={s}
+              left={left(row[s.key])}
+              label={dotLabel(s)}
+            />
+          ) : null,
         )}
       </div>
     </li>
@@ -139,23 +178,7 @@ export default function BenchmarkChart({ rows, modelLabel }) {
           </ul>
         </section>
       ))}
-      <ul className="mt-3 flex flex-wrap justify-center gap-x-5 gap-y-1 text-xs text-slate-600">
-        {SERIES.map((s) => (
-          <li key={s.key} className="flex items-center gap-1.5">
-            <span
-              aria-hidden="true"
-              className="inline-block rounded-full"
-              style={{
-                width: 10,
-                height: 10,
-                background: s.ring ? "#FFFFFF" : s.color,
-                border: `2px solid ${s.color}`,
-              }}
-            />
-            {seriesLabels[s.key]}
-          </li>
-        ))}
-      </ul>
+      <ChartLegend items={SERIES.map((s) => ({ label: seriesLabels[s.key], fill: s.color, marker: "dot" }))} />
       <ChartLogo />
     </>
   );

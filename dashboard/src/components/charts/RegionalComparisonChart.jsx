@@ -1,12 +1,13 @@
 "use client";
 
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { getNiceTicks, getTickDomain } from "../../lib/chartUtils";
 import { colors } from "../../lib/colors";
 import { formatPct } from "../../lib/formatters";
 import ChartLogo from "../ChartLogo";
 import ChartLegend from "./ChartLegend";
 import { RowAxis } from "./benchmarkRows";
+import { TOOLTIP_PROPS, TooltipCard } from "./ChartTooltip";
 
 const MINUS = "−";
 // Room for a value label beside the outer dot on either side.
@@ -79,6 +80,7 @@ function Dumbbell({ x, y, width, height, payload, format }) {
           y={cy}
           textAnchor={d.side === "left" ? "end" : "start"}
           dominantBaseline="central"
+          pointerEvents="none"
           fontSize={11.5}
           fontWeight={d.s === PE ? 700 : 500}
           fill={d.s.text}
@@ -91,7 +93,7 @@ function Dumbbell({ x, y, width, height, payload, format }) {
   );
 }
 
-function RowChart({ d, domain, ticks, format }) {
+function RowChart({ d, domain, ticks, format, labels }) {
   return (
     <div style={{ height: ROW_CHART_HEIGHT }} className="w-full">
       <ResponsiveContainer>
@@ -99,6 +101,20 @@ function RowChart({ d, domain, ticks, format }) {
           <XAxis type="number" domain={domain} ticks={ticks} hide />
           <YAxis type="category" dataKey="region" hide />
           <CartesianGrid strokeDasharray="3 3" stroke={colors.border.light} horizontal={false} />
+          <Tooltip
+            {...TOOLTIP_PROPS}
+            content={({ active }) =>
+              active ? (
+                <TooltipCard
+                  title={d.region}
+                  rows={[
+                    { label: labels.pe, value: format(d.pe), color: PE.fill },
+                    { label: labels.centax, value: format(d.cx), color: CENTAX.fill },
+                  ]}
+                />
+              ) : null
+            }
+          />
           <Bar dataKey="range" barSize={12} shape={<Dumbbell format={format} />} isAnimationActive={false} />
         </BarChart>
       </ResponsiveContainer>
@@ -136,7 +152,7 @@ function Panel({ panel, rows, labels }) {
               {d.region}
             </p>
             <div aria-hidden="true" className="min-w-0 flex-1">
-              <RowChart d={d} domain={domain} ticks={ticks} format={panel.format} />
+              <RowChart d={d} domain={domain} ticks={ticks} format={panel.format} labels={labels} />
             </div>
           </div>
         ))}

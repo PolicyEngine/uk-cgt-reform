@@ -1,12 +1,13 @@
 "use client";
 
-import { Bar, BarChart, CartesianGrid, LabelList, ReferenceLine, ResponsiveContainer, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, LabelList, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { getNiceTicks, getTickDomain } from "../../lib/chartUtils";
 import { colors } from "../../lib/colors";
 import { formatBn } from "../../lib/formatters";
 import ChartLogo from "../ChartLogo";
 import ChartLegend from "./ChartLegend";
 import { EndLabel, RowAxis, SignedBar } from "./benchmarkRows";
+import { TOOLTIP_PROPS, TooltipCard } from "./ChartTooltip";
 
 const MARGIN = { top: 2, right: 112, bottom: 2, left: 14 };
 const BAR_SIZE = 16;
@@ -76,7 +77,7 @@ export function buildPackageRows(rows) {
   return built;
 }
 
-function RowChart({ value, text, derived = false, emphasis = false, domain, ticks }) {
+function RowChart({ value, text, title, derived = false, emphasis = false, domain, ticks }) {
   const style = derived ? DERIVED : CENTAX;
   const data = [{ key: "v", hasValue: isNum(value), value: Number(value) }];
   return (
@@ -87,6 +88,23 @@ function RowChart({ value, text, derived = false, emphasis = false, domain, tick
           <YAxis type="category" dataKey="key" hide />
           <CartesianGrid strokeDasharray="3 3" stroke={colors.border.light} horizontal={false} />
           <ReferenceLine x={0} stroke={colors.gray[400]} />
+          <Tooltip
+            {...TOOLTIP_PROPS}
+            content={({ active }) =>
+              active ? (
+                <TooltipCard
+                  title={title}
+                  rows={[
+                    {
+                      label: derived ? "PolicyEngine's estimate" : "CenTax estimate",
+                      value: text,
+                      color: derived ? DERIVED.stroke : CENTAX.fill,
+                    },
+                  ]}
+                />
+              ) : null
+            }
+          />
           <Bar
             dataKey="value"
             barSize={BAR_SIZE}
@@ -135,10 +153,10 @@ export default function PackageEstimatesChart({ rows }) {
             <div aria-hidden="true">
               {row.bars ? (
                 row.bars.map((bar) => (
-                  <RowChart key={bar.text} value={bar.value} text={bar.text} emphasis={bar.central} domain={domain} ticks={ticks} />
+                  <RowChart key={bar.text} title={`${row.label}, ${row.year}`} value={bar.value} text={bar.text} emphasis={bar.central} domain={domain} ticks={ticks} />
                 ))
               ) : (
-                <RowChart value={row.value} text={row.text} derived={row.derived} domain={domain} ticks={ticks} />
+                <RowChart title={`${row.label}, ${row.year}`} value={row.value} text={row.text} derived={row.derived} domain={domain} ticks={ticks} />
               )}
             </div>
             {row.note ? (

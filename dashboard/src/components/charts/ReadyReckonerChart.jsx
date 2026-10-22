@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Bar, BarChart, CartesianGrid, Cell, LabelList, ReferenceLine, ResponsiveContainer, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, Cell, LabelList, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { getNiceTicks, getTickDomain } from "../../lib/chartUtils";
 import { colors } from "../../lib/colors";
 import { formatSignedMn } from "../../lib/formatters";
@@ -9,8 +9,10 @@ import ChartLogo from "../ChartLogo";
 import ChartLegend from "./ChartLegend";
 import { LabelledSelect } from "../controls";
 import { EndLabel, RowAxis, SignedBar, rowHeight } from "./benchmarkRows";
+import { TOOLTIP_PROPS, TooltipCard } from "./ChartTooltip";
 
-// Both sides hold a value label: rows point either way from £0.
+// Both sides hold a value label: rows point either way from £0 (hover a
+// bar for its series and value).
 const MARGIN = { top: 2, right: 70, bottom: 2, left: 70 };
 const BAR_SIZE = 14;
 const GAP = 4;
@@ -50,7 +52,7 @@ export function buildReckonerRows(block, centralId = "centax_central", officialI
   return { pairs, rows };
 }
 
-function RowChart({ values, domain, ticks }) {
+function RowChart({ values, domain, ticks, title, labels }) {
   const data = ORDER.map((series) => ({
     series,
     hasValue: isNum(values[series]),
@@ -63,6 +65,25 @@ function RowChart({ values, domain, ticks }) {
           <XAxis type="number" domain={domain} ticks={ticks} hide />
           <YAxis type="category" dataKey="series" hide />
           <CartesianGrid strokeDasharray="3 3" stroke={colors.border.light} horizontal={false} />
+          <Tooltip
+            {...TOOLTIP_PROPS}
+            content={({ active, payload }) => {
+              const d = active && payload?.length ? payload[0].payload : null;
+              if (!d) return null;
+              return (
+                <TooltipCard
+                  title={title}
+                  rows={[
+                    {
+                      label: labels[d.series],
+                      value: d.hasValue ? formatSignedMn(d.value) : "—",
+                      color: SERIES[d.series].fill,
+                    },
+                  ]}
+                />
+              );
+            }}
+          />
           <Bar dataKey="value" barSize={BAR_SIZE} shape={<SignedBar />} isAnimationActive={false}>
             {data.map((d) => (
               <Cell key={d.series} fill={SERIES[d.series].fill} fillOpacity={SERIES[d.series].opacity ?? 1} />
@@ -90,8 +111,17 @@ function RowChart({ values, domain, ticks }) {
 // diverging bars around £0 on one £m scale shared by every row and both
 // year pairs (so switching pairs does not rescale). `pairs` and `rows` come
 // from buildReckonerRows; `labels`: { hmrc, central, official } legend text.
-export default function ReadyReckonerChart({ pairs, rows, labels }) {
-  const [pair, setPair] = useState(pairs[0]?.key);
+// The year pair is the chart's own state, shown as a select above it, unless
+// the caller controls it with `pairKey` and `onPairKeyChange` (and draws its
+// own select).
+export default function ReadyReckonerChart({ pairs, rows, labels, pairKey, onPairKeyChange }) {
+  const [ownPair, setOwnPair] = useState(pairs[0]?.key);
+  const controlled = pairKey !== undefined;
+  const pair = controlled ? pairKey : ownPair;
+  const setPair = (key) => {
+    if (!controlled) setOwnPair(key);
+    onPairKeyChange?.(key);
+  };
   const all = rows.flatMap((r) => Object.values(r.values).flatMap((v) => ORDER.map((s) => v[s]))).filter(isNum);
   const ticks = getNiceTicks([Math.min(0, ...all), Math.max(0, ...all)], 6);
   const domain = getTickDomain(ticks);
@@ -105,7 +135,7 @@ export default function ReadyReckonerChart({ pairs, rows, labels }) {
   };
   return (
     <>
-      {pairs.length > 1 ? (
+      {pairs.length > 1 && !controlled ? (
         <div className="mb-1 w-full max-w-xs">
           <LabelledSelect
             label="HMRC receipts year"
@@ -128,7 +158,7 @@ export default function ReadyReckonerChart({ pairs, rows, labels }) {
             >
               <p className="text-sm font-semibold leading-5 text-slate-800">{row.label}</p>
               <div aria-hidden="true">
-                <RowChart values={v} domain={domain} ticks={ticks} />
+                <RowChart values={v} domain={domain} ticks={ticks} title={`${row.label}, ${current.label}`} labels={labels} />
               </div>
             </div>
           );

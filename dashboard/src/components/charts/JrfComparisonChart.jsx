@@ -48,7 +48,7 @@ function Marker({ series, left, label }) {
   return (
     <span
       tabIndex={0}
-      className="group absolute top-1/2 -translate-x-1/2 -translate-y-1/2 cursor-default focus:outline-none"
+      className="group/tip absolute top-1/2 -translate-x-1/2 -translate-y-1/2 cursor-default focus:outline-none"
       style={{ left: `${left}%`, zIndex: series.key === "static" ? 2 : 1 }}
     >
       <span
@@ -65,7 +65,7 @@ function Marker({ series, left, label }) {
       />
       <span
         role="tooltip"
-        className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 hidden -translate-x-1/2 whitespace-nowrap rounded-md bg-slate-900 px-2 py-1 text-xs text-white shadow group-hover:block group-focus:block"
+        className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 hidden -translate-x-1/2 whitespace-nowrap rounded-md bg-slate-900 px-2 py-1 text-xs text-white shadow group-hover/tip:block group-focus/tip:block"
       >
         {label}
       </span>

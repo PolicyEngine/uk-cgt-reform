@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { getBenchmarks, getDatasetInfo } from "../lib/dataHelpers";
 import { formatBn, formatPublished, formatSignedBn, formatSignedMn } from "../lib/formatters";
 import JrfComparisonChart, { buildJrfRows } from "./charts/JrfComparisonChart";
@@ -325,10 +326,27 @@ function CentaxPackage({ rows, onNavigate }) {
 function ReadyReckoner({ block, dataset, elasticities, rr, onNavigate }) {
   const firstYear = block.hmrc_years[0];
   const agree = rr.rows.length - reckonerSplit(rr).split.length;
+  const [pairKey, setPairKey] = useState(rr.pairs[0]?.key);
   return (
     <section className="section-card">
       <SectionHeading
         title="Small rate changes: HMRC's ready reckoner"
+        action={
+          rr.pairs.length > 1 ? (
+            <select
+              aria-label="HMRC receipts year"
+              value={pairKey}
+              onChange={(event) => setPairKey(event.target.value)}
+              className="h-8 rounded-md border border-slate-300 bg-white pl-2 pr-7 text-sm font-medium text-slate-800 shadow-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--pe-color-primary-500)]"
+            >
+              {rr.pairs.map((p) => (
+                <option key={p.key} value={p.key}>
+                  {p.hmrcYear}
+                </option>
+              ))}
+            </select>
+          ) : null
+        }
         description={
           <>
             <SourceLink href={block.url}>HMRC&apos;s</SourceLink>
@@ -341,6 +359,8 @@ function ReadyReckoner({ block, dataset, elasticities, rr, onNavigate }) {
       <ReadyReckonerChart
         pairs={rr.pairs}
         rows={rr.rows}
+        pairKey={pairKey}
+        onPairKeyChange={setPairKey}
         labels={{
           hmrc: "HMRC",
           central: `${PE}, central (${elasticities.central.e_retention.toFixed(1)})`,

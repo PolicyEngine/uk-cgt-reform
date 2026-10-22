@@ -16,6 +16,7 @@ import { getNiceTicks, getTickDomain } from "../../lib/chartUtils";
 import { colors } from "../../lib/colors";
 import { formatSignedBn } from "../../lib/formatters";
 import ChartLogo from "../ChartLogo";
+import { TOOLTIP_PROPS, TooltipCard } from "./ChartTooltip";
 
 const AXIS_STYLE = { fontSize: 12, fill: colors.gray[500] };
 const fmt = (v) => formatSignedBn(v, 1);
@@ -93,12 +94,10 @@ function SensitivityTooltip({ active, payload }) {
   if (!active || !payload?.length) return null;
   const row = payload[0].payload;
   return (
-    <div className="w-[230px] rounded-md border border-slate-200 bg-white px-3 py-2 text-xs shadow-sm">
-      <p className="font-semibold text-slate-900">{row.name}</p>
-      <p className="mt-1 text-slate-700">
-        2026-27 revenue: <span className="font-semibold tabular-nums">{fmt(row.revenue)}</span>
-      </p>
-    </div>
+    <TooltipCard
+      title={row.name}
+      rows={[{ label: "2026-27 revenue", value: fmt(row.revenue), color: row.fill }]}
+    />
   );
 }
 
@@ -112,6 +111,11 @@ export default function SensitivityChart({ rows, centralRetention = 1 }) {
     revenue: Number(row.revenue_2026_bn),
   }));
   const centralIndex = data.findIndex((r) => Number(r.e_retention) === Number(centralRetention));
+  data.forEach((row, i) => {
+    const central = i === centralIndex;
+    row.fill =
+      FILLS[row.revenue < 0 ? (central ? "negativeCentral" : "negative") : central ? "positiveCentral" : "positive"];
+  });
   const values = data.map((r) => r.revenue).filter(Number.isFinite);
   const lo = Math.min(0, ...values);
   const hi = Math.max(0, ...values);
@@ -150,20 +154,11 @@ export default function SensitivityChart({ rows, centralRetention = 1 }) {
               tickLine={false}
               axisLine={false}
             />
-            <Tooltip cursor={{ fill: colors.gray[100] }} content={<SensitivityTooltip />} />
+            <Tooltip {...TOOLTIP_PROPS} content={<SensitivityTooltip />} />
             <Bar dataKey="revenue" radius={[0, 6, 6, 0]} isAnimationActive={false}>
-              {data.map((row, i) => {
-                const central = i === centralIndex;
-                const key =
-                  row.revenue < 0
-                    ? central
-                      ? "negativeCentral"
-                      : "negative"
-                    : central
-                      ? "positiveCentral"
-                      : "positive";
-                return <Cell key={row.name} fill={FILLS[key]} />;
-              })}
+              {data.map((row) => (
+                <Cell key={row.name} fill={row.fill} />
+              ))}
               <LabelList dataKey="revenue" content={<ValueLabel centralIndex={centralIndex} />} />
             </Bar>
             <ReferenceLine x={0} stroke={colors.gray[600]} strokeWidth={1.5} />

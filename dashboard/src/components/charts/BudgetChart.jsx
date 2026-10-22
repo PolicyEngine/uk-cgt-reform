@@ -14,6 +14,7 @@ import { colors } from "../../lib/colors";
 import { formatSignedBn } from "../../lib/formatters";
 import ChartLogo from "../ChartLogo";
 import ChartLegend from "./ChartLegend";
+import ChartTooltip, { TOOLTIP_PROPS } from "./ChartTooltip";
 import { LabelledSelect } from "../controls";
 
 const AXIS_STYLE = { fontSize: 12, fill: colors.gray[500] };
@@ -53,7 +54,10 @@ export default function BudgetChart({ budget }) {
               axisLine={false}
               width={72}
             />
-            <Tooltip formatter={(v) => formatSignedBn(v, 1)} cursor={{ fill: colors.gray[100] }} />
+            <Tooltip
+              {...TOOLTIP_PROPS}
+              content={<ChartTooltip title={(year) => `Fiscal year ${year}`} format={(v) => formatSignedBn(v, 1)} />}
+            />
             {budgetView === "levels" ? (
               <>
                 <Bar

@@ -15,6 +15,7 @@ import { colors } from "../../lib/colors";
 import { formatSignedCurrency, formatSignedPct } from "../../lib/formatters";
 import ChartLogo from "../ChartLogo";
 import { LabelledSelect, YearSelect } from "../controls";
+import ChartTooltip, { TOOLTIP_PROPS } from "./ChartTooltip";
 
 const AXIS_STYLE = { fontSize: 12, fill: colors.gray[500] };
 
@@ -128,11 +129,23 @@ export default function GroupImpactChart({ groupsByYear, initialYear }) {
               </>
             )}
             <Tooltip
-              cursor={{ fill: colors.gray[100] }}
-              formatter={(v, name, item) => [
-                `${formatSignedPct(item.payload.relative_change_pct)} (${formatSignedCurrency(item.payload.avg_change_gbp)}/household)`,
-                "Net income change",
-              ]}
+              {...TOOLTIP_PROPS}
+              content={
+                <ChartTooltip
+                  title={(_, payload) => `${payload[0].payload.group}, ${groupYear}`}
+                  rows={(payload) => [
+                    {
+                      label: "Average change per household",
+                      value: formatSignedCurrency(payload[0].payload.avg_change_gbp),
+                      color: colors.primary[600],
+                    },
+                    {
+                      label: "Relative net income change",
+                      value: formatSignedPct(payload[0].payload.relative_change_pct, 1),
+                    },
+                  ]}
+                />
+              }
             />
             <Bar
               dataKey={metricKey}

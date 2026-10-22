@@ -3,6 +3,7 @@
 import { colors } from "../../lib/colors";
 import { formatBn } from "../../lib/formatters";
 import ChartLogo from "../ChartLogo";
+import { HoverTip } from "./ChartTooltip";
 
 // Room past the longest bar for its value label.
 const HEADROOM = 1.3;
@@ -31,12 +32,15 @@ export default function ScheduleChart({ rows, datasetLabel = "this dataset" }) {
             <div role="listitem" aria-label={summary} key={row.key} className="py-2">
               <p className="mb-1 text-sm font-semibold text-slate-800">{row.label}</p>
               {has ? (
-                <div aria-hidden="true" className="flex items-center">
-                  <div
-                    className="h-5 shrink-0 rounded-r"
+                <div className="flex items-center">
+                  <HoverTip
+                    as="div"
+                    align="start"
+                    label={`${row.label}: ${formatBn(value)}`}
+                    className="relative h-5 shrink-0 rounded-r"
                     style={{ width: `${(100 * value) / max}%`, background: colors.primary[600] }}
                   />
-                  <span className="ml-2 whitespace-nowrap text-xs font-semibold tabular-nums text-slate-900">
+                  <span aria-hidden="true" className="ml-2 whitespace-nowrap text-xs font-semibold tabular-nums text-slate-900">
                     {formatBn(value)}
                   </span>
                 </div>
