@@ -10,7 +10,6 @@ import { EndLabel, RowAxis, SignedBar } from "./benchmarkRows";
 
 const MARGIN = { top: 2, right: 112, bottom: 2, left: 14 };
 const BAR_SIZE = 16;
-const RANGE_TOP = 16;
 
 const CENTAX = { fill: colors.gray[500], text: colors.gray[700] };
 const DERIVED = { fill: "#FFFFFF", stroke: colors.gray[500], text: colors.gray[700] };
@@ -30,9 +29,13 @@ const DERIVED_IDS = new Set(["centax_2024_rates_only_post_behavioural_derived"])
 const isNum = (v) => v !== null && v !== undefined && Number.isFinite(Number(v));
 
 // The props from the results file's `benchmarks.centax_package_context`.
+// CenTax's 2024 package appears twice in the file: Table 5 (at the central
+// elasticity) and Table 6 (across elasticities). They become one row with a
+// bar per elasticity, so the central figure is not shown twice.
 export function buildPackageRows(rows) {
-  return rows.map((row) => {
-    const points = row.details?.by_retention_elasticity;
+  const table5 = rows.find((row) => row.id === "centax_2024_table5_package");
+  const built = [];
+  for (const row of rows) {
     const base = {
       id: row.id,
       label: SHORT_LABELS[row.id] ?? `${row.source}, ${row.locator}`,
@@ -40,77 +43,46 @@ export function buildPackageRows(rows) {
       derived: DERIVED_IDS.has(row.id),
       note: null,
     };
+    const points = row.details?.by_retention_elasticity;
     if (points?.length) {
-      const sorted = [...points].sort((a, b) => a.value - b.value);
-      return {
+      const central = table5 && points.find((p) => Math.abs(p.value - table5.value) < 0.05);
+      built.push({
         ...base,
-        points: sorted.map((p) => ({ value: p.value, elasticity: p.retention_elasticity })),
-        // "£5.0–19.0bn": short enough to sit past the range at phone width.
-        text: `${formatBn(sorted[0].value, 1).replace(/bn$/, "")}\u2013${formatBn(sorted[sorted.length - 1].value, 1).replace("\u00A3", "")}`,
-        note: "Each point is one behavioural response assumption: 0.5 is weakest, 2.0 strongest.",
-      };
+        label: SHORT_LABELS.centax_2024_table5_package,
+        bars: [...points]
+          .sort((a, b) => a.retention_elasticity - b.retention_elasticity)
+          .map((p) => ({
+            value: p.value,
+            elasticity: p.retention_elasticity,
+            central: p === central,
+            text: `${formatBn(p.value, 1)} at ${p.retention_elasticity.toFixed(1)}${
+              p === central && table5.details?.uplift_pct ? ` (+${table5.details.uplift_pct}%, CenTax's central case)` : ""
+            }`,
+          })),
+        note: "One bar per assumption about how strongly people respond, from weakest (0.5) to strongest (2.0): the stronger the response, the less it raises.",
+      });
+      continue;
     }
+    if (row === table5 && rows.some((r) => r.details?.by_retention_elasticity?.length)) continue;
     const uplift = row.details?.uplift_pct;
     const withCarried = row.details?.with_carried_interest_bn;
-    return {
+    built.push({
       ...base,
       value: row.value,
       text: `${formatBn(row.value, 1)}${uplift ? ` (+${uplift}%)` : ""}`,
       note: withCarried ? `${formatBn(withCarried, 1)} with carried interest.` : null,
-    };
-  });
+    });
+  }
+  return built;
 }
 
-// CenTax's range: a line across its points, a dot at each, and each point's
-// elasticity above it.
-function RangeShape({ x, y, width, height, payload }) {
-  const pts = payload?.points;
-  if (!pts?.length) return null;
-  const lo = pts[0].value;
-  const hi = pts[pts.length - 1].value;
-  const px = (v) => x + ((v - lo) / (hi - lo || 1)) * width;
-  const cy = y + height / 2;
+function RowChart({ value, text, derived = false, emphasis = false, domain, ticks }) {
+  const style = derived ? DERIVED : CENTAX;
+  const data = [{ key: "v", hasValue: isNum(value), value: Number(value) }];
   return (
-    <g>
-      <line x1={x} x2={x + width} y1={cy} y2={cy} stroke={CENTAX.fill} strokeWidth={2} />
-      {[x, x + width].map((cx) => (
-        <line key={cx} x1={cx} x2={cx} y1={cy - 6} y2={cy + 6} stroke={CENTAX.fill} strokeWidth={2} />
-      ))}
-      {pts.map((p) => (
-        <g key={p.elasticity}>
-          <circle cx={px(p.value)} cy={cy} r={4.5} fill={CENTAX.fill} stroke="#FFFFFF" strokeWidth={1} />
-          <text
-            x={px(p.value)}
-            y={cy - 9}
-            textAnchor="middle"
-            fontSize={11}
-            fill={colors.gray[500]}
-            style={{ fontVariantNumeric: "tabular-nums" }}
-          >
-            {p.elasticity.toFixed(1)}
-          </text>
-        </g>
-      ))}
-    </g>
-  );
-}
-
-function RowChart({ row, domain, ticks }) {
-  const isRange = Boolean(row.points);
-  const style = row.derived ? DERIVED : CENTAX;
-  const data = [
-    {
-      key: row.id,
-      hasValue: isRange || isNum(row.value),
-      points: row.points,
-      value: isRange ? [row.points[0].value, row.points[row.points.length - 1].value] : Number(row.value),
-    },
-  ];
-  const margin = isRange ? { ...MARGIN, top: RANGE_TOP } : MARGIN;
-  return (
-    <div style={{ height: BAR_SIZE + margin.top + margin.bottom + 4 }} className="w-full">
+    <div style={{ height: BAR_SIZE + MARGIN.top + MARGIN.bottom + 4 }} className="w-full">
       <ResponsiveContainer>
-        <BarChart data={data} layout="vertical" margin={margin}>
+        <BarChart data={data} layout="vertical" margin={MARGIN}>
           <XAxis type="number" domain={domain} ticks={ticks} hide />
           <YAxis type="category" dataKey="key" hide />
           <CartesianGrid strokeDasharray="3 3" stroke={colors.border.light} horizontal={false} />
@@ -119,26 +91,13 @@ function RowChart({ row, domain, ticks }) {
             dataKey="value"
             barSize={BAR_SIZE}
             fill={style.fill}
-            shape={
-              isRange ? (
-                <RangeShape />
-              ) : (
-                <SignedBar stroke={row.derived ? DERIVED.stroke : undefined} strokeDasharray={row.derived ? "4 3" : undefined} />
-              )
-            }
+            shape={<SignedBar stroke={derived ? DERIVED.stroke : undefined} strokeDasharray={derived ? "4 3" : undefined} />}
             isAnimationActive={false}
           >
             <LabelList
               dataKey="key"
               content={(props) => (
-                <EndLabel
-                  {...props}
-                  width={props.width + (isRange ? 6 : 0)}
-                  value={1}
-                  text={row.text}
-                  color={style.text}
-                  weight={600}
-                />
+                <EndLabel {...props} value={1} text={text} color={style.text} weight={emphasis ? 700 : 600} />
               )}
             />
           </Bar>
@@ -149,10 +108,10 @@ function RowChart({ row, domain, ticks }) {
 }
 
 // CenTax's estimates after behavioural responses, one row each, on one £bn
-// scale; Table 6's range across its elasticities is drawn as a range.
+// scale; the 2024 package has one bar per elasticity.
 // `rows`: buildPackageRows(benchmarks.centax_package_context). Legend below.
 export default function PackageEstimatesChart({ rows }) {
-  const values = rows.flatMap((r) => (r.points ? r.points.map((p) => p.value) : [r.value])).filter(isNum);
+  const values = rows.flatMap((r) => (r.bars ? r.bars.map((b) => b.value) : [r.value])).filter(isNum);
   const ticks = getNiceTicks([0, Math.max(0, ...values)], 4);
   const domain = getTickDomain(ticks);
   const anyDerived = rows.some((r) => r.derived);
@@ -164,7 +123,7 @@ export default function PackageEstimatesChart({ rows }) {
           <div
             key={row.id}
             role="listitem"
-            aria-label={`${row.label}, ${row.year}: ${row.text}${row.note ? `. ${row.note}` : ""}`}
+            aria-label={`${row.label}, ${row.year}: ${row.bars ? row.bars.map((b) => b.text).join("; ") : row.text}${row.note ? `. ${row.note}` : ""}`}
             className="border-b border-slate-100 py-2 last:border-b-0"
           >
             <div className="flex items-start justify-between gap-3" style={{ paddingLeft: MARGIN.left }}>
@@ -174,7 +133,13 @@ export default function PackageEstimatesChart({ rows }) {
               </span>
             </div>
             <div aria-hidden="true">
-              <RowChart row={row} domain={domain} ticks={ticks} />
+              {row.bars ? (
+                row.bars.map((bar) => (
+                  <RowChart key={bar.text} value={bar.value} text={bar.text} emphasis={bar.central} domain={domain} ticks={ticks} />
+                ))
+              ) : (
+                <RowChart value={row.value} text={row.text} derived={row.derived} domain={domain} ticks={ticks} />
+              )}
             </div>
             {row.note ? (
               <p className="text-xs leading-5 text-slate-500" style={{ paddingLeft: MARGIN.left }}>

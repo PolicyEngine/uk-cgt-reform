@@ -68,7 +68,7 @@ function jrfGlance(block) {
 function packageRange(rows) {
   const values = rows
     .filter((row) => !row.derived)
-    .flatMap((row) => (row.points ? row.points.map((p) => p.value) : [row.value]))
+    .flatMap((row) => (row.bars ? row.bars.map((b) => b.value) : [row.value]))
     .filter(isNum);
   return values.length ? [Math.min(...values), Math.max(...values)] : null;
 }
@@ -147,7 +147,7 @@ function StaticEqualisation({ block, dataset }) {
     <section className="section-card">
       <SectionHeading
         title="Before behaviour: JRF's estimate"
-        description={`The static change in CGT from equalising with income tax rates, by year in 2026/27 prices: ${PE}'s own figure on ${dataset.shortLabel}, ${PE}'s uplift applied to the OBR's receipts, and JRF's (2026) published figures.`}
+        description={`The static change in CGT from equalising with income tax rates, by year in 2026/27 prices: ${PE}'s own figure on ${dataset.shortLabel}, ${PE}'s uplift applied to the OBR's receipts, and JRF's (2026) published figures. Compare the light bars with the diamonds: JRF also scales the OBR's receipts, so that pair shares a method; the dark bars are ${PE}'s own liabilities.`}
       />
       <JrfComparisonChart
         rows={buildJrfRows(block)}
@@ -157,10 +157,6 @@ function StaticEqualisation({ block, dataset }) {
           jrf: "JRF 2026",
         }}
       />
-      <Takeaway lead="Compare the light bars with the diamonds.">
-        JRF also scales the OBR&apos;s receipts, so that pair shares a method; the dark bars are{" "}
-        {PE}&apos;s own liabilities.
-      </Takeaway>
       <Notes>
         <p>
           Source: <SourceLabel href={source.url} label={source.source} />,{" "}
@@ -243,9 +239,6 @@ function CentaxRegions({ block, dataset }) {
 
 function CentaxPackage({ rows, onNavigate }) {
   const built = buildPackageRows(rows);
-  const range = built.find((row) => row.points?.length > 1);
-  const lo = range?.points[0];
-  const hi = range?.points[range.points.length - 1];
   return (
     <section className="section-card">
       <SectionHeading
@@ -253,11 +246,6 @@ function CentaxPackage({ rows, onNavigate }) {
         description="CenTax estimate what equalising would raise alongside wider changes to how gains are taxed. These cover more than this dashboard's reform, so they are context, not a direct comparison."
       />
       <PackageEstimatesChart rows={built} />
-      {range ? (
-        <Takeaway lead="The stronger the response, the less it raises.">
-          {`CenTax's package raises ${formatBn(hi.value, 1)} with the weakest response (${hi.elasticity.toFixed(1)}) and ${formatBn(lo.value, 1)} with the strongest (${lo.elasticity.toFixed(1)}).`}
-        </Takeaway>
-      ) : null}
       <Notes>
         <p>
           The package adds a rate-of-return investment allowance, removes the death uplift, and
