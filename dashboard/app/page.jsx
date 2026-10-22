@@ -92,8 +92,8 @@ function Dashboard() {
             This dashboard estimates how changing UK capital gains tax rates would affect
             government revenue and household incomes. Its headline reform, taxing gains at income
             tax rates and withdrawing Business Asset Disposal Relief, has been{" "}
-            <a href="https://www.cityam.com/healey-rejects-calls-to-equalise-capital-gains-and-income-tax-rates/" target="_blank" rel="noopener noreferrer" className={LINK}>debated</a>{" "}
-            ahead of the Budget; a custom option scores any other set of rates.
+            <a href="https://ifs.org.uk/sites/default/files/2024-10/Captial-gains-tax-reform.pdf" target="_blank" rel="noopener noreferrer" className={LINK}>debated</a>{" "}
+            in the UK; a custom option scores any other set of rates.
           </p>
         </div>
 
