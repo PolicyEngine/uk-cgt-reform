@@ -58,8 +58,17 @@ function FieldError({ id, children }) {
   );
 }
 
-// A percentage input with its "%" inside the field.
+// A percentage input with its "%" inside the field and up/down buttons that
+// step it by STEP_PCT within its bounds.
 function PercentInput({ id, value, onChange, invalid, describedBy, min = PCT_MIN }) {
+  const step = (direction) => {
+    const current = Number(value);
+    const base = value === "" || !Number.isFinite(current) ? min : current;
+    const next = Math.min(PCT_MAX, Math.max(min, Math.round((base + direction * STEP_PCT) * 100) / 100));
+    onChange(String(next));
+  };
+  const stepButton =
+    "flex h-1/2 w-7 items-center justify-center text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 focus:outline-none focus-visible:bg-slate-100 disabled:opacity-30";
   return (
     <div className="relative">
       <input
@@ -73,10 +82,30 @@ function PercentInput({ id, value, onChange, invalid, describedBy, min = PCT_MIN
         aria-invalid={invalid || undefined}
         aria-describedby={describedBy}
         onChange={(event) => onChange(event.target.value)}
-        className={`${FIELD} ${fieldBorder(invalid)} w-full pr-9`}
+        className={`${FIELD} ${fieldBorder(invalid)} w-full pr-16`}
       />
-      <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-base font-semibold text-slate-400">
+      <span className="pointer-events-none absolute inset-y-0 right-9 flex items-center text-base font-semibold text-slate-400">
         %
+      </span>
+      <span className="absolute inset-y-px right-px flex flex-col overflow-hidden rounded-r-lg border-l border-slate-200">
+        <button
+          type="button"
+          aria-label="Increase by one point"
+          className={`${stepButton} border-b border-slate-200`}
+          disabled={Number(value) >= PCT_MAX}
+          onClick={() => step(1)}
+        >
+          <svg aria-hidden="true" viewBox="0 0 10 6" className="h-1.5 w-2.5" fill="currentColor"><path d="M5 0l5 6H0z" /></svg>
+        </button>
+        <button
+          type="button"
+          aria-label="Decrease by one point"
+          className={stepButton}
+          disabled={value !== "" && Number(value) <= min}
+          onClick={() => step(-1)}
+        >
+          <svg aria-hidden="true" viewBox="0 0 10 6" className="h-1.5 w-2.5" fill="currentColor"><path d="M0 0h10L5 6z" /></svg>
+        </button>
       </span>
     </div>
   );

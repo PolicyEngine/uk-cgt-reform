@@ -365,11 +365,6 @@ export default function ReformTab({ data, datasetKey, onNavigate, anchor }) {
 
       {hasResults ? (
         <div ref={results} className="scroll-mt-24 space-y-6">
-          {stale ? (
-            <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-sm leading-6 text-amber-900" role="status">
-              These results are for the previous values; press Calculate to update.
-            </p>
-          ) : null}
           <div className={`space-y-6 transition-opacity ${stale ? "opacity-60" : ""}`}>
             {shown === "precomputed" ? (
               <EqualisationResults
