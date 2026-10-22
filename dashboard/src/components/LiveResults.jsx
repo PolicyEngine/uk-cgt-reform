@@ -203,13 +203,13 @@ function ReadyReckonerPanel({ row, result, onNavigate }) {
         <>
           {`${row.label}: `}
           <SourceLink href={READY_RECKONER.url}>HMRC&apos;s</SourceLink>
-          {" receipts beside this run's change in the government balance a year earlier; bars left of £0 lose revenue."}
+          {" receipts beside this run's change in the government balance a year earlier; bars left of £0 reduce revenue."}
         </>
       </p>
       <ReckonerBars
         rows={READY_RECKONER.lag.map((lag) => ({
           key: lag.hmrc_year,
-          label: `HMRC ${lag.hmrc_year} receipts vs this run's ${lag.model_year}`,
+          label: `HMRC ${lag.hmrc_year} receipts and this run's ${lag.model_year}`,
           hmrc: row.hmrc_m[lag.hmrc_year],
           run: liability(lag.model_year),
         }))}
@@ -270,12 +270,12 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
     <>
       <Card>
         <SectionHeading
-          title="Headline results"
+          title={`Headline results, ${firstYear}`}
           description={
             <>
-              {`${firstYear}, on ${result.metadata.dataset_short_label}, ${elasticityName(resultE)}. `}
+              {`On ${result.metadata.dataset_short_label}, ${elasticityName(resultE)}. `}
               {likeForLike
-                ? `Against equalisation at the same response: ${difference(firstRow.gov_balance_change_bn, equalisation.revenue)} in ${firstYear} and ${difference(result.five_year_total_bn, equalisation.fiveYear)} over five years. `
+                ? `Compared with equalisation at the same response: ${difference(firstRow.gov_balance_change_bn, equalisation.revenue)} in the first year and ${difference(result.five_year_total_bn, equalisation.fiveYear)} over five years. `
                 : "Equalisation's results use another response, so they are not compared here. "}
               <TabLink onNavigate={onShowEqualisation}>Show</TabLink> equalisation&apos;s results.
             </>
@@ -346,7 +346,7 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
           reckoner sits under it rather than beside it. */}
       <Card as="details" className="group min-w-0">
         <summary className="cursor-pointer select-none text-xl font-semibold tracking-tight text-slate-900 marker:text-[color:var(--pe-color-primary-600)]">
-          What exactly does this schedule change?
+          What does this schedule change?
           <span className="ml-2 text-sm font-normal text-slate-500 group-open:hidden">
             (expand for the full specification)
           </span>

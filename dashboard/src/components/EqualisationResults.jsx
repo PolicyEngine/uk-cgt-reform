@@ -100,10 +100,10 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
     <div className="space-y-6">
       <Card>
         <SectionHeading
-          title="Headline results"
+          title={`Headline results, ${firstYear}`}
           description={
             <>
-              In {firstYear}, the reform&apos;s first year, at{" "}
+              The reform&apos;s first year, at{" "}
               <SourceLink href={CENTAX_SOURCE.url}>CenTax&apos;s</SourceLink> central behavioural
               response, on {dataset.shortLabel}. Distributional figures cover all households.
             </>
@@ -256,11 +256,11 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
             <TabLink onNavigate={onNavigate} tab="methodology" section="elasticity-gap">
               Methodology
             </TabLink>{" "}
-            tab explains how the official elasticity and CenTax&apos;s differ and{" "}
+            tab describes the official and CenTax elasticities and the{" "}
             <TabLink onNavigate={onNavigate} tab="methodology" section="elasticity">
-              why
+              scope
             </TabLink>{" "}
-            CenTax expect a larger response to a rate rise on its own.{" "}
+            of CenTax&apos;s central value.{" "}
             CenTax&apos;s range is
             anchored on{" "}
             <a
@@ -287,7 +287,7 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
 
       <Card as="details" className="group">
         <summary className="cursor-pointer select-none text-xl font-semibold tracking-tight text-slate-900 marker:text-[color:var(--pe-color-primary-600)]">
-          What exactly does the reform change?
+          What does the reform change?
           <span className="ml-2 text-sm font-normal text-slate-500 group-open:hidden">
             (expand for the full specification)
           </span>
