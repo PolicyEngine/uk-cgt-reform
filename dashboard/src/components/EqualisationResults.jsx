@@ -27,7 +27,7 @@ import {
 import BudgetChart from "./charts/BudgetChart";
 import GroupImpactChart, { GroupDefinitions } from "./charts/GroupImpactChart";
 import SensitivityChart from "./charts/SensitivityChart";
-import RateChangeChart, { RateChangeCaption } from "./charts/RateChangeChart";
+import RateChangeChart from "./charts/RateChangeChart";
 import YieldChart from "./charts/YieldChart";
 import { Card, MetricCard, Notes, SourceLabel, SourceLink, TabLink } from "./controls";
 import SectionHeading from "./SectionHeading";
@@ -300,7 +300,9 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
             <SourceLink href={SAVINGS_PROPERTY_RATES}>income</SourceLink> face 22%, 42% and 47% (the
             property rates in England, Wales and Northern Ireland), and Scottish taxpayers&apos;
             earnings face Scotland&apos;s own <SourceLink href={SCOTTISH_INCOME_TAX}>bands</SourceLink>,
-            which the reform does not follow.
+            which the reform does not follow. Residential property gains take the same rates, and the annual exempt{" "}
+            <SourceLink href={EXEMPT_AMOUNT}>amount</SourceLink> stays £3,000.
+            {recorded(validation.residential_property_gains_bn)}
           </p>
           <RateChangeChart
             rows={[
@@ -320,15 +322,6 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
                 baselineNote: `${badrLimitLabel(BASELINE_SCHEDULE_RATES.badr.lifetime_limit)} lifetime limit`,
                 reformNote: schedules.badr.withdrawn ? "gains pay the main rates" : undefined,
               },
-            ]}
-          />
-          <RateChangeCaption
-            items={[
-              <>
-                Residential property gains take the same rates, and the annual exempt{" "}
-                <SourceLink href={EXEMPT_AMOUNT}>amount</SourceLink> stays £3,000.
-                {recorded(validation.residential_property_gains_bn)}
-              </>,
             ]}
           />
         </div>

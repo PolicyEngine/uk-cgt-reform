@@ -154,7 +154,12 @@ export default function ReformTab({ data, datasetKey, onNavigate, anchor }) {
 
   // After Calculate the panel folds to a one-line summary; Edit, or choosing
   // a reform, opens it again.
-  const [collapsed, setCollapsed] = useState(false);
+  // A page that opens on results (a shared link) starts folded too, and the
+  // panel folds again whenever a live run finishes.
+  const [collapsed, setCollapsed] = useState(() => Boolean(state.shown));
+  useEffect(() => {
+    if (status === "done") setCollapsed(true);
+  }, [status]);
 
   const calculate = (check) => {
     if (!check.rates || inFlight) return;

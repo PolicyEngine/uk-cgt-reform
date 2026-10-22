@@ -28,7 +28,7 @@ import {
 import { colors } from "../lib/colors";
 import BudgetChart from "./charts/BudgetChart";
 import ChartLegend from "./charts/ChartLegend";
-import RateChangeChart, { RateChangeCaption } from "./charts/RateChangeChart";
+import RateChangeChart from "./charts/RateChangeChart";
 import GroupImpactChart, { GroupDefinitions } from "./charts/GroupImpactChart";
 import { Card, MetricCard, Notes, SourceLink, TabLink } from "./controls";
 import SectionHeading from "./SectionHeading";
@@ -108,14 +108,6 @@ function ScheduleRates({ metadata }) {
           },
         ]}
       />
-      <RateChangeCaption
-        items={[
-          <>
-            Residential property gains take the same rates, and the annual exempt{" "}
-            <SourceLink href={EXEMPT_AMOUNT}>amount</SourceLink> stays £3,000.
-          </>,
-        ]}
-      />
     </>
   );
 }
@@ -139,7 +131,8 @@ function ReckonerBars({ rows }) {
             <p className="mb-1 text-sm font-semibold text-slate-800">{r.label}</p>
             {series.map((s) => {
               const v = r[s.key];
-              const width = (50 * Math.abs(v ?? 0)) / max;
+              // The longest bar takes 38% of the row, leaving room for its label.
+              const width = (38 * Math.abs(v ?? 0)) / max;
               return (
                 <div key={s.key} className="group relative flex h-6 items-center" tabIndex={0}>
                   <span aria-hidden="true" className="absolute left-1/2 top-0 h-full w-px bg-slate-300" />
@@ -183,17 +176,20 @@ function ReadyReckonerPanel({ row, result, onNavigate }) {
     1000 * result.budget.find((budgetRow) => budgetRow.year === year).gov_balance_change_bn;
   const [contextYear] = READY_RECKONER.hmrc_years;
   return (
-    <Card className="min-w-0">
-      <SectionHeading
-        title="HMRC ready reckoner"
-        description={
-          <>
-            {`${row.label}: `}
-            <SourceLink href={READY_RECKONER.url}>HMRC&apos;s</SourceLink>
-            {" receipts beside this run's change in the government balance a year earlier; bars left of £0 lose revenue."}
-          </>
-        }
-      />
+    <Card as="details" className="group min-w-0">
+      <summary className="cursor-pointer select-none text-xl font-semibold tracking-tight text-slate-900 marker:text-[color:var(--pe-color-primary-600)]">
+        HMRC ready reckoner
+        <span className="ml-2 text-sm font-normal text-slate-500 group-open:hidden">
+          (expand to compare with HMRC&apos;s figures)
+        </span>
+      </summary>
+      <p className="mb-4 mt-2 text-sm leading-6 text-slate-600">
+        <>
+          {`${row.label}: `}
+          <SourceLink href={READY_RECKONER.url}>HMRC&apos;s</SourceLink>
+          {" receipts beside this run's change in the government balance a year earlier; bars left of £0 lose revenue."}
+        </>
+      </p>
       <ReckonerBars
         rows={READY_RECKONER.lag.map((lag) => ({
           key: lag.hmrc_year,
@@ -264,7 +260,22 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
             <>
               {`In ${firstYear}, the reform's first year: ${pct(reform.basic_rate)} / ${pct(reform.higher_rate)} / ${pct(reform.additional_rate)}, Business Asset Disposal `}
               <SourceLink href={BADR_GUIDANCE}>Relief</SourceLink>
-              {` ${describeBadr(reformBadr).toLowerCase()}, on ${result.metadata.dataset_short_label}, ${elasticityName(resultE)}. Distributional figures cover all households.`}
+              {` ${describeBadr(reformBadr).toLowerCase()}, on ${result.metadata.dataset_short_label}, ${elasticityName(resultE)}. Distributional figures cover all households. `}
+              {likeForLike ? (
+                <>
+                  At the same elasticity, this schedule&apos;s change in the government balance is{" "}
+                  {difference(firstRow.gov_balance_change_bn, equalisation.revenue)} equalisation&apos;s in{" "}
+                  {firstYear}, and {difference(result.five_year_total_bn, equalisation.fiveYear)} it over
+                  the five years.{" "}
+                </>
+              ) : (
+                <>
+                  Equalisation&apos;s precomputed results are at{" "}
+                  {elasticityName(equalisation.elasticity)}, and this schedule ran at another
+                  elasticity, so the two are not like for like.{" "}
+                </>
+              )}
+              <TabLink onNavigate={onShowEqualisation}>Show</TabLink> equalisation&apos;s results.
             </>
           }
         />
@@ -287,23 +298,6 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
             />
           ) : null}
         </div>
-        <p className="mt-4 text-sm leading-6 text-slate-600">
-          {likeForLike ? (
-            <>
-              At the same elasticity, this schedule&apos;s change in the government balance is{" "}
-              {difference(firstRow.gov_balance_change_bn, equalisation.revenue)} equalisation&apos;s in{" "}
-              {firstYear}, and {difference(result.five_year_total_bn, equalisation.fiveYear)} it over
-              the five years.{" "}
-            </>
-          ) : (
-            <>
-              Equalisation&apos;s precomputed results are at{" "}
-              {elasticityName(equalisation.elasticity)}, and this schedule ran at another
-              elasticity, so the two are not like for like.{" "}
-            </>
-          )}
-          <TabLink onNavigate={onShowEqualisation}>Show</TabLink> equalisation&apos;s results.
-        </p>
       </Card>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -358,7 +352,8 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
         <div className="mt-4 space-y-3">
           <p className="text-sm leading-6 text-slate-600">
             Effective in every modelled year. Current law is read from the installed engine for
-            the first year.
+            the first year. Residential property gains take the same rates, and the annual exempt{" "}
+            <SourceLink href={EXEMPT_AMOUNT}>amount</SourceLink> stays £3,000.
           </p>
           <ScheduleRates metadata={result.metadata} />
         </div>
