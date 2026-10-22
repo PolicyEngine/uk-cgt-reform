@@ -3,7 +3,7 @@
 import { colors } from "../../lib/colors";
 import { formatBn } from "../../lib/formatters";
 import ChartLogo from "../ChartLogo";
-import { HoverTip } from "./ChartTooltip";
+import { HoverTip, useHoverState } from "./ChartTooltip";
 
 // Room past the longest bar for its value label.
 const HEADROOM = 1.3;
@@ -18,6 +18,7 @@ const HEADROOM = 1.3;
 //   datasetLabel: the dataset's short name, for the "not recorded" text.
 export default function ScheduleChart({ rows, datasetLabel = "this dataset" }) {
   const recorded = (r) => Number.isFinite(Number(r.gainsBn)) && Number(r.gainsBn) > 0;
+  const hover = useHoverState();
   const max = Math.max(0, ...rows.filter(recorded).map((r) => Number(r.gainsBn))) * HEADROOM || 1;
   return (
     <>
@@ -36,7 +37,12 @@ export default function ScheduleChart({ rows, datasetLabel = "this dataset" }) {
                   <HoverTip
                     as="div"
                     align="start"
-                    label={`${row.label}: ${formatBn(value)}`}
+                    id={row.key}
+                    hover={hover}
+                    title={row.label}
+                    label="Gains recorded"
+                    value={formatBn(value)}
+                    color={colors.primary[600]}
                     className="relative h-5 shrink-0 rounded-r"
                     style={{ width: `${(100 * value) / max}%`, background: colors.primary[600] }}
                   />

@@ -137,17 +137,6 @@ export function LabelledSelect({ label, options, value, onChange }) {
   );
 }
 
-export function YearSelect({ years, value, onChange }) {
-  return (
-    <LabelledSelect
-      label="Year"
-      options={years.map((year) => ({ value: year, label: year }))}
-      value={value}
-      onChange={onChange}
-    />
-  );
-}
-
 export function MetricCard({ label, value, note, tip }) {
   return (
     <Card as="div" variant="inset" className="flex flex-col">

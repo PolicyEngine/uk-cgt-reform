@@ -140,12 +140,12 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
           <BudgetChart budget={budget} />
           <Notes className="mt-auto">
             <p>
-              Baseline revenue grows as the engine uprates the dataset to each year; the{" "}
+              Baseline revenue grows as gains are uprated with the OBR&apos;s{" "}
+              <SourceLink href={OBR_EFO}>forecast</SourceLink> of GDP per head;{" "}
               <TabLink onNavigate={onNavigate} tab="methodology" section="projection">
                 Methodology
               </TabLink>{" "}
-              tab compares that projection with the OBR&apos;s{" "}
-              <SourceLink href={OBR_EFO}>forecast</SourceLink>.
+              describes the projection.
             </p>
             {entrantShare > 0.05 ? (
               <p>
@@ -164,7 +164,7 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
 
         <Card className="flex min-w-0 flex-col">
           <SectionHeading
-            title="Change in household net income by income group"
+            title={`Change in household net income by income group, ${firstYear}`}
             description="Each bar shows the average change in net income for one group of households, ranked by income before the reform."
           />
           <GroupImpactChart groupsByYear={getIncomeChangeGroupsByYear(data)} initialYear={firstYear} />
@@ -192,14 +192,11 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
           />
           <YieldChart steps={split.steps} />
           <Notes>
-            <p>
-              The bars add the main rates first, then residential property gains, then withdrawing
-              Business Asset Disposal <SourceLink href={BADR_GUIDANCE}>Relief</SourceLink>.
-            </p>
-            <p>Each segment is what that change adds once the ones before it are in place.</p>
+            <p>Each segment is what that step adds once the ones before it are in place.</p>
             {validation.badr_gains_bn > 0 ? (
               <p>
-                {dataset.shortLabel} charges the relief&apos;s qualifying gains on their own schedule; the{" "}
+                {dataset.shortLabel} charges gains qualifying for Business Asset Disposal{" "}
+                <SourceLink href={BADR_GUIDANCE}>Relief</SourceLink> on their own schedule; the{" "}
                 <TabLink onNavigate={onNavigate} tab="baseline" section="benchmarks">
                   Baseline
                 </TabLink>{" "}
@@ -208,18 +205,17 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
               </p>
             ) : (
               <p>
-                {dataset.shortLabel} records no gains that qualify for the relief, so withdrawing it
+                {dataset.shortLabel} records no gains that qualify for Business Asset Disposal{" "}
+                <SourceLink href={BADR_GUIDANCE}>Relief</SourceLink>, so withdrawing it
                 changes nothing here.
               </p>
             )}
             <p>
               Equalising the rates but keeping the relief changes CGT revenue by{" "}
               {formatSignedBn(keptRelief.static_cgt_change_bn, 1)} with no behavioural response and{" "}
-              {formatSignedBn(keptRelief.central_cgt_change_bn, 1)} at the central elasticity.
-            </p>
-            <p>
+              {formatSignedBn(keptRelief.central_cgt_change_bn, 1)} at the central elasticity;{" "}
               <TabLink onNavigate={onChooseCustom}>Custom</TabLink> rates can score any rate for the
-              relief, or withdraw it.
+              relief.
             </p>
           </Notes>
         </Card>
@@ -238,31 +234,18 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
           <SensitivityChart rows={sensitivity} centralRetention={central.e_retention} />
           <Notes>
           <p>
-            The revenue estimate depends on how strongly taxpayers reduce
-            realisations when rates rise. Each row re-runs the reform with a
-            different elasticity of realised gains with respect to the{" "}
-            retention{" "}
+            Each bar re-runs the reform with a different elasticity of realised gains with respect
+            to the retention{" "}
             <TabLink onNavigate={onNavigate} tab="methodology" section="elasticity">
               rate
             </TabLink>{" "}
-            (1 − t). The dark bar is this dashboard&apos;s central assumption,
-            CenTax&apos;s central {central.e_retention.toFixed(1)}; the bars either
-            side are CenTax&apos;s range, {centaxRange.lower.toFixed(1)} to{" "}
-            {centaxRange.upper.toFixed(1)}, from{" "}
-            <SourceLabel href={CENTAX_SOURCE.url} label="CenTax" />. The last bar is the official
-            HMRC/OBR assumption, from the{" "}
-            <SourceLabel href={officialSource(official).url} label="OBR" /> (January 2025, para
-            1.9). The{" "}
-            <TabLink onNavigate={onNavigate} tab="methodology" section="elasticity-gap">
-              Methodology
-            </TabLink>{" "}
-            tab describes the official and CenTax elasticities and the{" "}
-            <TabLink onNavigate={onNavigate} tab="methodology" section="elasticity">
-              scope
-            </TabLink>{" "}
-            of CenTax&apos;s central value.{" "}
-            CenTax&apos;s range is
-            anchored on{" "}
+            (1 − t).
+          </p>
+          <p>
+            The dark bar is the dashboard&apos;s central assumption, CenTax&apos;s central{" "}
+            {central.e_retention.toFixed(1)}; the bars either side are CenTax&apos;s range,{" "}
+            {centaxRange.lower.toFixed(1)} to {centaxRange.upper.toFixed(1)}, from{" "}
+            <SourceLabel href={CENTAX_SOURCE.url} label="CenTax" />, anchored on{" "}
             <a
               href="https://www.aeaweb.org/articles?id=10.1257/aeri.20200535"
               target="_blank"
@@ -282,6 +265,19 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
             </a>{" "}
             &amp; Tazhitdinova (2024).
           </p>
+          <p>
+            The last bar is the official HMRC/OBR assumption (
+            <SourceLabel href={officialSource(official).url} label="OBR" />, January 2025, para
+            1.9);{" "}
+            <TabLink onNavigate={onNavigate} tab="methodology" section="elasticity-gap">
+              Methodology
+            </TabLink>{" "}
+            describes both elasticities and the{" "}
+            <TabLink onNavigate={onNavigate} tab="methodology" section="elasticity">
+              scope
+            </TabLink>{" "}
+            of CenTax&apos;s central value.
+          </p>
           </Notes>
         </Card>
 
@@ -295,7 +291,7 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
         <div className="mt-4 space-y-3">
           <p className="text-sm leading-6 text-slate-600">
             Effective in every modelled year. All results on
-            this page compare this reform against current policy on the same baseline. The reformed
+            this page compare this reform with current policy on the same baseline. The reformed
             rates are the income tax rates on earnings; from April 2027 savings and property{" "}
             <SourceLink href={SAVINGS_PROPERTY_RATES}>income</SourceLink> face 22%, 42% and 47% (the
             property rates in England, Wales and Northern Ireland), and Scottish taxpayers&apos;

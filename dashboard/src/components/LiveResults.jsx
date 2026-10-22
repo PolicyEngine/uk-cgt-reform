@@ -218,13 +218,11 @@ function ReadyReckonerPanel({ row, result, onNavigate }) {
         <p>
           HMRC&apos;s <SourceLink href={READY_RECKONER.url}>figures</SourceLink> ({READY_RECKONER.source}) are {READY_RECKONER.measure[0].toLowerCase()}
           {READY_RECKONER.measure.slice(1)}, after behavioural responses; HMRC has deferred its 2026
-          edition, so they are provisional. HMRC reports receipts, which arrive about a year after
-          the liability. The{" "}
+          edition, so they are provisional. The{" "}
           <TabLink onNavigate={onNavigate} tab="benchmarks">
             Benchmarks
           </TabLink>{" "}
-          tab scores every row at the central and the official
-          elasticity.
+          tab scores every row at the central and official elasticities.
         </p>
         <p>
           {`HMRC's ${contextYear} figure, receipts in the reform's first year: ${formatSignedMn(row.hmrc_m[contextYear])}.`}
@@ -327,7 +325,7 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
 
         <Card className="flex min-w-0 flex-col">
           <SectionHeading
-            title="Change in household net income by income group"
+            title={`Change in household net income by income group, ${firstYear}`}
             description="Each bar shows the average change in net income for one group of households, ranked by income before the reform."
           />
           <GroupImpactChart groupsByYear={result.income_change_groups} initialYear={firstYear} />

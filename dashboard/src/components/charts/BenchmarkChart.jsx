@@ -4,7 +4,7 @@ import { colors } from "../../lib/colors";
 import { formatBn, formatCount, formatPct } from "../../lib/formatters";
 import ChartLogo from "../ChartLogo";
 import ChartLegend from "./ChartLegend";
-import { HoverTip } from "./ChartTooltip";
+import { HoverTip, useHoverState } from "./ChartTooltip";
 
 // The two estimates compared on each row, drawn as a dumbbell on one line,
 // styled as RegionalComparisonChart's: the model a teal dot, HMRC's latest
@@ -37,13 +37,17 @@ export function parseBenchmark(text) {
   return n;
 }
 
-// One dot on the strip, with its series and value shown on hover or focus.
-function Dot({ series, left, label }) {
+// One dot on the strip; hovering or focusing it shows the row and its
+// series' value (`lines`), one dot per chart at a time (`hover`).
+function Dot({ id, hover, series, left, title, lines }) {
   return (
     <HoverTip
-      label={label}
+      id={id}
+      hover={hover}
+      title={title}
+      rows={lines}
       align={left > 60 ? "end" : left < 40 ? "start" : "center"}
-      className={`absolute top-1/2 -translate-x-1/2 -translate-y-1/2 hover:z-20 focus:z-20 ${series.key === "model" ? "z-[2]" : "z-[1]"}`}
+      className={`absolute top-1/2 -translate-x-1/2 -translate-y-1/2 ${series.key === "model" ? "z-[2]" : "z-[1]"}`}
       style={{ left: `${left}%` }}
     >
       <span
@@ -76,7 +80,7 @@ function gapToLatest(row) {
   return `${rel > 0 ? "+" : rel < 0 ? "−" : ""}${Math.abs(rel)}%`;
 }
 
-function Row({ row, seriesLabels }) {
+function Row({ row, seriesLabels, hover }) {
   const format = FORMATS[row.unit] ?? ((v) => String(v));
   const values = SERIES.map((s) => row[s.key]).filter(Number.isFinite);
   // Shares sit on 0–100%; other rows scale to their largest value.
@@ -90,10 +94,8 @@ function Row({ row, seriesLabels }) {
   // hovered, so the teal dot's tooltip names both values.
   const overlap =
     Number.isFinite(row.model) && Number.isFinite(row.hmrc2024) && Math.abs(left(row.model) - left(row.hmrc2024)) < 3;
-  const dotLabel = (s) => {
-    const own = `${seriesLabels[s.key]}: ${format(row[s.key])}`;
-    return overlap && s.key === "model" ? `${own} · ${seriesLabels.hmrc2024}: ${format(row.hmrc2024)}` : own;
-  };
+  const line = (s) => ({ label: seriesLabels[s.key], value: format(row[s.key]), color: s.color });
+  const dotLines = (s) => (overlap && s.key === "model" ? [line(SERIES[0]), line(SERIES[1])] : [line(s)]);
   return (
     <li className={`grid grid-cols-2 items-center gap-x-3 gap-y-1.5 border-t border-slate-100 py-3 ${GRID}`}>
       <span className="col-span-2 text-sm font-medium text-slate-800 md:col-span-1">{row.label}</span>
@@ -130,9 +132,12 @@ function Row({ row, seriesLabels }) {
           Number.isFinite(row[s.key]) ? (
             <Dot
               key={s.key}
+              id={`${row.key}-${s.key}`}
+              hover={hover}
               series={s}
               left={left(row[s.key])}
-              label={dotLabel(s)}
+              title={row.label}
+              lines={dotLines(s)}
             />
           ) : null,
         )}
@@ -148,6 +153,7 @@ function Row({ row, seriesLabels }) {
 // latest year (in points for shares).
 export default function BenchmarkChart({ rows, modelLabel }) {
   const seriesLabels = { model: modelLabel, hmrc2024: SERIES[1].label };
+  const hover = useHoverState();
   // Rows sharing a `group` sit under one heading, in the order given.
   const groups = [];
   for (const row of rows) {
@@ -173,7 +179,7 @@ export default function BenchmarkChart({ rows, modelLabel }) {
           <h4 className="text-xs font-semibold uppercase tracking-wider text-[color:var(--pe-color-primary-700)]">{group}</h4>
           <ul>
             {groupRows.map((row) => (
-              <Row key={row.key} row={row} seriesLabels={seriesLabels} />
+              <Row key={row.key} row={row} seriesLabels={seriesLabels} hover={hover} />
             ))}
           </ul>
         </section>

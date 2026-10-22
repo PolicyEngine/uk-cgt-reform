@@ -69,10 +69,10 @@ function jrfGlance(block) {
     id: "jrf",
     title: (
       <>
-        Before behaviour: PolicyEngine vs <SourceLink href={first.url}>JRF</SourceLink>
+        Before behaviour: PolicyEngine and <SourceLink href={first.url}>JRF</SourceLink>
       </>
     ),
-    value: `${formatBn(byYear[first.year].uplift_on_obr_receipts_real_bn, 1)} vs ${formatBn(first.value, 0)}`,
+    value: `${formatBn(byYear[first.year].uplift_on_obr_receipts_real_bn, 1)} · ${formatBn(first.value, 0)}`,
     detail: (
       <>
         {`${first.year}, in 2026/27 prices. ${PE}'s uplift applied to the `}
@@ -122,10 +122,10 @@ function AtAGlance({ benchmarks, rr, elasticities }) {
       id: "centax-2019-20",
       title: (
         <>
-          At 2019/20 rules: PolicyEngine vs <SourceLink href={centax.external.url}>CenTax</SourceLink>
+          At 2019/20 rules: PolicyEngine and <SourceLink href={centax.external.url}>CenTax</SourceLink>
         </>
       ),
-      value: `${formatUplift(centax.national.uplift_pct)} vs ${formatUplift(centax.external.value)}`,
+      value: `${formatUplift(centax.national.uplift_pct)} · ${formatUplift(centax.external.value)}`,
       detail: "How much equalising raises CGT, before behaviour.",
     },
     range && {
@@ -139,8 +139,8 @@ function AtAGlance({ benchmarks, rr, elasticities }) {
       detail: "After behaviour, for a wider reform of the CGT base, so not like-for-like.",
     },
     widest && {
-      title: `${widest.label.replace(/\s*\(.*\)\s*$/, "")}: central vs official response`,
-      value: `${bnFromM(v.central)} vs ${bnFromM(v.official)}`,
+      title: `${widest.label.replace(/\s*\(.*\)\s*$/, "")}: central and official response`,
+      value: `${bnFromM(v.central)} · ${bnFromM(v.official)}`,
       id: "ready-reckoner",
       detail: (
         <>
@@ -203,21 +203,18 @@ function StaticEqualisation({ block, dataset }) {
           {formatPublished(source.published)}, {source.locator.toLowerCase()}.
         </p>
         <p>
-          JRF applies HMRC&apos;s CGT <SourceLink href={CGT_STATISTICS}>statistics</SourceLink> by
-          income band to the OBR&apos;s March 2026 CGT{" "}
-          <SourceLink href={OBR_EFO}>projection</SourceLink>.
-        </p>
-        <p>JRF uses grouped statistics rather than microdata, with no behavioural response.</p>
-        <p>
-          All figures are in 2026/27 prices. JRF does not state its deflator; the chart deflates
-          with the CPI path in {block.price_index_source}.
+          JRF applies HMRC&apos;s grouped CGT <SourceLink href={CGT_STATISTICS}>statistics</SourceLink>{" "}
+          by income band to the OBR&apos;s March 2026 CGT{" "}
+          <SourceLink href={OBR_EFO}>projection</SourceLink>, with no behavioural response.
         </p>
         <p>
-          The uplift on OBR receipts applies the model&apos;s static uplift (the static change as a
-          share of baseline liability) to the OBR&apos;s CGT receipts forecast (
-          {block.obr_receipts_source}), as JRF&apos;s method does.
+          The light dots apply the model&apos;s static uplift (the static change as a share of
+          baseline liability) to the OBR&apos;s cash receipts forecast ({block.obr_receipts_source}).
         </p>
-        <p>Model figures are liabilities in the year; the OBR figures are cash receipts.</p>
+        <p>
+          Prices use the CPI path in {block.price_index_source}; JRF&apos;s report does not name a
+          deflator.
+        </p>
       </Notes>
     </section>
   );
@@ -239,7 +236,7 @@ function CentaxRegions({ block, dataset }) {
             <SourceLink href={external.url}>CenTax&apos;s</SourceLink>
             {" 2019/20 rules to "}
             <DatasetName label={dataset.shortLabel} possessive />
-            {` 2026-27 data with no behavioural response, against CenTax's (2024) estimate on 2019/20 data. The shares line up closely: each region is within ${shareGap.toFixed(1)} percentage points of CenTax's.`}
+            {` 2026-27 data with no behavioural response, beside CenTax's (2024) estimate on 2019/20 data. Each region's share is within ${shareGap.toFixed(1)} percentage points of CenTax's.`}
           </>
         }
       />
@@ -252,30 +249,14 @@ function CentaxRegions({ block, dataset }) {
           {`The 2019/20 rules: main rates of ${percent(rules.main.basic_rate)} and ${percent(rules.main.higher_rate)}, ${percent(rules.residential_property.basic_rate)} and ${percent(rules.residential_property.higher_rate)} for residential property and carried interest, ${percent(rules.badr.rate)} under Business Asset Disposal`}{" "}
           <SourceLink href={BADR_GUIDANCE}>Relief</SourceLink>, and a £
           {rules.annual_exempt_amount.toLocaleString("en-GB")} exempt{" "}
-          <SourceLink href={EXEMPT_AMOUNT}>amount</SourceLink>.
+          <SourceLink href={EXEMPT_AMOUNT}>amount</SourceLink>, applied to 2026-27 incomes,
+          thresholds and gains (the £12,000 in 2026 money).
         </p>
         <p>
-          The counterfactual applies those rules to 2026-27 incomes, income tax thresholds and
-          gains, with the £12,000 exempt amount in 2026 money.
+          CenTax cover resident individuals, putting trusts and non-residents at about 5% of
+          revenue, and count CGT and income tax together. Their regions are taxpayers&apos;
+          regions of residence; these are households&apos; regions.
         </p>
-        <p>
-          Regions are ordered by {PE}&apos;s share of baseline CGT, largest first; CenTax&apos;s
-          table lists them in the standard regional order.
-        </p>
-        <p>
-          CenTax covers resident individuals only. It puts the omitted trusts and non-residents at
-          about 5% of revenue.
-        </p>
-        <p>CenTax counts CGT and income tax together.</p>
-        <p>
-          CenTax&apos;s regions are taxpayers&apos; regions of residence; these are households&apos;
-          regions.
-        </p>
-        <p>
-          A dataset that records no residential property gains charges every gain at the main rates
-          in both runs.
-        </p>
-        <p>{block.rules.not_modelled}</p>
         <p>
           Sources: <SourceLabel href={external.url} label={external.source} />, {external.locator}{" "}
           and {block.external_regions.locator}.
@@ -303,14 +284,11 @@ function CentaxPackage({ rows, onNavigate }) {
       <Notes>
         <p>
           The package adds a rate-of-return investment allowance, removes the death uplift, and
-          rebases on arrival with a deemed disposal on departure.
-        </p>
-        <p>
-          The{" "}
+          rebases on arrival with a deemed disposal on departure;{" "}
           <TabLink onNavigate={onNavigate} tab="methodology" section="elasticity">
             Methodology
           </TabLink>{" "}
-          tab explains what the package means for the elasticity.
+          covers what that means for the elasticity.
         </p>
         {rows.map((row) => (
           <p key={row.id}>
@@ -349,7 +327,7 @@ function ReadyReckoner({ block, dataset, elasticities, rr, onNavigate }) {
         description={
           <>
             <SourceLink href={block.url}>HMRC&apos;s</SourceLink>
-            {` (June 2025) receipts from small rate changes, beside ${PE}'s change a year earlier at the central and official elasticities. Bars left of £0 lose revenue.`}
+            {` (June 2025) receipts from small rate changes, beside ${PE}'s change a year earlier at the central and official elasticities. Bars left of £0 reduce revenue.`}
           </>
         }
       />
@@ -366,26 +344,21 @@ function ReadyReckoner({ block, dataset, elasticities, rr, onNavigate }) {
       />
       <Notes>
         <p>
-          {`Why the bars point different ways: a rate rise takes more tax from each gain still sold, but people sell fewer assets, and each bar is the net. At ${elasticities.central.e_retention.toFixed(1)} the higher rate wins; at ${elasticities.official.e_retention} the lost sales win. The rate that raises the most is 1 / (1 + elasticity): about ${Math.round(100 / (1 + elasticities.official.e_retention))}% at ${elasticities.official.e_retention}, below today's 24% higher rate, and ${Math.round(100 / (1 + elasticities.central.e_retention))}% at ${elasticities.central.e_retention.toFixed(1)}.`}
+          {`A rate rise takes more tax from each gain still sold, but people sell fewer assets; each bar is the net. At ${elasticities.central.e_retention.toFixed(1)} the extra tax per gain is larger than the fall in sales; at ${elasticities.official.e_retention} the fall in sales is larger. The rate that raises the most is 1 / (1 + elasticity): about ${Math.round(100 / (1 + elasticities.official.e_retention))}% at ${elasticities.official.e_retention}, below today's 24% higher rate, and ${Math.round(100 / (1 + elasticities.central.e_retention))}% at ${elasticities.central.e_retention.toFixed(1)}.`}
         </p>
         <p>
-          HMRC&apos;s figures are {lowerFirst(block.measure).replace(/\.$/, "")}; receipts arrive about a
-          year after the liability, so each is set against {PE}&apos;s liabilities a year earlier.
-        </p>
-        <p>
-          {PE}&apos;s figures are the change in government balance on its own data, within the{" "}
+          {PE}&apos;s figures are the change in government balance, as in the{" "}
           <TabLink onNavigate={onNavigate} tab="reform">
             Reform
           </TabLink>{" "}
-          tab&apos;s custom rates. The official elasticity uses its lower value for gains qualifying
-          for the relief;{" "}
+          tab&apos;s custom rates;{" "}
           <TabLink onNavigate={onNavigate} tab="methodology" section="elasticity-gap">
             Methodology
           </TabLink>{" "}
-          explains how the two differ.
+          describes both elasticities.
         </p>
         <p>
-          {block.note.replace(/\s+$/, "")}{" "}
+          HMRC&apos;s figures are {lowerFirst(block.measure).replace(/\.$/, "")}. {block.note.replace(/\s+$/, "")}{" "}
           Source: <SourceLabel href={block.url} label={block.source} />, {block.locator}.
         </p>
         <p>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Bar,
   BarChart,
@@ -14,24 +14,21 @@ import { getNiceTicks, getTickDomain } from "../../lib/chartUtils";
 import { colors } from "../../lib/colors";
 import { formatSignedCurrency, formatSignedPct } from "../../lib/formatters";
 import ChartLogo from "../ChartLogo";
-import { LabelledSelect, YearSelect } from "../controls";
+import { LabelledSelect } from "../controls";
 import ChartTooltip, { TOOLTIP_PROPS } from "./ChartTooltip";
 
 const AXIS_STYLE = { fontSize: 12, fill: colors.gray[500] };
 
 
 // Change in household net income by income quantile, household type or
-// region, for a chosen year. `groupsByYear` is the pipeline's
-// income_change_groups block (fiscal label -> groupings).
+// region, in the reform's first year (the headline's year). `groupsByYear` is
+// the pipeline's income_change_groups block (fiscal label -> groupings).
 export default function GroupImpactChart({ groupsByYear, initialYear }) {
   const years = Object.keys(groupsByYear);
-  const [groupYear, setGroupYear] = useState(initialYear ?? years[0]);
+  const groupYear = years.includes(initialYear) ? initialYear : years[0];
   const [groupMetric, setGroupMetric] = useState("absolute");
   const [grouping, setGrouping] = useState("quintile");
-  useEffect(() => {
-    if (!years.includes(groupYear)) setGroupYear(years[0]);
-  }, [years, groupYear]);
-  const groups = groupsByYear[groupYear] ?? groupsByYear[years[0]];
+  const groups = groupsByYear[groupYear];
   const isRelative = groupMetric === "relative";
   const metricKey = isRelative ? "relative_change_pct" : "avg_change_gbp";
   // Regions and household types are ordered by impact (largest loss first);
@@ -51,7 +48,6 @@ export default function GroupImpactChart({ groupsByYear, initialYear }) {
   return (
     <>
       <div className="mb-4 flex flex-wrap gap-2 sm:gap-3">
-        <YearSelect years={years} value={groupYear} onChange={setGroupYear} />
         <LabelledSelect
           label="Group by"
           options={[

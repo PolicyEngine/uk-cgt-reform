@@ -5,6 +5,7 @@ import { colors } from "../../lib/colors";
 import { formatBn } from "../../lib/formatters";
 import ChartLogo from "../ChartLogo";
 import ChartLegend from "./ChartLegend";
+import { HoverTip, useHoverState } from "./ChartTooltip";
 
 // The three estimates compared each year, as dots on one £bn line: the
 // model's own static change, the model's uplift applied to the OBR's
@@ -43,13 +44,20 @@ export function buildJrfRows(block) {
 
 const textFor = (row, key) => (key === "jrf" ? row.jrfLabel : formatBn(row[key], 1));
 
-// One marker on the strip, with its value shown on hover or focus.
-function Marker({ series, left, label }) {
+// One marker on the strip; hovering or focusing it shows the year and its
+// value, one marker per chart at a time (`hover`).
+function Marker({ id, hover, series, left, title, label, value }) {
   return (
-    <span
-      tabIndex={0}
-      className="group/tip absolute top-1/2 -translate-x-1/2 -translate-y-1/2 cursor-default focus:outline-none"
-      style={{ left: `${left}%`, zIndex: series.key === "static" ? 2 : 1 }}
+    <HoverTip
+      id={id}
+      hover={hover}
+      title={title}
+      label={label}
+      value={value}
+      color={series.fill}
+      align={left > 60 ? "end" : left < 40 ? "start" : "center"}
+      className={`absolute top-1/2 -translate-x-1/2 -translate-y-1/2 ${series.key === "static" ? "z-[2]" : "z-[1]"}`}
+      style={{ left: `${left}%` }}
     >
       <span
         aria-hidden="true"
@@ -63,13 +71,7 @@ function Marker({ series, left, label }) {
           border: "1.5px solid #FFFFFF",
         }}
       />
-      <span
-        role="tooltip"
-        className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 hidden -translate-x-1/2 whitespace-nowrap rounded-md bg-slate-900 px-2 py-1 text-xs text-white shadow group-hover/tip:block group-focus/tip:block"
-      >
-        {label}
-      </span>
-    </span>
+    </HoverTip>
   );
 }
 
@@ -77,6 +79,7 @@ function Marker({ series, left, label }) {
 // model's uplift applied to the OBR's receipts, and JRF's estimate where it
 // published one. `rows`: buildJrfRows(block); `labels`: { static, obr, jrf }.
 export default function JrfComparisonChart({ rows, labels }) {
+  const hover = useHoverState();
   const max = Math.max(0, ...rows.flatMap((r) => SERIES.map((s) => r[s.key]).filter(isNum).map(Number)));
   const ticks = getNiceTicks([0, max], 4);
   const [, top] = getTickDomain(ticks);
@@ -142,9 +145,13 @@ export default function JrfComparisonChart({ rows, labels }) {
                   isNum(row[s.key]) ? (
                     <Marker
                       key={s.key}
+                      id={`${row.year}-${s.key}`}
+                      hover={hover}
                       series={s}
                       left={left(Number(row[s.key]))}
-                      label={`${labels[s.key]}: ${textFor(row, s.key)}`}
+                      title={row.year}
+                      label={labels[s.key]}
+                      value={textFor(row, s.key)}
                     />
                   ) : null,
                 )}
