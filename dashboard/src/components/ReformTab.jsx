@@ -260,7 +260,6 @@ export default function ReformTab({ data, datasetKey, onNavigate, anchor }) {
                 key={policy}
                 form={forms[policy]}
                 onChange={setForm(policy)}
-                showPresets={policy === "custom"}
                 onCalculate={calculate}
                 running={inFlight}
                 onNavigate={onNavigate}

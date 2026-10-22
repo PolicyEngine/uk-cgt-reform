@@ -323,17 +323,6 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
       </Card>
 
       {matchedRow ? <ReadyReckonerPanel row={matchedRow} result={result} /> : null}
-
-      <p className="text-xs leading-5 text-slate-500">
-        Run on policyengine.py {result.metadata.policyengine_version} with policyengine-uk{" "}
-        {result.metadata.policyengine_uk_version}; reform fingerprint{" "}
-        <span className="font-mono">{result.metadata.reform_fingerprint}</span>, projection{" "}
-        <span className="font-mono">{result.metadata.projection.fingerprint}</span>
-        {result.metadata.timing?.total_seconds
-          ? `; ${result.metadata.timing.total_seconds}s of simulation`
-          : ""}
-        .
-      </p>
     </>
   );
 }

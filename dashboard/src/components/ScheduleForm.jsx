@@ -11,13 +11,8 @@ import {
   ELASTICITIES,
   PCT_MAX,
   PCT_MIN,
-  PRESETS,
-  READY_RECKONER,
   STEP_PCT,
   checkForm,
-  formOf,
-  presetFor,
-  readyReckonerRowFor,
 } from "../lib/schedule";
 import {
   FIELD,
@@ -201,30 +196,21 @@ function RateRow({ band, value, onChange, error }) {
   );
 }
 
-// One policy's parameters as one panel with sub-tabs (start from, CGT
-// rates, relief, behavioural response) and one button: Next, or Calculate
-// on the last sub-tab. `showPresets` adds the "Start from" sub-tab (presets and HMRC
-// ready-reckoner rows). It is a form: Enter moves to the next sub-tab, or
-// calculates on the last;
-// `running` (a run in flight) disables it.
-export default function ScheduleForm({ form, onChange, showPresets, onCalculate, running, onNavigate }) {
+// One policy's parameters as one panel with sub-tabs (CGT rates, relief,
+// behavioural response) and one button: Next, or Calculate on the last
+// sub-tab. It is a form: Enter moves to the next sub-tab, or calculates on
+// the last; `running` (a run in flight) disables it.
+export default function ScheduleForm({ form, onChange, onCalculate, running, onNavigate }) {
   const check = checkForm(form);
   const set = (patch) => onChange({ ...form, ...patch });
   const setBadr = (patch) => set({ badrForm: { ...form.badrForm, ...patch } });
-  // Loading a preset or a ready-reckoner row keeps the chosen elasticity.
-  const load = (schedule) => onChange(formOf(schedule.rates, schedule.badr, form.elasticity));
-  const readyReckonerRow = check.rates ? (readyReckonerRowFor(check.rates, check.badr)?.id ?? "none") : "none";
   const errorFor = (field) => (check.errorField === field ? check.error : null);
   const elasticity = ELASTICITIES.find((option) => String(option.e_retention) === String(form.elasticity));
 
   const badrSummary = form.badrForm.mode === "withdraw"
     ? "Withdrawn"
     : `${form.badrForm.rate || "–"}% to ${badrLimitLabel(form.badrForm.limit)}`;
-  const preset = PRESETS.find((candidate) => candidate.id === presetFor(check));
   const steps = [
-    ...(showPresets
-      ? [{ id: "start", label: "Start from", summary: preset ? splitLabel(preset.label).name : "Custom" }]
-      : []),
     {
       id: "rates",
       label: "CGT rates",
@@ -247,49 +233,6 @@ export default function ScheduleForm({ form, onChange, showPresets, onCalculate,
   return (
     <form onSubmit={submit} noValidate>
       <SubTabs steps={steps} current={current} onSelect={setStep} />
-
-      {current === "start" ? (
-        <Step id="start" intro="Load a preset or a row of HMRC's ready reckoner, then adjust it in the other tabs.">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <FieldLabel htmlFor="preset">Preset</FieldLabel>
-              <Select
-                id="preset"
-                describedBy="preset-hint"
-                value={presetFor(check)}
-                onChange={(id) => {
-                  const chosen = PRESETS.find((candidate) => candidate.id === id);
-                  if (chosen) load(chosen);
-                }}
-                options={[
-                  ...PRESETS.map((candidate) => ({ value: candidate.id, label: candidate.label })),
-                  { value: "custom", label: "Custom" },
-                ]}
-              />
-              <p id="preset-hint" className={`mt-1.5 ${HINT}`}>Fills in the rates and the relief.</p>
-            </div>
-            <div>
-              <FieldLabel htmlFor="ready-reckoner">HMRC ready-reckoner row</FieldLabel>
-              <Select
-                id="ready-reckoner"
-                describedBy="ready-reckoner-hint"
-                value={readyReckonerRow}
-                onChange={(id) => {
-                  const chosen = READY_RECKONER.rows.find((row) => row.id === id);
-                  if (chosen) load(chosen);
-                }}
-                options={[
-                  { value: "none", label: "None" },
-                  ...READY_RECKONER.rows.map((row) => ({ value: row.id, label: row.label })),
-                ]}
-              />
-              <p id="ready-reckoner-hint" className={`mt-1.5 ${HINT}`}>
-                Compared with HMRC&apos;s published figure in the results.
-              </p>
-            </div>
-          </div>
-        </Step>
-      ) : null}
 
       {current === "rates" ? (
         <Step id="rates" intro="The CGT rate on gains in each income tax band.">
