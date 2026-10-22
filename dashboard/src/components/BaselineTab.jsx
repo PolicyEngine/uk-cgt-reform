@@ -151,7 +151,7 @@ export default function BaselineTab({ data, anchor }) {
 
       <section className="section-card scroll-mt-24" id="benchmarks">
         <SectionHeading
-          title="Model versus external benchmarks"
+          title="Model and HMRC statistics"
           description={
             <>
               PolicyEngine&apos;s {firstYear} baseline beside HMRC&apos;s{" "}
@@ -172,7 +172,7 @@ export default function BaselineTab({ data, anchor }) {
         <div className="mb-5 mt-2 text-sm leading-6 text-slate-600">
           <>
               The exempt <SourceLink href={EXEMPT_AMOUNT}>amount</SourceLink>{" "}
-              {`stays at £${entrants.exempt_amount_gbp.toLocaleString("en-GB")} while gains grow with the economy, so some people with small gains become CGT taxpayers in later years. These entrants, with ${firstYear} gains between £${entrants.exempt_amount_gbp.toLocaleString("en-GB")} and £${Math.round(entrants.ceiling_gbp).toLocaleString("en-GB")}, are shown separately so they can be netted out.${entrantShare > 0.05 ? "" : " They are a small share of taxpayers, so the headline counts read as taxpayers in the ordinary sense."}`}
+              {`stays at £${entrants.exempt_amount_gbp.toLocaleString("en-GB")} while gains grow with the economy, so some people with gains below it become CGT taxpayers in later years. These entrants, with ${firstYear} gains between £${entrants.exempt_amount_gbp.toLocaleString("en-GB")} and £${Math.round(entrants.ceiling_gbp).toLocaleString("en-GB")}, are shown separately so they can be netted out.${entrantShare > 0.05 ? "" : " They are under 5% of taxpayers, so the headline counts read as taxpayers in the ordinary sense."}`}
             </>
         </div>
         <div className="grid gap-4 md:grid-cols-3">
@@ -192,8 +192,8 @@ export default function BaselineTab({ data, anchor }) {
             </span>
             On this dataset {formatPct(100 * entrantShare, 0)} of the {firstYear} CGT taxpayers
             are entrants by uprating. {dataset.notes} The share of people the reform touches,
-            and every count in this tab, is dominated by that group; the gains and liability
-            totals are not, because each entrant carries only a few hundred pounds above the
+            and every count in this tab, mostly reflects that group; the gains and liability
+            totals do not, because each entrant has a few hundred pounds of gains above the
             exempt amount.
           </p>
         ) : null}

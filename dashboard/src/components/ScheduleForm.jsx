@@ -408,7 +408,7 @@ export default function ScheduleForm({ form, onChange, onCalculate, running, onN
                 <TabLink onNavigate={onNavigate} tab="methodology" section="elasticity">
                   Methodology
                 </TabLink>{" "}
-                explains how they differ.
+                describes each value.
               </p>
             </div>
           </div>

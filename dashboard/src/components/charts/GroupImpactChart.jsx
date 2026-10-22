@@ -176,8 +176,8 @@ export function GroupDefinitions({ children }) {
         households contain at least one child.
       </li>
       <li>
-        Regional averages reflect where households with taxable gains live in the survey, so they
-        are noisier than the income groups; households without an assigned area are excluded.
+        Regional averages reflect where households with taxable gains live in the survey and rest
+        on fewer households than the income groups; households without an assigned area are excluded.
       </li>
       {children}
     </ul>
