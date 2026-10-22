@@ -1,7 +1,7 @@
 "use client";
 
 import { getBenchmarks, getDatasetInfo } from "../lib/dataHelpers";
-import { formatBn, formatPublished, formatSignedMn } from "../lib/formatters";
+import { formatBn, formatPublished, formatSignedBn, formatSignedMn } from "../lib/formatters";
 import JrfComparisonChart, { buildJrfRows } from "./charts/JrfComparisonChart";
 import PackageEstimatesChart, { buildPackageRows } from "./charts/PackageEstimatesChart";
 import ReadyReckonerChart, { buildReckonerRows } from "./charts/ReadyReckonerChart";
@@ -113,7 +113,8 @@ function AtAGlance({ benchmarks, rr, elasticities }) {
   const range = packageRange(buildPackageRows(benchmarks.centax_package_context));
   const { widest, pair } = reckonerSplit(rr);
   const v = widest?.values[pair.key];
-  const sign = (x) => (x < 0 ? "loss" : "gain");
+  // £m from the reckoner block as "+£5.3bn" / "−£4.5bn".
+  const bnFromM = (m) => formatSignedBn(m / 1000, 1);
   const items = [
     jrfGlance(benchmarks.static_equalisation),
     {
@@ -137,14 +138,14 @@ function AtAGlance({ benchmarks, rr, elasticities }) {
       detail: "After behaviour, for a wider reform of the CGT base, so not like-for-like.",
     },
     widest && {
-      title: `Higher rate +10pp: ${elasticities.central.e_retention.toFixed(1)} vs ${elasticities.official.e_retention} response`,
-      value: `${sign(v.central)} vs ${sign(v.official)}`,
+      title: `${widest.label.replace(/\s*\(.*\)\s*$/, "")}: central vs official response`,
+      value: `${bnFromM(v.central)} vs ${bnFromM(v.official)}`,
       id: "ready-reckoner",
       detail: (
         <>
-          {"The sign depends on how strongly people respond. "}
+          {`${PE}'s change in revenue at ${elasticities.central.e_retention.toFixed(1)} and ${elasticities.official.e_retention}. `}
           <SourceLink href={benchmarks.ready_reckoner.url}>HMRC</SourceLink>
-          {` shows a ${sign(v.hmrc)} (${pair.hmrcYear} receipts).`}
+          {`: ${bnFromM(v.hmrc)} (${pair.hmrcYear} receipts).`}
         </>
       ),
     },
