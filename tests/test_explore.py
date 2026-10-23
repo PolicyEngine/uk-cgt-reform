@@ -49,7 +49,7 @@ def context(**overrides):
         "base_year": 2024,
         "projection_fingerprint": "fc5e9a879bce",
         "policyengine_uk_version": "2.132.6",
-        "policyengine_version": "6.10.0",
+        "policyengine_version": "6.10.1",
         "policyengine_core_version": "3.33.3",
         "code_fingerprint": "c0dec0dec0de",
         "exempt_amounts": {y: 3_000.0 for y in (2024, *YEARS)},
@@ -61,7 +61,7 @@ def context(**overrides):
             "certified_for_model_version": "2.132.6",
             "data_build_id": "microcosm-uk-2024-25-national-20261019T083323Z-6cba5d71",
             "built_with_model_version": "2.132.6",
-            "bundle_id": "uk-6.10.0",
+            "bundle_id": "uk-6.10.1",
             "certified_data_artifact_sha256": CANDIDATE.sha256,
         },
     }
@@ -296,13 +296,13 @@ def test_cache_key_tracks_every_input_and_nothing_else():
     req = validate_request({"dataset": CANDIDATE.key, "rates": FLAT_30})
     key = cache_key(req, context())
     assert key.startswith(
-        f"{CANDIDATE.key}__{CANDIDATE.digest}__fc5e9a879bce__2.132.6__6.10.0__3.33.3__c0dec0dec0de__"
+        f"{CANDIDATE.key}__{CANDIDATE.digest}__fc5e9a879bce__2.132.6__6.10.1__3.33.3__c0dec0dec0de__"
     )
     assert key.endswith(req.fingerprint)
     # Changes that must miss.
     assert cache_key(req, context(projection_fingerprint="other")) != key
     assert cache_key(req, context(policyengine_uk_version="2.132.7")) != key
-    assert cache_key(req, context(policyengine_version="6.10.1")) != key
+    assert cache_key(req, context(policyengine_version="6.10.2")) != key
     assert cache_key(req, context(policyengine_core_version="3.33.4")) != key
     assert cache_key(req, context(code_fingerprint="deadbeef0000")) != key
     other_rates = validate_request(

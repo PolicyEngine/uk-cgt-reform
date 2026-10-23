@@ -6,7 +6,7 @@ policyengine.py wrapper), never by constructing
 
 - ``pe.uk.ensure_datasets`` materialises the published single-year
   dataset as one per-year dataset file per simulated year. The dataset is
-  the release policyengine.py 6.10.0 bundles and certifies for its pinned
+  the release policyengine.py 6.10.1 bundles and certifies for its pinned
   policyengine-uk (2.132.6): it is requested by its logical name, the
   wrapper verifies the file's sha256 against the bundle, and the pipeline
   checks that digest against the one recorded here as well, so a re-tagged
@@ -27,7 +27,7 @@ relief breakdown that policyengine-uk 2.99.0 charges on separate schedules.
 It is a single engine-year file (``time_period`` 2024)
 that the engine copies forward and uprates; see ``uprating_audit``.
 
-Versions: the pipeline runs on policyengine.py 6.10.0, which pins
+Versions: the pipeline runs on policyengine.py 6.10.1, which pins
 policyengine-uk 2.132.6 and policyengine-core 3.33.3, the versions the
 Microcosm UK 2024-25 release was built with and is certified for. 2.132.6
 already charges the residential-property schedule, carries

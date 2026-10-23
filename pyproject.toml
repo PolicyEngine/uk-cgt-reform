@@ -26,13 +26,13 @@ dependencies = [
 
 [project.optional-dependencies]
 simulation = [
-  # policyengine.py 6.10.0 pins policyengine-uk 2.132.6 and policyengine-core
+  # policyengine.py 6.10.1 pins policyengine-uk 2.132.6 and policyengine-core
   # 3.33.3, the versions the Microcosm UK 2024-25 release was built with and
   # is certified for, and refuses any other policyengine-uk. Each engine
   # release can move the projection fingerprint, so a fresh install reproduces
   # the committed results only on these pins; changing them is a deliberate
   # re-pin that regenerates the results (projection fc5e9a879bce on 2.132.6).
-  "policyengine[uk]==6.10.0",
+  "policyengine[uk]==6.10.1",
   "policyengine-uk==2.132.6",
   "policyengine-core==3.33.3",
   "microdf-python>=1.3,<1.4",

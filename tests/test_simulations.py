@@ -67,7 +67,7 @@ def test_the_mtr_convention_and_a_conflict():
 
 def _wrapper(sha256):
     entry = types.SimpleNamespace(sha256=sha256, revision="tag")
-    manifest = types.SimpleNamespace(datasets={CANDIDATE.key: entry}, policyengine_version="6.10.0")
+    manifest = types.SimpleNamespace(datasets={CANDIDATE.key: entry}, policyengine_version="6.10.1")
     return types.SimpleNamespace(
         uk=types.SimpleNamespace(model=types.SimpleNamespace(release_manifest=manifest))
     )

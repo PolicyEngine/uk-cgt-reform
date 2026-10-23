@@ -90,7 +90,7 @@ option scores any rate and lifetime limit for the relief, or withdraws it, for e
 
 ## Results (2026-27 unless stated)
 
-Engine policyengine-uk 2.132.6, wrapper policyengine.py 6.10.0, projection
+Engine policyengine-uk 2.132.6, wrapper policyengine.py 6.10.1, projection
 fingerprint `fc5e9a879bce`.
 
 | | Microcosm UK 2024-25 | External benchmark |
@@ -283,7 +283,7 @@ Left out by decision: the Office of Tax Simplification's 2020 static figure
 
 ### Versions
 
-The pipeline runs on policyengine.py 6.10.0, which pins policyengine-uk
+The pipeline runs on policyengine.py 6.10.1, which pins policyengine-uk
 2.132.6 and policyengine-core 3.33.3: the versions the Microcosm UK 2024-25
 release was built with and is certified for. The wrapper requests the
 dataset by its bundled name (`microcosm_uk_2024_25`), verifies the file's
@@ -654,7 +654,7 @@ Requires a Hugging Face token with access to PolicyEngine's private repos.
 `huggingface_hub` fetches the pinned file (its stored token or `HF_TOKEN`);
 export the token as `HUGGING_FACE_TOKEN` too, so the wrapper checks its
 certification against the live data-release manifest. `pyproject.toml` pins
-policyengine.py 6.10.0 with policyengine-uk 2.132.6 and policyengine-core
+policyengine.py 6.10.1 with policyengine-uk 2.132.6 and policyengine-core
 3.33.3, the versions the dataset was built with and is certified for.
 2.132.6 carries the residential-property and BADR schedules, the precise
 marginal rate on large gains and the separate BADR elasticity

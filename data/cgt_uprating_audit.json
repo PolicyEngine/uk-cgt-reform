@@ -93,7 +93,7 @@
           "parameter": "gov.economic_assumptions.yoy_growth.ons.population",
           "pull_request": 1305,
           "commit": "b9efbaf8",
-          "note": "Engine metadata cited 'ONS Population Projections' with an unversioned href until policyengine-uk 2.141.6, which cites the OBR release and the ONS 2022-based projections; the March 2026 EFO refresh (PR #1514) left this series unchanged."
+          "note": "Engine metadata cites 'ONS Population Projections' with an unversioned href on policyengine-uk 2.132.6 (2.141.6 and later cite the OBR release and the ONS 2022-based projections); the March 2026 EFO refresh (PR #1514) left this series unchanged."
         },
         "workbook_reread": "not re-read for this audit: the OBR download endpoint refuses non-browser requests; values of record are the engine series as committed in PR #1305",
         "values_of_record": {
