@@ -76,6 +76,11 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
   const [sensitivityYear, setSensitivityYear] = useState(headlineYear);
   const headlineSensitivity = getSensitivity(data, headlineYear);
   const sensitivity = getSensitivity(data, sensitivityYear);
+  // A year's chart shows only with every case the headline year has, never
+  // a partial set of bars.
+  const sensitivityComplete =
+    sensitivity.length === headlineSensitivity.length &&
+    headlineSensitivity.every((row) => sensitivity.some((r) => r.e_retention === row.e_retention));
   const { central, official, centax_range: centaxRange } = getBenchmarks(data).elasticities;
   const validation = getValidation(data);
   const dataset = getDatasetInfo(data);
@@ -204,7 +209,7 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
               </>
             }
           />
-          <YieldChart steps={split.steps} />
+          <YieldChart key={splitYear} steps={split.steps} />
           <Notes>
             <p>Each segment is what that step adds once the ones before it are in place.</p>
             {validation.badr_gains_bn > 0 ? (
@@ -235,23 +240,27 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
           </Notes>
         </Card>
 
-        <Card as="details" className="group min-w-0 scroll-mt-24" id="sensitivity">
-          <summary className="cursor-pointer select-none text-xl font-semibold tracking-tight text-slate-900 marker:text-[color:var(--pe-color-primary-600)]">
-            {`Sensitivity to the behavioural elasticity, ${sensitivityYear}`}
+        <Card as="details" className="group relative min-w-0 scroll-mt-24" id="sensitivity">
+          <summary className="cursor-pointer select-none text-xl font-semibold tracking-tight text-slate-900 marker:text-[color:var(--pe-color-primary-600)] sm:group-open:pr-40">
+            {`Sensitivity to the behavioural response, ${sensitivityYear}`}
             <span className="ml-2 text-sm font-normal text-slate-500 group-open:hidden">
               (expand to see how the result depends on taxpayers&apos; response)
             </span>
           </summary>
-          <div className="mb-5 mt-2 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-            <p className="text-sm leading-6 text-slate-600">
-              Each bar shows the change in CGT revenue under a different assumption about how
-              strongly taxpayers cut the gains they realise.
-            </p>
-            <div className="shrink-0">
-              <YearSelect years={getSensitivityYears(data)} value={sensitivityYear} onChange={setSensitivityYear} />
-            </div>
+          {/* The year select sits right of the title once the section is open
+              (it stacks under the title on phones). */}
+          <div className="mt-3 sm:absolute sm:right-6 sm:top-4 sm:mt-0">
+            <YearSelect years={getSensitivityYears(data)} value={sensitivityYear} onChange={setSensitivityYear} />
           </div>
-          <SensitivityChart rows={sensitivity} centralRetention={central.e_retention} />
+          <p className="mb-5 mt-2 text-sm leading-6 text-slate-600">
+            Each bar shows the change in CGT revenue under a different assumption about how
+            strongly taxpayers cut the gains they realise.
+          </p>
+          {sensitivityComplete ? (
+            <SensitivityChart key={sensitivityYear} rows={sensitivity} centralRetention={central.e_retention} />
+          ) : (
+            <p className="text-sm text-slate-500">The sensitivity runs for {sensitivityYear} are not in this results file.</p>
+          )}
           <Notes>
           <p>
             Each bar re-runs the reform with a different elasticity of realised gains with respect
@@ -315,8 +324,10 @@ export function BeyondForecastNote() {
   );
 }
 
-// The compact year select the per-year sections share.
+// The compact year select the per-year sections share; none when the
+// results cover a single year.
 function YearSelect({ years, value, onChange }) {
+  if (years.length < 2) return null;
   return (
     <div className="w-36">
       <LabelledSelect
