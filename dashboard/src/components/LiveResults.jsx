@@ -33,7 +33,7 @@ import ChartLegend from "./charts/ChartLegend";
 import RateChangeChart from "./charts/RateChangeChart";
 import GroupImpactChart, { GROUP_DESCRIPTION, GroupDefinitions } from "./charts/GroupImpactChart";
 import { Card, DatasetName, MetricCard, Notes, SourceLink, TabLink } from "./controls";
-import { SPEC_SUMMARY } from "./EqualisationResults";
+import { BeyondForecastNote, SPEC_SUMMARY } from "./EqualisationResults";
 import SectionHeading from "./SectionHeading";
 
 const EXEMPT_AMOUNT = "https://www.gov.uk/capital-gains-tax/allowances";
@@ -224,8 +224,7 @@ function ReadyReckonerPanel({ row, result, onNavigate }) {
           <TabLink onNavigate={onNavigate} tab="baseline" section="ready-reckoner">
             Baseline
           </TabLink>{" "}
-          tab scores every row at the central elasticity, an elasticity of 3.0 and the official
-          one.
+          tab scores every row at the official elasticity, 3.0 and the central one.
         </p>
         <p>
           <SourceLink href={READY_RECKONER.url}>HMRC&apos;s</SourceLink>
@@ -320,8 +319,9 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
             description="Each bar shows the change in the government's balance in one fiscal year, after taxpayers realise fewer gains."
           />
           <BudgetChart budget={result.budget} />
-          {entrantShare > 0.05 ? (
-            <Notes className="mt-auto">
+          <Notes className="mt-auto">
+            <BeyondForecastNote />
+            {entrantShare > 0.05 ? (
               <p>
                 Entrants by uprating (see{" "}
                 <TabLink onNavigate={onNavigate} tab="methodology" section="new-taxpayers">
@@ -330,8 +330,8 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
                 ) contribute {formatSmallBn(headlineRow.cgt_change_from_entrants_bn)} of the{" "}
                 {headlineYear} change.
               </p>
-            </Notes>
-          ) : null}
+            ) : null}
+          </Notes>
         </Card>
 
         <Card className="flex min-w-0 flex-col">

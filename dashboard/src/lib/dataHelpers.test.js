@@ -9,20 +9,20 @@ describe("headline year", () => {
 
   test("the single-year blocks are for the headline year", () => {
     const year = getHeadlineYear(results);
-    expect(getScheduleSplit(results).year).toBe(year);
-    expect(new Set(getSensitivity(results).map((row) => row.year))).toEqual(new Set([year]));
+    expect(getScheduleSplit(results, year).year).toBe(year);
+    expect(new Set(getSensitivity(results, year).map((row) => row.year))).toEqual(new Set([year]));
     expect(Object.keys(results.income_change_groups)).toContain(year);
   });
 
   test("the central sensitivity case is the headline year's budget row", () => {
     const year = getHeadlineYear(results);
-    const central = getSensitivity(results).find((row) => row.e_retention === results.metadata.elasticity);
+    const central = getSensitivity(results, year).find((row) => row.e_retention === results.metadata.elasticity);
     expect(central.revenue_bn).toBeCloseTo(getBudgetRow(results, year).cgt_change_bn, 6);
   });
 
   test("a missing headline year or budget row fails visibly", () => {
     expect(() => getHeadlineYear({ metadata: {} })).toThrow("headline_year");
-    expect(() => getBudgetRow(results, "2031-32")).toThrow("2031-32");
+    expect(() => getBudgetRow(results, "2032-33")).toThrow("2032-33");
   });
 });
 

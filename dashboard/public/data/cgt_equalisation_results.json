@@ -1276,182 +1276,186 @@
       ]
     }
   },
-  "sensitivity": [
-    {
-      "name": "Static (no behavioural response)",
-      "e_retention": 0.0,
-      "elasticity_parameter": "gov.simulation.capital_gains_responses.elasticity",
-      "applied_as": "retention",
-      "applied_value": 0.0,
-      "badr_elasticity": 0.0,
-      "year": "2027-28",
-      "revenue_bn": 27.019114081709194,
-      "response_assumption": {
-        "period": "2027",
-        "convention": "static",
-        "elasticity": 0.0,
+  "sensitivity": {
+    "2027-28": [
+      {
+        "name": "Static (no behavioural response)",
+        "e_retention": 0.0,
+        "elasticity_parameter": "gov.simulation.capital_gains_responses.elasticity",
+        "applied_as": "retention",
+        "applied_value": 0.0,
         "badr_elasticity": 0.0,
-        "mtr_elasticity": 0.0,
-        "separate_badr_elasticity": false,
-        "sources": {
-          "elasticity": "default",
-          "badr_elasticity": "default",
-          "mtr_elasticity": "default",
-          "separate_badr_elasticity": "default"
-        },
-        "mtr_auto_resolved": false,
-        "warnings": []
-      }
-    },
-    {
-      "name": "CenTax lower (retention elasticity 0.5)",
-      "e_retention": 0.5,
-      "elasticity_parameter": "gov.simulation.capital_gains_responses.elasticity",
-      "applied_as": "retention",
-      "applied_value": 0.5,
-      "badr_elasticity": 0.5,
-      "year": "2027-28",
-      "revenue_bn": 18.261136029817127,
-      "response_assumption": {
-        "period": "2027",
-        "convention": "retention",
-        "elasticity": 0.5,
+        "year": "2027-28",
+        "revenue_bn": 27.019114081709194,
+        "response_assumption": {
+          "period": "2027",
+          "convention": "static",
+          "elasticity": 0.0,
+          "badr_elasticity": 0.0,
+          "mtr_elasticity": 0.0,
+          "separate_badr_elasticity": false,
+          "sources": {
+            "elasticity": "default",
+            "badr_elasticity": "default",
+            "mtr_elasticity": "default",
+            "separate_badr_elasticity": "default"
+          },
+          "mtr_auto_resolved": false,
+          "warnings": []
+        }
+      },
+      {
+        "name": "CenTax lower (retention elasticity 0.5)",
+        "e_retention": 0.5,
+        "elasticity_parameter": "gov.simulation.capital_gains_responses.elasticity",
+        "applied_as": "retention",
+        "applied_value": 0.5,
         "badr_elasticity": 0.5,
-        "mtr_elasticity": 0.0,
-        "separate_badr_elasticity": false,
-        "sources": {
-          "elasticity": "override",
-          "badr_elasticity": "override",
-          "mtr_elasticity": "default",
-          "separate_badr_elasticity": "default"
-        },
-        "mtr_auto_resolved": false,
-        "warnings": []
-      }
-    },
-    {
-      "name": "CenTax central (retention elasticity 1.0)",
-      "e_retention": 1.0,
-      "elasticity_parameter": "gov.simulation.capital_gains_responses.elasticity",
-      "applied_as": "retention",
-      "applied_value": 1.0,
-      "badr_elasticity": 1.0,
-      "year": "2027-28",
-      "revenue_bn": 10.837106247754834,
-      "response_assumption": {
-        "period": "2027",
-        "convention": "retention",
-        "elasticity": 1.0,
+        "year": "2027-28",
+        "revenue_bn": 18.261136029817127,
+        "response_assumption": {
+          "period": "2027",
+          "convention": "retention",
+          "elasticity": 0.5,
+          "badr_elasticity": 0.5,
+          "mtr_elasticity": 0.0,
+          "separate_badr_elasticity": false,
+          "sources": {
+            "elasticity": "override",
+            "badr_elasticity": "override",
+            "mtr_elasticity": "default",
+            "separate_badr_elasticity": "default"
+          },
+          "mtr_auto_resolved": false,
+          "warnings": []
+        }
+      },
+      {
+        "name": "CenTax central (retention elasticity 1.0)",
+        "e_retention": 1.0,
+        "elasticity_parameter": "gov.simulation.capital_gains_responses.elasticity",
+        "applied_as": "retention",
+        "applied_value": 1.0,
         "badr_elasticity": 1.0,
-        "mtr_elasticity": 0.0,
-        "separate_badr_elasticity": false,
-        "sources": {
-          "elasticity": "override",
-          "badr_elasticity": "override",
-          "mtr_elasticity": "default",
-          "separate_badr_elasticity": "default"
-        },
-        "mtr_auto_resolved": false,
-        "warnings": []
-      }
-    },
-    {
-      "name": "CenTax upper (retention elasticity 2.0)",
-      "e_retention": 2.0,
-      "elasticity_parameter": "gov.simulation.capital_gains_responses.elasticity",
-      "applied_as": "retention",
-      "applied_value": 2.0,
-      "badr_elasticity": 2.0,
-      "year": "2027-28",
-      "revenue_bn": -0.7898717933099861,
-      "response_assumption": {
-        "period": "2027",
-        "convention": "retention",
-        "elasticity": 2.0,
+        "year": "2027-28",
+        "revenue_bn": 10.837106247754834,
+        "response_assumption": {
+          "period": "2027",
+          "convention": "retention",
+          "elasticity": 1.0,
+          "badr_elasticity": 1.0,
+          "mtr_elasticity": 0.0,
+          "separate_badr_elasticity": false,
+          "sources": {
+            "elasticity": "override",
+            "badr_elasticity": "override",
+            "mtr_elasticity": "default",
+            "separate_badr_elasticity": "default"
+          },
+          "mtr_auto_resolved": false,
+          "warnings": []
+        }
+      },
+      {
+        "name": "CenTax upper (retention elasticity 2.0)",
+        "e_retention": 2.0,
+        "elasticity_parameter": "gov.simulation.capital_gains_responses.elasticity",
+        "applied_as": "retention",
+        "applied_value": 2.0,
         "badr_elasticity": 2.0,
-        "mtr_elasticity": 0.0,
-        "separate_badr_elasticity": false,
-        "sources": {
-          "elasticity": "override",
-          "badr_elasticity": "override",
-          "mtr_elasticity": "default",
-          "separate_badr_elasticity": "default"
-        },
-        "mtr_auto_resolved": false,
-        "warnings": []
-      }
-    },
-    {
-      "name": "HMRC/OBR official (retention elasticity 3.6; 1.4 for BADR gains)",
-      "e_retention": 3.6,
-      "elasticity_parameter": "gov.simulation.capital_gains_responses.elasticity",
-      "applied_as": "retention",
-      "applied_value": 3.6,
-      "badr_elasticity": 1.4,
-      "year": "2027-28",
-      "revenue_bn": -9.946874784852277,
-      "response_assumption": {
-        "period": "2027",
-        "convention": "retention",
-        "elasticity": 3.6,
+        "year": "2027-28",
+        "revenue_bn": -0.7898717933099861,
+        "response_assumption": {
+          "period": "2027",
+          "convention": "retention",
+          "elasticity": 2.0,
+          "badr_elasticity": 2.0,
+          "mtr_elasticity": 0.0,
+          "separate_badr_elasticity": false,
+          "sources": {
+            "elasticity": "override",
+            "badr_elasticity": "override",
+            "mtr_elasticity": "default",
+            "separate_badr_elasticity": "default"
+          },
+          "mtr_auto_resolved": false,
+          "warnings": []
+        }
+      },
+      {
+        "name": "HMRC/OBR official (retention elasticity 3.6; 1.4 for BADR gains)",
+        "e_retention": 3.6,
+        "elasticity_parameter": "gov.simulation.capital_gains_responses.elasticity",
+        "applied_as": "retention",
+        "applied_value": 3.6,
         "badr_elasticity": 1.4,
-        "mtr_elasticity": 0.0,
-        "separate_badr_elasticity": true,
-        "sources": {
-          "elasticity": "override",
-          "badr_elasticity": "override",
-          "mtr_elasticity": "default",
-          "separate_badr_elasticity": "override"
-        },
-        "mtr_auto_resolved": false,
-        "warnings": []
-      }
-    }
-  ],
-  "schedule_split": {
-    "year": "2027-28",
-    "elasticities": {
-      "static": 0.0,
-      "central": 1.0
-    },
-    "reform_fingerprints": {
-      "static": {
-        "main_rates": "2136ae8ba8f0",
-        "residential": "ebeeba8cd992",
-        "badr_withdrawn": "4251e7185edd"
-      },
-      "central": {
-        "main_rates": "b6104c1f31ec",
-        "residential": "a35352e11262",
-        "badr_withdrawn": "0dd9416217c3"
-      }
-    },
-    "steps": [
-      {
-        "step": "main_rates",
-        "label": "Main rates at 20% / 40% / 45%",
-        "static_cgt_change_bn": 19.67584861380367,
-        "static_increment_bn": 19.67584861380367,
-        "central_cgt_change_bn": 7.098727726428211,
-        "central_increment_bn": 7.098727726428211
-      },
-      {
-        "step": "residential",
-        "label": "Residential property gains at the same rates",
-        "static_cgt_change_bn": 21.947757963107044,
-        "static_increment_bn": 2.271909349303375,
-        "central_cgt_change_bn": 7.895260669401493,
-        "central_increment_bn": 0.7965329429732818
-      },
-      {
-        "step": "badr_withdrawn",
-        "label": "Business Asset Disposal Relief withdrawn",
-        "static_cgt_change_bn": 27.019114081709194,
-        "static_increment_bn": 5.07135611860215,
-        "central_cgt_change_bn": 10.837106247754834,
-        "central_increment_bn": 2.94184557835334
+        "year": "2027-28",
+        "revenue_bn": -9.946874784852277,
+        "response_assumption": {
+          "period": "2027",
+          "convention": "retention",
+          "elasticity": 3.6,
+          "badr_elasticity": 1.4,
+          "mtr_elasticity": 0.0,
+          "separate_badr_elasticity": true,
+          "sources": {
+            "elasticity": "override",
+            "badr_elasticity": "override",
+            "mtr_elasticity": "default",
+            "separate_badr_elasticity": "override"
+          },
+          "mtr_auto_resolved": false,
+          "warnings": []
+        }
       }
     ]
+  },
+  "schedule_split": {
+    "2027-28": {
+      "year": "2027-28",
+      "elasticities": {
+        "static": 0.0,
+        "central": 1.0
+      },
+      "reform_fingerprints": {
+        "static": {
+          "main_rates": "2136ae8ba8f0",
+          "residential": "ebeeba8cd992",
+          "badr_withdrawn": "4251e7185edd"
+        },
+        "central": {
+          "main_rates": "b6104c1f31ec",
+          "residential": "a35352e11262",
+          "badr_withdrawn": "0dd9416217c3"
+        }
+      },
+      "steps": [
+        {
+          "step": "main_rates",
+          "label": "Main rates at 20% / 40% / 45%",
+          "static_cgt_change_bn": 19.67584861380367,
+          "static_increment_bn": 19.67584861380367,
+          "central_cgt_change_bn": 7.098727726428211,
+          "central_increment_bn": 7.098727726428211
+        },
+        {
+          "step": "residential",
+          "label": "Residential property gains at the same rates",
+          "static_cgt_change_bn": 21.947757963107044,
+          "static_increment_bn": 2.271909349303375,
+          "central_cgt_change_bn": 7.895260669401493,
+          "central_increment_bn": 0.7965329429732818
+        },
+        {
+          "step": "badr_withdrawn",
+          "label": "Business Asset Disposal Relief withdrawn",
+          "static_cgt_change_bn": 27.019114081709194,
+          "static_increment_bn": 5.07135611860215,
+          "central_cgt_change_bn": 10.837106247754834,
+          "central_increment_bn": 2.94184557835334
+        }
+      ]
+    }
   },
   "benchmarks": {
     "elasticities": {

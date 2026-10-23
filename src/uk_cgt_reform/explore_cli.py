@@ -38,7 +38,7 @@ def build_parser() -> argparse.ArgumentParser:
         description=(
             "Score a CGT rate schedule (main and residential property rates, and "
             "Business Asset Disposal Relief) on a "
-            "registered dataset for 2026-27 to 2030-31, with the pipeline's behavioural "
+            "registered dataset for 2027-28 to 2031-32, with the pipeline's behavioural "
             "response. Rates are fractions: 0.3 for 30%."
         ),
     )

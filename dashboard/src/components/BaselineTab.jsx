@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { getDatasetInfo, getFirstYear, getValidation } from "../lib/dataHelpers";
+import { getDatasetInfo, getHeadlineYear, getValidation } from "../lib/dataHelpers";
 import { Notes, SourceLink } from "./controls";
 import BenchmarkChart, { parseBenchmark } from "./charts/BenchmarkChart";
 import BenchmarksTab from "./BenchmarksTab";
@@ -90,7 +90,9 @@ export default function BaselineTab({ data, anchor, onNavigate }) {
 
   const validation = getValidation(data);
   const dataset = getDatasetInfo(data);
-  const firstYear = getFirstYear(data);
+  // The baseline is checked in the headline year, against HMRC's latest
+  // (provisional) outturn.
+  const modelYear = getHeadlineYear(data);
   const bench = (group, key, label, unit, model) => ({
     group,
     key,
@@ -119,8 +121,8 @@ export default function BaselineTab({ data, anchor, onNavigate }) {
       data={data}
       onNavigate={onNavigate}
       baselineGlance={{
-        modelYear: firstYear,
-        hmrcYear: "2024-25 (provisional)",
+        modelYear,
+        hmrcYear: "2024-25",
         url: CGT_STATISTICS,
         gains: { model: validation.total_gains_bn, hmrc: BENCHMARKS.totalGains.y2024.value },
         liability: { model: validation.baseline_cgt_revenue_bn, hmrc: BENCHMARKS.liability.y2024.value },
@@ -128,15 +130,16 @@ export default function BaselineTab({ data, anchor, onNavigate }) {
     >
       <section className="section-card scroll-mt-24" id="benchmarks">
         <SectionHeading
-          title="Capital gains before the reform: PolicyEngine and HMRC"
+          title={`Baseline: PolicyEngine ${modelYear} and HMRC 2024-25`}
           description={
             <>
-              PolicyEngine&apos;s {firstYear} baseline beside HMRC&apos;s{" "}
-              <SourceLink href={CGT_STATISTICS}>statistics</SourceLink> for 2024-25 (provisional).
+              PolicyEngine&apos;s baseline beside HMRC&apos;s{" "}
+              <SourceLink href={CGT_STATISTICS}>statistics</SourceLink>, which are provisional for
+              that year.
             </>
           }
         />
-        <BenchmarkChart rows={benchmarkRows} modelLabel={`PolicyEngine (${dataset.shortLabel}, ${firstYear})`} />
+        <BenchmarkChart rows={benchmarkRows} modelLabel={`PolicyEngine (${dataset.shortLabel})`} />
         <Notes>
           <p>
             The Family Resources <SourceLink href={FRS}>Survey</SourceLink> records few capital
@@ -144,9 +147,9 @@ export default function BaselineTab({ data, anchor, onNavigate }) {
             HMRC&apos;s CGT <SourceLink href={CGT_STATISTICS}>statistics</SourceLink>.
           </p>
           <p>
-            {`Liabilities are higher relative to gains in ${firstYear} because CGT `}
+            {"PolicyEngine's liabilities are higher relative to gains than HMRC's because CGT "}
             <SourceLink href={CGT_RATES}>rates</SourceLink>
-            {" rose from 10% and 20% to 18% and 24% partway through 2024-25."}
+            {" rose from 10% and 20% to 18% and 24% partway through HMRC's year."}
           </p>
         </Notes>
       </section>

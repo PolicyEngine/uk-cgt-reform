@@ -23,7 +23,9 @@ const SERIES = {
   upper: { fill: colors.primary[300], text: colors.primary[600], weight: 600 },
   official: { fill: colors.error, opacity: 0.45, text: "#B42318", weight: 600 },
 };
-const ORDER = ["hmrc", "central", "upper", "official"];
+// Top to bottom in each row, and in the legend: HMRC, then the model from
+// the strongest response to the weakest.
+const ORDER = ["hmrc", "official", "upper", "central"];
 
 const isNum = (v) => v !== null && v !== undefined && Number.isFinite(Number(v));
 
@@ -37,7 +39,7 @@ export function buildReckonerRows(
 ) {
   const pairs = block.lag.map((lag, i) => ({
     key: String(i),
-    label: lag.hmrc_year,
+    label: lag.model_year,
     hmrcYear: lag.hmrc_year,
     modelYear: lag.model_year,
   }));

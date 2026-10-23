@@ -32,7 +32,7 @@ ENGINE_REGIONS = {
 
 def test_microdf_quantile_ranks_split_weight_evenly():
     income = MicroSeries(np.arange(100, dtype=float), weights=np.ones(100))
-    for n, rank in ((10, income.decile_rank()), (4, income.quartile_rank())):
+    for n, rank in ((10, income.decile_rank()),):
         labels = np.array(QUANTILE_LABELS[n], dtype=object)[rank.values.astype(int) - 1]
         values, counts = np.unique(labels, return_counts=True)
         assert set(values) == set(QUANTILE_LABELS[n])
@@ -41,15 +41,14 @@ def test_microdf_quantile_ranks_split_weight_evenly():
 
 def test_microdf_ranks_are_weighted():
     # A heavy high-income household fills the upper groups, leaving the
-    # light low-income households ranked in the bottom quartile.
+    # light low-income households ranked in the bottom decile.
     income = MicroSeries(np.array([1.0, 2.0, 3.0, 4.0]), weights=np.array([1.0, 1.0, 1.0, 75.0]))
-    rank = income.quartile_rank().values.astype(int)
+    rank = income.decile_rank().values.astype(int)
     assert (rank[:3] == 1).all()
-    assert rank[-1] == 4
+    assert rank[-1] == 10
 
 
 def test_quantile_labels_are_ordered_and_complete():
-    assert len(QUANTILE_LABELS[4]) == 4
     assert len(QUANTILE_LABELS[10]) == 10
     assert QUANTILE_LABELS[10][0] == "Lowest 10%"
     assert QUANTILE_LABELS[10][-1] == "Highest 10%"

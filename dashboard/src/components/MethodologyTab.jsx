@@ -561,8 +561,8 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
               <TabLink onNavigate={onNavigate} tab="baseline" section="ready-reckoner">
                 Baseline
               </TabLink>{" "}
-              tab scores the ready reckoner&apos;s rows at {central.e_retention.toFixed(1)}, 3.0
-              and the official values.
+              tab scores the ready reckoner&apos;s rows at the official values, 3.0 and{" "}
+              {central.e_retention.toFixed(1)}.
             </li>
           </ul>
         </Topic>

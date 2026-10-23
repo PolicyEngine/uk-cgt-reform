@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 import {
   formatPct,
   formatPublished,
@@ -21,6 +23,8 @@ import {
   getIncomeChangeGroupsByYear,
   getReformSchedules,
   getScheduleSplit,
+  getScheduleSplitYears,
+  getSensitivityYears,
   getSensitivity,
   getReform,
   getValidation,
@@ -30,7 +34,7 @@ import GroupImpactChart, { GROUP_DESCRIPTION, GroupDefinitions } from "./charts/
 import SensitivityChart from "./charts/SensitivityChart";
 import RateChangeChart from "./charts/RateChangeChart";
 import YieldChart from "./charts/YieldChart";
-import { Card, DatasetName, MetricCard, Notes, SourceLabel, SourceLink, TabLink } from "./controls";
+import { Card, DatasetName, LabelledSelect, MetricCard, Notes, SourceLabel, SourceLink, TabLink } from "./controls";
 import SectionHeading from "./SectionHeading";
 
 // Where each sensitivity scenario's elasticity comes from: the static case
@@ -66,7 +70,12 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
   const budget = getBudget(data);
   const headlineYear = getHeadlineYear(data);
   const headlineGroups = getIncomeChangeGroups(data, headlineYear);
-  const sensitivity = getSensitivity(data);
+  // The yield and sensitivity sections each have a year select, starting
+  // at the headline year; the headline card's range stays on that year.
+  const [splitYear, setSplitYear] = useState(headlineYear);
+  const [sensitivityYear, setSensitivityYear] = useState(headlineYear);
+  const headlineSensitivity = getSensitivity(data, headlineYear);
+  const sensitivity = getSensitivity(data, sensitivityYear);
   const { central, official, centax_range: centaxRange } = getBenchmarks(data).elasticities;
   const validation = getValidation(data);
   const dataset = getDatasetInfo(data);
@@ -82,13 +91,13 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
   const topShare = topDecile
     ? topDecile.avg_change_gbp / deciles.reduce((sum, group) => sum + group.avg_change_gbp, 0)
     : null;
-  const split = getScheduleSplit(data);
+  const split = getScheduleSplit(data, splitYear);
   // Equalisation with the relief kept: the step before it is withdrawn.
   const keptRelief = split.steps.find((row) => row.step === "residential");
   // The spread of the yield across the behavioural cases in the
   // sensitivity chart (the static case excluded): the official case and
   // CenTax's upper case can turn it negative.
-  const behavioural = sensitivity.filter((row) => row.e_retention !== 0);
+  const behavioural = headlineSensitivity.filter((row) => row.e_retention !== 0);
   const lowest = behavioural.reduce((a, b) => (b.revenue_bn < a.revenue_bn ? b : a));
   const highest = behavioural.reduce((a, b) => (b.revenue_bn > a.revenue_bn ? b : a));
   const caseName = (row) =>
@@ -150,6 +159,7 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
               </TabLink>{" "}
               describes the projection.
             </p>
+            <BeyondForecastNote />
             {entrantShare > 0.05 ? (
               <p>
                 Entrants by uprating (see{" "}
@@ -183,6 +193,9 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
         <Card className="min-w-0">
           <SectionHeading
             title={`Where the yield comes from, ${split.year}`}
+            action={
+              <YearSelect years={getScheduleSplitYears(data)} value={splitYear} onChange={setSplitYear} />
+            }
             description={
               <>
                 Each bar adds the reform&apos;s parts one at a time, first with no behavioural
@@ -224,15 +237,20 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
 
         <Card as="details" className="group min-w-0 scroll-mt-24" id="sensitivity">
           <summary className="cursor-pointer select-none text-xl font-semibold tracking-tight text-slate-900 marker:text-[color:var(--pe-color-primary-600)]">
-            {`Sensitivity to the behavioural elasticity, ${sensitivity[0].year}`}
+            {`Sensitivity to the behavioural elasticity, ${sensitivityYear}`}
             <span className="ml-2 text-sm font-normal text-slate-500 group-open:hidden">
               (expand to see how the result depends on taxpayers&apos; response)
             </span>
           </summary>
-          <p className="mb-5 mt-2 text-sm leading-6 text-slate-600">
-            Each bar shows the change in CGT revenue under a different assumption about
-            how strongly taxpayers cut the gains they realise.
-          </p>
+          <div className="mb-5 mt-2 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+            <p className="text-sm leading-6 text-slate-600">
+              Each bar shows the change in CGT revenue under a different assumption about how
+              strongly taxpayers cut the gains they realise.
+            </p>
+            <div className="shrink-0">
+              <YearSelect years={getSensitivityYears(data)} value={sensitivityYear} onChange={setSensitivityYear} />
+            </div>
+          </div>
           <SensitivityChart rows={sensitivity} centralRetention={central.e_retention} />
           <Notes>
           <p>
@@ -282,6 +300,31 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
           </p>
           </Notes>
         </Card>
+    </div>
+  );
+}
+
+// The modelled window's last year lies beyond the OBR's forecast: the one
+// extrapolation in the projection, stated under each budget chart.
+export function BeyondForecastNote() {
+  return (
+    <p>
+      The OBR&apos;s <SourceLink href={OBR_EFO}>forecast</SourceLink> ends in 2030-31, so in
+      2031-32 gains grow at its 2030-31 growth rate of GDP per head (3.15%).
+    </p>
+  );
+}
+
+// The compact year select the per-year sections share.
+function YearSelect({ years, value, onChange }) {
+  return (
+    <div className="w-36">
+      <LabelledSelect
+        label="Year"
+        options={years.map((year) => ({ value: year, label: year }))}
+        value={value}
+        onChange={onChange}
+      />
     </div>
   );
 }

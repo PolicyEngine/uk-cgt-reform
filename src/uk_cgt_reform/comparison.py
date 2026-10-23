@@ -375,8 +375,8 @@ READY_RECKONER = {
     "hmrc_years": ["2026-27", "2027-28", "2028-29"],
     # Receipts lag liabilities by about a year: this repo's liabilities in
     # a year are compared with HMRC's receipts in the next.
+    # The modelled window starts in 2027-28, so one pair remains.
     "lag": [
-        {"model_year": "2026-27", "hmrc_year": "2027-28"},
         {"model_year": "2027-28", "hmrc_year": "2028-29"},
     ],
     "rows": [
@@ -463,7 +463,7 @@ def static_equalisation_block(
 
     JRF scales the OBR's CGT receipts by a static uplift, so each year also
     carries this repo's uplift applied to the same OBR receipts, in 2026-27
-    prices; that line isolates the uplift from the dataset's baseline level.
+    prices (JRF's basis; ``reform.PRICE_BASE_YEAR``); that line isolates the uplift from the dataset's baseline level.
     """
     rows = []
     for row in static_budget:
@@ -496,7 +496,11 @@ def static_equalisation_block(
 
 
 def centax_1920_block(
-    current_law_cgt_bn: float, uplift: dict, rules: dict, fingerprints: dict[str, str]
+    current_law_cgt_bn: float,
+    uplift: dict,
+    rules: dict,
+    fingerprints: dict[str, str],
+    year: str,
 ) -> dict:
     """This repo's static uplift at 2019/20 rules beside CenTax Tables 3 and 8.
     ``uplift`` is :func:`impacts.cgt_uplift` of the counterfactual pair."""
@@ -516,7 +520,7 @@ def centax_1920_block(
             }
         )
     return {
-        "year": "2026-27",
+        "year": year,
         "rules": rules,
         "reform_fingerprints": dict(fingerprints),
         "national": {"current_law_cgt_bn": current_law_cgt_bn, **uplift["national"]},

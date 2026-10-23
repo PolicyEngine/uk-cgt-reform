@@ -31,14 +31,18 @@ function jrfText(note, value) {
 }
 
 // The props from the results file's `benchmarks.static_equalisation` block.
+// A JRF year outside the modelled window (2026-27) keeps its own row, with
+// no PolicyEngine values.
 export function buildJrfRows(block) {
   const jrf = Object.fromEntries(block.external.map((row) => [row.year, row]));
-  return block.by_year.map((row) => ({
-    year: row.year,
-    static: row.static_cgt_change_real_bn,
-    obr: row.uplift_on_obr_receipts_real_bn,
-    jrf: jrf[row.year]?.value ?? null,
-    jrfLabel: jrf[row.year] ? jrfText(jrf[row.year].note, jrf[row.year].value) : null,
+  const model = Object.fromEntries(block.by_year.map((row) => [row.year, row]));
+  const years = [...new Set([...Object.keys(jrf), ...Object.keys(model)])].sort();
+  return years.map((year) => ({
+    year,
+    static: model[year]?.static_cgt_change_real_bn ?? null,
+    obr: model[year]?.uplift_on_obr_receipts_real_bn ?? null,
+    jrf: jrf[year]?.value ?? null,
+    jrfLabel: jrf[year] ? jrfText(jrf[year].note, jrf[year].value) : null,
   }));
 }
 

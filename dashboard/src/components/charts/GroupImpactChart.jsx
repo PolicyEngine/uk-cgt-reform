@@ -22,13 +22,12 @@ const AXIS_STYLE = { fontSize: 12, fill: colors.gray[500] };
 
 const GROUPINGS = [
   { value: "decile", label: "Income deciles", title: "income decile" },
-  { value: "quartile", label: "Income quartiles", title: "income quartile" },
   { value: "household_type", label: "Household type", title: "household type" },
   { value: "region", label: "Region", title: "region" },
 ];
 
 
-// Change in household net income by income decile or quartile (ranked by
+// Change in household net income by income decile (ranked by
 // household net income before the reform), household type or region, in a
 // chosen year (`defaultYear` first), under a heading that names the grouping
 // and the year. `groupsByYear` is the pipeline's income_change_groups block
@@ -135,9 +134,7 @@ export default function GroupImpactChart({ groupsByYear, defaultYear, descriptio
                     grouping === "household_type"
                       ? undefined
                       : {
-                          value: isDecile
-                            ? "Income decile before the reform (1 = lowest)"
-                            : "Income quartile before the reform",
+                          value: "Income decile before the reform (1 = lowest)",
                           position: "insideBottom",
                           offset: -8,
                           fontSize: 12,
@@ -201,8 +198,8 @@ export function GroupDefinitions({ children }) {
   return (
     <ul className="list-disc space-y-1.5 pl-5">
       <li>
-        Income deciles and quartiles are weighted tenths and quarters of households ranked by
-        household net income before the reform; decile 1 is the bottom income decile and 10 the top.
+        Income deciles are weighted tenths of households ranked by household net income
+        before the reform; decile 1 is the bottom income decile and 10 the top.
       </li>
       <li>
         &ldquo;Pensioner&rdquo; households have no working-age adults; &ldquo;With children&rdquo;

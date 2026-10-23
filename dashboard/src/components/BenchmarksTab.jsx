@@ -62,38 +62,45 @@ function AtAGlance({ benchmarks, baseline }) {
   const centax = benchmarks.centax_2019_20_rules;
   const range = packageRange(buildPackageRows(benchmarks.centax_package_context));
   const hmrcLink = baseline && <SourceLink href={baseline.url}>HMRC</SourceLink>;
+  const baselineYears = baseline && (
+    <>
+      PolicyEngine {baseline.modelYear} · {hmrcLink} {baseline.hmrcYear} (provisional)
+    </>
+  );
   const items = [
     baseline && {
       id: "baseline-gains",
-      title: <>Taxable gains: PolicyEngine and {hmrcLink}</>,
+      title: "Taxable gains",
       value: `${formatBn(baseline.gains.model, 1)} · ${baseline.gains.hmrc}`,
-      detail: `${PE} ${baseline.modelYear} and HMRC ${baseline.hmrcYear}.`,
+      detail: baselineYears,
     },
     baseline && {
       id: "baseline-liability",
-      title: <>CGT liability: PolicyEngine and {hmrcLink}</>,
+      title: "CGT liability",
       value: `${formatBn(baseline.liability.model, 1)} · ${baseline.liability.hmrc}`,
-      detail: `${PE} ${baseline.modelYear} and HMRC ${baseline.hmrcYear}; rates rose partway through 2024-25.`,
+      detail: baselineYears,
     },
     {
       id: "centax-2019-20",
-      title: (
+      title: "Equalising, 2019/20 rules",
+      value: `${formatUplift(centax.national.uplift_pct)} · ${formatUplift(centax.external.value)}`,
+      detail: (
         <>
-          CGT rise under 2019/20 rules: PolicyEngine and <SourceLink href={centax.external.url}>CenTax</SourceLink>
+          PolicyEngine {centax.year} · <SourceLink href={centax.external.url}>CenTax</SourceLink> 2019-20,
+          before behaviour
         </>
       ),
-      value: `${formatUplift(centax.national.uplift_pct)} · ${formatUplift(centax.external.value)}`,
-      detail: "How much equalising raises CGT, before behaviour.",
     },
     range && {
       id: "centax-package",
-      title: (
+      title: "CenTax's wider package",
+      value: `${formatBn(range[0], 1)}–${formatBn(range[1], 1)}`,
+      detail: (
         <>
-          <SourceLink href={CENTAX_REPORT}>CenTax&apos;s</SourceLink> wider reform package
+          <SourceLink href={CENTAX_REPORT}>CenTax</SourceLink>,{" "}
+          {packageYears(benchmarks.centax_package_context)}; not like-for-like
         </>
       ),
-      value: `${formatBn(range[0], 1)}–${formatBn(range[1], 1)}`,
-      detail: "After behaviour, for a wider reform of the CGT base, so not like-for-like.",
     },
   ].filter(Boolean);
   return (
@@ -114,6 +121,13 @@ function AtAGlance({ benchmarks, baseline }) {
   );
 }
 
+// CenTax's package estimates' own years (not the rates-only derivation,
+// which is PolicyEngine's), as a range: "2025-26 to 2029-30".
+function packageYears(rows) {
+  const years = rows.filter((row) => !row.id.includes("rates_only")).map((row) => row.year).sort();
+  return years[0] === years.at(-1) ? years[0] : `${years[0]} to ${years.at(-1)}`;
+}
+
 // ---- Sections ----
 
 function StaticEqualisation({ block, dataset }) {
@@ -121,10 +135,10 @@ function StaticEqualisation({ block, dataset }) {
   return (
     <section className="section-card">
       <SectionHeading
-        title="Revenue before behaviour changes: PolicyEngine and JRF"
+        title={`Static revenue: PolicyEngine and JRF, ${block.by_year[0].year} to ${block.by_year.at(-1).year}`}
         description={
           <>
-            {"Static change from equalising, by year, in 2026/27 prices. "}
+            {"Static change from equalising, in 2026/27 prices. "}
             <SourceLink href={source.url}>JRF</SourceLink>
             {" scales the "}
             <SourceLink href={OBR_EFO}>OBR&apos;s</SourceLink>
@@ -176,30 +190,30 @@ function CentaxRegions({ block, dataset }) {
   return (
     <section className="section-card">
       <SectionHeading
-        title="CGT by region under 2019/20 rules: PolicyEngine and CenTax"
+        title={`Regional CGT: PolicyEngine ${block.year} and CenTax 2019-20`}
         description={
           <>
             {`Each region's share of baseline CGT: ${PE} applies `}
             <SourceLink href={external.url}>CenTax&apos;s</SourceLink>
             {" 2019/20 rules to "}
             <DatasetName label={dataset.shortLabel} possessive />
-            {` 2026-27 data with no behavioural response, beside CenTax's (2024) estimate on 2019/20 data. Each region's share is within ${shareGap.toFixed(1)} percentage points of CenTax's.`}
+            {` data with no behavioural response, beside CenTax's (2024) estimate. Each region's share is within ${shareGap.toFixed(1)} percentage points of CenTax's.`}
           </>
         }
       />
       <RegionalComparisonChart rows={rows} peLabel={PE} centaxLabel="CenTax 2024" />
       <Notes>
         <p>
-          {`Nationally, CGT at 2019/20 rules rises from ${formatBn(national.baseline_cgt_bn, 1)} to ${formatBn(national.reform_cgt_bn, 1)} on 2026-27 data (current law: ${formatBn(national.current_law_cgt_bn, 1)}). `}
+          {`Nationally, CGT at 2019/20 rules rises from ${formatBn(national.baseline_cgt_bn, 1)} to ${formatBn(national.reform_cgt_bn, 1)} (current law: ${formatBn(national.current_law_cgt_bn, 1)}). `}
           <SourceLink href={external.url}>CenTax&apos;s</SourceLink>
-          {` rates-only figure is +${formatBn(external.details.change_bn, 1)} on a ${formatBn(external.details.baseline_bn, 1)} baseline in 2019/20.`}
+          {` rates-only figure is +${formatBn(external.details.change_bn, 1)} on a ${formatBn(external.details.baseline_bn, 1)} baseline.`}
         </p>
         <p>
           {`The 2019/20 rules: main rates of ${percent(rules.main.basic_rate)} and ${percent(rules.main.higher_rate)}, ${percent(rules.residential_property.basic_rate)} and ${percent(rules.residential_property.higher_rate)} for residential property and carried interest, ${percent(rules.badr.rate)} under Business Asset Disposal`}{" "}
           <SourceLink href={BADR_GUIDANCE}>Relief</SourceLink>, and a £
           {rules.annual_exempt_amount.toLocaleString("en-GB")} exempt{" "}
-          <SourceLink href={EXEMPT_AMOUNT}>amount</SourceLink>, applied to 2026-27 incomes,
-          thresholds and gains (the £12,000 in 2026 money).
+          <SourceLink href={EXEMPT_AMOUNT}>amount</SourceLink> (not uprated), applied to that
+          year&apos;s incomes, thresholds and gains.
         </p>
         <p>
           <SourceLink href={external.url}>CenTax</SourceLink> cover resident individuals, putting trusts and non-residents at about 5% of
@@ -220,7 +234,7 @@ function CentaxPackage({ rows, onNavigate }) {
   return (
     <section className="section-card">
       <SectionHeading
-        title="Revenue from CenTax's wider reform package (not like-for-like)"
+        title={`CenTax's wider package, ${packageYears(rows)}`}
         description={
           <>
             <SourceLink href={CENTAX_REPORT}>CenTax</SourceLink> estimate what equalising would
@@ -280,7 +294,7 @@ function ReadyReckoner({ block, dataset, elasticities, rr, headlineYear, onNavig
   return (
     <section className="section-card scroll-mt-24" id="ready-reckoner">
       <SectionHeading
-        title={`Revenue from small rate changes: PolicyEngine and HMRC, ${currentPair.modelYear}`}
+        title={`Small rate changes: PolicyEngine and HMRC, ${currentPair.modelYear}`}
         action={
           rr.pairs.length > 1 ? (
             <label className="flex items-center gap-2">
@@ -312,7 +326,7 @@ function ReadyReckoner({ block, dataset, elasticities, rr, headlineYear, onNavig
         description={
           <>
             <SourceLink href={block.url}>HMRC&apos;s</SourceLink>
-            {` (June 2025) receipts from small rate changes, beside ${PE}'s change in the government balance at the central elasticity, an elasticity of ${upper} and the official one. Bars left of £0 reduce revenue.`}
+            {` (June 2025) receipts from small rate changes, beside ${PE}'s change in the government balance at the official elasticity, ${upper} and the central one. Bars left of £0 reduce revenue.`}
           </>
         }
       />
@@ -382,7 +396,7 @@ export default function BenchmarksTab({ data, onNavigate, baselineGlance, childr
       <section className="pt-2">
         <SectionHeading
           size="lg"
-          title="How PolicyEngine compares with HMRC, JRF and CenTax"
+          title="Comparison with HMRC, JRF and CenTax"
           description={
             <>
               {"HMRC's "}
