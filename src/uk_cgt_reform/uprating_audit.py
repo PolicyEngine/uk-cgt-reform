@@ -242,9 +242,13 @@ def audit_uprating(
         "index": CPI_INDEX,
         "applied_to": [],
         **_reference(metadata(CPI_INDEX)),
+        # Every year from the base year on, so prices can be expressed in a
+        # year before the modelled window (the JRF comparison's 2026-27).
         "by_year": {
             str(y): row
-            for y, row in cumulative_factors(CPI_INDEX, growth, base_year, years).items()
+            for y, row in cumulative_factors(
+                CPI_INDEX, growth, base_year, list(range(base_year + 1, max(years) + 1))
+            ).items()
         },
     }
     return {

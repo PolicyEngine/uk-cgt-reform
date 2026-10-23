@@ -1,7 +1,8 @@
 # UK capital gains tax reform
 
 Data pipeline and dashboard estimating the budgetary and distributional
-impact of reforms to UK capital gains tax rates from 2026-27, using the
+impact of reforms to UK capital gains tax rates from April 2026, over
+2027-28 to 2031-32, using the
 standard [policyengine.py](https://github.com/PolicyEngine/policyengine.py)
 stack (the `policyengine` package wrapping the PolicyEngine UK model). They
 score two things:
@@ -54,7 +55,7 @@ realise under the behavioural response, so they are roughly an order of
 magnitude larger than the net revenue raised. This is a mechanical property of
 modelling the response as a reduction in realised gains, not a bug.
 
-## The equalisation reform (from 2026-27)
+## The equalisation reform (from April 2026)
 
 | Band | Baseline CGT rate | Reformed rate (= income tax) |
 |---|---|---|
@@ -62,8 +63,10 @@ modelling the response as a reduction in realised gains, not a bug.
 | Higher | 24% | **40%** |
 | Additional | 24% | **45%** |
 
-Annual exempt amount unchanged at £3,000. Fiscal years 2026-27 through
-2030-31.
+Annual exempt amount unchanged at £3,000. Fiscal years 2027-28 through
+2031-32. The OBR's March 2026 forecast ends in 2030-31; for 2031-32
+policyengine-uk holds the OBR's 2030-31 growth rate of GDP per head (3.15%)
+for gains, and CPI-uprates the income tax thresholds as their freeze ends.
 
 The reformed rates are the income tax rates on earnings, 20/40/45%, held
 through 2030-31. From April 2027 savings and property income face 22/42/47%
@@ -81,45 +84,46 @@ does. Carried interest has been taxed as income since 6 April 2026 (the
 engine keeps a 32% CGT stand-in), so equalising CGT with income tax leaves
 it alone. On a dataset without these columns the parameters are inert.
 
-The results split the reform's 2027-28 yield (the dashboard's headline year) by schedule
+The results split each year's yield by schedule
 (`schedule_split`, static and central): the main rates first, then the
 residential property schedule (which is equalisation with the relief kept,
 one reading of Wes Streeting's proposed exemption for genuine entrepreneurs,
 which has not been defined), then the relief withdrawn. The Reform tab's Custom rates
 option scores any rate and lifetime limit for the relief, or withdraws it, for every year.
 
-## Results (2026-27 unless stated)
+## Results (2027-28 unless stated)
 
 The dashboard reports 2027-28 by default (`metadata.headline_year`); the
-rows marked 2027-28 below are its headline figures.
+sensitivity and the yield by schedule are in the results for every year.
 
 Engine policyengine-uk 2.132.6, wrapper policyengine.py 6.10.1, projection
-fingerprint `fc5e9a879bce`.
+fingerprint `1f3d4d9bbc1a`.
 
 | | Microcosm UK 2024-25 | External benchmark |
 |---|---:|---|
-| CGT taxpayers (gains above the exempt amount) | 555k | HMRC Table 1: 382k (2023-24), 551k (2024-25, provisional) |
-| of which entrants by uprating (see below) | 2.6k | none: HMRC counts only taxpayers with a liability |
-| CGT taxpayers excluding entrants | 552k | HMRC Table 1: 382k (2023-24), 551k (2024-25) |
-| Taxable gains | £128.4bn | HMRC Table 1: £66.6bn (2023-24), £119.3bn (2024-25) |
-| Taxable gains excluding entrants | £128.4bn | HMRC Table 1: £66.6bn (2023-24), £119.3bn (2024-25) |
-| Baseline CGT liability | £29.0bn | HMRC Table 1: £12.1bn (2023-24), £22.5bn (2024-25); OBR receipts £20.8bn (2026-27), £25.5bn (2027-28) |
-| Residential property gains on their own schedule | £13.2bn | HMRC Table 8a (2024-25): £12.9bn including trusts, about £12.2bn for individuals; 205k taxpayers |
-| Gains qualifying for Business Asset Disposal Relief (and Investors' Relief) | £20.1bn, 61k people | HMRC Table 4 (individuals, BADR and Investors' Relief): 42k people and £11.0bn (2023-24), 61k and £18.4bn (2024-25) |
+| CGT taxpayers (gains above the exempt amount) | 558k | HMRC Table 1: 382k (2023-24), 551k (2024-25, provisional) |
+| of which entrants by uprating (see below) | 3.8k | none: HMRC counts only taxpayers with a liability |
+| CGT taxpayers excluding entrants | 554k | HMRC Table 1: 382k (2023-24), 551k (2024-25) |
+| Taxable gains | £133.1bn | HMRC Table 1: £66.6bn (2023-24), £119.3bn (2024-25) |
+| Taxable gains excluding entrants | £133.1bn | HMRC Table 1: £66.6bn (2023-24), £119.3bn (2024-25) |
+| Baseline CGT liability | £30.1bn | HMRC Table 1: £12.1bn (2023-24), £22.5bn (2024-25); OBR receipts £20.8bn (2026-27), £25.5bn (2027-28) |
+| Residential property gains on their own schedule | £13.7bn | HMRC Table 8a (2024-25): £12.9bn including trusts, about £12.2bn for individuals; 205k taxpayers |
+| Gains qualifying for Business Asset Disposal Relief (and Investors' Relief) | £20.8bn, 61k people | HMRC Table 4 (individuals, BADR and Investors' Relief): 42k people and £11.0bn (2023-24), 61k and £18.4bn (2024-25) |
 | Share of gains from gains of £1m or more | 67% | HMRC Table 2: 61% (2023-24), 65% (2024-25) |
-| Taxpayers with gains over £500k | 37.1k | HMRC Table 2: 19k (2023-24), 33k (2024-25) |
-| Largest single gain | £566m | none: HMRC's top band is £5m and over (2k taxpayers, £23.6bn in 2023-24; 3k, £48.5bn in 2024-25) |
-| Static yield (e = 0), 2027-28 | +£27.0bn | JRF (2026): around £13bn, static, equalisation alone (see [Benchmarks](#benchmarks)) |
-| of which the relief withdrawn (static), 2027-28 | +£5.1bn | none |
+| Taxpayers with gains over £500k | 37.8k | HMRC Table 2: 19k (2023-24), 33k (2024-25) |
+| Largest single gain | £584m | none: HMRC's top band is £5m and over (2k taxpayers, £23.6bn in 2023-24; 3k, £48.5bn in 2024-25) |
+| Static yield (e = 0) | +£27.0bn | JRF (2026): around £13bn, static, equalisation alone (see [Benchmarks](#benchmarks)) |
+| of which the relief withdrawn (static) | +£5.1bn | none |
 | Uplift from equalising at 2019/20 rules (static) | +130% | CenTax (2024), Table 3: +139% on 2019/20 data |
-| Yield, CenTax lower (retention 0.5), 2027-28 | +£18.3bn | none |
-| **Yield, CenTax central (retention 1.0), 2027-28** | **+£10.8bn** (2026-27: +£10.4bn) | none for equalisation alone; CenTax's £14.3bn (2025-26), £11.3bn (2026-27) and £19.7bn (2029-30) add an investment allowance and base broadening |
-| of which the relief withdrawn (central), 2027-28 | +£2.9bn | none |
-| Yield, CenTax upper (retention 2.0), 2027-28 | −£0.8bn | none |
-| Yield, official HMRC/OBR elasticities (retention 3.6; 1.4 for gains qualifying for BADR), 2027-28 | −£9.9bn | none |
-| Five-year total, 2026-27 to 2030-31 | +£56.3bn | none |
-| Top income decile, net income change, 2027-28 | −8.1% (−£15,667/household) | none |
-| Bottom income decile, net income change, 2027-28 | −0.08% (−£12) | none |
+| Yield, CenTax lower (retention 0.5) | +£18.3bn | none |
+| **Yield, CenTax central (retention 1.0)** | **+£10.8bn** | none for equalisation alone; CenTax's £14.3bn (2025-26), £11.3bn (2026-27) and £19.7bn (2029-30) add an investment allowance and base broadening |
+| of which the relief withdrawn (central) | +£2.9bn | none |
+| Yield, CenTax upper (retention 2.0) | −£0.8bn | none |
+| Yield, official HMRC/OBR elasticities (retention 3.6; 1.4 for gains qualifying for BADR) | −£9.9bn | none |
+| Five-year total, 2027-28 to 2031-32 | +£58.5bn | none |
+| Change in government balance, 2031-32 | +£12.6bn | none |
+| Top income decile, net income change | −8.1% (−£15,667/household) | none |
+| Bottom income decile, net income change | −0.08% (−£12) | none |
 
 Benchmarks are outturns for the tax year stated (HMRC Capital Gains Tax
 statistics, 2026 release, Tables 1, 2 and 8) or other institutions'
@@ -133,13 +137,14 @@ above HMRC's 2024-25 Table 4 figure uprated the same way (£19.8bn), and its
 claimant count on the 61k HMRC reports.
 
 Baseline CGT liability by year, against the OBR's March 2026 receipts path
-(receipts lag the liability by about a year, so the 2027-28 receipts figure
-is the closest published counterpart of the 2026-27 liability):
+(receipts lag the liability by about a year, so the 2028-29 receipts figure
+is the closest published counterpart of the 2027-28 liability; the OBR's
+forecast ends in 2030-31):
 
-| | 2026-27 | 2027-28 | 2028-29 | 2029-30 | 2030-31 |
+| | 2027-28 | 2028-29 | 2029-30 | 2030-31 | 2031-32 |
 |---|---:|---:|---:|---:|---:|
-| Baseline CGT liability | £29.0bn | £30.1bn | £31.2bn | £32.3bn | £33.5bn |
-| OBR CGT receipts (EFO March 2026, Table 3.7) | £20.8bn | £25.5bn | £28.9bn | £32.0bn | £34.9bn |
+| Baseline CGT liability | £30.1bn | £31.2bn | £32.3bn | £33.5bn | £34.8bn |
+| OBR CGT receipts (EFO March 2026, Table 3.7) | £25.5bn | £28.9bn | £32.0bn | £34.9bn | none |
 
 Two features of the baseline matter before the reform is applied:
 
@@ -278,7 +283,7 @@ Left out by decision: the Office of Tax Simplification's 2020 static figure
   carry a digest of the reform definition, so a dataset, engine or reform
   change cannot reuse a stale output.
 - Distributional outputs group the change in household net income by
-  weighted baseline-income decile and quartile, by household type and by
+  weighted baseline-income decile, by household type and by
   region (the engine's `region` enum, present in every UK dataset).
   Aggregates are computed from the simulations' output datasets with
   **native microdf weighted operations** (`MicroSeries.sum/mean/median/count`,
@@ -371,7 +376,7 @@ longer needed. The pipeline asserts that the static (e=0) and central
   HMRC/Advani including the entrants, the schedule components and the BADR
   claimants, budget
   impact by year with the entrants' contribution, distributional impacts,
-  the elasticity sensitivity and the yield split by schedule, both for the headline year 2027-28
+  the elasticity sensitivity and the yield split by schedule, both for every year
   (`schedule_split`: main rates, residential property, the relief withdrawn;
   static and central), and a `benchmarks` block (see
   [Benchmarks](#benchmarks)).

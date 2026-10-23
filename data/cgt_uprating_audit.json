@@ -3,11 +3,11 @@
   "base_year": 2024,
   "base_year_note": "Engine period of the Microcosm UK 2024-25 build (time_period 2024), an FRS 2024-25 spine with weights calibrated to 2024-25. Uprating runs year on year from the base year; the base year itself is not uprated.",
   "years": [
-    2026,
     2027,
     2028,
     2029,
-    2030
+    2030,
+    2031
   ],
   "variables": {
     "capital_gains": {
@@ -20,10 +20,6 @@
         }
       ],
       "by_year": {
-        "2026": {
-          "yoy_growth": 0.0292,
-          "cumulative_factor": 1.07427896
-        },
         "2027": {
           "yoy_growth": 0.0323,
           "cumulative_factor": 1.108978170408
@@ -39,6 +35,10 @@
         "2030": {
           "yoy_growth": 0.0315,
           "cumulative_factor": 1.214281641049864
+        },
+        "2031": {
+          "yoy_growth": 0.0315,
+          "cumulative_factor": 1.2525315127429348
         }
       }
     },
@@ -52,10 +52,6 @@
         }
       ],
       "by_year": {
-        "2026": {
-          "yoy_growth": 0.0292,
-          "cumulative_factor": 1.07427896
-        },
         "2027": {
           "yoy_growth": 0.0323,
           "cumulative_factor": 1.108978170408
@@ -71,6 +67,10 @@
         "2030": {
           "yoy_growth": 0.0315,
           "cumulative_factor": 1.214281641049864
+        },
+        "2031": {
+          "yoy_growth": 0.0315,
+          "cumulative_factor": 1.2525315127429348
         }
       }
     },
@@ -108,10 +108,6 @@
         "drift": {}
       },
       "by_year": {
-        "2026": {
-          "yoy_growth": 0.0038,
-          "cumulative_factor": 1.0110273600000002
-        },
         "2027": {
           "yoy_growth": 0.0037,
           "cumulative_factor": 1.014768161232
@@ -127,6 +123,10 @@
         "2030": {
           "yoy_growth": 0.0045,
           "cumulative_factor": 1.0279149690376634
+        },
+        "2031": {
+          "yoy_growth": 0.0043,
+          "cumulative_factor": 1.0323350034045253
         }
       }
     }
@@ -147,6 +147,10 @@
         }
       ],
       "by_year": {
+        "2025": {
+          "yoy_growth": 0.034,
+          "cumulative_factor": 1.034
+        },
         "2026": {
           "yoy_growth": 0.023,
           "cumulative_factor": 1.057782
@@ -166,6 +170,10 @@
         "2030": {
           "yoy_growth": 0.02,
           "cumulative_factor": 1.14497725506912
+        },
+        "2031": {
+          "yoy_growth": 0.02,
+          "cumulative_factor": 1.1678768001705024
         }
       }
     }
@@ -182,7 +190,7 @@
       "2030-31": 34.9
     }
   },
-  "projection_fingerprint": "fc5e9a879bce",
+  "projection_fingerprint": "1f3d4d9bbc1a",
   "datasets": {
     "microcosm_uk_2024_25": {
       "key": "microcosm_uk_2024_25",
@@ -201,40 +209,14 @@
     }
   },
   "entrant_ceiling_gbp": {
-    "2026": 3222.83688,
     "2027": 3326.934511224,
     "2028": 3430.0694810719438,
     "2029": 3531.5995377116737,
-    "2030": 3642.844923149592
+    "2030": 3642.844923149592,
+    "2031": 3757.5945382288046
   },
   "baseline_by_year": {
     "microcosm_uk_2024_25": {
-      "2026": {
-        "cgt_taxpayers": 554661.691222338,
-        "total_gains_bn": 128.4426795841697,
-        "mean_gain": 231569.4081938733,
-        "median_gain": 30132.244140625,
-        "share_gains_over_1m_pct": 66.77700488713629,
-        "share_gains_over_5m_pct": 42.1297997899497,
-        "taxpayers_over_500k": 37126.43295023963,
-        "gains_over_500k_bn": 98.06035203003428,
-        "gains_over_5m_bn": 54.112643753657295,
-        "largest_gain_m": 565.8272094726562,
-        "baseline_cgt_revenue_bn": 29.031002810145814,
-        "residential_property_gains_bn": 13.196552483079696,
-        "badr_gains_bn": 20.06814728223493,
-        "badr_claimants": 61155.90197432041,
-        "carried_interest_gains_bn": 0.0,
-        "entrants_by_uprating": {
-          "exempt_amount_gbp": 3000.0,
-          "ceiling_gbp": 3222.83688,
-          "count": 2602.985676283017,
-          "gains_bn": 0.008109363275589214,
-          "cgt_bn": 6.341645419771576e-05
-        },
-        "cgt_taxpayers_excluding_entrants": 552058.705546055,
-        "total_gains_excluding_entrants_bn": 128.4345702208941
-      },
       "2027": {
         "cgt_taxpayers": 557894.7518215035,
         "total_gains_bn": 133.08556673274123,
@@ -338,6 +320,32 @@
         },
         "cgt_taxpayers_excluding_entrants": 561279.9711443745,
         "total_gains_excluding_entrants_bn": 147.5973567140831
+      },
+      "2031": {
+        "cgt_taxpayers": 571716.9666520702,
+        "total_gains_bn": 152.92844023660328,
+        "mean_gain": 267489.7705627668,
+        "median_gain": 33943.41015625,
+        "share_gains_over_1m_pct": 68.88784099000465,
+        "share_gains_over_5m_pct": 46.088975302646965,
+        "taxpayers_over_500k": 41072.367867143825,
+        "gains_over_500k_bn": 118.42364768302173,
+        "gains_over_5m_bn": 70.48315105137131,
+        "largest_gain_m": 659.713623046875,
+        "baseline_cgt_revenue_bn": 34.773195963361026,
+        "residential_property_gains_bn": 15.710493475884226,
+        "badr_gains_bn": 23.89112543429911,
+        "badr_claimants": 62444.77727511525,
+        "carried_interest_gains_bn": 0.0,
+        "entrants_by_uprating": {
+          "exempt_amount_gbp": 3000.0,
+          "ceiling_gbp": 3757.5945382288046,
+          "count": 8023.4910829542205,
+          "gains_bn": 0.027106047690001644,
+          "cgt_bn": 0.0006583631323571466
+        },
+        "cgt_taxpayers_excluding_entrants": 563693.475569116,
+        "total_gains_excluding_entrants_bn": 152.90133418891327
       }
     }
   }

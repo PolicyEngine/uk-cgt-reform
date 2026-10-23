@@ -162,10 +162,6 @@
     ],
     "lag": [
       {
-        "model_year": "2026-27",
-        "hmrc_year": "2027-28"
-      },
-      {
         "model_year": "2027-28",
         "hmrc_year": "2028-29"
       }
@@ -328,11 +324,11 @@
   },
   "scope": "main_residential_and_badr",
   "years": [
-    2026,
     2027,
     2028,
     2029,
-    2030
+    2030,
+    2031
   ],
   "reform_period_start": "2026-01-01",
   "datasets": [

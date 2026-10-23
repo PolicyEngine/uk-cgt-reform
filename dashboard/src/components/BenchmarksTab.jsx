@@ -204,7 +204,8 @@ function StaticEqualisation({ block, dataset }) {
         <p>
           The light dots apply the model&apos;s static uplift (the static change as a share of
           baseline liability) to the OBR&apos;s cash receipts{" "}
-          <SourceLink href={OBR_EFO}>forecast</SourceLink> ({block.obr_receipts_source}).
+          <SourceLink href={OBR_EFO}>forecast</SourceLink> ({block.obr_receipts_source}), which ends in
+          2030-31.
         </p>
         <p>
           Prices use the CPI <SourceLink href={OBR_EFO}>path</SourceLink> in {block.price_index_source};

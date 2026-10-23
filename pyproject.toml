@@ -31,7 +31,7 @@ simulation = [
   # is certified for, and refuses any other policyengine-uk. Each engine
   # release can move the projection fingerprint, so a fresh install reproduces
   # the committed results only on these pins; changing them is a deliberate
-  # re-pin that regenerates the results (projection fc5e9a879bce on 2.132.6).
+  # re-pin that regenerates the results (projection 1f3d4d9bbc1a on 2.132.6).
   "policyengine[uk]==6.10.1",
   "policyengine-uk==2.132.6",
   "policyengine-core==3.33.3",
