@@ -30,7 +30,7 @@ import GroupImpactChart, { GROUP_DESCRIPTION, GroupDefinitions } from "./charts/
 import SensitivityChart from "./charts/SensitivityChart";
 import RateChangeChart from "./charts/RateChangeChart";
 import YieldChart from "./charts/YieldChart";
-import { Card, MetricCard, Notes, SourceLabel, SourceLink, TabLink } from "./controls";
+import { Card, DatasetName, MetricCard, Notes, SourceLabel, SourceLink, TabLink } from "./controls";
 import SectionHeading from "./SectionHeading";
 
 // Where each sensitivity scenario's elasticity comes from: the static case
@@ -103,8 +103,10 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
           title={`Headline results, ${headlineYear}`}
           description={
             <>
-              At <SourceLink href={CENTAX_SOURCE.url}>CenTax&apos;s</SourceLink> central behavioural
-              response, on {dataset.shortLabel}. Distributional figures cover all households.
+              These figures assume taxpayers realise fewer gains as rates rise, by as much as{" "}
+              <SourceLink href={CENTAX_SOURCE.url}>CenTax&apos;s</SourceLink> central estimate, and
+              use <DatasetName label={dataset.shortLabel} /> data; the household figures cover every
+              UK household.
             </>
           }
         />
@@ -194,7 +196,8 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
             <p>Each segment is what that step adds once the ones before it are in place.</p>
             {validation.badr_gains_bn > 0 ? (
               <p>
-                {dataset.shortLabel} charges gains qualifying for Business Asset Disposal{" "}
+                <DatasetName label={dataset.shortLabel} /> charges gains qualifying for Business Asset
+                Disposal{" "}
                 <SourceLink href={BADR_GUIDANCE}>Relief</SourceLink> on their own schedule; the{" "}
                 <TabLink onNavigate={onNavigate} tab="baseline" section="benchmarks">
                   Baseline

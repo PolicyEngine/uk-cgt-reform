@@ -175,6 +175,20 @@ export function Notes({ children, className = "" }) {
 }
 
 // An external source, opened in a new tab.
+export const MICROCOSM_URL = "https://github.com/PolicyEngine/microcosm";
+
+// The dataset's short name with "Microcosm" linked to its builder.
+export function DatasetName({ label, possessive = false }) {
+  const tail = possessive ? "'s" : "";
+  if (!label?.startsWith("Microcosm")) return `${label}${tail}`;
+  return (
+    <>
+      <SourceLink href={MICROCOSM_URL}>Microcosm</SourceLink>
+      {`${label.slice("Microcosm".length)}${tail}`}
+    </>
+  );
+}
+
 export function SourceLink({ href, children }) {
   return (
     <a

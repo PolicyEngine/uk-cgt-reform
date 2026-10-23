@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { getBenchmarks, getDatasetInfo, getFirstYear, getMetadata } from "../lib/dataHelpers";
 import { formatBn, formatCount, formatPct, formatPublished, formatSmallBn } from "../lib/formatters";
-import { TabLink } from "./controls";
+import { MICROCOSM_URL, TabLink } from "./controls";
 import SectionHeading from "./SectionHeading";
 
 function ExternalLink({ href, children }) {
@@ -235,7 +235,7 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
           <p>
             {dataset.label?.startsWith("Microcosm ") ? (
               <>
-                <ExternalLink href="https://github.com/PolicyEngine/microcosm">Microcosm</ExternalLink>
+                <ExternalLink href={MICROCOSM_URL}>Microcosm</ExternalLink>
                 {dataset.label.slice("Microcosm".length)}
               </>
             ) : (
@@ -272,7 +272,8 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
         <Topic title="Calibration">
           <p>
             Household weights are set so the sample matches {figures.targets ?? "a set of"}{" "}
-            statistics. These include HMRC&apos;s CGT totals and size bands, gains by taxable
+            statistics. These include HMRC&apos;s CGT{" "}
+            <ExternalLink href={CGT_STATISTICS}>totals</ExternalLink> and size bands, gains by taxable
             income band, the relief&apos;s bands, residential property gains, age and region.
           </p>
         </Topic>
@@ -451,7 +452,9 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
         </summary>
         <p className="mt-3 text-sm leading-6 text-slate-600">
           The elasticity measures how much people cut the gains they realise when the tax rate
-          rises. HMRC and the OBR assume a stronger response than{" "}
+          rises. HMRC and the{" "}
+          <ExternalLink href={`${official.url}#page=3`}>OBR</ExternalLink> assume a stronger
+          response than{" "}
           <ExternalLink href={CENTAX_REPORT}>CenTax</ExternalLink>. With HMRC&apos;s value, raising
           the higher rate by 5 or 10 points loses revenue, as its ready{" "}
           <ExternalLink href={READY_RECKONER_URL}>reckoner</ExternalLink> shows; with
@@ -502,8 +505,8 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
         </Topic>
         <Topic title="A worked example">
           <p>
-            Take a taxpayer whose rate on gains rises from 24% to 34%, the ready reckoner&apos;s
-            largest row:
+            Take a taxpayer whose rate on gains rises from 24% to 34%, the ready{" "}
+            <ExternalLink href={READY_RECKONER_URL}>reckoner&apos;s</ExternalLink> largest row:
           </p>
           <div className="overflow-x-auto rounded-lg border border-slate-200 px-4 py-2">
             <table className="w-full text-left text-sm">
@@ -540,8 +543,8 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
           </div>
           <p>
             With CenTax&apos;s value the tax paid {atCentral.revenue >= 0 ? "rises" : "falls"}; with
-            the official value it {atOfficial.revenue >= 0 ? "rises" : "falls"}, as in HMRC&apos;s
-            table. Across all taxpayers, the result depends on each person&apos;s rate.
+            the official value it {atOfficial.revenue >= 0 ? "rises" : "falls"}, as in HMRC&apos;s{" "}
+            <ExternalLink href={READY_RECKONER_URL}>table</ExternalLink>. Across all taxpayers, the result depends on each person&apos;s rate.
           </p>
         </Topic>
         <Topic title="Where to see it">
@@ -577,7 +580,15 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
             tab&apos;s Custom rates option lets you set your own CGT rates and your own
             treatment of Business Asset Disposal{" "}
             <ExternalLink href={BADR_GUIDANCE}>Relief</ExternalLink>. It scores them on{" "}
-            {dataset.shortLabel} for every modelled year, with the same model and assumptions
+            {dataset.shortLabel?.startsWith("Microcosm") ? (
+              <>
+                <ExternalLink href={MICROCOSM_URL}>Microcosm</ExternalLink>
+                {dataset.shortLabel.slice("Microcosm".length)}
+              </>
+            ) : (
+              dataset.shortLabel
+            )}{" "}
+            for every modelled year, with the same model and assumptions
             as the main results.
           </p>
 

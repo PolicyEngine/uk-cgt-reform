@@ -32,7 +32,7 @@ import BudgetChart from "./charts/BudgetChart";
 import ChartLegend from "./charts/ChartLegend";
 import RateChangeChart from "./charts/RateChangeChart";
 import GroupImpactChart, { GROUP_DESCRIPTION, GroupDefinitions } from "./charts/GroupImpactChart";
-import { Card, MetricCard, Notes, SourceLink, TabLink } from "./controls";
+import { Card, DatasetName, MetricCard, Notes, SourceLink, TabLink } from "./controls";
 import { SPEC_SUMMARY } from "./EqualisationResults";
 import SectionHeading from "./SectionHeading";
 
@@ -228,7 +228,8 @@ function ReadyReckonerPanel({ row, result, onNavigate }) {
           one.
         </p>
         <p>
-          {`HMRC's ${contextYear} figure, receipts in the reform's first year: ${formatSignedMn(row.hmrc_m[contextYear])}.`}
+          <SourceLink href={READY_RECKONER.url}>HMRC&apos;s</SourceLink>
+          {` ${contextYear} figure, receipts in the reform's first year: ${formatSignedMn(row.hmrc_m[contextYear])}.`}
         </p>
       </Notes>
     </Card>
@@ -279,7 +280,9 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
           title={`Headline results, ${headlineYear}`}
           description={
             <>
-              {`On ${result.metadata.dataset_short_label}, ${elasticityName(resultE)}. `}
+              {`These figures use the behavioural case ${elasticityName(resultE)} and `}
+              <DatasetName label={result.metadata.dataset_short_label} />
+              {" data; the household figures cover every UK household. "}
               {likeForLike
                 ? `Compared with equalisation at the same response: ${difference(headlineRow.gov_balance_change_bn, equalisation.revenue)} in the year and ${difference(result.five_year_total_bn, equalisation.fiveYear)} over five years. `
                 : "Equalisation's results use another response, so they are not compared here. "}

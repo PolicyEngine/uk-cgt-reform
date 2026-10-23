@@ -10,7 +10,7 @@ import RegionalComparisonChart, {
   buildRegionRows,
   formatUplift,
 } from "./charts/RegionalComparisonChart";
-import { Notes, SourceLabel, SourceLink, TabLink } from "./controls";
+import { DatasetName, Notes, SourceLabel, SourceLink, TabLink } from "./controls";
 import SectionHeading from "./SectionHeading";
 
 // Published estimates next to this dataset's own figures on the same basis
@@ -26,19 +26,6 @@ const BADR_GUIDANCE = "https://www.gov.uk/business-asset-disposal-relief";
 const EXEMPT_AMOUNT = "https://www.gov.uk/capital-gains-tax/allowances";
 const CENTAX_REPORT =
   "https://centax.org.uk/wp-content/uploads/2024/10/AdvaniLonsdaleSummers2024_CGTReform.pdf";
-const MICROCOSM = "https://github.com/PolicyEngine/microcosm";
-
-// The dataset's short name with "Microcosm" linked to its builder.
-function DatasetName({ label, possessive = false }) {
-  const tail = possessive ? "'s" : "";
-  if (!label?.startsWith("Microcosm")) return `${label}${tail}`;
-  return (
-    <>
-      <SourceLink href={MICROCOSM}>Microcosm</SourceLink>
-      {`${label.slice("Microcosm".length)}${tail}`}
-    </>
-  );
-}
 
 // Legend names, short and parallel across the tab's charts.
 const PE = "PolicyEngine";
@@ -167,10 +154,12 @@ function StaticEqualisation({ block, dataset }) {
         </p>
         <p>
           The light dots apply the model&apos;s static uplift (the static change as a share of
-          baseline liability) to the OBR&apos;s cash receipts forecast ({block.obr_receipts_source}).
+          baseline liability) to the OBR&apos;s cash receipts{" "}
+          <SourceLink href={OBR_EFO}>forecast</SourceLink> ({block.obr_receipts_source}).
         </p>
         <p>
-          Prices use the CPI path in {block.price_index_source}; JRF&apos;s report does not name a
+          Prices use the CPI <SourceLink href={OBR_EFO}>path</SourceLink> in {block.price_index_source};
+          JRF&apos;s report does not name a
           deflator.
         </p>
       </Notes>
@@ -201,7 +190,9 @@ function CentaxRegions({ block, dataset }) {
       <RegionalComparisonChart rows={rows} peLabel={PE} centaxLabel="CenTax 2024" />
       <Notes>
         <p>
-          {`Nationally, CGT at 2019/20 rules rises from ${formatBn(national.baseline_cgt_bn, 1)} to ${formatBn(national.reform_cgt_bn, 1)} on 2026-27 data (current law: ${formatBn(national.current_law_cgt_bn, 1)}). CenTax's rates-only figure is +${formatBn(external.details.change_bn, 1)} on a ${formatBn(external.details.baseline_bn, 1)} baseline in 2019/20.`}
+          {`Nationally, CGT at 2019/20 rules rises from ${formatBn(national.baseline_cgt_bn, 1)} to ${formatBn(national.reform_cgt_bn, 1)} on 2026-27 data (current law: ${formatBn(national.current_law_cgt_bn, 1)}). `}
+          <SourceLink href={external.url}>CenTax&apos;s</SourceLink>
+          {` rates-only figure is +${formatBn(external.details.change_bn, 1)} on a ${formatBn(external.details.baseline_bn, 1)} baseline in 2019/20.`}
         </p>
         <p>
           {`The 2019/20 rules: main rates of ${percent(rules.main.basic_rate)} and ${percent(rules.main.higher_rate)}, ${percent(rules.residential_property.basic_rate)} and ${percent(rules.residential_property.higher_rate)} for residential property and carried interest, ${percent(rules.badr.rate)} under Business Asset Disposal`}{" "}
@@ -211,7 +202,7 @@ function CentaxRegions({ block, dataset }) {
           thresholds and gains (the £12,000 in 2026 money).
         </p>
         <p>
-          CenTax cover resident individuals, putting trusts and non-residents at about 5% of
+          <SourceLink href={external.url}>CenTax</SourceLink> cover resident individuals, putting trusts and non-residents at about 5% of
           revenue, and count CGT and income tax together. Their regions are taxpayers&apos;
           regions of residence; these are households&apos; regions.
         </p>
@@ -342,7 +333,7 @@ function ReadyReckoner({ block, dataset, elasticities, rr, headlineYear, onNavig
           {`Why bars point different ways: a higher rate raises more tax on each gain sold, but fewer gains are sold. With a weaker response (${central}) the first effect is larger, so revenue rises; with a stronger one (${official}) the second is larger on the higher-rate rows, so revenue falls there.${upperClause}`}
         </p>
         <p>
-          HMRC&apos;s figures are receipts in £m, including knock-on income tax and SDLT, and arrive
+          <SourceLink href={block.url}>HMRC&apos;s</SourceLink> figures are receipts in £m, including knock-on income tax and SDLT, and arrive
           a year after the tax is owed, so the chart shows HMRC&apos;s receipts in{" "}
           {currentPair.hmrcYear}; {PE}&apos;s are the change in the government balance in the
           year, as for custom rates in the{" "}
@@ -362,7 +353,8 @@ function ReadyReckoner({ block, dataset, elasticities, rr, headlineYear, onNavig
           {formatPublished(block.published).replace(/^\d+\s+/, "")}.
         </p>
         <p>
-          {`HMRC's first-year (${firstYear}) figures: `}
+          <SourceLink href={block.url}>HMRC&apos;s</SourceLink>
+          {` first-year (${firstYear}) figures: `}
           {block.rows.map((row, i) => (
             <span key={row.id}>
               {i > 0 ? "; " : ""}
@@ -393,7 +385,9 @@ export default function BenchmarksTab({ data, onNavigate, baselineGlance, childr
           title="How PolicyEngine compares with HMRC, JRF and CenTax"
           description={
             <>
-              {`HMRC's statistics for the baseline, and published estimates that score the same reform or the same kind of rate change, next to ${PE}'s figures on `}
+              {"HMRC's "}
+              <SourceLink href={CGT_STATISTICS}>statistics</SourceLink>
+              {` for the baseline, and published estimates that score the same reform or the same kind of rate change, next to ${PE}'s figures on `}
               <DatasetName label={dataset.shortLabel} />
               {" on the same basis. Estimates that cover a wider package are shown separately as context."}
             </>
