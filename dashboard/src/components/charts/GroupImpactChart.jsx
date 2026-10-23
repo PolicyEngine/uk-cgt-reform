@@ -15,26 +15,27 @@ import { colors } from "../../lib/colors";
 import { formatSignedCurrency, formatSignedPct } from "../../lib/formatters";
 import ChartLogo from "../ChartLogo";
 import { LabelledSelect } from "../controls";
+import SectionHeading from "../SectionHeading";
 import ChartTooltip, { TOOLTIP_PROPS } from "./ChartTooltip";
 
 const AXIS_STYLE = { fontSize: 12, fill: colors.gray[500] };
 
 const GROUPINGS = [
-  { value: "decile", label: "Income deciles" },
-  { value: "quartile", label: "Income quartiles" },
-  { value: "household_type", label: "Household type" },
-  { value: "region", label: "Region" },
+  { value: "decile", label: "Income deciles", title: "income decile" },
+  { value: "quartile", label: "Income quartiles", title: "income quartile" },
+  { value: "household_type", label: "Household type", title: "household type" },
+  { value: "region", label: "Region", title: "region" },
 ];
 
 
 // Change in household net income by income decile or quartile (ranked by
-// household net income before the reform), household type or region, for a chosen year from 2027-28 on (the first year, 2026-27, is the
-// headline's). `groupsByYear` is the pipeline's income_change_groups block
-// (fiscal label -> groupings).
-export default function GroupImpactChart({ groupsByYear }) {
-  const all = Object.keys(groupsByYear);
-  const years = all.length > 1 ? all.slice(1) : all;
-  const [groupYear, setGroupYear] = useState(years[0]);
+// household net income before the reform), household type or region, in a
+// chosen year (`defaultYear` first), under a heading that names the grouping
+// and the year. `groupsByYear` is the pipeline's income_change_groups block
+// (fiscal label -> groupings); `description` sits under the heading.
+export default function GroupImpactChart({ groupsByYear, defaultYear, description }) {
+  const years = Object.keys(groupsByYear);
+  const [groupYear, setGroupYear] = useState(years.includes(defaultYear) ? defaultYear : years[0]);
   const [groupMetric, setGroupMetric] = useState("absolute");
   const groups = groupsByYear[groupYear] ?? groupsByYear[years[0]];
   // Only the groupings the results carry (a result from before deciles has
@@ -64,8 +65,14 @@ export default function GroupImpactChart({ groupsByYear }) {
   const metricName = isRelative ? "Relative net income change" : "Average change per household";
   const formatMetric = (v) => (isRelative ? formatSignedPct(v, 1) : formatSignedCurrency(v));
 
+  const groupingTitle = GROUPINGS.find((option) => option.value === grouping)?.title;
+
   return (
     <>
+      <SectionHeading
+        title={`Change in household net income by ${groupingTitle}, ${groupYear}`}
+        description={description}
+      />
       <div className="mb-4 flex flex-wrap gap-2 sm:gap-3">
         <LabelledSelect
           label="Year"
@@ -184,6 +191,9 @@ export default function GroupImpactChart({ groupsByYear }) {
     </>
   );
 }
+
+export const GROUP_DESCRIPTION =
+  "Each bar shows the average change in net income for one group of households, ranked by income before the reform.";
 
 // How the groups are defined, as bullets for the Notes under the chart; a
 // caller adds its own bullets as children.

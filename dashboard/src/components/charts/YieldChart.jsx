@@ -123,7 +123,7 @@ function YieldTooltip({ active, payload, label, steps }) {
   );
 }
 
-// Where the 2026-27 yield comes from: each reform step's increment, stacked,
+// Where one year's yield comes from (schedule_split.year): each reform step's increment, stacked,
 // with no behavioural response and at the CenTax central elasticity.
 // `steps` is the pipeline's schedule_split.steps.
 export default function YieldChart({ steps }) {

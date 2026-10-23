@@ -81,7 +81,7 @@ does. Carried interest has been taxed as income since 6 April 2026 (the
 engine keeps a 32% CGT stand-in), so equalising CGT with income tax leaves
 it alone. On a dataset without these columns the parameters are inert.
 
-The results split the reform's 2026-27 yield by schedule
+The results split the reform's 2027-28 yield (the dashboard's headline year) by schedule
 (`schedule_split`, static and central): the main rates first, then the
 residential property schedule (which is equalisation with the relief kept,
 one reading of Wes Streeting's proposed exemption for genuine entrepreneurs,
@@ -89,6 +89,9 @@ which has not been defined), then the relief withdrawn. The Reform tab's Custom 
 option scores any rate and lifetime limit for the relief, or withdraws it, for every year.
 
 ## Results (2026-27 unless stated)
+
+The dashboard reports 2027-28 by default (`metadata.headline_year`); the
+rows marked 2027-28 below are its headline figures.
 
 Engine policyengine-uk 2.132.6, wrapper policyengine.py 6.10.1, projection
 fingerprint `fc5e9a879bce`.
@@ -106,17 +109,17 @@ fingerprint `fc5e9a879bce`.
 | Share of gains from gains of £1m or more | 67% | HMRC Table 2: 61% (2023-24), 65% (2024-25) |
 | Taxpayers with gains over £500k | 37.1k | HMRC Table 2: 19k (2023-24), 33k (2024-25) |
 | Largest single gain | £566m | none: HMRC's top band is £5m and over (2k taxpayers, £23.6bn in 2023-24; 3k, £48.5bn in 2024-25) |
-| Static yield (e = 0) | +£26.0bn | JRF (2026): around £13bn, static, equalisation alone (see [Benchmarks](#benchmarks)) |
-| of which the relief withdrawn (static) | +£5.0bn | none |
+| Static yield (e = 0), 2027-28 | +£27.0bn | JRF (2026): around £13bn, static, equalisation alone (see [Benchmarks](#benchmarks)) |
+| of which the relief withdrawn (static), 2027-28 | +£5.1bn | none |
 | Uplift from equalising at 2019/20 rules (static) | +130% | CenTax (2024), Table 3: +139% on 2019/20 data |
-| Yield, CenTax lower (retention 0.5) | +£17.6bn | none |
-| **Yield, CenTax central (retention 1.0)** | **+£10.4bn** | none for equalisation alone; CenTax's £14.3bn (2025-26), £11.3bn (2026-27) and £19.7bn (2029-30) add an investment allowance and base broadening |
-| of which the relief withdrawn (central) | +£2.8bn | none |
-| Yield, CenTax upper (retention 2.0) | −£0.8bn | none |
-| Yield, official HMRC/OBR elasticities (retention 3.6; 1.4 for gains qualifying for BADR) | −£9.6bn | none |
+| Yield, CenTax lower (retention 0.5), 2027-28 | +£18.3bn | none |
+| **Yield, CenTax central (retention 1.0), 2027-28** | **+£10.8bn** (2026-27: +£10.4bn) | none for equalisation alone; CenTax's £14.3bn (2025-26), £11.3bn (2026-27) and £19.7bn (2029-30) add an investment allowance and base broadening |
+| of which the relief withdrawn (central), 2027-28 | +£2.9bn | none |
+| Yield, CenTax upper (retention 2.0), 2027-28 | −£0.8bn | none |
+| Yield, official HMRC/OBR elasticities (retention 3.6; 1.4 for gains qualifying for BADR), 2027-28 | −£9.9bn | none |
 | Five-year total, 2026-27 to 2030-31 | +£56.3bn | none |
-| Top income decile, net income change | −7.9% (−£15,106/household) | none |
-| Bottom income decile, net income change | −0.08% (−£12) | none |
+| Top income decile, net income change, 2027-28 | −8.1% (−£15,667/household) | none |
+| Bottom income decile, net income change, 2027-28 | −0.08% (−£12) | none |
 
 Benchmarks are outturns for the tax year stated (HMRC Capital Gains Tax
 statistics, 2026 release, Tables 1, 2 and 8) or other institutions'
@@ -368,7 +371,7 @@ longer needed. The pipeline asserts that the static (e=0) and central
   HMRC/Advani including the entrants, the schedule components and the BADR
   claimants, budget
   impact by year with the entrants' contribution, distributional impacts,
-  the elasticity sensitivity, the 2026-27 yield split by schedule
+  the elasticity sensitivity and the yield split by schedule, both for the headline year 2027-28
   (`schedule_split`: main rates, residential property, the relief withdrawn;
   static and central), and a `benchmarks` block (see
   [Benchmarks](#benchmarks)).

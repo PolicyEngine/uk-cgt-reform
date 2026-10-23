@@ -65,6 +65,9 @@ import json
 from dataclasses import dataclass
 
 YEARS = [2026, 2027, 2028, 2029, 2030]  # fiscal years 2026-27 .. 2030-31
+# The year the dashboard reports by default: the headline cards, the yield
+# by schedule, the elasticity sensitivity and the group chart's first year.
+HEADLINE_YEAR = 2027  # 2027-28
 # policyengine.py reform dicts take a single effective date per value and
 # apply it open-endedly (equivalent to the old "2026-01-01.2035-12-31"
 # range over the 2026-2030 window simulated here).

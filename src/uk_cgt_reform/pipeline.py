@@ -56,6 +56,7 @@ from .reform import (
     BADR_ELASTICITY_BY_CASE,
     ELASTICITY,
     ELASTICITY_PARAMETER,
+    HEADLINE_YEAR,
     INCOME_TAX_RATES,
     PERIOD,
     YEARS,
@@ -151,9 +152,7 @@ def score_ready_reckoner(spec: DatasetSpec, folder: Path, fingerprint: str) -> d
         scores[row["id"]] = {}
         for elasticity_id, elasticity in READY_RECKONER_ELASTICITIES.items():
             request = dataclasses.replace(
-                validate_request(
-                    {"dataset": spec.key, "rates": row["rates"], "badr": row["badr"]}
-                ),
+                validate_request({"dataset": spec.key, "rates": row["rates"], "badr": row["badr"]}),
                 elasticity=elasticity,
             )
             scores[row["id"]][elasticity_id] = {}
@@ -288,7 +287,7 @@ def run_dataset(
         )
 
     # ── Step 2b: the static reform in every year, for the static benchmarks
-    # (the 2026 run is also the sensitivity table's static case) ──────────
+    # (the headline year's run is also the sensitivity table's static case)
     print(f"Step 2b {tag}: Static reform (e=0), every year...")
     static_reform = equalisation_reform(0.0)
     static_digest = reform_fingerprint(static_reform)
@@ -302,46 +301,48 @@ def run_dataset(
         for year in YEARS
     }
 
-    # ── Step 3: elasticity sensitivity (2026), which doubles as the check
-    # that the behavioural response fires through policyengine.py ─────────
-    print(f"Step 3 {tag}: Elasticity sensitivity (2026)...")
-    base_cgt_2026 = cgt_revenue(baseline_sims[2026])
+    # ── Step 3: elasticity sensitivity (the headline year), which doubles
+    # as the check that the behavioural response fires through
+    # policyengine.py ────────────────────────────────────────────────────
+    hy = HEADLINE_YEAR
+    print(f"Step 3 {tag}: Elasticity sensitivity ({fiscal_year_label(hy)})...")
+    base_cgt_headline = cgt_revenue(baseline_sims[hy])
 
     def run_case(e: float):
         if e == ELASTICITY:
-            return reform_sims[2026]
+            return reform_sims[hy]
         if e == 0.0:
-            return static_sims[2026]
+            return static_sims[hy]
         reform = equalisation_reform(e)
         return run_simulation(
-            datasets[2026],
+            datasets[hy],
             policy=make_policy(reform, equalisation_case(e)),
-            sim_id=equalisation_sim_id(sim_stem, e, reform_fingerprint(reform), 2026),
+            sim_id=equalisation_sim_id(sim_stem, e, reform_fingerprint(reform), hy),
         )
 
-    sens = sensitivity(base_cgt_2026, SENSITIVITY_CASES, run_case)
+    sens = sensitivity(base_cgt_headline, SENSITIVITY_CASES, run_case, hy)
     for row in sens:
-        print(f"    {row['name']}: {row['revenue_2026_bn']:+.1f}bn")
-    static_2026 = next(r["revenue_2026_bn"] for r in sens if r["e_retention"] == 0.0)
-    central_2026 = next(r["revenue_2026_bn"] for r in sens if r["e_retention"] == ELASTICITY)
-    assert static_2026 - central_2026 > 1.0, (
+        print(f"    {row['name']}: {row['revenue_bn']:+.1f}bn")
+    static_yield = next(r["revenue_bn"] for r in sens if r["e_retention"] == 0.0)
+    central_yield = next(r["revenue_bn"] for r in sens if r["e_retention"] == ELASTICITY)
+    assert static_yield - central_yield > 1.0, (
         f"Behavioural CGT elasticity did not fire through policyengine.py on {spec.key}: "
-        f"static (e=0) yield {static_2026:.2f}bn vs central (e={ELASTICITY}) "
-        f"{central_2026:.2f}bn. Refusing to write results."
+        f"static (e=0) yield {static_yield:.2f}bn vs central (e={ELASTICITY}) "
+        f"{central_yield:.2f}bn. Refusing to write results."
     )
     # The response each case applies, resolved from the settings the engine
     # reads (simulations.response_assumption), beside the convention.
     for row in sens:
         row["response_assumption"] = checked_assumption(
-            equalisation_reform(row["e_retention"]), row["e_retention"], 2026
+            equalisation_reform(row["e_retention"]), row["e_retention"], hy
         )
 
-    # ── Step 3d: the yield built up schedule by schedule (2026), static and
-    # central: main rates, then residential property, then the relief
+    # ── Step 3d: the yield built up schedule by schedule (the headline
+    # year), static and central: main rates, then residential property, then the relief
     # withdrawn; the step before the last is equalisation keeping the relief
-    print(f"Step 3d {tag}: The yield by schedule (2026, static and central)...")
+    print(f"Step 3d {tag}: The yield by schedule ({fiscal_year_label(hy)}, static and central)...")
     split_cases = {"static": 0.0, "central": ELASTICITY}
-    full_runs = {"static": static_sims[2026], "central": reform_sims[2026]}
+    full_runs = {"static": static_sims[hy], "central": reform_sims[hy]}
     revenues, split_digests = {}, {}
     for case, e in split_cases.items():
         revenues[case], split_digests[case] = {}, {}
@@ -354,17 +355,17 @@ def run_dataset(
                 sim = full_runs[case]
             else:
                 sim = run_simulation(
-                    datasets[2026],
+                    datasets[hy],
                     policy=make_policy(reform, f"step_{step}"),
-                    sim_id=step_sim_id(sim_stem, step, e, digest, 2026),
+                    sim_id=step_sim_id(sim_stem, step, e, digest, hy),
                 )
             revenues[case][step] = cgt_revenue(sim)
     split = {
-        "year": fiscal_year_label(2026),
+        "year": fiscal_year_label(hy),
         "elasticities": split_cases,
         "reform_fingerprints": split_digests,
         "steps": schedule_split(
-            base_cgt_2026,
+            base_cgt_headline,
             [(step, label) for step, label, _ in schedule_step_reforms(0.0)],
             revenues,
         ),
@@ -386,7 +387,7 @@ def run_dataset(
             sim_id=counterfactual_sim_id(sim_stem, role, cf_digests[role], 2026),
         )
     uplift = cgt_uplift(cf_sims["baseline"], cf_sims["reform"])
-    current_law_cgt_bn = base_cgt_2026 / 1e9
+    current_law_cgt_bn = cgt_revenue(baseline_sims[2026]) / 1e9
     national = uplift["national"]
     assert national["baseline_cgt_bn"] < current_law_cgt_bn, (
         f"2019/20 rules raised more CGT ({national['baseline_cgt_bn']:.2f}bn) than current "
@@ -465,6 +466,7 @@ def run_dataset(
             "default_dataset_key": DEFAULT_DATASET_KEY,
             "calibrated": False,
             "reform_period_start": PERIOD,
+            "headline_year": fiscal_year_label(HEADLINE_YEAR),
             "elasticity": ELASTICITY,
             "elasticity_parameter": ELASTICITY_PARAMETER,
             "capital_gains_response_assumption": {

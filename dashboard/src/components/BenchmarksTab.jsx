@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { getBenchmarks, getDatasetInfo } from "../lib/dataHelpers";
+import { getBenchmarks, getDatasetInfo, getHeadlineYear } from "../lib/dataHelpers";
 import { formatBn, formatPublished, formatSignedBn, formatSignedMn } from "../lib/formatters";
 import JrfComparisonChart, { buildJrfRows } from "./charts/JrfComparisonChart";
 import PackageEstimatesChart, { buildPackageRows } from "./charts/PackageEstimatesChart";
@@ -259,7 +259,7 @@ function CentaxPackage({ rows, onNavigate }) {
   );
 }
 
-function ReadyReckoner({ block, dataset, elasticities, rr, onNavigate }) {
+function ReadyReckoner({ block, dataset, elasticities, rr, headlineYear, onNavigate }) {
   const firstYear = block.hmrc_years[0];
   const central = elasticities.central.e_retention.toFixed(1);
   const official = elasticities.official.e_retention;
@@ -280,25 +280,30 @@ function ReadyReckoner({ block, dataset, elasticities, rr, onNavigate }) {
       : fallsWithOfficial
         ? ` At ${upper} revenue falls on the same rows, by less than at ${official}.`
         : "";
-  const [pairKey, setPairKey] = useState(rr.pairs[0]?.key);
+  // The year select names PolicyEngine's year (HMRC's receipts follow a
+  // year later), starting at the headline year.
+  const [pairKey, setPairKey] = useState(
+    (rr.pairs.find((p) => p.modelYear === headlineYear) ?? rr.pairs[0])?.key,
+  );
+  const currentPair = rr.pairs.find((p) => p.key === pairKey) ?? rr.pairs[0];
   return (
     <section className="section-card scroll-mt-24" id="ready-reckoner">
       <SectionHeading
-        title="Revenue from small rate changes: PolicyEngine and HMRC"
+        title={`Revenue from small rate changes: PolicyEngine and HMRC, ${currentPair.modelYear}`}
         action={
           rr.pairs.length > 1 ? (
             <label className="flex items-center gap-2">
-              <span className="text-xs text-slate-500">HMRC receipts</span>
+              <span className="text-xs text-slate-500">Year</span>
               <span className="relative inline-flex">
                 <select
-                  aria-label="HMRC receipts year"
+                  aria-label="Year"
                   value={pairKey}
                   onChange={(event) => setPairKey(event.target.value)}
                   className="h-8 cursor-pointer appearance-none rounded-md border border-slate-200 bg-slate-50 pl-3 pr-8 text-sm font-medium tabular-nums text-slate-800 transition-colors hover:border-slate-300 hover:bg-white focus:outline-none focus:ring-2 focus:ring-[color:var(--pe-color-primary-500)]"
                 >
                   {rr.pairs.map((p) => (
                     <option key={p.key} value={p.key}>
-                      {p.hmrcYear}
+                      {p.modelYear}
                     </option>
                   ))}
                 </select>
@@ -316,7 +321,7 @@ function ReadyReckoner({ block, dataset, elasticities, rr, onNavigate }) {
         description={
           <>
             <SourceLink href={block.url}>HMRC&apos;s</SourceLink>
-            {` (June 2025) receipts from small rate changes, beside ${PE}'s change a year earlier at the central elasticity, an elasticity of ${upper} and the official one. Bars left of £0 reduce revenue.`}
+            {` (June 2025) receipts from small rate changes, beside ${PE}'s change in the government balance at the central elasticity, an elasticity of ${upper} and the official one. Bars left of £0 reduce revenue.`}
           </>
         }
       />
@@ -338,7 +343,8 @@ function ReadyReckoner({ block, dataset, elasticities, rr, onNavigate }) {
         </p>
         <p>
           HMRC&apos;s figures are receipts in £m, including knock-on income tax and SDLT, and arrive
-          a year after the tax is owed; {PE}&apos;s are the change in the government balance in the
+          a year after the tax is owed, so the chart shows HMRC&apos;s receipts in{" "}
+          {currentPair.hmrcYear}; {PE}&apos;s are the change in the government balance in the
           year, as for custom rates in the{" "}
           <TabLink onNavigate={onNavigate} tab="reform">
             Reform
@@ -401,6 +407,7 @@ export default function BenchmarksTab({ data, onNavigate, baselineGlance, childr
       <CentaxPackage rows={benchmarks.centax_package_context} onNavigate={onNavigate} />
       <ReadyReckoner
         block={benchmarks.ready_reckoner}
+        headlineYear={getHeadlineYear(data)}
         dataset={dataset}
         elasticities={elasticities}
         rr={rr}

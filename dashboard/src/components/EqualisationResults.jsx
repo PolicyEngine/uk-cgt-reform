@@ -15,7 +15,8 @@ import {
   getBudget,
   getDatasetInfo,
   getEntrants,
-  getFirstYear,
+  getBudgetRow,
+  getHeadlineYear,
   getIncomeChangeGroups,
   getIncomeChangeGroupsByYear,
   getReformSchedules,
@@ -25,7 +26,7 @@ import {
   getValidation,
 } from "../lib/dataHelpers";
 import BudgetChart from "./charts/BudgetChart";
-import GroupImpactChart, { GroupDefinitions } from "./charts/GroupImpactChart";
+import GroupImpactChart, { GROUP_DESCRIPTION, GroupDefinitions } from "./charts/GroupImpactChart";
 import SensitivityChart from "./charts/SensitivityChart";
 import RateChangeChart from "./charts/RateChangeChart";
 import YieldChart from "./charts/YieldChart";
@@ -63,8 +64,8 @@ function officialSource(official) {
 // by schedule and the sensitivity to the elasticity).
 export default function EqualisationResults({ data, onNavigate, onChooseCustom }) {
   const budget = getBudget(data);
-  const firstYear = getFirstYear(data);
-  const headlineGroups = getIncomeChangeGroups(data, firstYear);
+  const headlineYear = getHeadlineYear(data);
+  const headlineGroups = getIncomeChangeGroups(data, headlineYear);
   const sensitivity = getSensitivity(data);
   const { central, official, centax_range: centaxRange } = getBenchmarks(data).elasticities;
   const reform = getReform(data);
@@ -73,9 +74,9 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
   const dataset = getDatasetInfo(data);
   const entrants = getEntrants(data);
   const entrantShare = entrants.count / validation.cgt_taxpayers;
-  const firstYearRow = budget[0];
+  const headlineRow = getBudgetRow(data, headlineYear);
   const entrantShareOfChange =
-    firstYearRow.cgt_change_from_entrants_bn / firstYearRow.gov_balance_change_bn;
+    headlineRow.cgt_change_from_entrants_bn / headlineRow.gov_balance_change_bn;
   const recorded = (gains) => (gains > 0 ? "" : ` ${dataset.shortLabel} records no such gains, so this line is inert here.`);
   const deciles = headlineGroups.decile;
   const topDecile = deciles?.at(-1);
@@ -87,12 +88,12 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
   const split = getScheduleSplit(data);
   // Equalisation with the relief kept: the step before it is withdrawn.
   const keptRelief = split.steps.find((row) => row.step === "residential");
-  // The spread of the first-year yield across the behavioural cases in the
+  // The spread of the yield across the behavioural cases in the
   // sensitivity chart (the static case excluded): the official case and
   // CenTax's upper case can turn it negative.
   const behavioural = sensitivity.filter((row) => row.e_retention !== 0);
-  const lowest = behavioural.reduce((a, b) => (b.revenue_2026_bn < a.revenue_2026_bn ? b : a));
-  const highest = behavioural.reduce((a, b) => (b.revenue_2026_bn > a.revenue_2026_bn ? b : a));
+  const lowest = behavioural.reduce((a, b) => (b.revenue_bn < a.revenue_bn ? b : a));
+  const highest = behavioural.reduce((a, b) => (b.revenue_bn > a.revenue_bn ? b : a));
   const caseName = (row) =>
     row.e_retention === official.e_retention
       ? "the official HMRC/OBR elasticity"
@@ -102,11 +103,10 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
     <div className="space-y-6">
       <Card>
         <SectionHeading
-          title={`Headline results, ${firstYear}`}
+          title={`Headline results, ${headlineYear}`}
           description={
             <>
-              The reform&apos;s first year, at{" "}
-              <SourceLink href={CENTAX_SOURCE.url}>CenTax&apos;s</SourceLink> central behavioural
+              At <SourceLink href={CENTAX_SOURCE.url}>CenTax&apos;s</SourceLink> central behavioural
               response, on {dataset.shortLabel}. Distributional figures cover all households.
             </>
           }
@@ -114,9 +114,9 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
         <div className={`grid gap-4 ${topDecile?.share_affected_pct !== undefined ? "md:grid-cols-3" : "md:grid-cols-2"}`}>
           <MetricCard
             label="Change in government balance"
-            value={formatSignedBn(firstYearRow.gov_balance_change_bn, 1)}
+            value={formatSignedBn(headlineRow.gov_balance_change_bn, 1)}
             note="After taxpayers realise fewer gains."
-            tip={`Across the behavioural cases in the sensitivity chart, the first-year change in CGT revenue runs from ${formatSignedBn(lowest.revenue_2026_bn, 1)} at ${caseName(lowest)} to ${formatSignedBn(highest.revenue_2026_bn, 1)} at ${caseName(highest)}.`}
+            tip={`Across the behavioural cases in the sensitivity chart, the ${lowest.year} change in CGT revenue runs from ${formatSignedBn(lowest.revenue_bn, 1)} at ${caseName(lowest)} to ${formatSignedBn(highest.revenue_bn, 1)} at ${caseName(highest)}.`}
           />
           {topDecile ? (
             <MetricCard
@@ -180,7 +180,7 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
       <div className="grid gap-6 lg:grid-cols-2">
         <Card className="flex min-w-0 flex-col">
           <SectionHeading
-            title="Budgetary impact by year"
+            title={`Budgetary impact by year, ${budget[0].year} to ${budget.at(-1).year}`}
             description="Each bar shows the change in the government's balance in one fiscal year, after taxpayers realise fewer gains."
           />
           <BudgetChart budget={budget} />
@@ -199,19 +199,19 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
                 <TabLink onNavigate={onNavigate} tab="methodology" section="new-taxpayers">
                   Methodology
                 </TabLink>
-                ) contribute {formatSmallBn(firstYearRow.cgt_change_from_entrants_bn)} of the
-                first-year change ({formatPct(100 * entrantShareOfChange, 0)}).
+                ) contribute {formatSmallBn(headlineRow.cgt_change_from_entrants_bn)} of the{" "}
+                {headlineYear} change ({formatPct(100 * entrantShareOfChange, 0)}).
               </p>
             ) : null}
           </Notes>
         </Card>
 
         <Card className="flex min-w-0 flex-col">
-          <SectionHeading
-            title="Change in household net income by income group"
-            description="Each bar shows the average change in net income for one group of households, ranked by income before the reform."
+          <GroupImpactChart
+            groupsByYear={getIncomeChangeGroupsByYear(data)}
+            defaultYear={headlineYear}
+            description={GROUP_DESCRIPTION}
           />
-          <GroupImpactChart groupsByYear={getIncomeChangeGroupsByYear(data)} />
           <Notes className="mt-auto">
             <GroupDefinitions>
               <li>
@@ -225,11 +225,11 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
 
         <Card className="min-w-0">
           <SectionHeading
-            title="Where the yield comes from"
+            title={`Where the yield comes from, ${split.year}`}
             description={
               <>
-                Each bar adds the reform&apos;s parts one at a time in its first year, first with
-                no behavioural response and then with{" "}
+                Each bar adds the reform&apos;s parts one at a time, first with no behavioural
+                response and then with{" "}
                 <SourceLink href={CENTAX_SOURCE.url}>CenTax&apos;s</SourceLink> central response.
               </>
             }
@@ -266,13 +266,13 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
 
         <Card as="details" className="group min-w-0 scroll-mt-24" id="sensitivity">
           <summary className="cursor-pointer select-none text-xl font-semibold tracking-tight text-slate-900 marker:text-[color:var(--pe-color-primary-600)]">
-            Sensitivity to the behavioural elasticity
+            {`Sensitivity to the behavioural elasticity, ${sensitivity[0].year}`}
             <span className="ml-2 text-sm font-normal text-slate-500 group-open:hidden">
               (expand to see how the result depends on taxpayers&apos; response)
             </span>
           </summary>
           <p className="mb-5 mt-2 text-sm leading-6 text-slate-600">
-            Each bar shows the first-year change in CGT revenue under a different assumption about
+            Each bar shows the change in CGT revenue under a different assumption about
             how strongly taxpayers cut the gains they realise.
           </p>
           <SensitivityChart rows={sensitivity} centralRetention={central.e_retention} />

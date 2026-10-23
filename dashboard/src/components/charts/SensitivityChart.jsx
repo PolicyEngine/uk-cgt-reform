@@ -96,19 +96,19 @@ function SensitivityTooltip({ active, payload }) {
   return (
     <TooltipCard
       title={row.name}
-      rows={[{ label: "2026-27 revenue", value: fmt(row.revenue), color: row.fill }]}
+      rows={[{ label: `${row.year} revenue`, value: fmt(row.revenue), color: row.fill }]}
     />
   );
 }
 
-// 2026-27 revenue from the reform under each behavioural case, diverging
+// One year's revenue from the reform under each behavioural case, diverging
 // around zero. `rows` is the pipeline's sensitivity block, in display order;
 // the case whose retention elasticity equals `centralRetention` is highlighted.
 export default function SensitivityChart({ rows, centralRetention = 1 }) {
   const data = rows.map((row) => ({
     ...row,
     short: shortCaseName(row.name),
-    revenue: Number(row.revenue_2026_bn),
+    revenue: Number(row.revenue_bn),
   }));
   const centralIndex = data.findIndex((r) => Number(r.e_retention) === Number(centralRetention));
   data.forEach((row, i) => {

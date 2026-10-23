@@ -91,7 +91,7 @@ def test_price_factors_express_each_year_in_the_first_years_prices():
 
 def test_sensitivity_rows_record_how_each_case_was_applied():
     runs = {e: fake_sim([100.0 + e, 50.0, 10.0, 7.0]) for e in SENSITIVITY_CASES.values()}
-    rows = sensitivity(0.0, SENSITIVITY_CASES, lambda e: runs[e])
+    rows = sensitivity(0.0, SENSITIVITY_CASES, lambda e: runs[e], 2027)
     assert [set(row) for row in rows] == [
         {
             "name",
@@ -100,7 +100,8 @@ def test_sensitivity_rows_record_how_each_case_was_applied():
             "applied_as",
             "applied_value",
             "badr_elasticity",
-            "revenue_2026_bn",
+            "year",
+            "revenue_bn",
         }
     ] * len(SENSITIVITY_CASES)
     assert [row["elasticity_parameter"] for row in rows] == [ELASTICITY_PARAMETER] * len(rows)

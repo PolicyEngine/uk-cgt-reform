@@ -47,12 +47,13 @@ export function getYearLabels(data) {
   return Object.keys(data.income_change_groups);
 }
 
-// Every row's elasticity and first-year revenue change are required: the
-// Reform tab's revenue card reads its range from them.
+// Every row's elasticity, year and revenue change are required: the Reform
+// tab's revenue card reads its range from them.
 export function getSensitivity(data) {
   for (const row of data.sensitivity) {
     requireNumber(row, "e_retention", "sensitivity row");
-    requireNumber(row, "revenue_2026_bn", "sensitivity row");
+    requireNumber(row, "revenue_bn", "sensitivity row");
+    if (typeof row.year !== "string") throw new Error('sensitivity row: required field "year" is missing');
   }
   return data.sensitivity;
 }
@@ -116,6 +117,21 @@ export function getFirstYear(data) {
     return `${year}-${String(year + 1).slice(2)}`;
   }
   return year;
+}
+
+// The year the headline cards, the yield split, the sensitivity chart and
+// the group chart's default report (a fiscal label, "2027-28").
+export function getHeadlineYear(data) {
+  const year = data.metadata.headline_year;
+  if (typeof year !== "string") throw new Error('metadata: required field "headline_year" is missing');
+  return year;
+}
+
+// The budget row for one fiscal label.
+export function getBudgetRow(data, year) {
+  const row = getBudget(data).find((r) => r.year === year);
+  if (!row) throw new Error(`budget: no row for ${year}`);
+  return row;
 }
 
 export function getFiveYearTotal(data) {

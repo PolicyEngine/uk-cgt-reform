@@ -14,6 +14,7 @@ from uk_cgt_reform.comparison import (
 )
 from uk_cgt_reform.impacts import QUANTILE_LABELS, REGION_NAMES, fiscal_year_label, schedule_split
 from uk_cgt_reform.reform import (
+    HEADLINE_YEAR,
     YEARS,
     centax_1920_rules,
     elasticity_convention,
@@ -113,7 +114,7 @@ def fake_schedule_split(scale: float = 1.0) -> dict:
         },
     }
     return {
-        "year": "2026-27",
+        "year": "2027-28",
         "elasticities": {"static": 0.0, "central": 1.0},
         "reform_fingerprints": {
             case: {step: "0" * 12 for step, _ in steps} for case in ("static", "central")
@@ -151,6 +152,7 @@ def fake_results(spec=CANDIDATE, scale: float = 1.0) -> dict:
             "default_dataset_key": DEFAULT_DATASET_KEY,
             "calibrated": False,
             "reform_period_start": "2026-01-01",
+            "headline_year": "2027-28",
             "elasticity": 1.0,
             "elasticity_parameter": "gov.simulation.capital_gains_responses.elasticity",
             "reform": {"basic_rate": 0.20, "higher_rate": 0.40, "additional_rate": 0.45},
@@ -241,7 +243,13 @@ def fake_results(spec=CANDIDATE, scale: float = 1.0) -> dict:
             for label in YEAR_LABELS
         },
         "sensitivity": [
-            {"name": name, "e_retention": e, **elasticity_convention(e), "revenue_2026_bn": 1.0}
+            {
+                "name": name,
+                "e_retention": e,
+                **elasticity_convention(e),
+                "year": "2027-28",
+                "revenue_bn": 1.0,
+            }
             for name, e in SENSITIVITY_CASES.items()
         ],
         "benchmarks": fake_benchmarks(scale),
@@ -372,7 +380,7 @@ def test_benchmarks_block_shape():
 
 def test_schedule_split_builds_the_yield_up_step_by_step():
     split = fake_results()["schedule_split"]
-    assert split["year"] == "2026-27"
+    assert split["year"] == "2027-28"
     assert split["elasticities"] == {"static": 0.0, "central": 1.0}
     steps = split["steps"]
     assert [row["step"] for row in steps] == ["main_rates", "residential", "badr_withdrawn"]
@@ -383,3 +391,12 @@ def test_schedule_split_builds_the_yield_up_step_by_step():
     assert sum(row["central_increment_bn"] for row in steps) == pytest.approx(
         steps[-1]["central_cgt_change_bn"]
     )
+
+
+def test_headline_year_is_a_modelled_year_and_keys_the_single_year_blocks():
+    results = fake_results()
+    headline = results["metadata"]["headline_year"]
+    assert headline == fiscal_year_label(HEADLINE_YEAR) == "2027-28"
+    assert headline in results["income_change_groups"]
+    assert results["schedule_split"]["year"] == headline
+    assert {row["year"] for row in results["sensitivity"]} == {headline}

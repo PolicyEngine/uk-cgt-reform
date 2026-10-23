@@ -5,9 +5,10 @@ import { useState } from "react";
 import {
   BASELINE_SCHEDULE_RATES,
   badrLimitLabel,
-  getBudget,
+  getBudgetRow,
   getEntrants,
   getFiveYearTotal,
+  getHeadlineYear,
   getValidation,
 } from "../lib/dataHelpers";
 import {
@@ -30,7 +31,7 @@ import { colors } from "../lib/colors";
 import BudgetChart from "./charts/BudgetChart";
 import ChartLegend from "./charts/ChartLegend";
 import RateChangeChart from "./charts/RateChangeChart";
-import GroupImpactChart, { GroupDefinitions } from "./charts/GroupImpactChart";
+import GroupImpactChart, { GROUP_DESCRIPTION, GroupDefinitions } from "./charts/GroupImpactChart";
 import { Card, MetricCard, Notes, SourceLink, TabLink } from "./controls";
 import SectionHeading from "./SectionHeading";
 
@@ -245,10 +246,12 @@ function difference(value, reference) {
 // figures have their home in the precomputed results; here the schedule is
 // set against them as differences, with a button to show them.
 export default function LiveResults({ data, result, onNavigate, onShowEqualisation }) {
-  const firstYear = result.budget[0].year;
-  const firstRow = result.budget[0];
+  // The run's headline year (a run from before the field reports the
+  // results file's, the same constant).
+  const headlineYear = result.metadata.headline_year ?? getHeadlineYear(data);
+  const headlineRow = result.budget.find((row) => row.year === headlineYear);
   // A result cached before deciles has none; its decile cards are left out.
-  const deciles = result.income_change_groups[firstYear].decile;
+  const deciles = result.income_change_groups[headlineYear].decile;
   const topDecile = deciles?.at(-1);
   // Deciles hold equal numbers of households, so the top decile's share of
   // the total fall is its average over the sum of the ten averages.
@@ -262,7 +265,7 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
   // Equalisation's precomputed figures, which ran at the results file's elasticity.
   const equalisation = {
     elasticity: data.metadata.elasticity,
-    revenue: getBudget(data)[0].gov_balance_change_bn,
+    revenue: getBudgetRow(data, headlineYear).gov_balance_change_bn,
     fiveYear: getFiveYearTotal(data),
   };
   const likeForLike = sameElasticity(resultE, equalisation.elasticity);
@@ -272,12 +275,12 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
     <>
       <Card>
         <SectionHeading
-          title={`Headline results, ${firstYear}`}
+          title={`Headline results, ${headlineYear}`}
           description={
             <>
               {`On ${result.metadata.dataset_short_label}, ${elasticityName(resultE)}. `}
               {likeForLike
-                ? `Compared with equalisation at the same response: ${difference(firstRow.gov_balance_change_bn, equalisation.revenue)} in the first year and ${difference(result.five_year_total_bn, equalisation.fiveYear)} over five years. `
+                ? `Compared with equalisation at the same response: ${difference(headlineRow.gov_balance_change_bn, equalisation.revenue)} in the year and ${difference(result.five_year_total_bn, equalisation.fiveYear)} over five years. `
                 : "Equalisation's results use another response, so they are not compared here. "}
               <TabLink onNavigate={onShowEqualisation}>Show</TabLink> equalisation&apos;s results.
             </>
@@ -286,7 +289,7 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
         <div className={`grid gap-4 ${topDecile?.share_affected_pct !== undefined ? "md:grid-cols-3" : "md:grid-cols-2"}`}>
           <MetricCard
             label="Change in government balance"
-            value={bn(firstRow.gov_balance_change_bn)}
+            value={bn(headlineRow.gov_balance_change_bn)}
             note={Number(resultE) === 0 ? "With no behavioural response." : "After the behavioural response."}
           />
           {topDecile ? (
@@ -327,7 +330,7 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
       <div className="grid gap-6 lg:grid-cols-2">
         <Card className="flex min-w-0 flex-col">
           <SectionHeading
-            title="Budgetary impact by year"
+            title={`Budgetary impact by year, ${result.budget[0].year} to ${result.budget.at(-1).year}`}
             description="Each bar shows the change in the government's balance in one fiscal year, after taxpayers realise fewer gains."
           />
           <BudgetChart budget={result.budget} />
@@ -338,19 +341,19 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
                 <TabLink onNavigate={onNavigate} tab="methodology" section="new-taxpayers">
                   Methodology
                 </TabLink>
-                ) contribute {formatSmallBn(firstRow.cgt_change_from_entrants_bn)} of the
-                first-year change.
+                ) contribute {formatSmallBn(headlineRow.cgt_change_from_entrants_bn)} of the{" "}
+                {headlineYear} change.
               </p>
             </Notes>
           ) : null}
         </Card>
 
         <Card className="flex min-w-0 flex-col">
-          <SectionHeading
-            title="Change in household net income by income group"
-            description="Each bar shows the average change in net income for one group of households, ranked by income before the reform."
+          <GroupImpactChart
+            groupsByYear={result.income_change_groups}
+            defaultYear={headlineYear}
+            description={GROUP_DESCRIPTION}
           />
-          <GroupImpactChart groupsByYear={result.income_change_groups} />
           <Notes className="mt-auto">
             <GroupDefinitions>
               <li>

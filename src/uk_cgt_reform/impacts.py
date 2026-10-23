@@ -339,11 +339,13 @@ def cgt_uplift(baseline, reformed) -> dict:
     }
 
 
-def sensitivity(baseline_cgt: float, cases: dict[str, float], run_case) -> list[dict]:
-    """Re-run the 2026 reform under each institution's elasticity assumption.
+def sensitivity(baseline_cgt: float, cases: dict[str, float], run_case, year: int) -> list[dict]:
+    """Re-run the reform in ``year`` under each institution's elasticity
+    assumption.
 
     ``run_case(elasticity)`` must return the completed reform simulation
-    for 2026 with that elasticity. Each case is a retention-rate elasticity
+    for ``year`` with that elasticity; ``baseline_cgt`` is that year's
+    current-law CGT revenue, £. Each case is a retention-rate elasticity
     (``e_retention``); the row also says which engine parameter carried it
     and in which convention (``reform.elasticity_convention``).
     """
@@ -355,7 +357,8 @@ def sensitivity(baseline_cgt: float, cases: dict[str, float], run_case) -> list[
                 "name": name,
                 "e_retention": e,
                 **elasticity_convention(e),
-                "revenue_2026_bn": (cgt_revenue(sim) - baseline_cgt) / 1e9,
+                "year": fiscal_year_label(year),
+                "revenue_bn": (cgt_revenue(sim) - baseline_cgt) / 1e9,
             }
         )
     return rows
