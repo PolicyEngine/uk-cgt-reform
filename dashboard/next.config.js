@@ -7,6 +7,10 @@ const FORMER_BASE_PATH = "/uk/equalising-cgt";
 const nextConfig = {
   reactStrictMode: true,
   transpilePackages: ["@policyengine/design-system"],
+  // Next.js 14 runs instrumentation.js only with this flag (Next.js 15 runs
+  // it by default and the flag can go). It removes the compromised eMudhra
+  // roots from Node's CA list before the live-run routes call the Modal backend.
+  experimental: { instrumentationHook: true },
   // Mounted as a Next.js multizone under policyengine.org/uk/cgt-reform,
   // so pages and /_next assets must resolve under that path prefix.
   basePath: BASE_PATH,
