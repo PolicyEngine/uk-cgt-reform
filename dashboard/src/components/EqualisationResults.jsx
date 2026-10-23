@@ -35,7 +35,7 @@ import GroupImpactChart, { GROUP_DESCRIPTION, GroupDefinitions, HOUSEHOLD_COLOR 
 import SensitivityChart from "./charts/SensitivityChart";
 import RateChangeChart from "./charts/RateChangeChart";
 import YieldChart from "./charts/YieldChart";
-import { Card, DatasetName, LabelledSelect, MetricCard, Notes, SourceLabel, SourceLink, TabLink } from "./controls";
+import { Card, DatasetName, MetricCard, Notes, SourceLabel, SourceLink, TabLink, YearPill } from "./controls";
 import SectionHeading from "./SectionHeading";
 
 // Where each sensitivity scenario's elasticity comes from: the static case
@@ -333,14 +333,7 @@ export function BeyondForecastNote() {
 function YearSelect({ years, value, onChange }) {
   if (years.length < 2) return null;
   return (
-    <div className="w-36">
-      <LabelledSelect
-        label="Year"
-        options={years.map((year) => ({ value: year, label: year }))}
-        value={value}
-        onChange={onChange}
-      />
-    </div>
+    <YearPill years={years} value={value} onChange={onChange} />
   );
 }
 

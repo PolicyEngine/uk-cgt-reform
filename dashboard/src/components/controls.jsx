@@ -262,3 +262,32 @@ export function TabLink({ onNavigate, tab, section, children }) {
 export function TableScroll({ className = "", children }) {
   return <div className={`table-scroll overflow-x-auto ${className}`}>{children}</div>;
 }
+
+// A compact year picker beside a section title: one pill reading
+// "Year 2027-28", with a chevron.
+export function YearPill({ years, value, onChange }) {
+  return (
+    <label className="relative inline-flex h-9 cursor-pointer items-center rounded-full border border-[color:var(--pe-color-primary-200)] bg-[color:var(--pe-color-primary-50)] pl-3.5 pr-8 text-sm transition-colors hover:border-[color:var(--pe-color-primary-400)] focus-within:ring-2 focus-within:ring-[color:var(--pe-color-primary-500)]">
+      <span className="mr-2 text-xs font-medium text-slate-500">Year</span>
+      <select
+        aria-label="Year"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="cursor-pointer appearance-none bg-transparent font-semibold tabular-nums text-[color:var(--pe-color-primary-800)] focus:outline-none"
+      >
+        {years.map((year) => (
+          <option key={year.value ?? year} value={year.value ?? year}>
+            {year.label ?? year}
+          </option>
+        ))}
+      </select>
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 12 12"
+        className="pointer-events-none absolute right-3 top-1/2 h-3 w-3 -translate-y-1/2 text-[color:var(--pe-color-primary-700)]"
+      >
+        <path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </label>
+  );
+}

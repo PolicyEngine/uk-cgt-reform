@@ -11,7 +11,7 @@ import RegionalComparisonChart, {
   formatUplift,
 } from "./charts/RegionalComparisonChart";
 import { colors } from "../lib/colors";
-import { DatasetName, Notes, SourceLabel, SourceLink, TabLink } from "./controls";
+import { DatasetName, Notes, SourceLabel, SourceLink, TabLink, YearPill } from "./controls";
 import SectionHeading from "./SectionHeading";
 
 // Published estimates next to this dataset's own figures on the same basis
@@ -329,30 +329,11 @@ function ReadyReckoner({ block, dataset, elasticities, rr, headlineYear, onNavig
         title={`Small rate changes: PolicyEngine and HMRC, ${currentPair.modelYear}`}
         action={
           rr.pairs.length > 1 ? (
-            <label className="flex items-center gap-2">
-              <span className="text-xs text-slate-500">Year</span>
-              <span className="relative inline-flex">
-                <select
-                  aria-label="Year"
-                  value={pairKey}
-                  onChange={(event) => setPairKey(event.target.value)}
-                  className="h-8 cursor-pointer appearance-none rounded-md border border-slate-200 bg-slate-50 pl-3 pr-8 text-sm font-medium tabular-nums text-slate-800 transition-colors hover:border-slate-300 hover:bg-white focus:outline-none focus:ring-2 focus:ring-[color:var(--pe-color-primary-500)]"
-                >
-                  {rr.pairs.map((p) => (
-                    <option key={p.key} value={p.key}>
-                      {p.modelYear}
-                    </option>
-                  ))}
-                </select>
-                <svg
-                  aria-hidden="true"
-                  viewBox="0 0 12 12"
-                  className="pointer-events-none absolute right-2.5 top-1/2 h-3 w-3 -translate-y-1/2 text-slate-500"
-                >
-                  <path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </span>
-            </label>
+            <YearPill
+              years={rr.pairs.map((p) => ({ value: p.key, label: p.modelYear }))}
+              value={pairKey}
+              onChange={setPairKey}
+            />
           ) : null
         }
         description={
