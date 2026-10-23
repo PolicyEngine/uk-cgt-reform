@@ -25,6 +25,7 @@ official one (``comparison.py``).
 
 from __future__ import annotations
 
+import dataclasses
 import datetime
 import importlib.metadata
 import json
@@ -134,7 +135,8 @@ def score_ready_reckoner(spec: DatasetSpec, folder: Path, fingerprint: str) -> d
     and in each model year the lag names. Each row carries its rates and its
     treatment of Business Asset Disposal Relief; the official case applies
     3.6 to main-rate gains and 1.4 to gains qualifying for the relief in
-    every row. Returns ``{row id: {elasticity id: {model year: change in
+    every row. The 3.0 case is not an explorer option, so the request is
+    validated at the central case and then given the row's elasticity. Returns ``{row id: {elasticity id: {model year: change in
     government balance, £m}}}``."""
     from .explore import engine_context, run_year, validate_request
 
@@ -148,13 +150,11 @@ def score_ready_reckoner(spec: DatasetSpec, folder: Path, fingerprint: str) -> d
     for row in READY_RECKONER["rows"]:
         scores[row["id"]] = {}
         for elasticity_id, elasticity in READY_RECKONER_ELASTICITIES.items():
-            request = validate_request(
-                {
-                    "dataset": spec.key,
-                    "rates": row["rates"],
-                    "badr": row["badr"],
-                    "elasticity": elasticity,
-                }
+            request = dataclasses.replace(
+                validate_request(
+                    {"dataset": spec.key, "rates": row["rates"], "badr": row["badr"]}
+                ),
+                elasticity=elasticity,
             )
             scores[row["id"]][elasticity_id] = {}
             for lag in READY_RECKONER["lag"]:

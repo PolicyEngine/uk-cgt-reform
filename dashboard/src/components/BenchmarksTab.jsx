@@ -263,16 +263,23 @@ function ReadyReckoner({ block, dataset, elasticities, rr, onNavigate }) {
   const firstYear = block.hmrc_years[0];
   const central = elasticities.central.e_retention.toFixed(1);
   const official = elasticities.official.e_retention;
-  // CenTax's upper value, described from the rows themselves: whether it
-  // raises revenue in every row and pair, and by less than the central case.
-  const upper = elasticities.centax_range.upper.toFixed(1);
+  // The 3.0 case, described from the rows themselves: whether revenue
+  // falls at it on exactly the rows where it falls at the official value
+  // (and by less),
+  // or rises in every row by less than at the central one.
+  const upper = block.elasticities.elasticity_3.toFixed(1);
   const upperValues = rr.rows.flatMap((row) => rr.pairs.map((p) => row.values[p.key]));
-  const upperRises = upperValues.every((v) => isNum(v.upper) && v.upper > 0);
-  const upperBelowCentral = upperValues.every((v) => isNum(v.upper) && v.upper < v.central);
-  const upperClause =
-    upperRises && upperBelowCentral
-      ? ` At CenTax's upper value (${upper}) revenue still rises in every row, by less than at ${central}.`
-      : "";
+  const complete = upperValues.every((v) => isNum(v.upper) && isNum(v.central) && isNum(v.official));
+  const fallsWithOfficial =
+    complete && upperValues.every((v) => v.upper < 0 === v.official < 0 && (v.official >= 0 || v.upper > v.official));
+  const upperRises = complete && upperValues.every((v) => v.upper > 0 && v.upper < v.central);
+  const upperClause = !complete
+    ? ""
+    : upperRises
+      ? ` At ${upper} revenue still rises in every row, by less than at ${central}.`
+      : fallsWithOfficial
+        ? ` At ${upper} revenue falls on the same rows, by less than at ${official}.`
+        : "";
   const [pairKey, setPairKey] = useState(rr.pairs[0]?.key);
   return (
     <section className="section-card scroll-mt-24" id="ready-reckoner">
@@ -309,7 +316,7 @@ function ReadyReckoner({ block, dataset, elasticities, rr, onNavigate }) {
         description={
           <>
             <SourceLink href={block.url}>HMRC&apos;s</SourceLink>
-            {` (June 2025) receipts from small rate changes, beside ${PE}'s change a year earlier at the central elasticity, CenTax's upper value and the official one. Bars left of £0 reduce revenue.`}
+            {` (June 2025) receipts from small rate changes, beside ${PE}'s change a year earlier at the central elasticity, an elasticity of ${upper} and the official one. Bars left of £0 reduce revenue.`}
           </>
         }
       />
@@ -321,7 +328,7 @@ function ReadyReckoner({ block, dataset, elasticities, rr, onNavigate }) {
         labels={{
           hmrc: "HMRC",
           central: `${PE}, central (${elasticities.central.e_retention.toFixed(1)})`,
-          upper: `${PE}, CenTax upper (${elasticities.centax_range.upper.toFixed(1)})`,
+          upper: `${PE}, elasticity ${upper}`,
           official: `${PE}, official (${elasticities.official.e_retention}; ${elasticities.official.badr_e_retention} relief)`,
         }}
       />
@@ -371,7 +378,7 @@ export default function BenchmarksTab({ data, onNavigate, baselineGlance, childr
   const benchmarks = getBenchmarks(data);
   const dataset = getDatasetInfo(data);
   const elasticities = benchmarks.elasticities;
-  const rr = buildReckonerRows(benchmarks.ready_reckoner, elasticities.central.id, elasticities.official.id);
+  const rr = buildReckonerRows(benchmarks.ready_reckoner, elasticities.central.id, elasticities.official.id, "elasticity_3");
   return (
     <div id="comparisons" className="scroll-mt-24 space-y-6">
       <section className="pt-2">

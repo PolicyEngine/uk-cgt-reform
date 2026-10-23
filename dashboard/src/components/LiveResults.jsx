@@ -222,7 +222,7 @@ function ReadyReckonerPanel({ row, result, onNavigate }) {
           <TabLink onNavigate={onNavigate} tab="baseline" section="ready-reckoner">
             Baseline
           </TabLink>{" "}
-          tab scores every row at the central elasticity, CenTax&apos;s upper value and the official
+          tab scores every row at the central elasticity, an elasticity of 3.0 and the official
           one.
         </p>
         <p>

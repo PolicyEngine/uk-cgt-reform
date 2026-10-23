@@ -33,7 +33,7 @@ export function buildReckonerRows(
   block,
   centralId = "centax_central",
   officialId = "official",
-  upperId = "centax_upper",
+  upperId = "elasticity_3",
 ) {
   const pairs = block.lag.map((lag, i) => ({
     key: String(i),

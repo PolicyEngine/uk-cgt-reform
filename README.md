@@ -212,7 +212,8 @@ external figure with its source, locator, scope, year and basis.
 - **HMRC's ready reckoner (June 2025).** Seven rows (higher rate +1, +5 and
   +10 points; lower rate +1 and +5 points; the Business Asset Disposal Relief
   rate +1 and +5 points) are scored through the live-run code at the
-  central elasticity, CenTax's upper value (2.0) and the official one,
+  central elasticity, an elasticity of 3.0 (not a CenTax value; applied
+  as stated, to gains qualifying for the relief too) and the official one,
   comparing HMRC's receipts in 2027-28
   and 2028-29 with this repo's liabilities a year earlier. The official case
   applies 3.6 to main-rate gains and 1.4 to gains qualifying for the relief,

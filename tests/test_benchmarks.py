@@ -212,16 +212,19 @@ def test_ready_reckoner_block_refuses_unscored_rows():
         ready_reckoner_block({})
 
 
-def test_ready_reckoner_elasticities_are_explorer_options():
-    # Central (1.0), CenTax's upper value (2.0) and the official case (3.6),
-    # each keyed by the rate explorer's id for the same elasticity.
+def test_ready_reckoner_elasticities():
+    # Central (1.0), a retention-rate elasticity of 3.0 and the official case
+    # (3.6). The central and official cases are keyed by the rate explorer's
+    # ids for the same elasticity; 3.0 is not an explorer option.
     assert READY_RECKONER_ELASTICITIES == {
         "centax_central": 1.0,
-        "centax_upper": 2.0,
+        "elasticity_3": 3.0,
         "official": 3.6,
     }
     options = {o["id"]: o["e_retention"] for o in ELASTICITY_OPTIONS}
-    assert all(options[eid] == e for eid, e in READY_RECKONER_ELASTICITIES.items())
+    assert options["centax_central"] == READY_RECKONER_ELASTICITIES["centax_central"]
+    assert options["official"] == READY_RECKONER_ELASTICITIES["official"]
+    assert "elasticity_3" not in options
 
 
 def test_ready_reckoner_block_lists_every_elasticity():
@@ -233,5 +236,6 @@ def test_ready_reckoner_block_lists_every_elasticity():
         for row in READY_RECKONER["rows"]
     }
     block = ready_reckoner_block(scores)
-    assert block["elasticity_ids"] == ["centax_central", "centax_upper", "official"]
+    assert block["elasticity_ids"] == ["centax_central", "elasticity_3", "official"]
+    assert block["elasticities"] == READY_RECKONER_ELASTICITIES
     assert all(set(row["model_m"]) == set(READY_RECKONER_ELASTICITIES) for row in block["rows"])

@@ -318,15 +318,17 @@ OFFICIAL_ELASTICITY_SOURCE = {
     ),
 }
 
-# The elasticity cases the ready-reckoner rows are scored at, keyed by the
-# rate explorer's option ids: CenTax's central value, the upper end of their
-# range (Advani, Lonsdale and Summers 2024, Table 6) and the official case.
-# The official case is the same in every row: 3.6 for main-rate gains and
-# 1.4 for gains qualifying for the relief (OBR, January 2025, para 1.9;
+# The elasticity cases the ready-reckoner rows are scored at: CenTax's
+# central value (keyed by the rate explorer's option id), a retention-rate
+# elasticity of 3.0 (not one of CenTax's values nor an explorer option;
+# applied as stated, to gains qualifying for the relief too) and the
+# official case, the same in every row: 3.6 for main-rate gains and 1.4 for
+# gains qualifying for the relief (OBR, January 2025, para 1.9;
 # ``reform.elasticity_assignment``).
+READY_RECKONER_ELASTICITY_3 = 3.0
 READY_RECKONER_ELASTICITIES = {
     "centax_central": ELASTICITY,
-    "centax_upper": CENTAX_UPPER_ELASTICITY,
+    "elasticity_3": READY_RECKONER_ELASTICITY_3,
     "official": OFFICIAL_ELASTICITY,
 }
 
@@ -534,6 +536,7 @@ def ready_reckoner_block(model_m: dict[str, dict[str, dict[str, float]]]) -> dic
     return {
         **{key: value for key, value in READY_RECKONER.items() if key != "rows"},
         "elasticity_ids": list(READY_RECKONER_ELASTICITIES),
+        "elasticities": dict(READY_RECKONER_ELASTICITIES),
         "model_measure": (
             "Change in government balance, £m, on this repo's liabilities in the model "
             "year, with each row's rates and relief (the main and residential rates move "
