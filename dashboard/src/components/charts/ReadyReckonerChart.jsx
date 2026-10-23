@@ -20,18 +20,26 @@ const GAP = 4;
 const SERIES = {
   hmrc: { fill: colors.gray[700], text: colors.gray[800], weight: 700 },
   central: { fill: colors.primary[600], text: colors.primary[700], weight: 600 },
+  upper: { fill: colors.primary[300], text: colors.primary[600], weight: 600 },
   official: { fill: colors.error, opacity: 0.45, text: "#B42318", weight: 600 },
 };
-const ORDER = ["hmrc", "central", "official"];
+// Top to bottom in each row, and in the legend: HMRC, then the model from
+// the strongest response to the weakest.
+const ORDER = ["hmrc", "official", "upper", "central"];
 
 const isNum = (v) => v !== null && v !== undefined && Number.isFinite(Number(v));
 
 // The props from the results file's `benchmarks.ready_reckoner` block: one
-// entry per HMRC row, its three values for each receipts/liabilities pair.
-export function buildReckonerRows(block, centralId = "centax_central", officialId = "official") {
+// entry per HMRC row, its four values for each receipts/liabilities pair.
+export function buildReckonerRows(
+  block,
+  centralId = "centax_central",
+  officialId = "official",
+  upperId = "elasticity_3",
+) {
   const pairs = block.lag.map((lag, i) => ({
     key: String(i),
-    label: lag.hmrc_year,
+    label: lag.model_year,
     hmrcYear: lag.hmrc_year,
     modelYear: lag.model_year,
   }));
@@ -44,6 +52,7 @@ export function buildReckonerRows(block, centralId = "centax_central", officialI
         {
           hmrc: row.hmrc_m[lag.hmrc_year],
           central: row.model_m[centralId]?.[lag.model_year],
+          upper: row.model_m[upperId]?.[lag.model_year],
           official: row.model_m[officialId]?.[lag.model_year],
         },
       ]),
@@ -107,10 +116,10 @@ function RowChart({ values, domain, ticks, title, labels }) {
   );
 }
 
-// HMRC's ready reckoner rows against the model at two elasticities, as
+// HMRC's ready reckoner rows against the model at three elasticities, as
 // diverging bars around £0 on one £m scale shared by every row and both
 // year pairs (so switching pairs does not rescale). `pairs` and `rows` come
-// from buildReckonerRows; `labels`: { hmrc, central, official } legend text.
+// from buildReckonerRows; `labels`: { hmrc, central, upper, official } legend text.
 // The year pair is the chart's own state, shown as a select above it, unless
 // the caller controls it with `pairKey` and `onPairKeyChange` (and draws its
 // own select).

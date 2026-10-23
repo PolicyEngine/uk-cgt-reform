@@ -47,14 +47,22 @@ export function getYearLabels(data) {
   return Object.keys(data.income_change_groups);
 }
 
-// Every row's elasticity and first-year revenue change are required: the
-// Reform tab's revenue card reads its range from them.
-export function getSensitivity(data) {
-  for (const row of data.sensitivity) {
-    requireNumber(row, "e_retention", "sensitivity row");
-    requireNumber(row, "revenue_2026_bn", "sensitivity row");
+// One year's sensitivity rows (the block is keyed by fiscal label). Every
+// row's elasticity and revenue change are required: the Reform tab's
+// revenue card reads its range from them.
+export function getSensitivity(data, year) {
+  const rows = data.sensitivity[year];
+  if (!Array.isArray(rows)) throw new Error(`sensitivity: no rows for ${year}`);
+  for (const row of rows) {
+    requireNumber(row, "e_retention", `sensitivity row ${year}`);
+    requireNumber(row, "revenue_bn", `sensitivity row ${year}`);
   }
-  return data.sensitivity;
+  return rows;
+}
+
+// The years the per-year blocks (sensitivity, yield by schedule) cover.
+export function getSensitivityYears(data) {
+  return Object.keys(data.sensitivity);
 }
 
 // External benchmarks beside this dataset's own scores (issue #7): the
@@ -100,8 +108,15 @@ export function describeBadr(badr) {
   return `${Math.round(badr.rate * 100)}% up to a ${badrLimitLabel(badr.lifetime_limit)} lifetime limit`;
 }
 
-export function getScheduleSplit(data) {
-  return data.schedule_split;
+// One year's yield by schedule (the block is keyed by fiscal label).
+export function getScheduleSplit(data, year) {
+  const split = data.schedule_split[year];
+  if (!split) throw new Error(`schedule_split: no block for ${year}`);
+  return split;
+}
+
+export function getScheduleSplitYears(data) {
+  return Object.keys(data.schedule_split);
 }
 
 export function getReformSchedules(data) {
@@ -116,6 +131,21 @@ export function getFirstYear(data) {
     return `${year}-${String(year + 1).slice(2)}`;
   }
   return year;
+}
+
+// The year the headline cards, the yield split, the sensitivity chart and
+// the group chart's default report (a fiscal label, "2027-28").
+export function getHeadlineYear(data) {
+  const year = data.metadata.headline_year;
+  if (typeof year !== "string") throw new Error('metadata: required field "headline_year" is missing');
+  return year;
+}
+
+// The budget row for one fiscal label.
+export function getBudgetRow(data, year) {
+  const row = getBudget(data).find((r) => r.year === year);
+  if (!row) throw new Error(`budget: no row for ${year}`);
+  return row;
 }
 
 export function getFiveYearTotal(data) {

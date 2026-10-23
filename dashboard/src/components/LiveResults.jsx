@@ -5,9 +5,10 @@ import { useState } from "react";
 import {
   BASELINE_SCHEDULE_RATES,
   badrLimitLabel,
-  getBudget,
+  getBudgetRow,
   getEntrants,
   getFiveYearTotal,
+  getHeadlineYear,
   getValidation,
 } from "../lib/dataHelpers";
 import {
@@ -30,8 +31,9 @@ import { colors } from "../lib/colors";
 import BudgetChart from "./charts/BudgetChart";
 import ChartLegend from "./charts/ChartLegend";
 import RateChangeChart from "./charts/RateChangeChart";
-import GroupImpactChart, { GroupDefinitions } from "./charts/GroupImpactChart";
-import { Card, MetricCard, Notes, SourceLink, TabLink } from "./controls";
+import GroupImpactChart, { GROUP_DESCRIPTION, GroupDefinitions, HOUSEHOLD_COLOR } from "./charts/GroupImpactChart";
+import { Card, DatasetName, MetricCard, Notes, SourceLink, TabLink } from "./controls";
+import { BeyondForecastNote, SPEC_SUMMARY } from "./EqualisationResults";
 import SectionHeading from "./SectionHeading";
 
 const EXEMPT_AMOUNT = "https://www.gov.uk/capital-gains-tax/allowances";
@@ -219,13 +221,14 @@ function ReadyReckonerPanel({ row, result, onNavigate }) {
           HMRC&apos;s <SourceLink href={READY_RECKONER.url}>figures</SourceLink> ({READY_RECKONER.source}) are {READY_RECKONER.measure[0].toLowerCase()}
           {READY_RECKONER.measure.slice(1)}, after behavioural responses; HMRC has deferred its 2026
           edition, so they are provisional. The{" "}
-          <TabLink onNavigate={onNavigate} tab="benchmarks">
-            Benchmarks
+          <TabLink onNavigate={onNavigate} tab="baseline" section="ready-reckoner">
+            Baseline
           </TabLink>{" "}
-          tab scores every row at the central and official elasticities.
+          tab scores every row at the official elasticity, 3.0 and the central one.
         </p>
         <p>
-          {`HMRC's ${contextYear} figure, receipts in the reform's first year: ${formatSignedMn(row.hmrc_m[contextYear])}.`}
+          <SourceLink href={READY_RECKONER.url}>HMRC&apos;s</SourceLink>
+          {` ${contextYear} figure, receipts in the reform's first year: ${formatSignedMn(row.hmrc_m[contextYear])}.`}
         </p>
       </Notes>
     </Card>
@@ -244,13 +247,18 @@ function difference(value, reference) {
 // figures have their home in the precomputed results; here the schedule is
 // set against them as differences, with a button to show them.
 export default function LiveResults({ data, result, onNavigate, onShowEqualisation }) {
-  const firstYear = result.budget[0].year;
-  const firstRow = result.budget[0];
-  const topQuintile = result.income_change_groups[firstYear].quintile.at(-1);
-  // Quintiles hold equal numbers of households, so the top fifth's share of
-  // the total fall is its average over the sum of the five averages.
-  const quintiles = result.income_change_groups[firstYear].quintile;
-  const topShare = topQuintile.avg_change_gbp / quintiles.reduce((sum, group) => sum + group.avg_change_gbp, 0);
+  // The run's headline year (a run from before the field reports the
+  // results file's, the same constant).
+  const headlineYear = result.metadata.headline_year ?? getHeadlineYear(data);
+  const headlineRow = result.budget.find((row) => row.year === headlineYear);
+  // A result cached before deciles has none; its decile cards are left out.
+  const deciles = result.income_change_groups[headlineYear].decile;
+  const topDecile = deciles?.at(-1);
+  // Deciles hold equal numbers of households, so the top decile's share of
+  // the total fall is its average over the sum of the ten averages.
+  const topShare = topDecile
+    ? topDecile.avg_change_gbp / deciles.reduce((sum, group) => sum + group.avg_change_gbp, 0)
+    : null;
   const resultE = result.metadata.elasticity;
   const reformBadr = result.metadata.reform_badr ?? BADR_CURRENT_LAW;
   const matchedRow = readyReckonerRowFor(result.metadata.reform, reformBadr);
@@ -258,7 +266,7 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
   // Equalisation's precomputed figures, which ran at the results file's elasticity.
   const equalisation = {
     elasticity: data.metadata.elasticity,
-    revenue: getBudget(data)[0].gov_balance_change_bn,
+    revenue: getBudgetRow(data, headlineYear).gov_balance_change_bn,
     fiveYear: getFiveYearTotal(data),
   };
   const likeForLike = sameElasticity(resultE, equalisation.elasticity);
@@ -268,33 +276,40 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
     <>
       <Card>
         <SectionHeading
-          title={`Headline results, ${firstYear}`}
+          title={`Headline results, ${headlineYear}`}
           description={
             <>
-              {`On ${result.metadata.dataset_short_label}, ${elasticityName(resultE)}. `}
+              {`These figures use the behavioural case ${elasticityName(resultE)} and `}
+              <DatasetName label={result.metadata.dataset_short_label} />
+              {" data; the household figures cover every UK household. "}
               {likeForLike
-                ? `Compared with equalisation at the same response: ${difference(firstRow.gov_balance_change_bn, equalisation.revenue)} in the first year and ${difference(result.five_year_total_bn, equalisation.fiveYear)} over five years. `
+                ? `Compared with equalisation at the same response: ${difference(headlineRow.gov_balance_change_bn, equalisation.revenue)} in the year and ${difference(result.five_year_total_bn, equalisation.fiveYear)} over five years. `
                 : "Equalisation's results use another response, so they are not compared here. "}
               <TabLink onNavigate={onShowEqualisation}>Show</TabLink> equalisation&apos;s results.
             </>
           }
         />
-        <div className={`grid gap-4 ${topQuintile.share_affected_pct !== undefined ? "md:grid-cols-3" : "md:grid-cols-2"}`}>
+        <div className={`grid gap-4 ${topDecile?.share_affected_pct !== undefined ? "md:grid-cols-3" : "md:grid-cols-2"}`}>
           <MetricCard
             label="Change in government balance"
-            value={bn(firstRow.gov_balance_change_bn)}
+            valueColor={colors.primary[700]}
+            value={bn(headlineRow.gov_balance_change_bn)}
             note={Number(resultE) === 0 ? "With no behavioural response." : "After the behavioural response."}
           />
-          <MetricCard
-            label="Top fifth of households: average change in net income"
-            value={formatSignedCurrency(topQuintile.avg_change_gbp)}
-            note={`${formatSignedPct(topQuintile.relative_change_pct)} of net income; ${formatPct(100 * topShare, 0)} of the total fall in household income.`}
-          />
-          {topQuintile.share_affected_pct !== undefined ? (
+          {topDecile ? (
             <MetricCard
-              label="Top fifth of households: share with lower net income"
-              value={formatPct(topQuintile.share_affected_pct, 1)}
-              note="Households in the top fifth whose net income falls."
+              label="Top income decile: average change in net income"
+              valueColor={HOUSEHOLD_COLOR}
+              value={formatSignedCurrency(topDecile.avg_change_gbp)}
+              note={`${formatSignedPct(topDecile.relative_change_pct)} of net income; ${formatPct(100 * topShare, 0)} of the total fall in household income.`}
+            />
+          ) : null}
+          {topDecile?.share_affected_pct !== undefined ? (
+            <MetricCard
+              label="Top income decile: share with lower net income"
+              valueColor={HOUSEHOLD_COLOR}
+              value={formatPct(topDecile.share_affected_pct, 1)}
+              note="Households in the top income decile whose net income falls."
             />
           ) : null}
         </div>
@@ -303,32 +318,31 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
       <div className="grid gap-6 lg:grid-cols-2">
         <Card className="flex min-w-0 flex-col">
           <SectionHeading
-            title="Budgetary impact by year"
+            title={`Budgetary impact by year, ${result.budget[0].year} to ${result.budget.at(-1).year}`}
             description="Each bar shows the change in the government's balance in one fiscal year, after taxpayers realise fewer gains."
           />
           <BudgetChart budget={result.budget} />
-          {entrantShare > 0.05 ? (
-            <Notes className="mt-auto">
+          <Notes className="mt-auto">
+            <BeyondForecastNote />
+            {entrantShare > 0.05 ? (
               <p>
-                Entrants by uprating (
-                see the{" "}
-                <TabLink onNavigate={onNavigate} tab="baseline" section="entrants">
-                  Baseline
-                </TabLink>{" "}
-                tab
-                ) contribute {formatSmallBn(firstRow.cgt_change_from_entrants_bn)} of the
-                first-year change.
+                Entrants by uprating (see{" "}
+                <TabLink onNavigate={onNavigate} tab="methodology" section="new-taxpayers">
+                  Methodology
+                </TabLink>
+                ) contribute {formatSmallBn(headlineRow.cgt_change_from_entrants_bn)} of the{" "}
+                {headlineYear} change.
               </p>
-            </Notes>
-          ) : null}
+            ) : null}
+          </Notes>
         </Card>
 
         <Card className="flex min-w-0 flex-col">
-          <SectionHeading
-            title="Change in household net income by income group"
-            description="Each bar shows the average change in net income for one group of households, ranked by income before the reform."
+          <GroupImpactChart
+            groupsByYear={result.income_change_groups}
+            defaultYear={headlineYear}
+            description={GROUP_DESCRIPTION}
           />
-          <GroupImpactChart groupsByYear={result.income_change_groups} />
           <Notes className="mt-auto">
             <GroupDefinitions>
               <li>
@@ -340,26 +354,30 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
         </Card>
       </div>
 
-      {/* The specification's long text needs the full width, so the ready
-          reckoner sits under it rather than beside it. */}
-      <Card as="details" className="group min-w-0">
-        <summary className="cursor-pointer select-none text-xl font-semibold tracking-tight text-slate-900 marker:text-[color:var(--pe-color-primary-600)]">
-          What does this schedule change?
-          <span className="ml-2 text-sm font-normal text-slate-500 group-open:hidden">
-            (expand for the full specification)
-          </span>
-        </summary>
-        <div className="mt-4 space-y-3">
-          <p className="text-sm leading-6 text-slate-600">
-            Effective in every modelled year. Current law is read from the installed engine for
-            the first year. Residential property gains take the same rates, and the annual exempt{" "}
-            <SourceLink href={EXEMPT_AMOUNT}>amount</SourceLink> stays £3,000.
-          </p>
-          <ScheduleRates metadata={result.metadata} />
-        </div>
-      </Card>
-
       {matchedRow ? <ReadyReckonerPanel row={matchedRow} result={result} onNavigate={onNavigate} /> : null}
     </>
+  );
+}
+
+// A live run's full schedule, folded: it sits in the "Choose a reform"
+// panel under the one-line summary once the run's results show.
+export function ScheduleSpec({ result }) {
+  return (
+    <details className="group">
+      <summary className={SPEC_SUMMARY}>
+        What does this schedule change?
+        <span className="ml-2 text-sm font-normal text-slate-500 group-open:hidden">
+          (expand for the full specification)
+        </span>
+      </summary>
+      <div className="mt-4 space-y-3">
+        <p className="text-sm leading-6 text-slate-600">
+          Effective in every modelled year. Current law is read from the installed engine for
+          the first year. Residential property gains take the same rates, and the annual exempt{" "}
+          <SourceLink href={EXEMPT_AMOUNT}>amount</SourceLink> stays £3,000.
+        </p>
+        <ScheduleRates metadata={result.metadata} />
+      </div>
+    </details>
   );
 }

@@ -14,11 +14,11 @@ import {
   precomputedSchedule,
   scheduleParams,
 } from "../lib/schedule";
-import EqualisationResults from "./EqualisationResults";
-import LiveResults, { StatusLine } from "./LiveResults";
+import EqualisationResults, { EqualisationSpec } from "./EqualisationResults";
+import LiveResults, { ScheduleSpec, StatusLine } from "./LiveResults";
 import ScheduleForm from "./ScheduleForm";
 import SectionHeading from "./SectionHeading";
-import { Card, Pill, TEXT_BUTTON, TabLink, cardClass } from "./controls";
+import { Card, DatasetName, Pill, TEXT_BUTTON, TabLink, cardClass } from "./controls";
 
 const CENTAX_URL =
   "https://centax.org.uk/wp-content/uploads/2024/10/AdvaniLonsdaleSummers2024_CGTReform.pdf#page=38";
@@ -270,6 +270,13 @@ export default function ReformTab({ data, datasetKey, onNavigate, anchor }) {
                 <TabLink onNavigate={() => showEqualisation("sensitivity")}>sensitivity</TabLink>{" "}
                 chart in the results shows other values.
               </li>
+              <li>
+                Not modelled: an exit charge or people moving in or out of the UK; see{" "}
+                <TabLink onNavigate={onNavigate} tab="methodology" section="not-modelled">
+                  Methodology
+                </TabLink>
+                .
+              </li>
             </ul>
           ),
         }
@@ -287,6 +294,13 @@ export default function ReformTab({ data, datasetKey, onNavigate, anchor }) {
               </li>
               <li>Each run uses the same pipeline as the equalisation results.</li>
               <li>Completed runs are stored, so a schedule run before shows at once.</li>
+              <li>
+                Not modelled: an exit charge or people moving in or out of the UK; see{" "}
+                <TabLink onNavigate={onNavigate} tab="methodology" section="not-modelled">
+                  Methodology
+                </TabLink>
+                .
+              </li>
             </ul>
           ),
         };
@@ -300,7 +314,7 @@ export default function ReformTab({ data, datasetKey, onNavigate, anchor }) {
             policy ? null : (
               <>
                 <strong className="font-semibold text-slate-800">Pick one to start.</strong> Both
-                cover the same five years on {dataset.shortLabel}, with the same behavioural
+                cover the same five years on <DatasetName label={dataset.shortLabel} />, with the same behavioural
                 response.
               </>
             )
@@ -347,6 +361,13 @@ export default function ReformTab({ data, datasetKey, onNavigate, anchor }) {
                   about={about}
                 />
               )}
+              {/* The specification of the results shown, folded, under the
+                  one-line summary. */}
+              {collapsed && hasResults ? (
+                <div className="mt-5 border-t border-slate-200 pt-4">
+                  {shown === "precomputed" ? <EqualisationSpec data={data} /> : <ScheduleSpec result={result} />}
+                </div>
+              ) : null}
             </div>
             {shown === "live" ? (
               <StatusLine status={status} error={error} />

@@ -3,6 +3,7 @@
 import { colors } from "../../lib/colors";
 import { formatBn, formatCount, formatPct } from "../../lib/formatters";
 import ChartLogo from "../ChartLogo";
+import { InfoTip } from "../controls";
 import ChartLegend from "./ChartLegend";
 import { HoverTip, useHoverState } from "./ChartTooltip";
 
@@ -98,7 +99,10 @@ function Row({ row, seriesLabels, hover }) {
   const dotLines = (s) => (overlap && s.key === "model" ? [line(SERIES[0]), line(SERIES[1])] : [line(s)]);
   return (
     <li className={`grid grid-cols-2 items-center gap-x-3 gap-y-1.5 border-t border-slate-100 py-3 ${GRID}`}>
-      <span className="col-span-2 text-sm font-medium text-slate-800 md:col-span-1">{row.label}</span>
+      <span className="col-span-2 flex items-center gap-1.5 text-sm font-medium text-slate-800 md:col-span-1">
+        {row.label}
+        {row.tip ? <InfoTip label={`About ${row.label.toLowerCase()}`}>{row.tip}</InfoTip> : null}
+      </span>
       {SERIES.map((s) => (
         <span key={s.key} className="text-sm tabular-nums md:text-right" style={{ color: s.text, fontWeight: s.key === "model" ? 700 : 500 }}>
           <span className="block text-[10px] font-medium uppercase tracking-wide text-slate-400 md:hidden">

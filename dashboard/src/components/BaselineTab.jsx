@@ -1,11 +1,10 @@
 "use client";
 
 import { useEffect } from "react";
-import { formatBn, formatCount, formatPct, formatSmallBn } from "../lib/formatters";
-import { getDatasetInfo, getEntrants, getFirstYear, getValidation } from "../lib/dataHelpers";
-import { MetricCard, SourceLink } from "./controls";
+import { getDatasetInfo, getHeadlineYear, getValidation } from "../lib/dataHelpers";
+import { Notes, SourceLink } from "./controls";
 import BenchmarkChart, { parseBenchmark } from "./charts/BenchmarkChart";
-import ScheduleChart from "./charts/ScheduleChart";
+import BenchmarksTab from "./BenchmarksTab";
 import SectionHeading from "./SectionHeading";
 
 // External benchmarks the baseline is compared with. These are published
@@ -28,8 +27,6 @@ const T4_2023 = "HMRC CGT statistics 2026 release, Table 4 (2023-24, individuals
 const T4_2024 = "HMRC CGT statistics 2026 release, Table 4 (2024-25, provisional, individuals)";
 const CGT_STATISTICS = "https://www.gov.uk/government/statistics/capital-gains-tax-statistics";
 const FRS = "https://www.gov.uk/government/collections/family-resources-survey--2";
-const EXEMPT_AMOUNT = "https://www.gov.uk/capital-gains-tax/allowances";
-const BADR_GUIDANCE = "https://www.gov.uk/business-asset-disposal-relief";
 const CGT_RATES = "https://www.gov.uk/capital-gains-tax/rates";
 
 const BENCHMARKS = {
@@ -81,7 +78,7 @@ const BENCHMARKS = {
   },
 };
 
-export default function BaselineTab({ data, anchor }) {
+export default function BaselineTab({ data, anchor, onNavigate }) {
   // Other tabs link to a section here (``anchor``); the tab mounts after
   // navigation, so the scroll is replayed once it has.
   useEffect(() => {
@@ -93,9 +90,9 @@ export default function BaselineTab({ data, anchor }) {
 
   const validation = getValidation(data);
   const dataset = getDatasetInfo(data);
-  const entrants = getEntrants(data);
-  const firstYear = getFirstYear(data);
-  const entrantShare = entrants.count / validation.cgt_taxpayers;
+  // The baseline is checked in the headline year, against HMRC's latest
+  // (provisional) outturn.
+  const modelYear = getHeadlineYear(data);
   const bench = (group, key, label, unit, model) => ({
     group,
     key,
@@ -104,10 +101,20 @@ export default function BaselineTab({ data, anchor }) {
     model,
     hmrc2024: parseBenchmark(BENCHMARKS[key].y2024?.value),
   });
+  // Why the liabilities differ more than the gains: the rates, not the data.
+  function liabilityTip(v, year) {
+    const pe = v.baseline_cgt_revenue_bn / v.total_gains_bn;
+    const hmrc = parseBenchmark(BENCHMARKS.liability.y2024?.value) / parseBenchmark(BENCHMARKS.totalGains.y2024?.value);
+    const pct = (x) => `${Math.round(100 * x)}%`;
+    return `Most of this gap comes from the tax rates, not the data. CGT rates rose from 10% and 20% to 18% and 24% on 30 October 2024, so HMRC's 2024-25 liability is partly at the old rates, while PolicyEngine's ${year} figure is at the new rates all year: tax is ${pct(pe)} of taxable gains here against ${pct(hmrc)} in HMRC's figures. Gains also grow between the two years.`;
+  }
   const benchmarkRows = [
     bench("Overall", "totalGains", "Total taxable gains", "bn", validation.total_gains_bn),
     bench("Overall", "taxpayers", "CGT taxpayers", "count", validation.cgt_taxpayers),
-    bench("Overall", "liability", "Baseline CGT liability", "bn", validation.baseline_cgt_revenue_bn),
+    {
+      ...bench("Overall", "liability", "Baseline CGT liability", "bn", validation.baseline_cgt_revenue_bn),
+      tip: liabilityTip(validation, modelYear),
+    },
     bench("Large gains", "shareOver1m", "Share of gains from gains of £1m or more", "pct", validation.share_gains_over_1m_pct),
     bench("Large gains", "shareOver5m", "Share of gains from gains of £5m or more", "pct", validation.share_gains_over_5m_pct),
     bench("Large gains", "taxpayersOver500k", "Taxpayers with gains over £500k", "count", validation.taxpayers_over_500k),
@@ -116,106 +123,46 @@ export default function BaselineTab({ data, anchor }) {
     bench("Business Asset Disposal Relief", "badrClaimants", "People with qualifying gains", "count", validation.badr_claimants),
     bench("Business Asset Disposal Relief", "badrGains", "Qualifying gains", "bn", validation.badr_gains_bn),
   ];
-  // A tiny share still reads as a number: "0.47%", "0.006%", "<0.001%".
-  const formatShare = (share) => {
-    const pct = 100 * share;
-    if (pct < 0.001) return "<0.001%";
-    return `${pct.toPrecision(pct < 1 ? 1 : 2)}%`;
-  };
-  const entrantRows = [
-    { key: "taxpayers", label: "Taxpayers", unit: "count", total: validation.cgt_taxpayers, entrants: entrants.count },
-    { key: "gains", label: "Taxable gains", unit: "bn", total: validation.total_gains_bn, entrants: entrants.gains_bn },
-    { key: "liability", label: "Baseline CGT liability", unit: "bn", total: validation.baseline_cgt_revenue_bn, entrants: entrants.cgt_bn },
-  ];
-  const scheduleRows = [
-    { key: "residential", label: "Residential property", gainsBn: validation.residential_property_gains_bn },
-    { key: "badr", label: "Business Asset Disposal Relief", gainsBn: validation.badr_gains_bn },
-  ];
-
+  // The comparisons' intro and at-a-glance row come first; this tab's own
+  // check against HMRC's statistics sits under them, before the comparisons
+  // with other published estimates.
   return (
-    <div className="space-y-6">
-      <div className="pt-2">
-        <SectionHeading
-          size="lg"
-          title="Baseline estimation"
-          description={
-            <>
-              The Family Resources <SourceLink href={FRS}>Survey</SourceLink> records few capital
-              gains, so the dataset imputes them from HMRC data and weights households to
-              HMRC&apos;s CGT <SourceLink href={CGT_STATISTICS}>statistics</SourceLink>. The charts
-              below check that fit and two features that affect how the figures read.
-            </>
-          }
-        />
-      </div>
-
+    <BenchmarksTab
+      data={data}
+      onNavigate={onNavigate}
+      baselineGlance={{
+        modelYear,
+        hmrcYear: "2024-25",
+        url: CGT_STATISTICS,
+        gains: { model: validation.total_gains_bn, hmrc: BENCHMARKS.totalGains.y2024.value },
+        liability: { model: validation.baseline_cgt_revenue_bn, hmrc: BENCHMARKS.liability.y2024.value },
+      }}
+    >
       <section className="section-card scroll-mt-24" id="benchmarks">
         <SectionHeading
-          title="Model and HMRC statistics"
+          title={`Baseline: PolicyEngine ${modelYear} and HMRC 2024-25`}
           description={
             <>
-              PolicyEngine&apos;s {firstYear} baseline beside HMRC&apos;s{" "}
-              <SourceLink href={CGT_STATISTICS}>statistics</SourceLink> for 2024-25 (provisional).{" "}
-              {`Liabilities are higher relative to gains in ${firstYear} because CGT `}
-              <SourceLink href={CGT_RATES}>rates</SourceLink>
-              {" rose from 10% and 20% to 18% and 24% partway through 2024-25."}
+              PolicyEngine&apos;s baseline beside HMRC&apos;s{" "}
+              <SourceLink href={CGT_STATISTICS}>statistics</SourceLink>, which are provisional for
+              that year.
             </>
           }
         />
-        <BenchmarkChart rows={benchmarkRows} modelLabel={`PolicyEngine (${dataset.shortLabel}, ${firstYear})`} />
-      </section>
-
-      <details className="section-card group scroll-mt-24" id="entrants">
-        <summary className="cursor-pointer select-none text-xl font-semibold tracking-tight text-slate-900 marker:text-[color:var(--pe-color-primary-600)]">
-          Entrants by uprating
-        </summary>
-        <div className="mb-5 mt-2 text-sm leading-6 text-slate-600">
-          <>
-              The exempt <SourceLink href={EXEMPT_AMOUNT}>amount</SourceLink>{" "}
-              {`stays at £${entrants.exempt_amount_gbp.toLocaleString("en-GB")} while gains grow with the economy, so some people with gains below it become CGT taxpayers in later years. These entrants, with ${firstYear} gains between £${entrants.exempt_amount_gbp.toLocaleString("en-GB")} and £${Math.round(entrants.ceiling_gbp).toLocaleString("en-GB")}, are shown separately so they can be netted out.${entrantShare > 0.05 ? "" : " They are under 5% of taxpayers, so the headline counts read as taxpayers in the ordinary sense."}`}
-            </>
-        </div>
-        <div className="grid gap-4 md:grid-cols-3">
-          {entrantRows.map((row) => (
-            <MetricCard
-              key={row.key}
-              label={`${row.label} from entrants`}
-              value={row.unit === "count" ? formatCount(row.entrants) : formatSmallBn(row.entrants)}
-              note={`Of ${row.unit === "count" ? formatCount(row.total) : formatBn(row.total, 1)} in all (${formatShare(row.entrants / row.total)}).`}
-            />
-          ))}
-        </div>
-        {entrantShare > 0.05 ? (
-          <p className="note-card mt-4 rounded-lg p-4 text-sm leading-6 text-slate-600">
-            <span className="note-eyebrow block text-xs font-semibold uppercase tracking-wide">
-              Read with care
-            </span>
-            On this dataset {formatPct(100 * entrantShare, 0)} of the {firstYear} CGT taxpayers
-            are entrants by uprating. {dataset.notes} The share of people the reform touches,
-            and every count in this tab, mostly reflects that group; the gains and liability
-            totals do not, because each entrant has a few hundred pounds of gains above the
-            exempt amount.
+        <BenchmarkChart rows={benchmarkRows} modelLabel={`PolicyEngine (${dataset.shortLabel})`} />
+        <Notes>
+          <p>
+            The Family Resources <SourceLink href={FRS}>Survey</SourceLink> records few capital
+            gains, so the dataset imputes them from HMRC data and weights households to
+            HMRC&apos;s CGT <SourceLink href={CGT_STATISTICS}>statistics</SourceLink>.
           </p>
-        ) : null}
-      </details>
-
-      <details className="section-card group scroll-mt-24" id="schedules">
-        <summary className="cursor-pointer select-none text-xl font-semibold tracking-tight text-slate-900 marker:text-[color:var(--pe-color-primary-600)]">
-          Schedule components
-        </summary>
-        <div className="mb-5 mt-2 text-sm leading-6 text-slate-600">
-          <>
-              <SourceLink href="https://github.com/PolicyEngine/policyengine-uk">
-                policyengine-uk
-              </SourceLink>{" "}
-              charges residential property and Business Asset Disposal{" "}
-              <SourceLink href={BADR_GUIDANCE}>Relief</SourceLink> gains on their own schedules
-              when a dataset records them. Gains recorded on each schedule in {firstYear}, before
-              any behavioural response.
-            </>
-        </div>
-        <ScheduleChart rows={scheduleRows} datasetLabel={dataset.shortLabel} />
-      </details>
-    </div>
+          <p>
+            {"PolicyEngine's liabilities are higher relative to gains than HMRC's because CGT "}
+            <SourceLink href={CGT_RATES}>rates</SourceLink>
+            {" rose from 10% and 20% to 18% and 24% partway through HMRC's year."}
+          </p>
+        </Notes>
+      </section>
+    </BenchmarksTab>
   );
 }

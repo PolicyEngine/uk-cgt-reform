@@ -12,8 +12,9 @@ from uk_cgt_reform.comparison import (
     ready_reckoner_block,
     static_equalisation_block,
 )
-from uk_cgt_reform.impacts import REGION_NAMES, fiscal_year_label, schedule_split
+from uk_cgt_reform.impacts import QUANTILE_LABELS, REGION_NAMES, fiscal_year_label, schedule_split
 from uk_cgt_reform.reform import (
+    HEADLINE_YEAR,
     YEARS,
     centax_1920_rules,
     elasticity_convention,
@@ -21,7 +22,7 @@ from uk_cgt_reform.reform import (
 )
 from uk_cgt_reform.simulations import CANDIDATE, DATASETS, DEFAULT_DATASET_KEY
 
-YEAR_LABELS = [fiscal_year_label(y) for y in range(2026, 2031)]
+YEAR_LABELS = [fiscal_year_label(y) for y in YEARS]
 
 TOP_LEVEL_KEYS = {
     "metadata",
@@ -87,12 +88,13 @@ def fake_benchmarks(scale: float = 1.0) -> dict:
             uplift,
             centax_1920_rules(),
             {"baseline": "a2eab6466ee5", "reform": "2367c58b5ba5"},
+            "2027-28",
         ),
         ready_reckoner=ready_reckoner_block(model_m),
     )
 
 
-def fake_schedule_split(scale: float = 1.0) -> dict:
+def fake_schedule_split(scale: float = 1.0, year: str = "2027-28") -> dict:
     """The ``schedule_split`` block, built through the real builder."""
     steps = [
         ("main_rates", "Main rates at 20% / 40% / 45%"),
@@ -113,7 +115,7 @@ def fake_schedule_split(scale: float = 1.0) -> dict:
         },
     }
     return {
-        "year": "2026-27",
+        "year": year,
         "elasticities": {"static": 0.0, "central": 1.0},
         "reform_fingerprints": {
             case: {step: "0" * 12 for step, _ in steps} for case in ("static", "central")
@@ -135,8 +137,8 @@ def fake_results(spec=CANDIDATE, scale: float = 1.0) -> dict:
     return {
         "metadata": {
             "generated": "2026-09-21",
-            "policyengine_version": "4.22.3",
-            "policyengine_uk_version": "2.99.1",
+            "policyengine_version": "6.10.1",
+            "policyengine_uk_version": "2.132.6",
             "dataset": spec.uri,
             "dataset_key": spec.key,
             "dataset_label": spec.label,
@@ -151,6 +153,7 @@ def fake_results(spec=CANDIDATE, scale: float = 1.0) -> dict:
             "default_dataset_key": DEFAULT_DATASET_KEY,
             "calibrated": False,
             "reform_period_start": "2026-01-01",
+            "headline_year": "2027-28",
             "elasticity": 1.0,
             "elasticity_parameter": "gov.simulation.capital_gains_responses.elasticity",
             "reform": {"basic_rate": 0.20, "higher_rate": 0.40, "additional_rate": 0.45},
@@ -202,23 +205,14 @@ def fake_results(spec=CANDIDATE, scale: float = 1.0) -> dict:
         ],
         "income_change_groups": {
             label: {
-                "quintile": [
+                "decile": [
                     {
                         "group": g,
                         "avg_change_gbp": 0.0,
                         "relative_change_pct": 0.0,
                         "share_affected_pct": 0.0,
                     }
-                    for g in ["Lowest 20%", "20–40%", "40–60%", "60–80%", "Highest 20%"]
-                ],
-                "quartile": [
-                    {
-                        "group": g,
-                        "avg_change_gbp": 0.0,
-                        "relative_change_pct": 0.0,
-                        "share_affected_pct": 0.0,
-                    }
-                    for g in ["Lowest 25%", "25–50%", "50–75%", "Highest 25%"]
+                    for g in QUANTILE_LABELS[10]
                 ],
                 "household_type": [
                     {
@@ -240,12 +234,21 @@ def fake_results(spec=CANDIDATE, scale: float = 1.0) -> dict:
             }
             for label in YEAR_LABELS
         },
-        "sensitivity": [
-            {"name": name, "e_retention": e, **elasticity_convention(e), "revenue_2026_bn": 1.0}
-            for name, e in SENSITIVITY_CASES.items()
-        ],
+        "sensitivity": {
+            label: [
+                {
+                    "name": name,
+                    "e_retention": e,
+                    **elasticity_convention(e),
+                    "year": label,
+                    "revenue_bn": 1.0,
+                }
+                for name, e in SENSITIVITY_CASES.items()
+            ]
+            for label in YEAR_LABELS
+        },
         "benchmarks": fake_benchmarks(scale),
-        "schedule_split": fake_schedule_split(scale),
+        "schedule_split": {label: fake_schedule_split(scale, label) for label in YEAR_LABELS},
     }
 
 
@@ -255,7 +258,7 @@ def test_top_level_keys():
 
 def test_metadata_and_years():
     md = fake_results()["metadata"]
-    assert md["years"] == [2026, 2027, 2028, 2029, 2030]
+    assert md["years"] == [2027, 2028, 2029, 2030, 2031]
     assert md["elasticity"] == 1.0
     assert set(md["reform"]) == {"basic_rate", "higher_rate", "additional_rate"}
     # Carried interest has been taxed as income since April 2026: the reform
@@ -281,11 +284,11 @@ def test_validation_reports_entrants_by_uprating():
 def test_budget_rows_use_fiscal_year_labels():
     results = fake_results()
     assert [r["year"] for r in results["budget"]] == [
-        "2026-27",
         "2027-28",
         "2028-29",
         "2029-30",
         "2030-31",
+        "2031-32",
     ]
     assert set(results["budget"][0]) == {
         "year",
@@ -300,10 +303,11 @@ def test_budget_rows_use_fiscal_year_labels():
 
 def test_income_change_groups_keyed_by_fiscal_year():
     groups = fake_results()["income_change_groups"]
-    assert set(groups) == {"2026-27", "2027-28", "2028-29", "2029-30", "2030-31"}
-    year = groups["2026-27"]
-    assert set(year) == {"quintile", "quartile", "household_type", "region"}
-    assert set(year["quintile"][0]) == {
+    assert set(groups) == {"2027-28", "2028-29", "2029-30", "2030-31", "2031-32"}
+    year = groups["2027-28"]
+    assert set(year) == {"decile", "household_type", "region"}
+    assert len(year["decile"]) == 10
+    assert set(year["decile"][0]) == {
         "group",
         "avg_change_gbp",
         "relative_change_pct",
@@ -320,7 +324,10 @@ def test_calibration_block_is_explicitly_empty():
 
 
 def test_sensitivity_cases():
-    rows = fake_results()["sensitivity"]
+    by_year = fake_results()["sensitivity"]
+    assert list(by_year) == YEAR_LABELS
+    assert all({r["year"] for r in rows} == {label} for label, rows in by_year.items())
+    rows = by_year["2027-28"]
     assert [r["e_retention"] for r in rows] == [0.0, 0.5, 1.0, 2.0, 3.6]
     assert rows[0]["name"] == "Static (no behavioural response)"
     # Every row says how its case reached the engine: a retention-rate
@@ -355,7 +362,9 @@ def test_benchmarks_block_shape():
     assert [row["year"] for row in static["by_year"]] == YEAR_LABELS
     first = static["by_year"][0]
     assert first["static_uplift_pct"] == pytest.approx(100 * 14.0 / 17.2)
-    assert first["uplift_on_obr_receipts_real_bn"] == pytest.approx(20.8 * 14.0 / 17.2)
+    assert first["uplift_on_obr_receipts_real_bn"] == pytest.approx(25.5 * 14.0 / 17.2)
+    # The OBR forecast ends in 2030-31: no receipts for 2031-32.
+    assert static["by_year"][-1]["obr_receipts_bn"] is None
     assert static["by_year"][3]["static_cgt_change_real_bn"] == pytest.approx(14.0 / 1.02**3)
     centax = bench["centax_2019_20_rules"]
     assert [row["region"] for row in centax["regions"]] == list(REGION_NAMES.values())
@@ -366,12 +375,14 @@ def test_benchmarks_block_shape():
     rows = bench["ready_reckoner"]["rows"]
     assert [row["id"] for row in rows] == [row["id"] for row in READY_RECKONER["rows"]]
     assert set(rows[0]["model_m"]) == set(READY_RECKONER_ELASTICITIES)
-    assert set(rows[0]["model_m"]["official"]) == {"2026-27", "2027-28"}
+    assert set(rows[0]["model_m"]["official"]) == {"2027-28"}
 
 
 def test_schedule_split_builds_the_yield_up_step_by_step():
-    split = fake_results()["schedule_split"]
-    assert split["year"] == "2026-27"
+    by_year = fake_results()["schedule_split"]
+    assert list(by_year) == YEAR_LABELS
+    split = by_year["2027-28"]
+    assert split["year"] == "2027-28"
     assert split["elasticities"] == {"static": 0.0, "central": 1.0}
     steps = split["steps"]
     assert [row["step"] for row in steps] == ["main_rates", "residential", "badr_withdrawn"]
@@ -382,3 +393,13 @@ def test_schedule_split_builds_the_yield_up_step_by_step():
     assert sum(row["central_increment_bn"] for row in steps) == pytest.approx(
         steps[-1]["central_cgt_change_bn"]
     )
+
+
+def test_headline_year_is_a_modelled_year_and_keys_the_single_year_blocks():
+    results = fake_results()
+    headline = results["metadata"]["headline_year"]
+    assert headline == fiscal_year_label(HEADLINE_YEAR) == "2027-28"
+    assert headline in results["income_change_groups"]
+    assert headline == YEAR_LABELS[0]
+    assert headline in results["schedule_split"]
+    assert headline in results["sensitivity"]

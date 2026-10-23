@@ -1,7 +1,7 @@
 """Budgetary, validation, distributional and sensitivity impacts.
 
 Distributional outputs group the change in household net income by
-weighted baseline-income quantile (quintiles and quartiles), by household
+weighted baseline-income decile, by household
 type, and by region. Aggregates are computed from the simulations' output
 datasets with native microdf weighted operations
 (``MicroSeries.sum/mean/median/count`` and weighted ``groupby``); there is
@@ -48,8 +48,18 @@ REGION_NAMES = {
 }
 
 QUANTILE_LABELS = {
-    4: ["Lowest 25%", "25–50%", "50–75%", "Highest 25%"],
-    5: ["Lowest 20%", "20–40%", "40–60%", "60–80%", "Highest 20%"],
+    10: [
+        "Lowest 10%",
+        "10–20%",
+        "20–30%",
+        "30–40%",
+        "40–50%",
+        "50–60%",
+        "60–70%",
+        "70–80%",
+        "80–90%",
+        "Highest 10%",
+    ],
 }
 
 
@@ -232,18 +242,16 @@ def _group_rows(gain, base_income, labels, order) -> list[dict]:
 
 def income_change_groups(baseline, reformed) -> dict:
     """Change in household net income by weighted baseline-income quantile
-    (quintiles and quartiles), by household type, and by region."""
+    (deciles, ranked by household net income before the reform), by
+    household type, and by region."""
     base_hh, ref_hh = _household(baseline), _household(reformed)
     gain = ref_hh["household_net_income"] - base_hh["household_net_income"]
     base_income = base_hh["household_net_income"]
 
     result = {}
-    for n, key, rank in (
-        (5, "quintile", base_income.quintile_rank()),
-        (4, "quartile", base_income.quartile_rank()),
-    ):
-        labels = np.array(QUANTILE_LABELS[n], dtype=object)[rank.values.astype(int) - 1]
-        result[key] = _group_rows(gain, base_income, labels, QUANTILE_LABELS[n])
+    rank = base_income.decile_rank()
+    labels = np.array(QUANTILE_LABELS[10], dtype=object)[rank.values.astype(int) - 1]
+    result["decile"] = _group_rows(gain, base_income, labels, QUANTILE_LABELS[10])
 
     # Household type from the members of each household: any child ->
     # "With children"; otherwise all adults at State Pension age ->
@@ -327,11 +335,13 @@ def cgt_uplift(baseline, reformed) -> dict:
     }
 
 
-def sensitivity(baseline_cgt: float, cases: dict[str, float], run_case) -> list[dict]:
-    """Re-run the 2026 reform under each institution's elasticity assumption.
+def sensitivity(baseline_cgt: float, cases: dict[str, float], run_case, year: int) -> list[dict]:
+    """Re-run the reform in ``year`` under each institution's elasticity
+    assumption.
 
     ``run_case(elasticity)`` must return the completed reform simulation
-    for 2026 with that elasticity. Each case is a retention-rate elasticity
+    for ``year`` with that elasticity; ``baseline_cgt`` is that year's
+    current-law CGT revenue, £. Each case is a retention-rate elasticity
     (``e_retention``); the row also says which engine parameter carried it
     and in which convention (``reform.elasticity_convention``).
     """
@@ -343,7 +353,8 @@ def sensitivity(baseline_cgt: float, cases: dict[str, float], run_case) -> list[
                 "name": name,
                 "e_retention": e,
                 **elasticity_convention(e),
-                "revenue_2026_bn": (cgt_revenue(sim) - baseline_cgt) / 1e9,
+                "year": fiscal_year_label(year),
+                "revenue_bn": (cgt_revenue(sim) - baseline_cgt) / 1e9,
             }
         )
     return rows

@@ -137,15 +137,27 @@ export function LabelledSelect({ label, options, value, onChange }) {
   );
 }
 
-export function MetricCard({ label, value, note, tip }) {
+// `valueColor`: the big number's colour, tying the card to its chart (a
+// palette colour, never a good/bad signal). Each card carries a thin teal
+// accent along its top.
+export function MetricCard({ label, value, note, tip, valueColor }) {
   return (
-    <Card as="div" variant="inset" className="flex flex-col">
+    <Card
+      as="div"
+      variant="inset"
+      className="flex flex-col border-t-4 border-t-[color:var(--pe-color-primary-500)]"
+    >
       {/* A two-line slot for the label, so values line up across a row. */}
       <div className="flex items-start gap-2 md:min-h-[2.5rem]">
         <p className="text-sm font-semibold leading-snug text-slate-700">{label}</p>
         {tip ? <InfoTip label={`About ${label.toLowerCase()}`}>{tip}</InfoTip> : null}
       </div>
-      <p className="mt-1 text-3xl font-bold tabular-nums text-slate-900">{value}</p>
+      <p
+        className={`mt-1 text-3xl font-bold tabular-nums ${valueColor ? "" : "text-slate-900"}`}
+        style={valueColor ? { color: valueColor } : undefined}
+      >
+        {value}
+      </p>
       {note ? <p className={`mt-2 ${HINT}`}>{note}</p> : null}
     </Card>
   );
@@ -175,6 +187,20 @@ export function Notes({ children, className = "" }) {
 }
 
 // An external source, opened in a new tab.
+export const MICROCOSM_URL = "https://github.com/PolicyEngine/microcosm";
+
+// The dataset's short name with "Microcosm" linked to its builder.
+export function DatasetName({ label, possessive = false }) {
+  const tail = possessive ? "'s" : "";
+  if (!label?.startsWith("Microcosm")) return `${label}${tail}`;
+  return (
+    <>
+      <SourceLink href={MICROCOSM_URL}>Microcosm</SourceLink>
+      {`${label.slice("Microcosm".length)}${tail}`}
+    </>
+  );
+}
+
 export function SourceLink({ href, children }) {
   return (
     <a
@@ -235,4 +261,33 @@ export function TabLink({ onNavigate, tab, section, children }) {
 // widening the page.
 export function TableScroll({ className = "", children }) {
   return <div className={`table-scroll overflow-x-auto ${className}`}>{children}</div>;
+}
+
+// A compact year picker beside a section title: one pill reading
+// "Year 2027-28", with a chevron.
+export function YearPill({ years, value, onChange }) {
+  return (
+    <label className="relative inline-flex h-9 cursor-pointer items-center rounded-full border border-[color:var(--pe-color-primary-200)] bg-[color:var(--pe-color-primary-50)] pl-3.5 pr-8 text-sm transition-colors hover:border-[color:var(--pe-color-primary-400)] focus-within:ring-2 focus-within:ring-[color:var(--pe-color-primary-500)]">
+      <span className="mr-2 text-xs font-medium text-slate-500">Year</span>
+      <select
+        aria-label="Year"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="cursor-pointer appearance-none bg-transparent font-semibold tabular-nums text-[color:var(--pe-color-primary-800)] focus:outline-none"
+      >
+        {years.map((year) => (
+          <option key={year.value ?? year} value={year.value ?? year}>
+            {year.label ?? year}
+          </option>
+        ))}
+      </select>
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 12 12"
+        className="pointer-events-none absolute right-3 top-1/2 h-3 w-3 -translate-y-1/2 text-[color:var(--pe-color-primary-700)]"
+      >
+        <path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </label>
+  );
 }

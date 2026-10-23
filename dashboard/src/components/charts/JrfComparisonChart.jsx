@@ -24,21 +24,28 @@ const SHORT = { static: "Static", obr: "On OBR receipts", jrf: "JRF" };
 
 const isNum = (v) => v !== null && v !== undefined && Number.isFinite(Number(v));
 
-// "About £13bn." → "about £13bn": JRF's own wording, from the results file.
+// "Around £13bn." → "around £13bn": JRF's own wording, from the results file.
 function jrfText(note, value) {
   const text = (note ?? "").trim().replace(/\.$/, "");
-  return text ? `${text[0].toLowerCase()}${text.slice(1)}` : `about ${formatBn(value, 0)}`;
+  return text ? `${text[0].toLowerCase()}${text.slice(1)}` : formatBn(value, 0);
 }
 
 // The props from the results file's `benchmarks.static_equalisation` block.
+// A JRF year outside the modelled window (2026-27) keeps its own row, with
+// PolicyEngine's static run for that year where the results carry one
+// (`comparison_by_year`, scored for this comparison only).
 export function buildJrfRows(block) {
   const jrf = Object.fromEntries(block.external.map((row) => [row.year, row]));
-  return block.by_year.map((row) => ({
-    year: row.year,
-    static: row.static_cgt_change_real_bn,
-    obr: row.uplift_on_obr_receipts_real_bn,
-    jrf: jrf[row.year]?.value ?? null,
-    jrfLabel: jrf[row.year] ? jrfText(jrf[row.year].note, jrf[row.year].value) : null,
+  const model = Object.fromEntries(
+    [...(block.comparison_by_year ?? []), ...block.by_year].map((row) => [row.year, row]),
+  );
+  const years = [...new Set([...Object.keys(jrf), ...Object.keys(model)])].sort();
+  return years.map((year) => ({
+    year,
+    static: model[year]?.static_cgt_change_real_bn ?? null,
+    obr: model[year]?.uplift_on_obr_receipts_real_bn ?? null,
+    jrf: jrf[year]?.value ?? null,
+    jrfLabel: jrf[year] ? jrfText(jrf[year].note, jrf[year].value) : null,
   }));
 }
 

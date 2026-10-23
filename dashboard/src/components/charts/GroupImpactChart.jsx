@@ -15,22 +15,39 @@ import { colors } from "../../lib/colors";
 import { formatSignedCurrency, formatSignedPct } from "../../lib/formatters";
 import ChartLogo from "../ChartLogo";
 import { LabelledSelect } from "../controls";
+import SectionHeading from "../SectionHeading";
 import ChartTooltip, { TOOLTIP_PROPS } from "./ChartTooltip";
 
 const AXIS_STYLE = { fontSize: 12, fill: colors.gray[500] };
 
+const GROUPINGS = [
+  { value: "decile", label: "Income deciles", title: "income decile" },
+  { value: "household_type", label: "Household type", title: "household type" },
+  { value: "region", label: "Region", title: "region" },
+];
 
-// Change in household net income by income quantile, household type or
-// region, for a chosen year from 2027-28 on (the first year, 2026-27, is the
-// headline's). `groupsByYear` is the pipeline's income_change_groups block
-// (fiscal label -> groupings).
-export default function GroupImpactChart({ groupsByYear }) {
-  const all = Object.keys(groupsByYear);
-  const years = all.length > 1 ? all.slice(1) : all;
-  const [groupYear, setGroupYear] = useState(years[0]);
+
+// Change in household net income by income decile (ranked by
+// household net income before the reform), household type or region, in a
+// chosen year (`defaultYear` first), under a heading that names the grouping
+// and the year. `groupsByYear` is the pipeline's income_change_groups block
+// (fiscal label -> groupings); `description` sits under the heading.
+export default function GroupImpactChart({ groupsByYear, defaultYear, description }) {
+  const years = Object.keys(groupsByYear);
+  const [groupYear, setGroupYear] = useState(years.includes(defaultYear) ? defaultYear : years[0]);
   const [groupMetric, setGroupMetric] = useState("absolute");
-  const [grouping, setGrouping] = useState("quintile");
   const groups = groupsByYear[groupYear] ?? groupsByYear[years[0]];
+  // Only the groupings the results carry (a result from before deciles has
+  // none), deciles first.
+  const groupingOptions = GROUPINGS.filter((option) => Array.isArray(groups[option.value]));
+  const [chosenGrouping, setGrouping] = useState(groupingOptions[0]?.value);
+  const grouping = groupingOptions.some((o) => o.value === chosenGrouping)
+    ? chosenGrouping
+    : groupingOptions[0]?.value;
+  const isDecile = grouping === "decile";
+  // Deciles are labelled 1 (lowest) to 10 (highest) on the axis, which has
+  // no room for ten ranges; the tooltip names the range.
+  const decileOf = (group) => groups.decile.findIndex((d) => d.group === group) + 1;
   const isRelative = groupMetric === "relative";
   const metricKey = isRelative ? "relative_change_pct" : "avg_change_gbp";
   // Regions and household types are ordered by impact (largest loss first);
@@ -47,8 +64,14 @@ export default function GroupImpactChart({ groupsByYear }) {
   const metricName = isRelative ? "Relative net income change" : "Average change per household";
   const formatMetric = (v) => (isRelative ? formatSignedPct(v, 1) : formatSignedCurrency(v));
 
+  const groupingTitle = GROUPINGS.find((option) => option.value === grouping)?.title;
+
   return (
     <>
+      <SectionHeading
+        title={`Change in household net income by ${groupingTitle}, ${groupYear}`}
+        description={description}
+      />
       <div className="mb-4 flex flex-wrap gap-2 sm:gap-3">
         <LabelledSelect
           label="Year"
@@ -58,12 +81,7 @@ export default function GroupImpactChart({ groupsByYear }) {
         />
         <LabelledSelect
           label="Group by"
-          options={[
-            { value: "quintile", label: "Quintiles" },
-            { value: "quartile", label: "Quartiles" },
-            { value: "household_type", label: "Household type" },
-            { value: "region", label: "Region" },
-          ]}
+          options={groupingOptions}
           value={grouping}
           onChange={setGrouping}
         />
@@ -110,11 +128,13 @@ export default function GroupImpactChart({ groupsByYear }) {
                 <XAxis
                   dataKey="group"
                   tick={AXIS_STYLE}
+                  interval={0}
+                  tickFormatter={isDecile ? (group) => String(decileOf(group)) : undefined}
                   label={
                     grouping === "household_type"
                       ? undefined
                       : {
-                          value: "Baseline household income group",
+                          value: "Income decile before the reform (1 = lowest)",
                           position: "insideBottom",
                           offset: -8,
                           fontSize: 12,
@@ -136,7 +156,11 @@ export default function GroupImpactChart({ groupsByYear }) {
               {...TOOLTIP_PROPS}
               content={
                 <ChartTooltip
-                  title={(_, payload) => `${payload[0].payload.group}, ${groupYear}`}
+                  title={(_, payload) => {
+                    const { group } = payload[0].payload;
+                    const name = isDecile ? `Income decile ${decileOf(group)} (${group.toLowerCase()})` : group;
+                    return `${name}, ${groupYear}`;
+                  }}
                   rows={(payload) => [
                     {
                       label: "Average change per household",
@@ -154,7 +178,7 @@ export default function GroupImpactChart({ groupsByYear }) {
             <Bar
               dataKey={metricKey}
               name={metricName}
-              fill={colors.primary[600]}
+              fill={HOUSEHOLD_COLOR}
               radius={grouping === "region" ? [0, 6, 6, 0] : [6, 6, 0, 0]}
             />
           </BarChart>
@@ -165,12 +189,21 @@ export default function GroupImpactChart({ groupsByYear }) {
   );
 }
 
+// The bars' colour, shared by the headline cards that report these groups.
+export const HOUSEHOLD_COLOR = colors.primary[600];
+
+export const GROUP_DESCRIPTION =
+  "Each bar shows the average change in net income for one group of households, ranked by income before the reform.";
+
 // How the groups are defined, as bullets for the Notes under the chart; a
 // caller adds its own bullets as children.
 export function GroupDefinitions({ children }) {
   return (
     <ul className="list-disc space-y-1.5 pl-5">
-      <li>Income groups are weighted quantiles of household net income before the reform.</li>
+      <li>
+        Income deciles are weighted tenths of households ranked by household net income
+        before the reform; decile 1 is the bottom income decile and 10 the top.
+      </li>
       <li>
         &ldquo;Pensioner&rdquo; households have no working-age adults; &ldquo;With children&rdquo;
         households contain at least one child.

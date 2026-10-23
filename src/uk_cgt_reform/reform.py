@@ -64,7 +64,17 @@ import hashlib
 import json
 from dataclasses import dataclass
 
-YEARS = [2026, 2027, 2028, 2029, 2030]  # fiscal years 2026-27 .. 2030-31
+# Fiscal years 2027-28 .. 2031-32. The OBR's March 2026 forecast ends in
+# 2030-31; for 2031-32 policyengine-uk holds the OBR's 2030 growth rate of
+# GDP per head (3.15%), which uprates gains, and CPI-uprates the income tax
+# thresholds once their freeze ends (April 2031).
+YEARS = [2027, 2028, 2029, 2030, 2031]
+# The year the dashboard reports by default: the headline cards, and the
+# first year of every chart with a year select.
+HEADLINE_YEAR = 2027  # 2027-28
+# The price base of the static comparison with JRF, which reports in
+# 2026/27 prices.
+PRICE_BASE_YEAR = 2026
 # policyengine.py reform dicts take a single effective date per value and
 # apply it open-endedly (equivalent to the old "2026-01-01.2035-12-31"
 # range over the 2026-2030 window simulated here).

@@ -3,7 +3,7 @@
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
 import { colors } from "../../lib/colors";
 
-// Shared parts of the Benchmarks tab's row charts: each item is one row with
+// Shared parts of the Baseline tab's comparison row charts: each item is one row with
 // its label above and a small horizontal bar chart below, and every row uses
 // the same scale and the same horizontal margins, so bars line up down the
 // column under one axis drawn at the top. Legends come from ChartLegend,

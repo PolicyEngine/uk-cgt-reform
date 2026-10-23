@@ -3,7 +3,6 @@
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import BaselineTab from "../src/components/BaselineTab";
-import BenchmarksTab from "../src/components/BenchmarksTab";
 import MethodologyTab from "../src/components/MethodologyTab";
 import ReformTab from "../src/components/ReformTab";
 import { getDatasetInfo } from "../src/lib/dataHelpers";
@@ -15,17 +14,20 @@ import results from "../public/data/cgt_equalisation_results.json";
 
 const LINK = "underline decoration-1 underline-offset-2 hover:opacity-80";
 const BOLD = "font-semibold text-slate-900";
+const CENTAX_REPORT =
+  "https://centax.org.uk/wp-content/uploads/2024/10/AdvaniLonsdaleSummers2024_CGTReform.pdf";
 
 const TAB_OPTIONS = [
   { id: "reform", label: "Reform" },
   { id: "baseline", label: "Baseline" },
-  { id: "benchmarks", label: "Benchmarks" },
   { id: "methodology", label: "Methodology" },
 ];
 
 // Links from before the Reform tab merged the Reform impacts and Rate
-// explorer tabs open the Reform tab, which reads their schedule.
-const LEGACY_TABS = { explorer: "reform" };
+// explorer tabs open the Reform tab, which reads their schedule; links to the
+// old Benchmarks tab open the Baseline tab at its comparisons.
+const LEGACY_TABS = { explorer: "reform", benchmarks: "baseline" };
+const LEGACY_ANCHORS = { benchmarks: "comparisons" };
 
 function getInitialTab(tabParam) {
   if (LEGACY_TABS[tabParam]) return LEGACY_TABS[tabParam];
@@ -40,7 +42,7 @@ function Dashboard() {
   const router = useRouter();
 
   const [activeTab, setActiveTab] = useState(() => getInitialTab(searchParams.get("tab")));
-  const [anchor, setAnchor] = useState(null);
+  const [anchor, setAnchor] = useState(() => LEGACY_ANCHORS[searchParams.get("tab")] ?? null);
   const data = results;
   const dataset = getDatasetInfo(data);
 
@@ -81,27 +83,36 @@ function Dashboard() {
     <div className="app-shell flex flex-1 flex-col">
       <header className="title-row">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4 md:px-8">
-          <h1>Capital gains tax reform dashboard</h1>
+          <h1>Capital gains tax reform analysis</h1>
         </div>
       </header>
 
       <main className="relative z-[1] mx-auto flex w-full max-w-6xl flex-1 flex-col px-6 pb-6 pt-10 md:px-8 md:pt-12">
         <div className="animate-[fadeIn_0.4s_ease-out]">
           <p className="text-lg leading-8 text-slate-800">
-            This dashboard estimates how changing UK capital gains tax rates would affect{" "}
-            <strong className={BOLD}>government revenue</strong> and{" "}
-            <strong className={BOLD}>household incomes</strong>. Its headline reform,{" "}
-            <strong className={BOLD}>taxing gains at income tax rates</strong> and withdrawing
-            Business Asset Disposal{" "}
-            <a href="https://www.gov.uk/business-asset-disposal-relief" target="_blank" rel="noopener noreferrer" className={LINK}>Relief</a>, has been{" "}
+            This dashboard estimates how{" "}
+            <strong className={BOLD}>taxing capital gains at income tax rates</strong> and
+            withdrawing Business Asset Disposal{" "}
+            <a href="https://www.gov.uk/business-asset-disposal-relief" target="_blank" rel="noopener noreferrer" className={LINK}>Relief</a>, a reform{" "}
             <a href="https://ifs.org.uk/sites/default/files/2024-10/Captial-gains-tax-reform.pdf" target="_blank" rel="noopener noreferrer" className={LINK}>debated</a>{" "}
-            in the UK; a <strong className={BOLD}>custom option</strong> scores any other set of rates.
+            in the UK, would affect <strong className={BOLD}>government revenue</strong> and{" "}
+            <strong className={BOLD}>household incomes</strong>; a{" "}
+            <strong className={BOLD}>custom option</strong> scores any other set of rates. It
+            models the <strong className={BOLD}>rate changes only</strong>, with fewer gains
+            realised as rates rise, and not the other measures{" "}
+            <a href={CENTAX_REPORT} target="_blank" rel="noopener noreferrer" className={LINK}>CenTax</a>{" "}
+            pair with them (an investment allowance, ending the uplift at death and an exit tax) or
+            people moving into or out of the UK (see{" "}
+            <button type="button" onClick={() => handleNavigate("methodology", "not-modelled")} className={`inline font-normal text-[color:var(--pe-color-primary-700)] ${LINK}`}>
+              Methodology
+            </button>
+            ).
           </p>
         </div>
 
         <nav
           aria-label="Dashboard sections"
-          className="tab-strip mb-8 mt-8 flex max-w-full gap-6 overflow-x-auto border-b border-slate-200 sm:gap-8"
+          className="tab-strip mb-8 mt-8 flex max-w-full flex-wrap gap-x-6 border-b border-slate-200 sm:gap-x-8"
         >
           {TAB_OPTIONS.map((tab) => (
             <button
@@ -120,9 +131,12 @@ function Dashboard() {
           ))}
         </nav>
 
-        {activeTab === "reform" && <ReformTab data={data} datasetKey={dataset.key} anchor={anchor} onNavigate={handleNavigate} />}
+        {/* Kept mounted so a chosen reform and its results survive a visit to
+            another tab. */}
+        <div hidden={activeTab !== "reform"}>
+          <ReformTab data={data} datasetKey={dataset.key} anchor={activeTab === "reform" ? anchor : null} onNavigate={handleNavigate} />
+        </div>
         {activeTab === "baseline" && <BaselineTab data={data} anchor={anchor} onNavigate={handleNavigate} />}
-        {activeTab === "benchmarks" && <BenchmarksTab data={data} onNavigate={handleNavigate} />}
         {activeTab === "methodology" && <MethodologyTab data={data} anchor={anchor} onNavigate={handleNavigate} />}
 
         <div aria-hidden="true" className="h-10 shrink-0" />

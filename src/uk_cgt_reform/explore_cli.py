@@ -38,7 +38,7 @@ def build_parser() -> argparse.ArgumentParser:
         description=(
             "Score a CGT rate schedule (main and residential property rates, and "
             "Business Asset Disposal Relief) on a "
-            "registered dataset for 2026-27 to 2030-31, with the pipeline's behavioural "
+            "registered dataset for 2027-28 to 2031-32, with the pipeline's behavioural "
             "response. Rates are fractions: 0.3 for 30%."
         ),
     )
@@ -128,10 +128,10 @@ def print_headline(result: dict) -> None:
             f"(CGT {row['cgt_change_bn']:+.2f}bn, entrants {row['cgt_change_from_entrants_bn']:+.2f}bn)"
         )
     print(f"  Five-year total: {result['five_year_total_bn']:+.2f}bn")
-    first = result["budget"][0]["year"]
-    top = result["income_change_groups"][first]["quintile"][-1]
+    headline = md["headline_year"]
+    top = result["income_change_groups"][headline]["decile"][-1]
     print(
-        f"  Top quintile, {first}: {top['relative_change_pct']:+.2f}% "
+        f"  Top income decile, {headline}: {top['relative_change_pct']:+.2f}% "
         f"({top['avg_change_gbp']:+,.0f} per household)"
     )
     timing = md.get("timing", {})

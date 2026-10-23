@@ -16,7 +16,7 @@ so the dashboard can say how comparable it is:
   base broadening: context only, a different scope.
 - HMRC's ready reckoner (June 2025): post-behavioural yields of +1/+5/+10pp
   on the higher rate and +1/+5pp on the lower rate, scored here at the
-  central and the official elasticity.
+  central elasticity, CenTax's upper value (2.0) and the official one.
 - The official elasticity itself (OBR, January 2025): retention 3.6.
 """
 
@@ -111,7 +111,7 @@ JRF_STATIC = [
         value=13.0,
         unit="gbp_bn",
         details={"method": JRF_METHOD},
-        note="About £13bn.",
+        note="Around £13bn.",
     ),
     _external(
         id="jrf_2026_static_2029_30",
@@ -127,7 +127,7 @@ JRF_STATIC = [
         value=17.0,
         unit="gbp_bn",
         details={"method": JRF_METHOD},
-        note="About £17bn.",
+        note="£17bn.",
     ),
 ]
 
@@ -318,11 +318,19 @@ OFFICIAL_ELASTICITY_SOURCE = {
     ),
 }
 
-# The elasticity cases the ready-reckoner rows are scored at. The official
-# case is the same in every row: 3.6 for main-rate gains and 1.4 for gains
-# qualifying for the relief (OBR, January 2025, para 1.9;
+# The elasticity cases the ready-reckoner rows are scored at: CenTax's
+# central value (keyed by the rate explorer's option id), a retention-rate
+# elasticity of 3.0 (not one of CenTax's values nor an explorer option;
+# applied as stated, to gains qualifying for the relief too) and the
+# official case, the same in every row: 3.6 for main-rate gains and 1.4 for
+# gains qualifying for the relief (OBR, January 2025, para 1.9;
 # ``reform.elasticity_assignment``).
-READY_RECKONER_ELASTICITIES = {"centax_central": ELASTICITY, "official": OFFICIAL_ELASTICITY}
+READY_RECKONER_ELASTICITY_3 = 3.0
+READY_RECKONER_ELASTICITIES = {
+    "centax_central": ELASTICITY,
+    "elasticity_3": READY_RECKONER_ELASTICITY_3,
+    "official": OFFICIAL_ELASTICITY,
+}
 
 
 def _rates(basic: float, higher: float, additional: float) -> dict:
@@ -367,8 +375,8 @@ READY_RECKONER = {
     "hmrc_years": ["2026-27", "2027-28", "2028-29"],
     # Receipts lag liabilities by about a year: this repo's liabilities in
     # a year are compared with HMRC's receipts in the next.
+    # The modelled window starts in 2027-28, so one pair remains.
     "lag": [
-        {"model_year": "2026-27", "hmrc_year": "2027-28"},
         {"model_year": "2027-28", "hmrc_year": "2028-29"},
     ],
     "rows": [
@@ -445,18 +453,13 @@ def price_factors(cpi_by_year: dict[str, dict], base_year: int, years: list[int]
     }
 
 
-def static_equalisation_block(
-    static_budget: list[dict],
-    factors: dict[str, float],
-    reform_fingerprint: str,
-    price_index_source: str,
-) -> dict:
-    """The static equalisation reform by year beside JRF's static estimate.
+def jrf_comparison_years(window: list[int]) -> list[int]:
+    """JRF's published years outside the modelled window (2026-27): scored
+    statically for the JRF comparison only."""
+    return sorted({int(row["year"][:4]) for row in JRF_STATIC} - set(window))
 
-    JRF scales the OBR's CGT receipts by a static uplift, so each year also
-    carries this repo's uplift applied to the same OBR receipts, in 2026-27
-    prices; that line isolates the uplift from the dataset's baseline level.
-    """
+
+def _static_rows(static_budget: list[dict], factors: dict[str, float]) -> list[dict]:
     rows = []
     for row in static_budget:
         year = row["year"]
@@ -476,19 +479,42 @@ def static_equalisation_block(
                 "uplift_on_obr_receipts_real_bn": None if obr is None else obr * uplift / factor,
             }
         )
+    return rows
+
+
+def static_equalisation_block(
+    static_budget: list[dict],
+    factors: dict[str, float],
+    reform_fingerprint: str,
+    price_index_source: str,
+    comparison_budget: list[dict] = (),
+) -> dict:
+    """The static equalisation reform by year beside JRF's static estimate.
+
+    JRF scales the OBR's CGT receipts by a static uplift, so each year also
+    carries this repo's uplift applied to the same OBR receipts, in 2026-27
+    prices; that line isolates the uplift from the dataset's baseline level.
+    ``comparison_budget`` holds the same static rows for JRF years outside
+    the modelled window (``comparison_by_year``), which nothing else reads.
+    """
     return {
         "reform_fingerprint": reform_fingerprint,
         "price_basis": "2026-27 prices",
         "price_index": CPI_INDEX,
         "price_index_source": price_index_source,
         "obr_receipts_source": OBR_CGT_RECEIPTS_SOURCE,
-        "by_year": rows,
+        "by_year": _static_rows(static_budget, factors),
+        "comparison_by_year": _static_rows(list(comparison_budget), factors),
         "external": [dict(row) for row in JRF_STATIC],
     }
 
 
 def centax_1920_block(
-    current_law_cgt_bn: float, uplift: dict, rules: dict, fingerprints: dict[str, str]
+    current_law_cgt_bn: float,
+    uplift: dict,
+    rules: dict,
+    fingerprints: dict[str, str],
+    year: str,
 ) -> dict:
     """This repo's static uplift at 2019/20 rules beside CenTax Tables 3 and 8.
     ``uplift`` is :func:`impacts.cgt_uplift` of the counterfactual pair."""
@@ -508,7 +534,7 @@ def centax_1920_block(
             }
         )
     return {
-        "year": "2026-27",
+        "year": year,
         "rules": rules,
         "reform_fingerprints": dict(fingerprints),
         "national": {"current_law_cgt_bn": current_law_cgt_bn, **uplift["national"]},
@@ -528,6 +554,7 @@ def ready_reckoner_block(model_m: dict[str, dict[str, dict[str, float]]]) -> dic
     return {
         **{key: value for key, value in READY_RECKONER.items() if key != "rows"},
         "elasticity_ids": list(READY_RECKONER_ELASTICITIES),
+        "elasticities": dict(READY_RECKONER_ELASTICITIES),
         "model_measure": (
             "Change in government balance, £m, on this repo's liabilities in the model "
             "year, with each row's rates and relief (the main and residential rates move "
