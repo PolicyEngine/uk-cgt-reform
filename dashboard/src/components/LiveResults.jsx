@@ -306,6 +306,24 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
         </div>
       </Card>
 
+      {/* The specification, full width, directly under the headline. */}
+      <Card as="details" className="group min-w-0">
+        <summary className="cursor-pointer select-none text-xl font-semibold tracking-tight text-slate-900 marker:text-[color:var(--pe-color-primary-600)]">
+          What does this schedule change?
+          <span className="ml-2 text-sm font-normal text-slate-500 group-open:hidden">
+            (expand for the full specification)
+          </span>
+        </summary>
+        <div className="mt-4 space-y-3">
+          <p className="text-sm leading-6 text-slate-600">
+            Effective in every modelled year. Current law is read from the installed engine for
+            the first year. Residential property gains take the same rates, and the annual exempt{" "}
+            <SourceLink href={EXEMPT_AMOUNT}>amount</SourceLink> stays £3,000.
+          </p>
+          <ScheduleRates metadata={result.metadata} />
+        </div>
+      </Card>
+
       <div className="grid gap-6 lg:grid-cols-2">
         <Card className="flex min-w-0 flex-col">
           <SectionHeading
@@ -343,25 +361,6 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
           </Notes>
         </Card>
       </div>
-
-      {/* The specification's long text needs the full width, so the ready
-          reckoner sits under it rather than beside it. */}
-      <Card as="details" className="group min-w-0">
-        <summary className="cursor-pointer select-none text-xl font-semibold tracking-tight text-slate-900 marker:text-[color:var(--pe-color-primary-600)]">
-          What does this schedule change?
-          <span className="ml-2 text-sm font-normal text-slate-500 group-open:hidden">
-            (expand for the full specification)
-          </span>
-        </summary>
-        <div className="mt-4 space-y-3">
-          <p className="text-sm leading-6 text-slate-600">
-            Effective in every modelled year. Current law is read from the installed engine for
-            the first year. Residential property gains take the same rates, and the annual exempt{" "}
-            <SourceLink href={EXEMPT_AMOUNT}>amount</SourceLink> stays £3,000.
-          </p>
-          <ScheduleRates metadata={result.metadata} />
-        </div>
-      </Card>
 
       {matchedRow ? <ReadyReckonerPanel row={matchedRow} result={result} onNavigate={onNavigate} /> : null}
     </>

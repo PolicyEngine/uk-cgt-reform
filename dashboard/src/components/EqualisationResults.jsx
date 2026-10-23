@@ -135,6 +135,48 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
         </div>
       </Card>
 
+      <Card as="details" className="group">
+        <summary className="cursor-pointer select-none text-xl font-semibold tracking-tight text-slate-900 marker:text-[color:var(--pe-color-primary-600)]">
+          What does the reform change?
+          <span className="ml-2 text-sm font-normal text-slate-500 group-open:hidden">
+            (expand for the full specification)
+          </span>
+        </summary>
+        <div className="mt-4 space-y-3">
+          <p className="text-sm leading-6 text-slate-600">
+            Effective in every modelled year. All results on
+            this page compare this reform with current policy on the same baseline. The reformed
+            rates are the income tax rates on earnings; from April 2027 savings and property{" "}
+            <SourceLink href={SAVINGS_PROPERTY_RATES}>income</SourceLink> face 22%, 42% and 47% (the
+            property rates in England, Wales and Northern Ireland), and Scottish taxpayers&apos;
+            earnings face Scotland&apos;s own <SourceLink href={SCOTTISH_INCOME_TAX}>bands</SourceLink>,
+            which the reform does not follow. Residential property gains take the same rates, and the annual exempt{" "}
+            <SourceLink href={EXEMPT_AMOUNT}>amount</SourceLink> stays £3,000.
+            {recorded(validation.residential_property_gains_bn)}
+          </p>
+          <RateChangeChart
+            rows={[
+              { key: "basic", label: "Basic rate", baseline: reform.basic_rate.baseline, reform: reform.basic_rate.reform },
+              { key: "higher", label: "Higher rate", baseline: reform.higher_rate.baseline, reform: reform.higher_rate.reform },
+              {
+                key: "additional",
+                label: "Additional rate (income over £125,140)",
+                baseline: reform.additional_rate.baseline,
+                reform: reform.additional_rate.reform,
+              },
+              {
+                key: "badr",
+                label: "Business Asset Disposal Relief",
+                baseline: BASELINE_SCHEDULE_RATES.badr.rate,
+                reform: schedules.badr.withdrawn ? null : schedules.badr.rate,
+                baselineNote: `${badrLimitLabel(BASELINE_SCHEDULE_RATES.badr.lifetime_limit)} lifetime limit`,
+                reformNote: schedules.badr.withdrawn ? "gains pay the main rates" : undefined,
+              },
+            ]}
+          />
+        </div>
+      </Card>
+
       <div className="grid gap-6 lg:grid-cols-2">
         <Card className="flex min-w-0 flex-col">
           <SectionHeading
@@ -282,48 +324,6 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
           </p>
           </Notes>
         </Card>
-
-      <Card as="details" className="group">
-        <summary className="cursor-pointer select-none text-xl font-semibold tracking-tight text-slate-900 marker:text-[color:var(--pe-color-primary-600)]">
-          What does the reform change?
-          <span className="ml-2 text-sm font-normal text-slate-500 group-open:hidden">
-            (expand for the full specification)
-          </span>
-        </summary>
-        <div className="mt-4 space-y-3">
-          <p className="text-sm leading-6 text-slate-600">
-            Effective in every modelled year. All results on
-            this page compare this reform with current policy on the same baseline. The reformed
-            rates are the income tax rates on earnings; from April 2027 savings and property{" "}
-            <SourceLink href={SAVINGS_PROPERTY_RATES}>income</SourceLink> face 22%, 42% and 47% (the
-            property rates in England, Wales and Northern Ireland), and Scottish taxpayers&apos;
-            earnings face Scotland&apos;s own <SourceLink href={SCOTTISH_INCOME_TAX}>bands</SourceLink>,
-            which the reform does not follow. Residential property gains take the same rates, and the annual exempt{" "}
-            <SourceLink href={EXEMPT_AMOUNT}>amount</SourceLink> stays £3,000.
-            {recorded(validation.residential_property_gains_bn)}
-          </p>
-          <RateChangeChart
-            rows={[
-              { key: "basic", label: "Basic rate", baseline: reform.basic_rate.baseline, reform: reform.basic_rate.reform },
-              { key: "higher", label: "Higher rate", baseline: reform.higher_rate.baseline, reform: reform.higher_rate.reform },
-              {
-                key: "additional",
-                label: "Additional rate (income over £125,140)",
-                baseline: reform.additional_rate.baseline,
-                reform: reform.additional_rate.reform,
-              },
-              {
-                key: "badr",
-                label: "Business Asset Disposal Relief",
-                baseline: BASELINE_SCHEDULE_RATES.badr.rate,
-                reform: schedules.badr.withdrawn ? null : schedules.badr.rate,
-                baselineNote: `${badrLimitLabel(BASELINE_SCHEDULE_RATES.badr.lifetime_limit)} lifetime limit`,
-                reformNote: schedules.badr.withdrawn ? "gains pay the main rates" : undefined,
-              },
-            ]}
-          />
-        </div>
-      </Card>
     </div>
   );
 }
