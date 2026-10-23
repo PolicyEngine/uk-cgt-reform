@@ -131,7 +131,11 @@ function Dashboard() {
           ))}
         </nav>
 
-        {activeTab === "reform" && <ReformTab data={data} datasetKey={dataset.key} anchor={anchor} onNavigate={handleNavigate} />}
+        {/* Kept mounted so a chosen reform and its results survive a visit to
+            another tab. */}
+        <div hidden={activeTab !== "reform"}>
+          <ReformTab data={data} datasetKey={dataset.key} anchor={activeTab === "reform" ? anchor : null} onNavigate={handleNavigate} />
+        </div>
         {activeTab === "baseline" && <BaselineTab data={data} anchor={anchor} onNavigate={handleNavigate} />}
         {activeTab === "methodology" && <MethodologyTab data={data} anchor={anchor} onNavigate={handleNavigate} />}
 

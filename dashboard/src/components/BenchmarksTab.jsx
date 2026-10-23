@@ -48,20 +48,25 @@ function Takeaway({ lead, children }) {
 
 // ---- At a glance: one line per section, every number from the data. ----
 
-function packageRange(rows) {
-  const values = rows
-    .filter((row) => !row.derived)
-    .flatMap((row) => (row.bars ? row.bars.map((b) => b.value) : [row.value]))
-    .filter(isNum);
-  return values.length ? [Math.min(...values), Math.max(...values)] : null;
-}
-
 // `baseline`: the Baseline tab's model and HMRC figures, { modelYear,
 // hmrcYear, url, gains: { model, hmrc }, liability: { model, hmrc } }, the
 // HMRC values as the benchmark chart shows them ("£119.3bn").
 function AtAGlance({ benchmarks, baseline }) {
   const centax = benchmarks.centax_2019_20_rules;
-  const range = packageRange(buildPackageRows(benchmarks.centax_package_context));
+  // JRF's latest published year that PolicyEngine also scores on the OBR's
+  // receipts: the same reform, scaled the same way, before behaviour.
+  const statics = benchmarks.static_equalisation;
+  const jrf = statics?.external
+    .map((row) => ({ row, model: statics.by_year.find((y) => y.year === row.year) }))
+    .filter(({ model }) => Number.isFinite(model?.uplift_on_obr_receipts_real_bn))
+    .map(({ row, model }) => ({
+      year: row.year,
+      url: row.url,
+      value: row.value,
+      prices: row.price_basis,
+      model: model.uplift_on_obr_receipts_real_bn,
+    }))
+    .at(-1);
   // Each card: a title, one column per source (value, then its source and
   // year in the source's chart colour: PolicyEngine teal, the other grey),
   // and at most one short note.
@@ -83,14 +88,6 @@ function AtAGlance({ benchmarks, baseline }) {
         { ...hmrc, value: baseline.gains.hmrc },
       ],
     },
-    baseline && {
-      id: "baseline-liability",
-      title: "CGT liability",
-      columns: [
-        { ...pe(baseline.modelYear), value: formatBn(baseline.liability.model, 1) },
-        { ...hmrc, value: baseline.liability.hmrc },
-      ],
-    },
     {
       id: "centax-2019-20",
       title: "Equalising, 2019/20 rules",
@@ -108,22 +105,18 @@ function AtAGlance({ benchmarks, baseline }) {
       ],
       note: "Before behaviour.",
     },
-    range && {
-      id: "centax-package",
-      title: "CenTax's wider package",
+    jrf && {
+      id: "jrf-static",
+      title: `Equalising before behaviour, ${jrf.year}`,
       columns: [
+        { ...pe("on OBR receipts"), value: formatBn(jrf.model, 1) },
         {
-          label: (
-            <>
-              <SourceLink href={CENTAX_REPORT}>CenTax</SourceLink>,{" "}
-              {packageYears(benchmarks.centax_package_context)}
-            </>
-          ),
+          label: <SourceLink href={jrf.url}>JRF</SourceLink>,
           tone: "other",
-          value: `${formatBn(range[0], 1)}–${formatBn(range[1], 1)}`,
+          value: formatBn(jrf.value, 0),
         },
       ],
-      note: "Not like-for-like.",
+      note: `Both scale the OBR's receipts; ${jrf.prices}.`,
     },
   ].filter(Boolean);
   return (
@@ -131,7 +124,7 @@ function AtAGlance({ benchmarks, baseline }) {
       <h2 id="benchmarks-glance" className="text-xl font-semibold tracking-tight text-slate-900">
         At a glance
       </h2>
-      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {items.map((item) => (
           <div key={item.id} className="flex flex-col rounded-xl border border-slate-200 bg-slate-50/60 p-4">
             <p className="text-xs font-semibold leading-snug text-slate-600">{item.title}</p>
