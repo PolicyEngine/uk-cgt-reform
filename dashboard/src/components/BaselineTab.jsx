@@ -128,7 +128,7 @@ export default function BaselineTab({ data, anchor, onNavigate }) {
     >
       <section className="section-card scroll-mt-24" id="benchmarks">
         <SectionHeading
-          title="Baseline: PolicyEngine and HMRC statistics"
+          title="Capital gains before the reform: PolicyEngine and HMRC"
           description={
             <>
               PolicyEngine&apos;s {firstYear} baseline beside HMRC&apos;s{" "}

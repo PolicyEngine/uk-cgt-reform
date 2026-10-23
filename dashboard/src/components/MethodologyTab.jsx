@@ -447,54 +447,63 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
 
       <details className="section-card group scroll-mt-24" id="elasticity-gap">
         <summary className="cursor-pointer select-none text-xl font-semibold tracking-tight text-slate-900 marker:text-[color:var(--pe-color-primary-600)]">
-          Official and CenTax elasticities
+          How strongly people respond: CenTax and HMRC
         </summary>
-          <p className="mt-3 text-sm leading-6 text-slate-600">
-            HMRC and the OBR use a higher elasticity than{" "}
-            <ExternalLink href={CENTAX_REPORT}>CenTax&apos;s</ExternalLink> central value. At that
-            value, HMRC&apos;s ready <ExternalLink href={READY_RECKONER_URL}>reckoner</ExternalLink>,
-            its table of costings for rate changes, shows higher-rate rises of 5 and 10 points
-            reducing revenue; at the central value this dashboard shows them increasing it.
-          </p>
+        <p className="mt-3 text-sm leading-6 text-slate-600">
+          The elasticity measures how much people cut the gains they realise when the tax rate
+          rises. HMRC and the OBR assume a stronger response than{" "}
+          <ExternalLink href={CENTAX_REPORT}>CenTax</ExternalLink>. With HMRC&apos;s value, raising
+          the higher rate by 5 or 10 points loses revenue, as its ready{" "}
+          <ExternalLink href={READY_RECKONER_URL}>reckoner</ExternalLink> shows; with
+          CenTax&apos;s value, the same rises bring in more.
+        </p>
 
-
-        <div className="grid gap-3 text-sm sm:grid-cols-2">
+        <div className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
           <ValueCard label="CenTax central" value={central.e_retention.toFixed(1)}>
-            <p>Used for all gains in this dashboard&apos;s central case.</p>
+            <p>This dashboard&apos;s central case, for all gains.</p>
           </ValueCard>
           <ValueCard label="HMRC/OBR official" value={official.e_retention.toFixed(1)}>
             <p>
-              Used for the main CGT rates ({(official.e_retention / central.e_retention).toFixed(1)}{" "}
-              times the CenTax value), and {official.badr_e_retention.toFixed(1)} for gains
+              For the main CGT rates, and {official.badr_e_retention.toFixed(1)} for gains
               qualifying for Business Asset Disposal{" "}
               <ExternalLink href={BADR_GUIDANCE}>Relief</ExternalLink> (
               <ExternalLink href={`${official.url}#page=3`}>OBR</ExternalLink>,{" "}
               {formatPublished(official.published.slice(0, 7))}, para 1.9 and{" "}
-              <ExternalLink href={`${official.url}#page=5`}>Table</ExternalLink> 1.1). The
-              dashboard&apos;s official case applies each value to its own kind of gain.
-            </p>
-            <p>
-              HMRC&apos;s own <ExternalLink href={`${official.url}#page=3`}>estimate</ExternalLink>{" "}
-              for 1998 to 2018 is 4.0 (para 1.10).
+              <ExternalLink href={`${official.url}#page=5`}>Table</ExternalLink> 1.1). HMRC&apos;s
+              own estimate for 1998 to 2018 is 4.0 (para 1.10).
             </p>
           </ValueCard>
         </div>
 
-        <Topic title="How each value is derived">
-          <p>
-            HMRC&apos;s value is estimated from UK responses under the current tax base. CenTax
-            start from US evidence of about 1.5 five years after a change (
-            <ExternalLink href={AGERSNAP_ZIDAR}>Agersnap</ExternalLink> &amp; Zidar, 2021) and
-            use {central.e_retention.toFixed(1)} for their package, because it ends the uplift at
-            death, which the US keeps, and because equalising rates moves income presented as
-            gains back into income tax, which estimates based on CGT alone count as lost. They
-            make no adjustment for the charge on leaving the UK.
-          </p>
+        <Topic title="Why the two values differ">
+          <ul className="list-disc space-y-1.5 pl-5">
+            <li>
+              <strong className="font-semibold text-slate-800">HMRC</strong> estimate theirs from
+              how UK taxpayers responded to past rate changes under today&apos;s rules.
+            </li>
+            <li>
+              <strong className="font-semibold text-slate-800">CenTax</strong> start from US
+              evidence of about 1.5 five years after a change (
+              <ExternalLink href={AGERSNAP_ZIDAR}>Agersnap</ExternalLink> &amp; Zidar, 2021) and
+              lower it to {central.e_retention.toFixed(1)} for two reasons:
+              <ul className="mt-1 list-[circle] space-y-1 pl-5">
+                <li>
+                  their package ends the uplift at death, which the US keeps, so holding assets
+                  until death no longer avoids the tax;
+                </li>
+                <li>
+                  with equal rates, there is no gain from presenting income as capital gains, so
+                  income that moves back into income tax is not lost revenue.
+                </li>
+              </ul>
+            </li>
+            <li>CenTax make no adjustment for the charge on people leaving the UK.</li>
+          </ul>
         </Topic>
         <Topic title="A worked example">
           <p>
-            A taxpayer&apos;s marginal rate on gains rises from 24% to 34%, the ready
-            reckoner&apos;s largest row.
+            Take a taxpayer whose rate on gains rises from 24% to 34%, the ready reckoner&apos;s
+            largest row:
           </p>
           <div className="overflow-x-auto rounded-lg border border-slate-200 px-4 py-2">
             <table className="w-full text-left text-sm">
@@ -504,17 +513,17 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
                     Elasticity
                   </th>
                   <th scope="col" className="py-2 pr-3 text-right font-medium">
-                    Realised gains
+                    Gains realised
                   </th>
                   <th scope="col" className="py-2 text-right font-medium">
-                    Tax on them
+                    Tax paid on them
                   </th>
                 </tr>
               </thead>
               <tbody className="tabular-nums">
                 {[
-                  ["Central", atCentral],
-                  ["Official", atOfficial],
+                  [`CenTax (${central.e_retention.toFixed(1)})`, atCentral],
+                  [`HMRC/OBR (${official.e_retention.toFixed(1)})`, atOfficial],
                 ].map(([label, change]) => (
                   <tr key={label} className="border-b border-slate-100 last:border-0">
                     <th scope="row" className="py-2 pr-3 font-medium text-slate-900">
@@ -530,24 +539,29 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
             </table>
           </div>
           <p>
-            At the official value the tax {atOfficial.revenue >= 0 ? "rises" : "falls"}, as in
-            HMRC&apos;s row; across the dataset the effect depends on taxpayers&apos; marginal rates.
+            With CenTax&apos;s value the tax paid {atCentral.revenue >= 0 ? "rises" : "falls"}; with
+            the official value it {atOfficial.revenue >= 0 ? "rises" : "falls"}, as in HMRC&apos;s
+            table. Across all taxpayers, the result depends on each person&apos;s rate.
           </p>
         </Topic>
         <Topic title="Where to see it">
-          <p>
-            The{" "}
-            <TabLink onNavigate={onNavigate} tab="reform" section="sensitivity">
-              Reform
-            </TabLink>{" "}
-            tab&apos;s sensitivity chart gives the reform&apos;s first-year revenue at each
-            elasticity, and the{" "}
-            <TabLink onNavigate={onNavigate} tab="baseline" section="ready-reckoner">
-              Baseline
-            </TabLink>{" "}
-            tab scores the ready reckoner&apos;s rows at the central value, CenTax&apos;s upper value
-            and the official one.
-          </p>
+          <ul className="list-disc space-y-1.5 pl-5">
+            <li>
+              The{" "}
+              <TabLink onNavigate={onNavigate} tab="reform" section="sensitivity">
+                Reform
+              </TabLink>{" "}
+              tab&apos;s sensitivity chart shows the reform&apos;s revenue at each value.
+            </li>
+            <li>
+              The{" "}
+              <TabLink onNavigate={onNavigate} tab="baseline" section="ready-reckoner">
+                Baseline
+              </TabLink>{" "}
+              tab scores the ready reckoner&apos;s rows at {central.e_retention.toFixed(1)}, 3.0
+              and the official values.
+            </li>
+          </ul>
         </Topic>
       </details>
 

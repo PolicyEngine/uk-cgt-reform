@@ -92,7 +92,7 @@ function AtAGlance({ benchmarks, baseline }) {
       id: "centax-2019-20",
       title: (
         <>
-          At 2019/20 rules: PolicyEngine and <SourceLink href={centax.external.url}>CenTax</SourceLink>
+          CGT rise under 2019/20 rules: PolicyEngine and <SourceLink href={centax.external.url}>CenTax</SourceLink>
         </>
       ),
       value: `${formatUplift(centax.national.uplift_pct)} · ${formatUplift(centax.external.value)}`,
@@ -102,7 +102,7 @@ function AtAGlance({ benchmarks, baseline }) {
       id: "centax-package",
       title: (
         <>
-          <SourceLink href={CENTAX_REPORT}>CenTax&apos;s</SourceLink> wider package (context)
+          <SourceLink href={CENTAX_REPORT}>CenTax&apos;s</SourceLink> wider reform package
         </>
       ),
       value: `${formatBn(range[0], 1)}–${formatBn(range[1], 1)}`,
@@ -134,7 +134,7 @@ function StaticEqualisation({ block, dataset }) {
   return (
     <section className="section-card">
       <SectionHeading
-        title="Before behaviour: JRF's estimate"
+        title="Revenue before behaviour changes: PolicyEngine and JRF"
         description={
           <>
             {"Static change from equalising, by year, in 2026/27 prices. "}
@@ -187,7 +187,7 @@ function CentaxRegions({ block, dataset }) {
   return (
     <section className="section-card">
       <SectionHeading
-        title="At 2019/20 rules: CenTax"
+        title="CGT by region under 2019/20 rules: PolicyEngine and CenTax"
         description={
           <>
             {`Each region's share of baseline CGT: ${PE} applies `}
@@ -229,7 +229,7 @@ function CentaxPackage({ rows, onNavigate }) {
   return (
     <section className="section-card">
       <SectionHeading
-        title="CenTax's wider package (context)"
+        title="Revenue from CenTax's wider reform package (not like-for-like)"
         description={
           <>
             <SourceLink href={CENTAX_REPORT}>CenTax</SourceLink> estimate what equalising would
@@ -284,7 +284,7 @@ function ReadyReckoner({ block, dataset, elasticities, rr, onNavigate }) {
   return (
     <section className="section-card scroll-mt-24" id="ready-reckoner">
       <SectionHeading
-        title="Small rate changes: HMRC's ready reckoner"
+        title="Revenue from small rate changes: PolicyEngine and HMRC"
         action={
           rr.pairs.length > 1 ? (
             <label className="flex items-center gap-2">
@@ -384,7 +384,7 @@ export default function BenchmarksTab({ data, onNavigate, baselineGlance, childr
       <section className="pt-2">
         <SectionHeading
           size="lg"
-          title="How these results compare with other estimates"
+          title="How PolicyEngine compares with HMRC, JRF and CenTax"
           description={
             <>
               {`HMRC's statistics for the baseline, and published estimates that score the same reform or the same kind of rate change, next to ${PE}'s figures on `}

@@ -90,27 +90,23 @@ function Dashboard() {
       <main className="relative z-[1] mx-auto flex w-full max-w-6xl flex-1 flex-col px-6 pb-6 pt-10 md:px-8 md:pt-12">
         <div className="animate-[fadeIn_0.4s_ease-out]">
           <p className="text-lg leading-8 text-slate-800">
-            This dashboard estimates how changing UK capital gains tax rates would affect{" "}
-            <strong className={BOLD}>government revenue</strong> and{" "}
-            <strong className={BOLD}>household incomes</strong>. Its headline reform,{" "}
-            <strong className={BOLD}>taxing gains at income tax rates</strong> and withdrawing
-            Business Asset Disposal{" "}
-            <a href="https://www.gov.uk/business-asset-disposal-relief" target="_blank" rel="noopener noreferrer" className={LINK}>Relief</a>, has been{" "}
+            This dashboard estimates how{" "}
+            <strong className={BOLD}>taxing capital gains at income tax rates</strong> and
+            withdrawing Business Asset Disposal{" "}
+            <a href="https://www.gov.uk/business-asset-disposal-relief" target="_blank" rel="noopener noreferrer" className={LINK}>Relief</a>, a reform{" "}
             <a href="https://ifs.org.uk/sites/default/files/2024-10/Captial-gains-tax-reform.pdf" target="_blank" rel="noopener noreferrer" className={LINK}>debated</a>{" "}
-            in the UK; a <strong className={BOLD}>custom option</strong> scores any other set of rates.
-          </p>
-          <p className="mt-4 text-lg leading-8 text-slate-800">
-            It models the <strong className={BOLD}>rate changes only</strong>, with fewer gains
-            realised as rates rise. It does not model the measures{" "}
+            in the UK, would affect <strong className={BOLD}>government revenue</strong> and{" "}
+            <strong className={BOLD}>household incomes</strong>; a{" "}
+            <strong className={BOLD}>custom option</strong> scores any other set of rates. It
+            models the <strong className={BOLD}>rate changes only</strong>, with fewer gains
+            realised as rates rise, and not the other measures{" "}
             <a href={CENTAX_REPORT} target="_blank" rel="noopener noreferrer" className={LINK}>CenTax</a>{" "}
-            pair with equal rates: an <strong className={BOLD}>investment allowance</strong>, ending
-            the <strong className={BOLD}>uplift at death</strong> and an{" "}
-            <strong className={BOLD}>exit tax</strong> on people leaving the UK. Nor does it model
-            people <strong className={BOLD}>moving</strong> into or out of the UK; the{" "}
+            pair with them (an investment allowance, ending the uplift at death and an exit tax) or
+            people moving into or out of the UK (see{" "}
             <button type="button" onClick={() => handleNavigate("methodology", "not-modelled")} className={`inline font-normal text-[color:var(--pe-color-primary-700)] ${LINK}`}>
               Methodology
-            </button>{" "}
-            tab has the details.
+            </button>
+            ).
           </p>
         </div>
 
