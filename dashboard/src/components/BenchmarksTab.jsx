@@ -160,10 +160,13 @@ function packageYears(rows) {
 
 function StaticEqualisation({ block, dataset }) {
   const source = block.external[0];
+  // The chart's years: the window plus JRF's earlier year (2026-27), which
+  // is scored statically for this comparison only.
+  const rows = buildJrfRows(block);
   return (
     <section className="section-card">
       <SectionHeading
-        title={`Static revenue: PolicyEngine and JRF, ${block.by_year[0].year} to ${block.by_year.at(-1).year}`}
+        title={`Static revenue: PolicyEngine and JRF, ${rows[0].year} to ${rows.at(-1).year}`}
         description={
           <>
             {"Static change from equalising, in 2026/27 prices. "}
@@ -177,7 +180,7 @@ function StaticEqualisation({ block, dataset }) {
         }
       />
       <JrfComparisonChart
-        rows={buildJrfRows(block)}
+        rows={rows}
         labels={{
           static: `${PE}, static`,
           obr: `${PE} uplift applied to OBR receipts`,

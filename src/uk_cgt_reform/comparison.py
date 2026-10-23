@@ -453,18 +453,13 @@ def price_factors(cpi_by_year: dict[str, dict], base_year: int, years: list[int]
     }
 
 
-def static_equalisation_block(
-    static_budget: list[dict],
-    factors: dict[str, float],
-    reform_fingerprint: str,
-    price_index_source: str,
-) -> dict:
-    """The static equalisation reform by year beside JRF's static estimate.
+def jrf_comparison_years(window: list[int]) -> list[int]:
+    """JRF's published years outside the modelled window (2026-27): scored
+    statically for the JRF comparison only."""
+    return sorted({int(row["year"][:4]) for row in JRF_STATIC} - set(window))
 
-    JRF scales the OBR's CGT receipts by a static uplift, so each year also
-    carries this repo's uplift applied to the same OBR receipts, in 2026-27
-    prices (JRF's basis; ``reform.PRICE_BASE_YEAR``); that line isolates the uplift from the dataset's baseline level.
-    """
+
+def _static_rows(static_budget: list[dict], factors: dict[str, float]) -> list[dict]:
     rows = []
     for row in static_budget:
         year = row["year"]
@@ -484,13 +479,32 @@ def static_equalisation_block(
                 "uplift_on_obr_receipts_real_bn": None if obr is None else obr * uplift / factor,
             }
         )
+    return rows
+
+
+def static_equalisation_block(
+    static_budget: list[dict],
+    factors: dict[str, float],
+    reform_fingerprint: str,
+    price_index_source: str,
+    comparison_budget: list[dict] = (),
+) -> dict:
+    """The static equalisation reform by year beside JRF's static estimate.
+
+    JRF scales the OBR's CGT receipts by a static uplift, so each year also
+    carries this repo's uplift applied to the same OBR receipts, in 2026-27
+    prices; that line isolates the uplift from the dataset's baseline level.
+    ``comparison_budget`` holds the same static rows for JRF years outside
+    the modelled window (``comparison_by_year``), which nothing else reads.
+    """
     return {
         "reform_fingerprint": reform_fingerprint,
         "price_basis": "2026-27 prices",
         "price_index": CPI_INDEX,
         "price_index_source": price_index_source,
         "obr_receipts_source": OBR_CGT_RECEIPTS_SOURCE,
-        "by_year": rows,
+        "by_year": _static_rows(static_budget, factors),
+        "comparison_by_year": _static_rows(list(comparison_budget), factors),
         "external": [dict(row) for row in JRF_STATIC],
     }
 

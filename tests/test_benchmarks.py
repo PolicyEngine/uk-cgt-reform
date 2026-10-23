@@ -239,3 +239,25 @@ def test_ready_reckoner_block_lists_every_elasticity():
     assert block["elasticity_ids"] == ["centax_central", "elasticity_3", "official"]
     assert block["elasticities"] == READY_RECKONER_ELASTICITIES
     assert all(set(row["model_m"]) == set(READY_RECKONER_ELASTICITIES) for row in block["rows"])
+
+
+def test_jrf_years_outside_the_window_are_scored_for_the_comparison_only():
+    from uk_cgt_reform.comparison import jrf_comparison_years, static_equalisation_block
+    from uk_cgt_reform.reform import YEARS
+
+    assert jrf_comparison_years(YEARS) == [2026]
+    row = {
+        "year": "2026-27",
+        "baseline_cgt_bn": 29.0,
+        "cgt_change_bn": 26.0,
+        "gov_balance_change_bn": 26.0,
+    }
+    window_row = {**row, "year": "2027-28"}
+    block = static_equalisation_block(
+        [window_row], {"2026-27": 1.0, "2027-28": 1.02}, "0" * 12, "OBR", [row]
+    )
+    assert [r["year"] for r in block["by_year"]] == ["2027-28"]
+    [extra] = block["comparison_by_year"]
+    assert extra["year"] == "2026-27"
+    assert extra["static_cgt_change_real_bn"] == pytest.approx(26.0)
+    assert extra["uplift_on_obr_receipts_real_bn"] == pytest.approx(20.8 * 26.0 / 29.0)

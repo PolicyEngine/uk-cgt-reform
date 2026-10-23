@@ -2125,6 +2125,19 @@
           "uplift_on_obr_receipts_real_bn": null
         }
       ],
+      "comparison_by_year": [
+        {
+          "year": "2026-27",
+          "baseline_cgt_bn": 29.031002810145814,
+          "static_cgt_change_bn": 26.030934380976866,
+          "static_gov_balance_change_bn": 26.030934840990355,
+          "static_uplift_pct": 89.66598415911255,
+          "price_factor": 1.0,
+          "static_cgt_change_real_bn": 26.030934380976866,
+          "obr_receipts_bn": 20.8,
+          "uplift_on_obr_receipts_real_bn": 18.65052470509541
+        }
+      ],
       "external": [
         {
           "id": "jrf_2026_static_2026_27",

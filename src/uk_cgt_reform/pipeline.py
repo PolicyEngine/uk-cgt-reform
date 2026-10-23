@@ -38,6 +38,7 @@ from .comparison import (
     SENSITIVITY_CASES,
     benchmarks_block,
     centax_1920_block,
+    jrf_comparison_years,
     price_factors,
     ready_reckoner_block,
     static_equalisation_block,
@@ -302,6 +303,32 @@ def run_dataset(
         for year in YEARS
     }
 
+    # ── Step 2c: the static reform in JRF's years outside the window
+    # (2026-27), for the JRF comparison only ─────────────────────────────
+    comparison_years = jrf_comparison_years(YEARS)
+    print(f"Step 2c {tag}: Static reform (e=0) for the JRF comparison, {comparison_years}...")
+    comparison_budget = []
+    if comparison_years:
+        cmp_datasets = ensure_uk_datasets(spec, comparison_years, folder)
+        cmp_audit = engine_audit(spec.base_year, comparison_years)
+        cmp_aea = exempt_amounts(sorted({spec.base_year, *comparison_years}))
+        cmp_ceilings = entrant_ceilings(cmp_audit, cmp_aea[spec.base_year], comparison_years)
+        cmp_baselines, cmp_statics = {}, {}
+        for year in comparison_years:
+            cmp_baselines[year] = run_simulation(
+                cmp_datasets[year], sim_id=f"{sim_stem}_baseline_{year}"
+            )
+            cmp_statics[year] = run_simulation(
+                cmp_datasets[year],
+                policy=static_policy,
+                sim_id=equalisation_sim_id(sim_stem, 0.0, static_digest, year),
+            )
+        comparison_budget = budget_impact(
+            cmp_baselines, cmp_statics, comparison_years, cmp_aea, cmp_ceilings
+        )
+        for row in comparison_budget:
+            print(f"    {row['year']}: static CGT {row['cgt_change_bn']:+.2f}bn")
+
     # ── Step 3: elasticity sensitivity, every year; the headline year's
     # cases double as the check that the behavioural response fires
     # through policyengine.py ────────────────────────────────────────────
@@ -460,10 +487,14 @@ def run_dataset(
 
     # ── Step 7: benchmarks against other institutions' estimates ─────────
     cpi = audit["sensitivity_not_applied"]["cpi"]
-    factors = price_factors(cpi["by_year"], PRICE_BASE_YEAR, YEARS)
+    factors = price_factors(cpi["by_year"], PRICE_BASE_YEAR, sorted({*YEARS, *comparison_years}))
     benchmarks = benchmarks_block(
         static_equalisation=static_equalisation_block(
-            static_budget, factors, static_digest, cpi["reference"][0]["title"]
+            static_budget,
+            factors,
+            static_digest,
+            cpi["reference"][0]["title"],
+            comparison_budget,
         ),
         centax_2019_20_rules=centax_1920,
         ready_reckoner=ready_reckoner,
