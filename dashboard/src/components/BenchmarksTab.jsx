@@ -10,6 +10,7 @@ import RegionalComparisonChart, {
   buildRegionRows,
   formatUplift,
 } from "./charts/RegionalComparisonChart";
+import { colors } from "../lib/colors";
 import { DatasetName, Notes, SourceLabel, SourceLink, TabLink } from "./controls";
 import SectionHeading from "./SectionHeading";
 
@@ -61,46 +62,68 @@ function packageRange(rows) {
 function AtAGlance({ benchmarks, baseline }) {
   const centax = benchmarks.centax_2019_20_rules;
   const range = packageRange(buildPackageRows(benchmarks.centax_package_context));
-  const hmrcLink = baseline && <SourceLink href={baseline.url}>HMRC</SourceLink>;
-  const baselineYears = baseline && (
-    <>
-      PolicyEngine {baseline.modelYear} · {hmrcLink} {baseline.hmrcYear} (provisional)
-    </>
-  );
+  // Each card: a title, one column per source (value, then its source and
+  // year in the source's chart colour: PolicyEngine teal, the other grey),
+  // and at most one short note.
+  const pe = (year) => ({ label: `PolicyEngine ${year}`, tone: "pe" });
+  const hmrc = baseline && {
+    label: (
+      <>
+        <SourceLink href={baseline.url}>HMRC</SourceLink> {baseline.hmrcYear} (provisional)
+      </>
+    ),
+    tone: "other",
+  };
   const items = [
     baseline && {
       id: "baseline-gains",
       title: "Taxable gains",
-      value: `${formatBn(baseline.gains.model, 1)} · ${baseline.gains.hmrc}`,
-      detail: baselineYears,
+      columns: [
+        { ...pe(baseline.modelYear), value: formatBn(baseline.gains.model, 1) },
+        { ...hmrc, value: baseline.gains.hmrc },
+      ],
     },
     baseline && {
       id: "baseline-liability",
       title: "CGT liability",
-      value: `${formatBn(baseline.liability.model, 1)} · ${baseline.liability.hmrc}`,
-      detail: baselineYears,
+      columns: [
+        { ...pe(baseline.modelYear), value: formatBn(baseline.liability.model, 1) },
+        { ...hmrc, value: baseline.liability.hmrc },
+      ],
     },
     {
       id: "centax-2019-20",
       title: "Equalising, 2019/20 rules",
-      value: `${formatUplift(centax.national.uplift_pct)} · ${formatUplift(centax.external.value)}`,
-      detail: (
-        <>
-          PolicyEngine {centax.year} · <SourceLink href={centax.external.url}>CenTax</SourceLink> 2019-20,
-          before behaviour
-        </>
-      ),
+      columns: [
+        { ...pe(centax.year), value: formatUplift(centax.national.uplift_pct) },
+        {
+          label: (
+            <>
+              <SourceLink href={centax.external.url}>CenTax</SourceLink> 2019-20
+            </>
+          ),
+          tone: "other",
+          value: formatUplift(centax.external.value),
+        },
+      ],
+      note: "Before behaviour.",
     },
     range && {
       id: "centax-package",
       title: "CenTax's wider package",
-      value: `${formatBn(range[0], 1)}–${formatBn(range[1], 1)}`,
-      detail: (
-        <>
-          <SourceLink href={CENTAX_REPORT}>CenTax</SourceLink>,{" "}
-          {packageYears(benchmarks.centax_package_context)}; not like-for-like
-        </>
-      ),
+      columns: [
+        {
+          label: (
+            <>
+              <SourceLink href={CENTAX_REPORT}>CenTax</SourceLink>,{" "}
+              {packageYears(benchmarks.centax_package_context)}
+            </>
+          ),
+          tone: "other",
+          value: `${formatBn(range[0], 1)}–${formatBn(range[1], 1)}`,
+        },
+      ],
+      note: "Not like-for-like.",
     },
   ].filter(Boolean);
   return (
@@ -111,9 +134,21 @@ function AtAGlance({ benchmarks, baseline }) {
       <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {items.map((item) => (
           <div key={item.id} className="flex flex-col rounded-xl border border-slate-200 bg-slate-50/60 p-4">
-            <p className="text-xs font-semibold leading-snug text-slate-600 md:min-h-[2.25rem]">{item.title}</p>
-            <p className="mt-1 text-xl font-bold tabular-nums text-slate-900 first-letter:uppercase">{item.value}</p>
-            <p className="mt-1 text-xs leading-5 text-slate-500">{item.detail}</p>
+            <p className="text-xs font-semibold leading-snug text-slate-600">{item.title}</p>
+            <div className={`mt-2 grid gap-3 ${item.columns.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}>
+              {item.columns.map((column, i) => (
+                <div key={i} className="min-w-0">
+                  <p className="text-xl font-bold tabular-nums text-slate-900">{column.value}</p>
+                  <p
+                    className={`mt-0.5 text-xs leading-4 ${column.tone === "pe" ? "font-bold" : "text-slate-500"}`}
+                    style={column.tone === "pe" ? { color: colors.primary[700] } : undefined}
+                  >
+                    {column.label}
+                  </p>
+                </div>
+              ))}
+            </div>
+            {item.note ? <p className="mt-2 text-xs leading-5 text-slate-500">{item.note}</p> : null}
           </div>
         ))}
       </div>

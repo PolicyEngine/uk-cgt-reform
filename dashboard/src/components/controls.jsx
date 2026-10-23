@@ -137,15 +137,27 @@ export function LabelledSelect({ label, options, value, onChange }) {
   );
 }
 
-export function MetricCard({ label, value, note, tip }) {
+// `valueColor`: the big number's colour, tying the card to its chart (a
+// palette colour, never a good/bad signal). Each card carries a thin teal
+// accent along its top.
+export function MetricCard({ label, value, note, tip, valueColor }) {
   return (
-    <Card as="div" variant="inset" className="flex flex-col">
+    <Card
+      as="div"
+      variant="inset"
+      className="flex flex-col border-t-4 border-t-[color:var(--pe-color-primary-500)]"
+    >
       {/* A two-line slot for the label, so values line up across a row. */}
       <div className="flex items-start gap-2 md:min-h-[2.5rem]">
         <p className="text-sm font-semibold leading-snug text-slate-700">{label}</p>
         {tip ? <InfoTip label={`About ${label.toLowerCase()}`}>{tip}</InfoTip> : null}
       </div>
-      <p className="mt-1 text-3xl font-bold tabular-nums text-slate-900">{value}</p>
+      <p
+        className={`mt-1 text-3xl font-bold tabular-nums ${valueColor ? "" : "text-slate-900"}`}
+        style={valueColor ? { color: valueColor } : undefined}
+      >
+        {value}
+      </p>
       {note ? <p className={`mt-2 ${HINT}`}>{note}</p> : null}
     </Card>
   );

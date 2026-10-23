@@ -31,7 +31,7 @@ import { colors } from "../lib/colors";
 import BudgetChart from "./charts/BudgetChart";
 import ChartLegend from "./charts/ChartLegend";
 import RateChangeChart from "./charts/RateChangeChart";
-import GroupImpactChart, { GROUP_DESCRIPTION, GroupDefinitions } from "./charts/GroupImpactChart";
+import GroupImpactChart, { GROUP_DESCRIPTION, GroupDefinitions, HOUSEHOLD_COLOR } from "./charts/GroupImpactChart";
 import { Card, DatasetName, MetricCard, Notes, SourceLink, TabLink } from "./controls";
 import { BeyondForecastNote, SPEC_SUMMARY } from "./EqualisationResults";
 import SectionHeading from "./SectionHeading";
@@ -292,12 +292,14 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
         <div className={`grid gap-4 ${topDecile?.share_affected_pct !== undefined ? "md:grid-cols-3" : "md:grid-cols-2"}`}>
           <MetricCard
             label="Change in government balance"
+            valueColor={colors.primary[700]}
             value={bn(headlineRow.gov_balance_change_bn)}
             note={Number(resultE) === 0 ? "With no behavioural response." : "After the behavioural response."}
           />
           {topDecile ? (
             <MetricCard
               label="Top income decile: average change in net income"
+              valueColor={HOUSEHOLD_COLOR}
               value={formatSignedCurrency(topDecile.avg_change_gbp)}
               note={`${formatSignedPct(topDecile.relative_change_pct)} of net income; ${formatPct(100 * topShare, 0)} of the total fall in household income.`}
             />
@@ -305,6 +307,7 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
           {topDecile?.share_affected_pct !== undefined ? (
             <MetricCard
               label="Top income decile: share with lower net income"
+              valueColor={HOUSEHOLD_COLOR}
               value={formatPct(topDecile.share_affected_pct, 1)}
               note="Households in the top income decile whose net income falls."
             />

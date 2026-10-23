@@ -29,8 +29,9 @@ import {
   getReform,
   getValidation,
 } from "../lib/dataHelpers";
+import { colors } from "../lib/colors";
 import BudgetChart from "./charts/BudgetChart";
-import GroupImpactChart, { GROUP_DESCRIPTION, GroupDefinitions } from "./charts/GroupImpactChart";
+import GroupImpactChart, { GROUP_DESCRIPTION, GroupDefinitions, HOUSEHOLD_COLOR } from "./charts/GroupImpactChart";
 import SensitivityChart from "./charts/SensitivityChart";
 import RateChangeChart from "./charts/RateChangeChart";
 import YieldChart from "./charts/YieldChart";
@@ -127,6 +128,7 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
         <div className={`grid gap-4 ${topDecile?.share_affected_pct !== undefined ? "md:grid-cols-3" : "md:grid-cols-2"}`}>
           <MetricCard
             label="Change in government balance"
+            valueColor={colors.primary[700]}
             value={formatSignedBn(headlineRow.gov_balance_change_bn, 1)}
             note="After taxpayers realise fewer gains."
             tip={`Across the behavioural cases in the sensitivity chart, the ${lowest.year} change in CGT revenue runs from ${formatSignedBn(lowest.revenue_bn, 1)} at ${caseName(lowest)} to ${formatSignedBn(highest.revenue_bn, 1)} at ${caseName(highest)}.`}
@@ -134,6 +136,7 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
           {topDecile ? (
             <MetricCard
               label="Top income decile: average change in net income"
+              valueColor={HOUSEHOLD_COLOR}
               value={formatSignedCurrency(topDecile.avg_change_gbp)}
               note={`${formatSignedPct(topDecile.relative_change_pct)} of net income; ${formatPct(100 * topShare, 0)} of the total fall in household income.`}
             />
@@ -141,6 +144,7 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
           {topDecile?.share_affected_pct !== undefined ? (
             <MetricCard
               label="Top income decile: share with lower net income"
+              valueColor={HOUSEHOLD_COLOR}
               value={formatPct(topDecile.share_affected_pct, 1)}
               note="Households in the top income decile whose net income falls."
             />

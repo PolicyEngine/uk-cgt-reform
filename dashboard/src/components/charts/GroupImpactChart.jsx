@@ -178,7 +178,7 @@ export default function GroupImpactChart({ groupsByYear, defaultYear, descriptio
             <Bar
               dataKey={metricKey}
               name={metricName}
-              fill={colors.primary[600]}
+              fill={HOUSEHOLD_COLOR}
               radius={grouping === "region" ? [0, 6, 6, 0] : [6, 6, 0, 0]}
             />
           </BarChart>
@@ -188,6 +188,9 @@ export default function GroupImpactChart({ groupsByYear, defaultYear, descriptio
     </>
   );
 }
+
+// The bars' colour, shared by the headline cards that report these groups.
+export const HOUSEHOLD_COLOR = colors.primary[600];
 
 export const GROUP_DESCRIPTION =
   "Each bar shows the average change in net income for one group of households, ranked by income before the reform.";
