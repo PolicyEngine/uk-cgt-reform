@@ -101,10 +101,20 @@ export default function BaselineTab({ data, anchor, onNavigate }) {
     model,
     hmrc2024: parseBenchmark(BENCHMARKS[key].y2024?.value),
   });
+  // Why the liabilities differ more than the gains: the rates, not the data.
+  function liabilityTip(v, year) {
+    const pe = v.baseline_cgt_revenue_bn / v.total_gains_bn;
+    const hmrc = parseBenchmark(BENCHMARKS.liability.y2024?.value) / parseBenchmark(BENCHMARKS.totalGains.y2024?.value);
+    const pct = (x) => `${Math.round(100 * x)}%`;
+    return `Most of this gap comes from the tax rates, not the data. CGT rates rose from 10% and 20% to 18% and 24% on 30 October 2024, so HMRC's 2024-25 liability is partly at the old rates, while PolicyEngine's ${year} figure is at the new rates all year: tax is ${pct(pe)} of taxable gains here against ${pct(hmrc)} in HMRC's figures. Gains also grow between the two years.`;
+  }
   const benchmarkRows = [
     bench("Overall", "totalGains", "Total taxable gains", "bn", validation.total_gains_bn),
     bench("Overall", "taxpayers", "CGT taxpayers", "count", validation.cgt_taxpayers),
-    bench("Overall", "liability", "Baseline CGT liability", "bn", validation.baseline_cgt_revenue_bn),
+    {
+      ...bench("Overall", "liability", "Baseline CGT liability", "bn", validation.baseline_cgt_revenue_bn),
+      tip: liabilityTip(validation, modelYear),
+    },
     bench("Large gains", "shareOver1m", "Share of gains from gains of £1m or more", "pct", validation.share_gains_over_1m_pct),
     bench("Large gains", "shareOver5m", "Share of gains from gains of £5m or more", "pct", validation.share_gains_over_5m_pct),
     bench("Large gains", "taxpayersOver500k", "Taxpayers with gains over £500k", "count", validation.taxpayers_over_500k),
