@@ -33,6 +33,7 @@ import ChartLegend from "./charts/ChartLegend";
 import RateChangeChart from "./charts/RateChangeChart";
 import GroupImpactChart, { GROUP_DESCRIPTION, GroupDefinitions } from "./charts/GroupImpactChart";
 import { Card, MetricCard, Notes, SourceLink, TabLink } from "./controls";
+import { SPEC_SUMMARY } from "./EqualisationResults";
 import SectionHeading from "./SectionHeading";
 
 const EXEMPT_AMOUNT = "https://www.gov.uk/capital-gains-tax/allowances";
@@ -309,24 +310,6 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
         </div>
       </Card>
 
-      {/* The specification, full width, directly under the headline. */}
-      <Card as="details" className="group min-w-0">
-        <summary className="cursor-pointer select-none text-xl font-semibold tracking-tight text-slate-900 marker:text-[color:var(--pe-color-primary-600)]">
-          What does this schedule change?
-          <span className="ml-2 text-sm font-normal text-slate-500 group-open:hidden">
-            (expand for the full specification)
-          </span>
-        </summary>
-        <div className="mt-4 space-y-3">
-          <p className="text-sm leading-6 text-slate-600">
-            Effective in every modelled year. Current law is read from the installed engine for
-            the first year. Residential property gains take the same rates, and the annual exempt{" "}
-            <SourceLink href={EXEMPT_AMOUNT}>amount</SourceLink> stays £3,000.
-          </p>
-          <ScheduleRates metadata={result.metadata} />
-        </div>
-      </Card>
-
       <div className="grid gap-6 lg:grid-cols-2">
         <Card className="flex min-w-0 flex-col">
           <SectionHeading
@@ -367,5 +350,28 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
 
       {matchedRow ? <ReadyReckonerPanel row={matchedRow} result={result} onNavigate={onNavigate} /> : null}
     </>
+  );
+}
+
+// A live run's full schedule, folded: it sits in the "Choose a reform"
+// panel under the one-line summary once the run's results show.
+export function ScheduleSpec({ result }) {
+  return (
+    <details className="group">
+      <summary className={SPEC_SUMMARY}>
+        What does this schedule change?
+        <span className="ml-2 text-sm font-normal text-slate-500 group-open:hidden">
+          (expand for the full specification)
+        </span>
+      </summary>
+      <div className="mt-4 space-y-3">
+        <p className="text-sm leading-6 text-slate-600">
+          Effective in every modelled year. Current law is read from the installed engine for
+          the first year. Residential property gains take the same rates, and the annual exempt{" "}
+          <SourceLink href={EXEMPT_AMOUNT}>amount</SourceLink> stays £3,000.
+        </p>
+        <ScheduleRates metadata={result.metadata} />
+      </div>
+    </details>
   );
 }

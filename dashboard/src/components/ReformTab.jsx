@@ -14,8 +14,8 @@ import {
   precomputedSchedule,
   scheduleParams,
 } from "../lib/schedule";
-import EqualisationResults from "./EqualisationResults";
-import LiveResults, { StatusLine } from "./LiveResults";
+import EqualisationResults, { EqualisationSpec } from "./EqualisationResults";
+import LiveResults, { ScheduleSpec, StatusLine } from "./LiveResults";
 import ScheduleForm from "./ScheduleForm";
 import SectionHeading from "./SectionHeading";
 import { Card, Pill, TEXT_BUTTON, TabLink, cardClass } from "./controls";
@@ -361,6 +361,13 @@ export default function ReformTab({ data, datasetKey, onNavigate, anchor }) {
                   about={about}
                 />
               )}
+              {/* The specification of the results shown, folded, under the
+                  one-line summary. */}
+              {collapsed && hasResults ? (
+                <div className="mt-5 border-t border-slate-200 pt-4">
+                  {shown === "precomputed" ? <EqualisationSpec data={data} /> : <ScheduleSpec result={result} />}
+                </div>
+              ) : null}
             </div>
             {shown === "live" ? (
               <StatusLine status={status} error={error} />

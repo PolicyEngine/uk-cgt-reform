@@ -68,8 +68,6 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
   const headlineGroups = getIncomeChangeGroups(data, headlineYear);
   const sensitivity = getSensitivity(data);
   const { central, official, centax_range: centaxRange } = getBenchmarks(data).elasticities;
-  const reform = getReform(data);
-  const schedules = getReformSchedules(data);
   const validation = getValidation(data);
   const dataset = getDatasetInfo(data);
   const entrants = getEntrants(data);
@@ -77,7 +75,6 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
   const headlineRow = getBudgetRow(data, headlineYear);
   const entrantShareOfChange =
     headlineRow.cgt_change_from_entrants_bn / headlineRow.gov_balance_change_bn;
-  const recorded = (gains) => (gains > 0 ? "" : ` ${dataset.shortLabel} records no such gains, so this line is inert here.`);
   const deciles = headlineGroups.decile;
   const topDecile = deciles?.at(-1);
   // Deciles hold equal numbers of households, so the top decile's share of
@@ -132,48 +129,6 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
               note="Households in the top income decile whose net income falls."
             />
           ) : null}
-        </div>
-      </Card>
-
-      <Card as="details" className="group">
-        <summary className="cursor-pointer select-none text-xl font-semibold tracking-tight text-slate-900 marker:text-[color:var(--pe-color-primary-600)]">
-          What does the reform change?
-          <span className="ml-2 text-sm font-normal text-slate-500 group-open:hidden">
-            (expand for the full specification)
-          </span>
-        </summary>
-        <div className="mt-4 space-y-3">
-          <p className="text-sm leading-6 text-slate-600">
-            Effective in every modelled year. All results on
-            this page compare this reform with current policy on the same baseline. The reformed
-            rates are the income tax rates on earnings; from April 2027 savings and property{" "}
-            <SourceLink href={SAVINGS_PROPERTY_RATES}>income</SourceLink> face 22%, 42% and 47% (the
-            property rates in England, Wales and Northern Ireland), and Scottish taxpayers&apos;
-            earnings face Scotland&apos;s own <SourceLink href={SCOTTISH_INCOME_TAX}>bands</SourceLink>,
-            which the reform does not follow. Residential property gains take the same rates, and the annual exempt{" "}
-            <SourceLink href={EXEMPT_AMOUNT}>amount</SourceLink> stays £3,000.
-            {recorded(validation.residential_property_gains_bn)}
-          </p>
-          <RateChangeChart
-            rows={[
-              { key: "basic", label: "Basic rate", baseline: reform.basic_rate.baseline, reform: reform.basic_rate.reform },
-              { key: "higher", label: "Higher rate", baseline: reform.higher_rate.baseline, reform: reform.higher_rate.reform },
-              {
-                key: "additional",
-                label: "Additional rate (income over £125,140)",
-                baseline: reform.additional_rate.baseline,
-                reform: reform.additional_rate.reform,
-              },
-              {
-                key: "badr",
-                label: "Business Asset Disposal Relief",
-                baseline: BASELINE_SCHEDULE_RATES.badr.rate,
-                reform: schedules.badr.withdrawn ? null : schedules.badr.rate,
-                baselineNote: `${badrLimitLabel(BASELINE_SCHEDULE_RATES.badr.lifetime_limit)} lifetime limit`,
-                reformNote: schedules.badr.withdrawn ? "gains pay the main rates" : undefined,
-              },
-            ]}
-          />
         </div>
       </Card>
 
@@ -325,5 +280,62 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
           </Notes>
         </Card>
     </div>
+  );
+}
+
+// The class of the specification's summary line, shared with a live run's.
+export const SPEC_SUMMARY =
+  "cursor-pointer select-none text-base font-semibold tracking-tight text-slate-900 marker:text-[color:var(--pe-color-primary-600)]";
+
+// The precomputed reform's full specification, folded: it sits in the
+// "Choose a reform" panel under the one-line summary once results show.
+export function EqualisationSpec({ data }) {
+  const reform = getReform(data);
+  const schedules = getReformSchedules(data);
+  const validation = getValidation(data);
+  const dataset = getDatasetInfo(data);
+  const recorded = (gains) => (gains > 0 ? "" : ` ${dataset.shortLabel} records no such gains, so this line is inert here.`);
+  return (
+    <details className="group">
+      <summary className={SPEC_SUMMARY}>
+        What does the reform change?
+        <span className="ml-2 text-sm font-normal text-slate-500 group-open:hidden">
+          (expand for the full specification)
+        </span>
+      </summary>
+      <div className="mt-4 space-y-3">
+        <p className="text-sm leading-6 text-slate-600">
+          Effective in every modelled year. All results on
+          this page compare this reform with current policy on the same baseline. The reformed
+          rates are the income tax rates on earnings; from April 2027 savings and property{" "}
+          <SourceLink href={SAVINGS_PROPERTY_RATES}>income</SourceLink> face 22%, 42% and 47% (the
+          property rates in England, Wales and Northern Ireland), and Scottish taxpayers&apos;
+          earnings face Scotland&apos;s own <SourceLink href={SCOTTISH_INCOME_TAX}>bands</SourceLink>,
+          which the reform does not follow. Residential property gains take the same rates, and the annual exempt{" "}
+          <SourceLink href={EXEMPT_AMOUNT}>amount</SourceLink> stays £3,000.
+          {recorded(validation.residential_property_gains_bn)}
+        </p>
+        <RateChangeChart
+          rows={[
+            { key: "basic", label: "Basic rate", baseline: reform.basic_rate.baseline, reform: reform.basic_rate.reform },
+            { key: "higher", label: "Higher rate", baseline: reform.higher_rate.baseline, reform: reform.higher_rate.reform },
+            {
+              key: "additional",
+              label: "Additional rate (income over £125,140)",
+              baseline: reform.additional_rate.baseline,
+              reform: reform.additional_rate.reform,
+            },
+            {
+              key: "badr",
+              label: "Business Asset Disposal Relief",
+              baseline: BASELINE_SCHEDULE_RATES.badr.rate,
+              reform: schedules.badr.withdrawn ? null : schedules.badr.rate,
+              baselineNote: `${badrLimitLabel(BASELINE_SCHEDULE_RATES.badr.lifetime_limit)} lifetime limit`,
+              reformNote: schedules.badr.withdrawn ? "gains pay the main rates" : undefined,
+            },
+          ]}
+        />
+      </div>
+    </details>
   );
 }
