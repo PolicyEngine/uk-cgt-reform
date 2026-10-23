@@ -391,7 +391,7 @@ def test_assemble_response_has_the_pipeline_shapes():
     assert [row["year"] for row in result["budget"]] == labels
     assert list(result["income_change_groups"]) == labels
     assert set(result["income_change_groups"][labels[0]]) == {
-        "quintile",
+        "decile",
         "quartile",
         "household_type",
         "region",

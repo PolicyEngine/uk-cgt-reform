@@ -355,36 +355,66 @@
   ],
   "income_change_groups": {
     "2026-27": {
-      "quintile": [
+      "decile": [
         {
-          "group": "Lowest 20%",
-          "avg_change_gbp": -7.512727889666502,
-          "relative_change_pct": -0.03633057591342485,
-          "share_affected_pct": 0.31803241369422847
+          "group": "Lowest 10%",
+          "avg_change_gbp": -11.766658070746246,
+          "relative_change_pct": -0.07975625834663704,
+          "share_affected_pct": 0.3951640648404748
         },
         {
-          "group": "20\u201340%",
-          "avg_change_gbp": -7.57683840832082,
-          "relative_change_pct": -0.01970550516676737,
-          "share_affected_pct": 0.3630382736744801
+          "group": "10\u201320%",
+          "avg_change_gbp": -3.2627511982332416,
+          "relative_change_pct": -0.012266523927928753,
+          "share_affected_pct": 0.24097244665450068
         },
         {
-          "group": "40\u201360%",
-          "avg_change_gbp": -12.94134975733708,
-          "relative_change_pct": -0.02417675762725525,
-          "share_affected_pct": 0.6778168513376764
+          "group": "20\u201330%",
+          "avg_change_gbp": -1.2943092120950164,
+          "relative_change_pct": -0.0037300840446603304,
+          "share_affected_pct": 0.36742186303527924
         },
         {
-          "group": "60\u201380%",
-          "avg_change_gbp": -54.72487072317588,
-          "relative_change_pct": -0.07615625429559944,
-          "share_affected_pct": 1.5163985416750227
+          "group": "30\u201340%",
+          "avg_change_gbp": -13.83642048436759,
+          "relative_change_pct": -0.032797185260826214,
+          "share_affected_pct": 0.35867069550101266
         },
         {
-          "group": "Highest 20%",
-          "avg_change_gbp": -7703.43793493646,
-          "relative_change_pct": -5.404298657900735,
-          "share_affected_pct": 6.823064622251716
+          "group": "40\u201350%",
+          "avg_change_gbp": -4.7235932658139115,
+          "relative_change_pct": -0.009574255339897841,
+          "share_affected_pct": 0.37958583015998465
+        },
+        {
+          "group": "50\u201360%",
+          "avg_change_gbp": -21.160992521829503,
+          "relative_change_pct": -0.03666102304260208,
+          "share_affected_pct": 0.9761163273441799
+        },
+        {
+          "group": "60\u201370%",
+          "avg_change_gbp": -35.356244417792254,
+          "relative_change_pct": -0.05314316257370074,
+          "share_affected_pct": 1.1149939301768415
+        },
+        {
+          "group": "70\u201380%",
+          "avg_change_gbp": -74.06295321826703,
+          "relative_change_pct": -0.09596288241568814,
+          "share_affected_pct": 1.9171701487406319
+        },
+        {
+          "group": "80\u201390%",
+          "avg_change_gbp": -200.00002718586947,
+          "relative_change_pct": -0.21211920126404127,
+          "share_affected_pct": 2.6220951381309465
+        },
+        {
+          "group": "Highest 10%",
+          "avg_change_gbp": -15106.116786094482,
+          "relative_change_pct": -7.944276219524466,
+          "share_affected_pct": 10.967621868782441
         }
       ],
       "quartile": [
@@ -509,36 +539,66 @@
       ]
     },
     "2027-28": {
-      "quintile": [
+      "decile": [
         {
-          "group": "Lowest 20%",
-          "avg_change_gbp": -7.906401848458165,
-          "relative_change_pct": -0.03806762500251696,
-          "share_affected_pct": 0.31681837998832946
+          "group": "Lowest 10%",
+          "avg_change_gbp": -12.221379973771876,
+          "relative_change_pct": -0.08318321933871241,
+          "share_affected_pct": 0.39458917657844167
         },
         {
-          "group": "20\u201340%",
-          "avg_change_gbp": -7.938962483306924,
-          "relative_change_pct": -0.020383303435879376,
-          "share_affected_pct": 0.3795083925770091
+          "group": "10\u201320%",
+          "avg_change_gbp": -3.584224219624198,
+          "relative_change_pct": -0.01334571752972089,
+          "share_affected_pct": 0.2389178234996585
         },
         {
-          "group": "40\u201360%",
-          "avg_change_gbp": -13.376572971420194,
-          "relative_change_pct": -0.024646075720244465,
-          "share_affected_pct": 0.6113548683859794
+          "group": "20\u201330%",
+          "avg_change_gbp": -1.6333946884673562,
+          "relative_change_pct": -0.004649206432692124,
+          "share_affected_pct": 0.3730904547582509
         },
         {
-          "group": "60\u201380%",
-          "avg_change_gbp": -56.57637810959535,
-          "relative_change_pct": -0.07752922086088272,
-          "share_affected_pct": 1.5578414539761296
+          "group": "30\u201340%",
+          "avg_change_gbp": -14.217078675737527,
+          "relative_change_pct": -0.033258389001063954,
+          "share_affected_pct": 0.38589838958488093
         },
         {
-          "group": "Highest 20%",
-          "avg_change_gbp": -7959.2951972841665,
-          "relative_change_pct": -5.47828415474027,
-          "share_affected_pct": 6.8438882324113965
+          "group": "40\u201350%",
+          "avg_change_gbp": -6.015009537821317,
+          "relative_change_pct": -0.012028855139794433,
+          "share_affected_pct": 0.42021716300854745
+        },
+        {
+          "group": "50\u201360%",
+          "avg_change_gbp": -20.707737569769712,
+          "relative_change_pct": -0.03538160674886981,
+          "share_affected_pct": 0.8017032898472816
+        },
+        {
+          "group": "60\u201370%",
+          "avg_change_gbp": -40.88856706560047,
+          "relative_change_pct": -0.06055276749437565,
+          "share_affected_pct": 1.2997219580476478
+        },
+        {
+          "group": "70\u201380%",
+          "avg_change_gbp": -72.09459874585325,
+          "relative_change_pct": -0.09199951030472313,
+          "share_affected_pct": 1.8131705930832158
+        },
+        {
+          "group": "80\u201390%",
+          "avg_change_gbp": -209.95251576903703,
+          "relative_change_pct": -0.2190360680088445,
+          "share_affected_pct": 2.627021188630321
+        },
+        {
+          "group": "Highest 10%",
+          "avg_change_gbp": -15666.65087286264,
+          "relative_change_pct": -8.056679975294442,
+          "share_affected_pct": 11.03790770977582
         }
       ],
       "quartile": [
@@ -663,36 +723,66 @@
       ]
     },
     "2028-29": {
-      "quintile": [
+      "decile": [
         {
-          "group": "Lowest 20%",
-          "avg_change_gbp": -8.39260997154504,
-          "relative_change_pct": -0.04014517422029791,
-          "share_affected_pct": 0.3126636949834825
+          "group": "Lowest 10%",
+          "avg_change_gbp": -12.98699720684118,
+          "relative_change_pct": -0.0890100847945123,
+          "share_affected_pct": 0.3970408084125157
         },
         {
-          "group": "20\u201340%",
-          "avg_change_gbp": -8.41981390466213,
-          "relative_change_pct": -0.021328721661711743,
-          "share_affected_pct": 0.3935766876328025
+          "group": "10\u201320%",
+          "avg_change_gbp": -3.819317360078775,
+          "relative_change_pct": -0.014045827913985431,
+          "share_affected_pct": 0.22867398979334622
         },
         {
-          "group": "40\u201360%",
-          "avg_change_gbp": -13.235637448033803,
-          "relative_change_pct": -0.024056543453523024,
-          "share_affected_pct": 0.5867359405362392
+          "group": "20\u201330%",
+          "avg_change_gbp": -1.7842040185129344,
+          "relative_change_pct": -0.005007977431314754,
+          "share_affected_pct": 0.3917078593289291
         },
         {
-          "group": "60\u201380%",
-          "avg_change_gbp": -57.81462614700484,
-          "relative_change_pct": -0.07810009463719293,
-          "share_affected_pct": 1.5233015669695016
+          "group": "30\u201340%",
+          "avg_change_gbp": -15.02456987003146,
+          "relative_change_pct": -0.03469261637181317,
+          "share_affected_pct": 0.395436826354041
         },
         {
-          "group": "Highest 20%",
-          "avg_change_gbp": -8212.958595717279,
-          "relative_change_pct": -5.554035028104623,
-          "share_affected_pct": 6.906099930637513
+          "group": "40\u201350%",
+          "avg_change_gbp": -9.965766008559717,
+          "relative_change_pct": -0.019670540375816788,
+          "share_affected_pct": 0.40569516145455375
+        },
+        {
+          "group": "50\u201360%",
+          "avg_change_gbp": -16.497310233752835,
+          "relative_change_pct": -0.027790370872193135,
+          "share_affected_pct": 0.7673227902538164
+        },
+        {
+          "group": "60\u201370%",
+          "avg_change_gbp": -45.0436989439682,
+          "relative_change_pct": -0.06576593006562424,
+          "share_affected_pct": 1.3665135531514125
+        },
+        {
+          "group": "70\u201380%",
+          "avg_change_gbp": -70.47891250988447,
+          "relative_change_pct": -0.08863545503706567,
+          "share_affected_pct": 1.6787803566996062
+        },
+        {
+          "group": "80\u201390%",
+          "avg_change_gbp": -219.93777841282932,
+          "relative_change_pct": -0.22610288836258827,
+          "share_affected_pct": 2.711059419924901
+        },
+        {
+          "group": "Highest 10%",
+          "avg_change_gbp": -16209.43521457325,
+          "relative_change_pct": -8.166126278856394,
+          "share_affected_pct": 11.102954177087462
         }
       ],
       "quartile": [
@@ -817,36 +907,66 @@
       ]
     },
     "2029-30": {
-      "quintile": [
+      "decile": [
         {
-          "group": "Lowest 20%",
-          "avg_change_gbp": -8.771276300835577,
-          "relative_change_pct": -0.041499484025751904,
-          "share_affected_pct": 0.31103855026612715
+          "group": "Lowest 10%",
+          "avg_change_gbp": -13.45607567747005,
+          "relative_change_pct": -0.09160029732727995,
+          "share_affected_pct": 0.39665589613521823
         },
         {
-          "group": "20\u201340%",
-          "avg_change_gbp": -9.120796738187632,
-          "relative_change_pct": -0.022772355175479972,
-          "share_affected_pct": 0.3966114185542817
+          "group": "10\u201320%",
+          "avg_change_gbp": -4.085690663548053,
+          "relative_change_pct": -0.014812443377616244,
+          "share_affected_pct": 0.22540683504098394
         },
         {
-          "group": "40\u201360%",
-          "avg_change_gbp": -13.392399344525476,
-          "relative_change_pct": -0.023992082196336223,
-          "share_affected_pct": 0.5767372215168597
+          "group": "20\u201330%",
+          "avg_change_gbp": -1.888239581998287,
+          "relative_change_pct": -0.00522049922993781,
+          "share_affected_pct": 0.39907784537235125
         },
         {
-          "group": "60\u201380%",
-          "avg_change_gbp": -61.5156511269796,
-          "relative_change_pct": -0.08192966116188384,
-          "share_affected_pct": 1.5383037904137817
+          "group": "30\u201340%",
+          "avg_change_gbp": -16.357592095714214,
+          "relative_change_pct": -0.03722992571755937,
+          "share_affected_pct": 0.3941435464364085
         },
         {
-          "group": "Highest 20%",
-          "avg_change_gbp": -8460.859799987351,
-          "relative_change_pct": -5.62868644560984,
-          "share_affected_pct": 6.906283061038845
+          "group": "40\u201350%",
+          "avg_change_gbp": -9.99569520038247,
+          "relative_change_pct": -0.019443157870155655,
+          "share_affected_pct": 0.40074029974299297
+        },
+        {
+          "group": "50\u201360%",
+          "avg_change_gbp": -16.79066748820361,
+          "relative_change_pct": -0.027876491539931148,
+          "share_affected_pct": 0.7528151804055759
+        },
+        {
+          "group": "60\u201370%",
+          "avg_change_gbp": -46.132905680068006,
+          "relative_change_pct": -0.06641944466593692,
+          "share_affected_pct": 1.3563315456161462
+        },
+        {
+          "group": "70\u201380%",
+          "avg_change_gbp": -76.87453816958043,
+          "relative_change_pct": -0.09525807980163742,
+          "share_affected_pct": 1.7199937990264196
+        },
+        {
+          "group": "80\u201390%",
+          "avg_change_gbp": -230.3737723639346,
+          "relative_change_pct": -0.23372089579445823,
+          "share_affected_pct": 2.6848530366576915
+        },
+        {
+          "group": "Highest 10%",
+          "avg_change_gbp": -16684.278434276843,
+          "relative_change_pct": -8.258676543544325,
+          "share_affected_pct": 11.12408820758
         }
       ],
       "quartile": [
@@ -971,36 +1091,66 @@
       ]
     },
     "2030-31": {
-      "quintile": [
+      "decile": [
         {
-          "group": "Lowest 20%",
-          "avg_change_gbp": -9.354378263779216,
-          "relative_change_pct": -0.04414865702959952,
-          "share_affected_pct": 0.31180312846092995
+          "group": "Lowest 10%",
+          "avg_change_gbp": -14.288863789042829,
+          "relative_change_pct": -0.09738909762066823,
+          "share_affected_pct": 0.396992073895081
         },
         {
-          "group": "20\u201340%",
-          "avg_change_gbp": -8.525174631286411,
-          "relative_change_pct": -0.02103336288433105,
-          "share_affected_pct": 0.36671997689169944
+          "group": "10\u201320%",
+          "avg_change_gbp": -4.4004133905116225,
+          "relative_change_pct": -0.015868485470819187,
+          "share_affected_pct": 0.22627789161286999
         },
         {
-          "group": "40\u201360%",
-          "avg_change_gbp": -14.86100537065826,
-          "relative_change_pct": -0.02624423667731953,
-          "share_affected_pct": 0.5989925393483672
+          "group": "20\u201330%",
+          "avg_change_gbp": -1.8186527061518822,
+          "relative_change_pct": -0.004972719283864974,
+          "share_affected_pct": 0.39554521947684745
         },
         {
-          "group": "60\u201380%",
-          "avg_change_gbp": -58.742046739440276,
-          "relative_change_pct": -0.07705893228153003,
-          "share_affected_pct": 1.408179355358946
+          "group": "30\u201340%",
+          "avg_change_gbp": -15.2698318105181,
+          "relative_change_pct": -0.034304002111855345,
+          "share_affected_pct": 0.33773082550812084
         },
         {
-          "group": "Highest 20%",
-          "avg_change_gbp": -8745.307221407356,
-          "relative_change_pct": -5.708111043515734,
-          "share_affected_pct": 7.054460899145293
+          "group": "40\u201350%",
+          "avg_change_gbp": -12.081569928095375,
+          "relative_change_pct": -0.02315369857553508,
+          "share_affected_pct": 0.43411901164390926
+        },
+        {
+          "group": "50\u201360%",
+          "avg_change_gbp": -17.65320370367203,
+          "relative_change_pct": -0.02889604173408103,
+          "share_affected_pct": 0.7646231498546486
+        },
+        {
+          "group": "60\u201370%",
+          "avg_change_gbp": -47.32612636711056,
+          "relative_change_pct": -0.06713568209138758,
+          "share_affected_pct": 1.3158604948816959
+        },
+        {
+          "group": "70\u201380%",
+          "avg_change_gbp": -70.17203170387035,
+          "relative_change_pct": -0.08560292296287007,
+          "share_affected_pct": 1.5006119541133944
+        },
+        {
+          "group": "80\u201390%",
+          "avg_change_gbp": -253.5748568312466,
+          "relative_change_pct": -0.2535006972135198,
+          "share_affected_pct": 2.953393491188177
+        },
+        {
+          "group": "Highest 10%",
+          "avg_change_gbp": -17235.292209085364,
+          "relative_change_pct": -8.351376668576533,
+          "share_affected_pct": 11.154684414462066
         }
       ],
       "quartile": [

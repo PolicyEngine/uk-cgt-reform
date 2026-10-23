@@ -12,7 +12,7 @@ from uk_cgt_reform.comparison import (
     ready_reckoner_block,
     static_equalisation_block,
 )
-from uk_cgt_reform.impacts import REGION_NAMES, fiscal_year_label, schedule_split
+from uk_cgt_reform.impacts import QUANTILE_LABELS, REGION_NAMES, fiscal_year_label, schedule_split
 from uk_cgt_reform.reform import (
     YEARS,
     centax_1920_rules,
@@ -202,14 +202,14 @@ def fake_results(spec=CANDIDATE, scale: float = 1.0) -> dict:
         ],
         "income_change_groups": {
             label: {
-                "quintile": [
+                "decile": [
                     {
                         "group": g,
                         "avg_change_gbp": 0.0,
                         "relative_change_pct": 0.0,
                         "share_affected_pct": 0.0,
                     }
-                    for g in ["Lowest 20%", "20–40%", "40–60%", "60–80%", "Highest 20%"]
+                    for g in QUANTILE_LABELS[10]
                 ],
                 "quartile": [
                     {
@@ -302,8 +302,9 @@ def test_income_change_groups_keyed_by_fiscal_year():
     groups = fake_results()["income_change_groups"]
     assert set(groups) == {"2026-27", "2027-28", "2028-29", "2029-30", "2030-31"}
     year = groups["2026-27"]
-    assert set(year) == {"quintile", "quartile", "household_type", "region"}
-    assert set(year["quintile"][0]) == {
+    assert set(year) == {"decile", "quartile", "household_type", "region"}
+    assert len(year["decile"]) == 10
+    assert set(year["decile"][0]) == {
         "group",
         "avg_change_gbp",
         "relative_change_pct",

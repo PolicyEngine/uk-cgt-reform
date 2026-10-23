@@ -129,9 +129,9 @@ def print_headline(result: dict) -> None:
         )
     print(f"  Five-year total: {result['five_year_total_bn']:+.2f}bn")
     first = result["budget"][0]["year"]
-    top = result["income_change_groups"][first]["quintile"][-1]
+    top = result["income_change_groups"][first]["decile"][-1]
     print(
-        f"  Top quintile, {first}: {top['relative_change_pct']:+.2f}% "
+        f"  Top income decile, {first}: {top['relative_change_pct']:+.2f}% "
         f"({top['avg_change_gbp']:+,.0f} per household)"
     )
     timing = md.get("timing", {})

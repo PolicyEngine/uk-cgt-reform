@@ -77,11 +77,13 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
   const entrantShareOfChange =
     firstYearRow.cgt_change_from_entrants_bn / firstYearRow.gov_balance_change_bn;
   const recorded = (gains) => (gains > 0 ? "" : ` ${dataset.shortLabel} records no such gains, so this line is inert here.`);
-  const topQuintile = headlineGroups.quintile[headlineGroups.quintile.length - 1];
-  // Quintiles hold equal numbers of households, so the top fifth's share of
-  // the total fall is its average over the sum of the five averages.
-  const topShare =
-    topQuintile.avg_change_gbp / headlineGroups.quintile.reduce((sum, group) => sum + group.avg_change_gbp, 0);
+  const deciles = headlineGroups.decile;
+  const topDecile = deciles?.at(-1);
+  // Deciles hold equal numbers of households, so the top decile's share of
+  // the total fall is its average over the sum of the ten averages.
+  const topShare = topDecile
+    ? topDecile.avg_change_gbp / deciles.reduce((sum, group) => sum + group.avg_change_gbp, 0)
+    : null;
   const split = getScheduleSplit(data);
   // Equalisation with the relief kept: the step before it is withdrawn.
   const keptRelief = split.steps.find((row) => row.step === "residential");
@@ -109,23 +111,25 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
             </>
           }
         />
-        <div className={`grid gap-4 ${topQuintile.share_affected_pct !== undefined ? "md:grid-cols-3" : "md:grid-cols-2"}`}>
+        <div className={`grid gap-4 ${topDecile?.share_affected_pct !== undefined ? "md:grid-cols-3" : "md:grid-cols-2"}`}>
           <MetricCard
             label="Change in government balance"
             value={formatSignedBn(firstYearRow.gov_balance_change_bn, 1)}
             note="After taxpayers realise fewer gains."
             tip={`Across the behavioural cases in the sensitivity chart, the first-year change in CGT revenue runs from ${formatSignedBn(lowest.revenue_2026_bn, 1)} at ${caseName(lowest)} to ${formatSignedBn(highest.revenue_2026_bn, 1)} at ${caseName(highest)}.`}
           />
-          <MetricCard
-            label="Top fifth of households: average change in net income"
-            value={formatSignedCurrency(topQuintile.avg_change_gbp)}
-            note={`${formatSignedPct(topQuintile.relative_change_pct)} of net income; ${formatPct(100 * topShare, 0)} of the total fall in household income.`}
-          />
-          {topQuintile.share_affected_pct !== undefined ? (
+          {topDecile ? (
             <MetricCard
-              label="Top fifth of households: share with lower net income"
-              value={formatPct(topQuintile.share_affected_pct, 1)}
-              note="Households in the top fifth whose net income falls."
+              label="Top income decile: average change in net income"
+              value={formatSignedCurrency(topDecile.avg_change_gbp)}
+              note={`${formatSignedPct(topDecile.relative_change_pct)} of net income; ${formatPct(100 * topShare, 0)} of the total fall in household income.`}
+            />
+          ) : null}
+          {topDecile?.share_affected_pct !== undefined ? (
+            <MetricCard
+              label="Top income decile: share with lower net income"
+              value={formatPct(topDecile.share_affected_pct, 1)}
+              note="Households in the top income decile whose net income falls."
             />
           ) : null}
         </div>

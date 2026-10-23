@@ -115,8 +115,8 @@ fingerprint `fc5e9a879bce`.
 | Yield, CenTax upper (retention 2.0) | −£0.8bn | none |
 | Yield, official HMRC/OBR elasticities (retention 3.6; 1.4 for gains qualifying for BADR) | −£9.6bn | none |
 | Five-year total, 2026-27 to 2030-31 | +£56.3bn | none |
-| Top income quintile, net income change | −5.4% (−£7,703/household) | none |
-| Lowest income quintile, net income change | −0.04% (−£8) | none |
+| Top income decile, net income change | −7.9% (−£15,106/household) | none |
+| Bottom income decile, net income change | −0.08% (−£12) | none |
 
 Benchmarks are outturns for the tax year stated (HMRC Capital Gains Tax
 statistics, 2026 release, Tables 1, 2 and 8) or other institutions'
@@ -275,7 +275,7 @@ Left out by decision: the Office of Tax Simplification's 2020 static figure
   carry a digest of the reform definition, so a dataset, engine or reform
   change cannot reuse a stale output.
 - Distributional outputs group the change in household net income by
-  weighted baseline-income quintile and quartile, by household type and by
+  weighted baseline-income decile and quartile, by household type and by
   region (the engine's `region` enum, present in every UK dataset).
   Aggregates are computed from the simulations' output datasets with
   **native microdf weighted operations** (`MicroSeries.sum/mean/median/count`,
