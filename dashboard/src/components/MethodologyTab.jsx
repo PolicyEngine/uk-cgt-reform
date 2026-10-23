@@ -433,6 +433,8 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
 
         <Topic title="What the model leaves out" id="not-modelled">
           <ul className="list-disc space-y-1 pl-5">
+            <li>No investment allowance: the full gain is taxed, with no deduction for a normal return.</li>
+            <li>No change to the uplift at death: gains on assets held until death stay untaxed.</li>
             <li>No exit charge: gains are not taxed when people leave the UK.</li>
             <li>
               No migration response: the number and mix of taxpayers do not change with the

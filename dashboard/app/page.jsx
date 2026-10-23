@@ -14,6 +14,8 @@ import results from "../public/data/cgt_equalisation_results.json";
 
 const LINK = "underline decoration-1 underline-offset-2 hover:opacity-80";
 const BOLD = "font-semibold text-slate-900";
+const CENTAX_REPORT =
+  "https://centax.org.uk/wp-content/uploads/2024/10/AdvaniLonsdaleSummers2024_CGTReform.pdf";
 
 const TAB_OPTIONS = [
   { id: "reform", label: "Reform" },
@@ -96,6 +98,19 @@ function Dashboard() {
             <a href="https://www.gov.uk/business-asset-disposal-relief" target="_blank" rel="noopener noreferrer" className={LINK}>Relief</a>, has been{" "}
             <a href="https://ifs.org.uk/sites/default/files/2024-10/Captial-gains-tax-reform.pdf" target="_blank" rel="noopener noreferrer" className={LINK}>debated</a>{" "}
             in the UK; a <strong className={BOLD}>custom option</strong> scores any other set of rates.
+          </p>
+          <p className="mt-4 text-lg leading-8 text-slate-800">
+            It models the <strong className={BOLD}>rate changes only</strong>, with fewer gains
+            realised as rates rise. It does not model the measures{" "}
+            <a href={CENTAX_REPORT} target="_blank" rel="noopener noreferrer" className={LINK}>CenTax</a>{" "}
+            pair with equal rates: an <strong className={BOLD}>investment allowance</strong>, ending
+            the <strong className={BOLD}>uplift at death</strong> and an{" "}
+            <strong className={BOLD}>exit tax</strong> on people leaving the UK. Nor does it model
+            people <strong className={BOLD}>moving</strong> into or out of the UK; the{" "}
+            <button type="button" onClick={() => handleNavigate("methodology", "not-modelled")} className={`inline font-normal text-[color:var(--pe-color-primary-700)] ${LINK}`}>
+              Methodology
+            </button>{" "}
+            tab has the details.
           </p>
         </div>
 
