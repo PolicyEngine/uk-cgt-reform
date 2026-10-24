@@ -332,9 +332,19 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
                 <TabLink onNavigate={onNavigate} tab="baseline" section="benchmarks">
                   Baseline
                 </TabLink>{" "}
-                tab shows the claimants and gains beside HMRC&apos;s. In later years, gains that grow
-                but stay under £1m are not checked against earlier claims; this overstates baseline
-                relief by at most about £0.1bn of CGT a year.
+                tab shows the claimants and gains beside HMRC&apos;s. HMRC and the{" "}
+                <ExternalLink href="https://obr.uk/docs/dlm_uploads/CGT-supplementary-release-Jan-2025.pdf">OBR</ExternalLink>{" "}
+                also cost the relief from returns, without each person&apos;s history. In later years
+                two small effects pull in opposite directions: gains that grow past £1m pay the main
+                rates on the excess, and gains below it are not checked against earlier claims.
+                Together they move baseline CGT by about £0.05bn a year or less.
+              </li>
+              <li>
+                <strong className="font-semibold text-slate-800">2024-25 claims.</strong> Claims
+                rose in 2024-25, before the relief&apos;s rate went up from April 2025, as some
+                business owners sold earlier. The model carries 2024-25&apos;s level of qualifying
+                gains into later years, so it may overstate those gains, and the yield from
+                withdrawing the relief, in 2027-28 onwards.
               </li>
               <li>
                 <strong className="font-semibold text-slate-800">Investors&apos; Relief.</strong>{" "}
