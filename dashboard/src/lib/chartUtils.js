@@ -45,3 +45,22 @@ export function getTickDomain(ticks) {
 
   return [ticks[0], ticks[ticks.length - 1]];
 }
+
+// Nice ticks over `values` with £0 always on the axis, as the household
+// chart has: an all-negative series grows down from £0, an all-positive one
+// up from it.
+export function getZeroBasedTicks(values, count = 5) {
+  const finite = values.map(Number).filter(Number.isFinite);
+  const ticks = getNiceTicks([Math.min(0, ...finite), Math.max(0, ...finite)], count);
+  return { ticks, domain: getTickDomain(ticks) };
+}
+
+// The fewest decimals (up to 3) that print every tick exactly, so a step
+// of 2.5 or 0.5 never prints two ticks with the same label.
+export function getTickDecimals(ticks) {
+  for (let decimals = 0; decimals < 3; decimals += 1) {
+    const factor = 10 ** decimals;
+    if (ticks.every((tick) => Math.abs(Math.round(tick * factor) / factor - tick) < 1e-9)) return decimals;
+  }
+  return 3;
+}

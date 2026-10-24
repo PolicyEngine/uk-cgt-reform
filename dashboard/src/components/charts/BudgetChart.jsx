@@ -10,6 +10,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { getTickDecimals, getZeroBasedTicks } from "../../lib/chartUtils";
 import { colors } from "../../lib/colors";
 import { formatSignedBn } from "../../lib/formatters";
 import ChartLogo from "../ChartLogo";
@@ -26,6 +27,11 @@ const AXIS_STYLE = { fontSize: 12, fill: colors.gray[500] };
 // so a two-column card can line them up with its neighbour's.
 export default function BudgetChart({ budget, title, description }) {
   const [budgetView, setBudgetView] = useState("change");
+  // £0 is always on the axis, so bars grow from it whatever their sign, on
+  // round ticks printed to the decimals that keep each label distinct.
+  const keys = budgetView === "levels" ? ["baseline_cgt_bn", "reform_cgt_bn"] : ["gov_balance_change_bn"];
+  const { ticks, domain } = getZeroBasedTicks(budget.flatMap((row) => keys.map((key) => row[key])), 5);
+  const decimals = getTickDecimals(ticks);
   return (
     <>
       <SectionHeading
@@ -56,7 +62,9 @@ export default function BudgetChart({ budget, title, description }) {
             />
             <YAxis
               tick={AXIS_STYLE}
-              tickFormatter={(v) => formatSignedBn(v, 0)}
+              domain={domain}
+              ticks={ticks}
+              tickFormatter={(v) => (v === 0 ? "£0" : formatSignedBn(v, decimals))}
               tickLine={false}
               axisLine={false}
               width={72}
