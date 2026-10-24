@@ -639,7 +639,41 @@ def elasticities_block() -> dict:
     }
 
 
-def benchmarks_block(*, static_equalisation: dict, regional: dict, ready_reckoner: dict) -> dict:
+# PolicyEngine's runs beside CenTax's package figures: the equalisation
+# reform (equal rates, the relief withdrawn) in each year CenTax report, at
+# each elasticity they state; the 2026 report states none, so the central
+# 1.0. 2025-26 and 2026-27 lie outside the modelled window and are scored
+# for this comparison only; 2029-30 at 1.0 is the window's central run.
+PACKAGE_MODEL_RUNS = {
+    2025: ("centax_2024_table6_package_range", (0.5, 1.0, 1.5, 2.0)),
+    2026: ("centax_2025_technical_note_package", (1.0,)),
+    2029: ("centax_2026_taxes_at_the_top_package", (1.0,)),
+}
+PACKAGE_MODEL_MEASURE = (
+    "Change in CGT revenue, £bn, on this repo's own liabilities in the year, nominal: "
+    "equal rates and the relief withdrawn only, after the behavioural response at the "
+    "elasticity shown. CenTax's figures are the change in CGT revenue from their whole "
+    "package, a percentage applied to the OBR's CGT forecast."
+)
+
+
+def package_model_block(rows: list[dict]) -> dict:
+    """PolicyEngine's rates-only estimate beside each CenTax package figure:
+    ``rows`` of ``{year, elasticity, cgt_change_bn, source_id}``."""
+    ids = {row["id"] for row in CENTAX_PACKAGE_CONTEXT}
+    missing = [row["source_id"] for row in rows if row["source_id"] not in ids]
+    if missing:
+        raise ValueError(f"package rows name unknown CenTax figures: {missing}")
+    return {"measure": PACKAGE_MODEL_MEASURE, "rows": [dict(row) for row in rows]}
+
+
+def benchmarks_block(
+    *,
+    static_equalisation: dict,
+    regional: dict,
+    ready_reckoner: dict,
+    package_model: dict | None = None,
+) -> dict:
     """The results file's ``benchmarks`` block. CenTax's 2019-20 rates-only
     uplift (Table 3) is carried as published, for the regional section's
     notes: the dataset cannot reach 2019-20, so it is not scored here."""
@@ -649,5 +683,6 @@ def benchmarks_block(*, static_equalisation: dict, regional: dict, ready_reckone
         "regional": regional,
         "centax_2019_20": dict(CENTAX_TABLE_3),
         "centax_package_context": [dict(row) for row in CENTAX_PACKAGE_CONTEXT],
+        **({"centax_package_model": package_model} if package_model is not None else {}),
         "ready_reckoner": ready_reckoner,
     }

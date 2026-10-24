@@ -33,12 +33,14 @@ import warnings
 from pathlib import Path
 
 from .comparison import (
+    PACKAGE_MODEL_RUNS,
     READY_RECKONER,
     READY_RECKONER_ELASTICITIES,
     SENSITIVITY_CASES,
     baseline_comparison_block,
     benchmarks_block,
     jrf_comparison_years,
+    package_model_block,
     price_factors,
     ready_reckoner_block,
     reckoner_comparison_years,
@@ -54,10 +56,12 @@ from .impacts import (
     schedule_split,
     sensitivity,
     sensitivity_curve,
+    split_point,
     validation_stats,
 )
 from .reform import (
     BADR_ELASTICITY_BY_CASE,
+    BADR_WITHDRAWN,
     COMPARISON_YEAR,
     ELASTICITY,
     ELASTICITY_PARAMETER,
@@ -68,6 +72,7 @@ from .reform import (
     SENSITIVITY_GRID,
     YEARS,
     comparison_rate_reforms,
+    dated,
     elasticity_convention,
     equalisation_reform,
     reform_fingerprint,
@@ -270,6 +275,45 @@ def write_uprating_audit(
     return audit
 
 
+def step_simulations(dataset, sim_stem: str, year: int, elasticity: float) -> dict:
+    """The schedule-by-schedule steps of the equalisation reform at
+    ``elasticity`` (one elasticity for every gain), all but the last, which
+    is the reform itself: ``{step: completed simulation}``. Shared by the
+    pipeline and any job that fills the cache ahead of it."""
+    sims = {}
+    for step, _label, reform in schedule_step_reforms(elasticity, single=True)[:-1]:
+        sims[step] = run_simulation(
+            dataset,
+            policy=make_policy(reform, f"step_{step}"),
+            sim_id=step_sim_id(sim_stem, step, elasticity, reform_fingerprint(reform), year),
+        )
+    return sims
+
+
+def package_simulations(spec, folder, sim_stem: str, years: list[int]) -> dict:
+    """The comparison-only runs for CenTax's package years, at CenTax's
+    scope (equal rates, the relief withdrawn): ``{year: {"baseline": sim,
+    elasticity: sim}}`` per :data:`comparison.PACKAGE_MODEL_RUNS`."""
+    datasets = ensure_uk_datasets(spec, years, folder)
+    out = {}
+    for year in years:
+        out[year] = {
+            "baseline": run_simulation(datasets[year], sim_id=f"{sim_stem}_baseline_{year}")
+        }
+        for e in PACKAGE_MODEL_RUNS[year][1]:
+            # CenTax's scope withdraws the relief; a year before the reform
+            # dicts' own start date takes the same values from its own start.
+            reform = equalisation_reform(e, badr=BADR_WITHDRAWN)
+            if f"{year}-01-01" < PERIOD:
+                reform = dated(reform, f"{year}-01-01")
+            out[year][e] = run_simulation(
+                datasets[year],
+                policy=make_policy(reform, equalisation_case(e)),
+                sim_id=equalisation_sim_id(sim_stem, e, reform_fingerprint(reform), year),
+            )
+    return out
+
+
 def run_dataset(
     spec: DatasetSpec,
     audit: dict,
@@ -314,6 +358,19 @@ def run_dataset(
     static_reform = equalisation_reform(0.0)
     static_digest = reform_fingerprint(static_reform)
     static_policy = make_policy(static_reform, equalisation_case(0.0))
+    # The same static reform with the relief withdrawn: JRF's scope, for
+    # that comparison only (``comparison.EQUALISATION_SCOPE``).
+    jrf_static_reform = equalisation_reform(0.0, badr=BADR_WITHDRAWN)
+    jrf_static_digest = reform_fingerprint(jrf_static_reform)
+    jrf_static_policy = make_policy(jrf_static_reform, equalisation_case(0.0))
+    jrf_static_sims = {
+        year: run_simulation(
+            datasets[year],
+            policy=jrf_static_policy,
+            sim_id=equalisation_sim_id(sim_stem, 0.0, jrf_static_digest, year),
+        )
+        for year in YEARS
+    }
     static_sims = {
         year: run_simulation(
             datasets[year],
@@ -342,8 +399,8 @@ def run_dataset(
             )
             cmp_statics[year] = run_simulation(
                 cmp_datasets[year],
-                policy=static_policy,
-                sim_id=equalisation_sim_id(sim_stem, 0.0, static_digest, year),
+                policy=jrf_static_policy,
+                sim_id=equalisation_sim_id(sim_stem, 0.0, jrf_static_digest, year),
             )
         jrf_years = jrf_comparison_years(YEARS)
         comparison_budget = budget_impact(cmp_baselines, cmp_statics, jrf_years, cmp_aea, cmp_ceilings)
@@ -467,6 +524,51 @@ def run_dataset(
                 f"central {row['central_increment_bn']:+.2f}bn"
             )
 
+    # ── Step 3f: the yield by schedule across the sensitivity grid, every
+    # year: each step's increment at every elasticity on the curve; the
+    # last step is the curve's own run ───────────────────────────────────
+    print(f"Step 3f {tag}: The yield by schedule across the grid, every year...")
+    step_ids = [step for step, _label, _reform in schedule_step_reforms(0.0)]
+    for year in YEARS:
+        label = fiscal_year_label(year)
+        run_point = case_runner(year, single=True)
+        points = []
+        for e in SENSITIVITY_GRID:
+            revenues = {
+                step: cgt_revenue(sim)
+                for step, sim in step_simulations(datasets[year], sim_stem, year, e).items()
+            }
+            revenues[step_ids[-1]] = cgt_revenue(run_point(e))
+            points.append(split_point(base_cgt[year], e, step_ids, revenues))
+        # The grid's top edge is the sensitivity curve, point for point.
+        for point, on_curve in zip(points, curve[label]["grid"], strict=True):
+            assert point["elasticity"] == on_curve["elasticity"]
+            assert abs(point["total_bn"] - on_curve["revenue_bn"]) < 1e-9, (label, point)
+        split[label]["grid"] = points
+        print(f"    {label}: {len(points)} points")
+
+    # ── Step 2e: CenTax's package years, PolicyEngine's rates-only estimate
+    # at each elasticity CenTax state, with the relief withdrawn as CenTax's
+    # scope has it; scored for this comparison only ─────────────────────
+    print(f"Step 2e {tag}: CenTax package years {sorted(PACKAGE_MODEL_RUNS)} (rates only)...")
+    pkg_sims = package_simulations(spec, folder, sim_stem, sorted(PACKAGE_MODEL_RUNS))
+    pkg_rows = []
+    for year in sorted(PACKAGE_MODEL_RUNS):
+        source_id, elasticities = PACKAGE_MODEL_RUNS[year]
+        for e in elasticities:
+            runs = pkg_sims[year]
+            change = cgt_revenue(runs[e]) - cgt_revenue(runs["baseline"])
+            pkg_rows.append(
+                {
+                    "year": fiscal_year_label(year),
+                    "elasticity": e,
+                    "cgt_change_bn": change / 1e9,
+                    "source_id": source_id,
+                }
+            )
+            print(f"    {fiscal_year_label(year)} at {e}: {change / 1e9:+.1f}bn")
+    package_model = package_model_block(pkg_rows)
+
     # ── Step 2d: the comparator year, 2024-25: the dataset's own year, no
     # projection. HMRC's statistics are for it, and it stands in for
     # CenTax's 2019-20, which the dataset cannot reach ───────────────────
@@ -536,7 +638,8 @@ def run_dataset(
         )
     five_year_total = sum(r["gov_balance_change_bn"] for r in budget)
     print(f"    Five-year total budgetary impact: £{five_year_total:.1f}bn")
-    static_budget = budget_impact(baseline_sims, static_sims, YEARS, aea, ceilings)
+    # JRF's comparison uses the static reform at JRF's scope (relief withdrawn).
+    static_budget = budget_impact(baseline_sims, jrf_static_sims, YEARS, aea, ceilings)
 
     # ── Step 6: distributional impacts (income quantiles, household type,
     # region), all years ──────────────────────────────────────────────────
@@ -552,11 +655,12 @@ def run_dataset(
         static_equalisation=static_equalisation_block(
             static_budget,
             factors,
-            static_digest,
+            jrf_static_digest,
             cpi["reference"][0]["title"],
             comparison_budget,
         ),
         regional=regional,
+        package_model=package_model,
         ready_reckoner=ready_reckoner,
     )
 

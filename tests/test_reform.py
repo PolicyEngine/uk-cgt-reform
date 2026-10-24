@@ -98,20 +98,19 @@ def test_retention_response_is_the_engines_form():
 # --- the schedules and the relief ---------------------------------------------
 
 
-def test_equalisation_moves_residential_withdraws_the_relief_and_leaves_carried_interest():
+def test_equalisation_moves_residential_keeps_the_relief_and_leaves_carried_interest():
     reform = equalisation_reform()
     assert SCHEDULES == ("residential_property",)
     for band, rate in INCOME_TAX_RATES.items():
         assert reform[f"gov.hmrc.cgt.residential_property.{band}"] == {PERIOD: rate}
-    # Withdrawn: the lifetime limit goes to zero, so qualifying gains take
-    # the reformed main rates.
-    assert reform[BADR_LIFETIME_LIMIT_PARAMETER] == {PERIOD: 0}
+    # The relief stays at current law: no relief parameter is set.
+    assert BADR_LIFETIME_LIMIT_PARAMETER not in reform
     assert BADR_RATE_PARAMETER not in reform
     # Carried interest has been taxed as income since April 2026.
     assert not any(CARRIED_INTEREST_SCHEDULE in key for key in reform)
     assert reform_schedules() == {
         "residential_property": INCOME_TAX_RATES,
-        "badr": {"withdrawn": True, "rate": None, "lifetime_limit": None},
+        "badr": BADR_CURRENT_LAW.to_dict(),
     }
 
 
@@ -133,8 +132,8 @@ def test_badr_policy_writes_only_what_differs_from_current_law():
 
 
 def test_keeping_the_relief_changes_only_the_relief():
-    kept = equalisation_reform(badr=BADR_CURRENT_LAW)
-    withdrawn = equalisation_reform()
+    kept = equalisation_reform()
+    withdrawn = equalisation_reform(badr=BADR_WITHDRAWN)
     assert set(withdrawn) - set(kept) == {BADR_LIFETIME_LIMIT_PARAMETER}
     assert {k: v for k, v in withdrawn.items() if k in kept} == kept
 
@@ -145,7 +144,7 @@ def test_reform_fingerprint_tracks_the_definition():
     # The definition the committed results were produced with; a change to
     # the rates, schedules, relief or elasticity moves it and must land with
     # regenerated results.
-    assert central == "0dd9416217c3"
+    assert central == "a35352e11262"
     assert central == reform_fingerprint(equalisation_reform(ELASTICITY))
     assert central != reform_fingerprint(equalisation_reform(0.0))
 
@@ -154,9 +153,13 @@ def test_equalisation_fingerprints_are_pinned_to_the_cached_simulation_ids():
     # data/policyengine_datasets/<dataset>/*_equalise_r100_<digest>_<year>.h5
     # and the static and lower-case outputs carry these digests; a change
     # here would silently orphan every cached output.
-    assert reform_fingerprint(equalisation_reform()) == "0dd9416217c3"
-    assert reform_fingerprint(equalisation_reform(0.0)) == "4251e7185edd"
-    assert reform_fingerprint(equalisation_reform(0.5)) == "7c1bb7e76aa7"
+    assert reform_fingerprint(equalisation_reform()) == "a35352e11262"
+    assert reform_fingerprint(equalisation_reform(0.0)) == "ebeeba8cd992"
+    assert reform_fingerprint(equalisation_reform(0.5)) == "828b77da9407"
+    # The relief-withdrawn reform, for the comparisons whose scope withdraws
+    # it (JRF, CenTax's package), keeps its earlier digests.
+    assert reform_fingerprint(equalisation_reform(badr=BADR_WITHDRAWN)) == "0dd9416217c3"
+    assert reform_fingerprint(equalisation_reform(0.0, badr=BADR_WITHDRAWN)) == "4251e7185edd"
 
 
 def test_elasticity_override():
@@ -166,22 +169,20 @@ def test_elasticity_override():
 
 def test_equalisation_reform_is_the_generic_builder():
     assert equalisation_reform(0.5) == cgt_rate_reform(
-        INCOME_TAX_RATES, 0.5, schedules=SCHEDULES, badr=BADR_WITHDRAWN
+        INCOME_TAX_RATES, 0.5, schedules=SCHEDULES, badr=BADR_CURRENT_LAW
     )
 
 
 def test_schedule_steps_build_up_to_the_reform():
     steps = schedule_step_reforms(ELASTICITY)
     assert [step for step, _, _ in steps] == [s for s, _, _, _ in SCHEDULE_STEPS]
-    assert [step for step, _, _ in steps] == ["main_rates", "residential", "badr_withdrawn"]
-    main, residential, withdrawn = (reform for _, _, reform in steps)
-    assert withdrawn == equalisation_reform(ELASTICITY)
-    assert residential == equalisation_reform(ELASTICITY, badr=BADR_CURRENT_LAW)
+    assert [step for step, _, _ in steps] == ["main_rates", "residential"]
+    main, residential = (reform for _, _, reform in steps)
+    assert residential == equalisation_reform(ELASTICITY)
     assert not any("residential_property" in key or "badr" in key for key in main)
-    assert [reform_fingerprint(r) for r in (main, residential, withdrawn)] == [
+    assert [reform_fingerprint(r) for r in (main, residential)] == [
         "b6104c1f31ec",
         "a35352e11262",
-        "0dd9416217c3",
     ]
 
 

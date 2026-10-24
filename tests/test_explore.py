@@ -220,8 +220,8 @@ def test_presets_are_valid_requests():
         assert req.badr.to_dict() == preset["badr"]
     by_id = {p["id"]: p for p in PRESETS}
     assert by_id["income_tax"]["rates"] == INCOME_TAX_RATES
-    assert by_id["income_tax"]["badr"] == BADR_WITHDRAWN.to_dict()
-    assert by_id["income_tax_keep_badr"]["badr"] == BADR_CURRENT_LAW.to_dict()
+    assert by_id["income_tax"]["badr"] == BADR_CURRENT_LAW.to_dict()
+    assert by_id["income_tax_withdraw_badr"]["badr"] == BADR_WITHDRAWN.to_dict()
     assert by_id["current_law"]["rates"] == {
         "basic_rate": 0.18,
         "higher_rate": 0.24,
@@ -274,8 +274,8 @@ def test_api_options_carry_what_a_client_needs():
 
 
 def test_explorer_equalisation_preset_is_the_equalisation_reform():
-    # With the relief withdrawn, the explorer builds the Reform impacts tab's
-    # own dict, so a run reproduces the committed results (and shares their
+    # With the relief kept, the explorer builds the Reform impacts tab's own
+    # dict, so a run reproduces the committed results (and shares their
     # fingerprint).
     by_id = {p["id"]: p for p in PRESETS}
     for e in (0.0, ELASTICITY, OFFICIAL_ELASTICITY):
@@ -283,10 +283,11 @@ def test_explorer_equalisation_preset_is_the_equalisation_reform():
         req = validate_request({"rates": preset["rates"], "badr": preset["badr"], "elasticity": e})
         assert req.reform() == equalisation_reform(e)
         assert req.fingerprint == reform_fingerprint(equalisation_reform(e))
-    # Keeping the relief differs from it in the relief alone.
-    kept = validate_request({"rates": INCOME_TAX_RATES})
-    assert kept.reform() == equalisation_reform(badr=BADR_CURRENT_LAW)
-    assert set(equalisation_reform()) - set(kept.reform()) == {BADR_LIFETIME_LIMIT_PARAMETER}
+    # Withdrawing the relief differs from it in the relief alone.
+    withdrawn = by_id["income_tax_withdraw_badr"]
+    req = validate_request({"rates": withdrawn["rates"], "badr": withdrawn["badr"]})
+    assert req.reform() == equalisation_reform(badr=BADR_WITHDRAWN)
+    assert set(req.reform()) - set(equalisation_reform()) == {BADR_LIFETIME_LIMIT_PARAMETER}
 
 
 # --- cache key ----------------------------------------------------------------

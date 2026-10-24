@@ -268,11 +268,12 @@ def cgt_rate_reform(
 
 
 def equalisation_reform(
-    elasticity: float = ELASTICITY, *, badr: BadrPolicy = BADR_WITHDRAWN, single: bool = False
+    elasticity: float = ELASTICITY, *, badr: BadrPolicy = BADR_CURRENT_LAW, single: bool = False
 ) -> dict:
     """The equalisation reform as a PolicyEngine parametric reform dict: the
     main and residential property schedules take the income tax rates and
-    Business Asset Disposal Relief is withdrawn (``badr`` keeps it instead).
+    Business Asset Disposal Relief stays at current law (``badr`` withdraws
+    it instead, as the comparisons whose scope withdraws it need).
     The dict is the one the cached simulation ids were minted from, so its
     fingerprint is pinned in the tests. ``single`` applies one elasticity to
     every gain (``elasticity_assignment``); it changes only the official
@@ -284,19 +285,27 @@ def equalisation_reform(
 
 #: The equalisation reform built up schedule by schedule, for the split of
 #: its yield: the main rates alone, then the residential property schedule
-#: (equalisation with the relief kept), then the relief withdrawn.
+#: too, which is the reform itself (the relief stays at current law).
 SCHEDULE_STEPS = (
     ("main_rates", "Main rates at 20% / 40% / 45%", (), BADR_CURRENT_LAW),
     ("residential", "Residential property gains at the same rates", SCHEDULES, BADR_CURRENT_LAW),
-    ("badr_withdrawn", "Business Asset Disposal Relief withdrawn", SCHEDULES, BADR_WITHDRAWN),
 )
 
 
-def schedule_step_reforms(elasticity: float) -> list[tuple[str, str, dict]]:
+def schedule_step_reforms(
+    elasticity: float, *, single: bool = False
+) -> list[tuple[str, str, dict]]:
     """``(step id, label, reform dict)`` for each step of
-    :data:`SCHEDULE_STEPS`; the last is the equalisation reform itself."""
+    :data:`SCHEDULE_STEPS`; the last is the equalisation reform itself.
+    ``single`` applies one elasticity to every gain (``elasticity_assignment``)."""
     return [
-        (step, label, cgt_rate_reform(INCOME_TAX_RATES, elasticity, schedules=schedules, badr=badr))
+        (
+            step,
+            label,
+            cgt_rate_reform(
+                INCOME_TAX_RATES, elasticity, schedules=schedules, badr=badr, single=single
+            ),
+        )
         for step, label, schedules, badr in SCHEDULE_STEPS
     ]
 
@@ -346,7 +355,7 @@ def rate_reform_schedules(
 
 def reform_schedules() -> dict:
     """The schedule part of the equalisation reform, for the results metadata."""
-    return rate_reform_schedules(INCOME_TAX_RATES, BADR_WITHDRAWN, SCHEDULES)
+    return rate_reform_schedules(INCOME_TAX_RATES, BADR_CURRENT_LAW, SCHEDULES)
 
 
 def retention_response(e_retention: float, t0: float, t1: float) -> float:

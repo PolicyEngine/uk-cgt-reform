@@ -261,3 +261,45 @@ def test_jrf_years_outside_the_window_are_scored_for_the_comparison_only():
     assert extra["year"] == "2026-27"
     assert extra["static_cgt_change_real_bn"] == pytest.approx(26.0)
     assert extra["uplift_on_obr_receipts_real_bn"] == pytest.approx(20.8 * 26.0 / 29.0)
+
+
+def test_split_point_stacks_increments_to_the_total():
+    from uk_cgt_reform.impacts import split_point
+
+    point = split_point(
+        10e9,
+        1.2,
+        ["main_rates", "residential", "badr_withdrawn"],
+        {"main_rates": 15e9, "residential": 14e9, "badr_withdrawn": 16e9},
+    )
+    assert point["main_rates_bn"] == pytest.approx(5.0)
+    assert point["residential_bn"] == pytest.approx(-1.0)
+    assert point["badr_withdrawn_bn"] == pytest.approx(2.0)
+    assert point["total_bn"] == pytest.approx(6.0)
+    parts = point["main_rates_bn"] + point["residential_bn"] + point["badr_withdrawn_bn"]
+    assert parts == pytest.approx(point["total_bn"])
+
+
+def test_package_model_rows_name_published_centax_figures():
+    from uk_cgt_reform.comparison import PACKAGE_MODEL_RUNS, package_model_block
+
+    ids = {row["id"] for row in CENTAX_PACKAGE_CONTEXT}
+    assert all(source in ids for source, _ in PACKAGE_MODEL_RUNS.values())
+    # CenTax's Table 6 elasticities, and the central 1.0 where one figure is given.
+    assert PACKAGE_MODEL_RUNS[2025][1] == (0.5, 1.0, 1.5, 2.0)
+    assert PACKAGE_MODEL_RUNS[2026][1] == PACKAGE_MODEL_RUNS[2029][1] == (1.0,)
+    block = package_model_block(
+        [
+            {
+                "year": "2025-26",
+                "elasticity": 1.0,
+                "cgt_change_bn": 9.0,
+                "source_id": "centax_2024_table6_package_range",
+            }
+        ]
+    )
+    assert block["rows"][0]["cgt_change_bn"] == 9.0 and "CGT revenue" in block["measure"]
+    with pytest.raises(ValueError):
+        package_model_block(
+            [{"year": "x", "elasticity": 1.0, "cgt_change_bn": 0, "source_id": "nope"}]
+        )

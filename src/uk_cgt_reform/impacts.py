@@ -379,6 +379,21 @@ def break_even(points: list[dict]) -> dict | None:
     return None
 
 
+def split_point(
+    baseline_cgt: float, elasticity: float, steps: list[str], revenues: dict[str, float]
+) -> dict:
+    """One elasticity's yield by schedule: each step's increment over the one
+    before (the first over current law), £bn, in ``steps`` order, and the
+    total, the last step's change in CGT revenue."""
+    point = {"elasticity": elasticity}
+    previous = baseline_cgt
+    for step in steps:
+        point[f"{step}_bn"] = (revenues[step] - previous) / 1e9
+        previous = revenues[step]
+    point["total_bn"] = (revenues[steps[-1]] - baseline_cgt) / 1e9
+    return point
+
+
 def schedule_split(
     baseline_cgt: float, steps: list[tuple[str, str]], revenues: dict[str, dict[str, float]]
 ) -> list[dict]:

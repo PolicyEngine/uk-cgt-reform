@@ -118,15 +118,15 @@ PRESETS = (
     },
     {
         "id": "income_tax",
-        "label": "Equalise with income tax (20% / 40% / 45%), relief withdrawn",
-        "rates": dict(INCOME_TAX_RATES),
-        "badr": BADR_WITHDRAWN.to_dict(),
-    },
-    {
-        "id": "income_tax_keep_badr",
         "label": "Equalise with income tax (20% / 40% / 45%), relief kept at 18%",
         "rates": dict(INCOME_TAX_RATES),
         "badr": BADR_CURRENT_LAW.to_dict(),
+    },
+    {
+        "id": "income_tax_withdraw_badr",
+        "label": "Equalise with income tax (20% / 40% / 45%), relief withdrawn",
+        "rates": dict(INCOME_TAX_RATES),
+        "badr": BADR_WITHDRAWN.to_dict(),
     },
     {
         "id": "flat_30",

@@ -85,19 +85,16 @@ def fake_schedule_split(scale: float = 1.0, year: str = "2027-28") -> dict:
     steps = [
         ("main_rates", "Main rates at 20% / 40% / 45%"),
         ("residential", "Residential property gains at the same rates"),
-        ("badr_withdrawn", "Business Asset Disposal Relief withdrawn"),
     ]
     base = 17.2e9 * scale
     revenues = {
         "static": {
             "main_rates": base + 9e9,
             "residential": base + 11e9,
-            "badr_withdrawn": base + 14e9,
         },
         "central": {
             "main_rates": base + 3e9,
             "residential": base + 3.5e9,
-            "badr_withdrawn": base + 4e9,
         },
     }
     return {
@@ -280,7 +277,7 @@ def test_metadata_and_years():
     # Carried interest has been taxed as income since April 2026: the reform
     # moves the residential schedule and withdraws the relief.
     assert set(md["reform_schedules"]) == {"residential_property", "badr"}
-    assert md["reform_schedules"]["badr"]["withdrawn"] is True
+    assert md["reform_schedules"]["badr"]["withdrawn"] is False
     assert md["dataset_key"] in {d["key"] for d in md["datasets"]}
     assert md["default_dataset_key"] in DATASETS
 
@@ -457,11 +454,11 @@ def test_schedule_split_builds_the_yield_up_step_by_step():
     assert split["year"] == "2027-28"
     assert split["elasticities"] == {"static": 0.0, "central": 1.0}
     steps = split["steps"]
-    assert [row["step"] for row in steps] == ["main_rates", "residential", "badr_withdrawn"]
+    assert [row["step"] for row in steps] == ["main_rates", "residential"]
     # Cumulative changes from current law, and each step's own increment.
-    assert [row["static_cgt_change_bn"] for row in steps] == pytest.approx([9.0, 11.0, 14.0])
-    assert [row["static_increment_bn"] for row in steps] == pytest.approx([9.0, 2.0, 3.0])
-    assert [row["central_increment_bn"] for row in steps] == pytest.approx([3.0, 0.5, 0.5])
+    assert [row["static_cgt_change_bn"] for row in steps] == pytest.approx([9.0, 11.0])
+    assert [row["static_increment_bn"] for row in steps] == pytest.approx([9.0, 2.0])
+    assert [row["central_increment_bn"] for row in steps] == pytest.approx([3.0, 0.5])
     assert sum(row["central_increment_bn"] for row in steps) == pytest.approx(
         steps[-1]["central_cgt_change_bn"]
     )
