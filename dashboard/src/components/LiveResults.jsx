@@ -328,7 +328,7 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
             title={`Budgetary impact by year, ${result.budget[0].year} to ${result.budget.at(-1).year}`}
             description="Each bar shows the change in the government's balance in one fiscal year, after taxpayers realise fewer gains."
           />
-          <div className="mt-auto">
+          <div className="mt-auto lg:mt-0">
           <Notes>
             <BeyondForecastNote />
             {entrantShare > 0.05 ? (
@@ -351,7 +351,7 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
             defaultYear={headlineYear}
             description={GROUP_DESCRIPTION}
           />
-          <div className="mt-auto">
+          <div className="mt-auto lg:mt-0">
           <Notes>
             <GroupDefinitions>
               <li>

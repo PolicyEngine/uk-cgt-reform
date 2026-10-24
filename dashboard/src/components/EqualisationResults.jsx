@@ -161,7 +161,7 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
             title={`Budgetary impact by year, ${budget[0].year} to ${budget.at(-1).year}`}
             description="Each bar shows the change in the government's balance in one fiscal year, after taxpayers realise fewer gains."
           />
-          <div className="mt-auto">
+          <div className="mt-auto lg:mt-0">
           <Notes>
             <p>
               Baseline revenue grows as gains are uprated with the OBR&apos;s{" "}
@@ -192,7 +192,7 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
             defaultYear={headlineYear}
             description={GROUP_DESCRIPTION}
           />
-          <div className="mt-auto">
+          <div className="mt-auto lg:mt-0">
           <Notes>
             <GroupDefinitions>
               <li>
