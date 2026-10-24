@@ -340,7 +340,7 @@ function ReadyReckoner({ block, dataset, elasticities, rr, headlineYear, onNavig
   return (
     <section className="section-card scroll-mt-24" id="ready-reckoner">
       <SectionHeading
-        title={`Small rate changes: PolicyEngine ${currentPair.modelYear} and HMRC ${currentPair.hmrcYear}`}
+        title={`Small rate changes: PolicyEngine and HMRC, gains made in ${currentPair.modelYear}`}
         action={
           rr.pairs.length > 1 ? (
             <YearPill
@@ -353,7 +353,7 @@ function ReadyReckoner({ block, dataset, elasticities, rr, headlineYear, onNavig
         description={
           <>
             <SourceLink href={block.url}>HMRC&apos;s</SourceLink>
-            {` table of small rate changes (its ‘ready reckoner’, June 2025): HMRC's receipts beside ${PE}'s change in the government balance ${reckonerElasticities(elasticities.official, elasticities.central, block.elasticities.elasticity_3)}. Bars left of £0 reduce revenue.`}
+            {` table of small rate changes (its ‘ready reckoner’, June 2025): HMRC's receipts beside ${PE}'s change in the government balance ${reckonerElasticities(elasticities.official, elasticities.central, block.elasticities.elasticity_3)}. Both are for the same gains: the tax on gains made in ${currentPair.modelYear} is paid, and counted by HMRC as receipts, in ${currentPair.hmrcYear}. Bars left of £0 reduce revenue.`}
           </>
         }
       />
