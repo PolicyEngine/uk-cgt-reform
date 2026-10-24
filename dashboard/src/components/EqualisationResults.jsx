@@ -252,16 +252,16 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
           </Notes>
         </Card>
 
-        <Card as="details" className="group relative min-w-0 scroll-mt-24" id="sensitivity">
-          <summary className="cursor-pointer select-none text-xl font-semibold tracking-tight text-slate-900 marker:text-[color:var(--pe-color-primary-600)] sm:group-open:pr-40">
+        <Card as="details" className="group min-w-0 scroll-mt-24" id="sensitivity">
+          <summary className="cursor-pointer select-none text-xl font-semibold tracking-tight text-slate-900 marker:text-[color:var(--pe-color-primary-600)]">
             {`Sensitivity to the behavioural response, ${sensitivityYear}`}
             <span className="ml-2 text-sm font-normal text-slate-500 group-open:hidden">
               (expand to see how the result depends on taxpayers&apos; response)
             </span>
           </summary>
-          {/* The year select sits right of the title once the section is open
-              (it stacks under the title on phones). */}
-          <div className="mt-3 sm:absolute sm:right-6 sm:top-4 sm:mt-0">
+          {/* The year pill sits under the title once the section is open, as
+              in every other card. */}
+          <div className="mt-3 flex">
             <YearSelect years={getSensitivityYears(data)} value={sensitivityYear} onChange={setSensitivityYear} />
           </div>
           <p className="mb-5 mt-2 text-sm leading-6 text-slate-600">

@@ -263,15 +263,16 @@ export function TableScroll({ className = "", children }) {
   return <div className={`table-scroll overflow-x-auto ${className}`}>{children}</div>;
 }
 
-// A compact chart control beside a section title: one teal-tinted pill
-// reading "Year 2027-28", with a chevron. `options` are { value, label }.
-// Several sit in the heading's action slot, in a row that wraps.
-export function PillSelect({ label, options, value, onChange }) {
+// A compact chart control under a section title: one teal-tinted pill
+// reading "Year 2027-28", with a chevron. `options` are { value, label };
+// `ariaLabel` names the select when the visible `label` is shortened.
+// Several sit in the heading's action slot, in one left-aligned row.
+export function PillSelect({ label, ariaLabel, options, value, onChange }) {
   return (
-    <label className="relative inline-flex h-9 max-w-full shrink-0 cursor-pointer items-center whitespace-nowrap rounded-full border border-[color:var(--pe-color-primary-200)] bg-[color:var(--pe-color-primary-50)] pl-3.5 pr-8 text-sm transition-colors hover:border-[color:var(--pe-color-primary-400)] focus-within:ring-2 focus-within:ring-[color:var(--pe-color-primary-500)]">
-      <span className="mr-2 text-xs font-medium text-slate-500">{label}</span>
+    <label className="relative inline-flex h-8 max-w-full shrink-0 cursor-pointer items-center whitespace-nowrap rounded-full border border-[color:var(--pe-color-primary-200)] bg-[color:var(--pe-color-primary-50)] pl-2.5 pr-6 text-sm transition-colors hover:border-[color:var(--pe-color-primary-400)] focus-within:ring-2 focus-within:ring-[color:var(--pe-color-primary-500)]">
+      <span className="mr-1.5 text-[11px] font-medium text-slate-500">{label}</span>
       <select
-        aria-label={label}
+        aria-label={ariaLabel ?? label}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         className="min-w-0 max-w-full cursor-pointer appearance-none truncate bg-transparent font-semibold tabular-nums text-[color:var(--pe-color-primary-800)] focus:outline-none"
@@ -285,7 +286,7 @@ export function PillSelect({ label, options, value, onChange }) {
       <svg
         aria-hidden="true"
         viewBox="0 0 12 12"
-        className="pointer-events-none absolute right-3 top-1/2 h-3 w-3 -translate-y-1/2 text-[color:var(--pe-color-primary-700)]"
+        className="pointer-events-none absolute right-2 top-1/2 h-3 w-3 -translate-y-1/2 text-[color:var(--pe-color-primary-700)]"
       >
         <path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
       </svg>

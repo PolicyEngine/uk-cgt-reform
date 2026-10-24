@@ -145,7 +145,7 @@ export default function ReadyReckonerChart({ pairs, rows, labels, pairKey, onPai
   return (
     <>
       {pairs.length > 1 && !controlled ? (
-        <div className="mb-3">
+        <div className="mb-3 flex">
           <PillSelect
             label="HMRC receipts year"
             options={pairs.map((p) => ({ value: p.key, label: p.label }))}

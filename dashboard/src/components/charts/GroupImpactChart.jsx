@@ -80,7 +80,7 @@ export default function GroupImpactChart({ groupsByYear, defaultYear, descriptio
               value={groupYear}
               onChange={setGroupYear}
             />
-            <PillSelect label="Group by" options={groupingOptions} value={grouping} onChange={setGrouping} />
+            <PillSelect label="Group" ariaLabel="Group by" options={groupingOptions} value={grouping} onChange={setGrouping} />
             <PillSelect
               label="Metric"
               options={[
