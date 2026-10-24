@@ -13,7 +13,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { getNiceTicks, getTickDomain } from "../../lib/chartUtils";
+import { getNiceTicks, getTickDecimals, getTickDomain } from "../../lib/chartUtils";
 import { colors } from "../../lib/colors";
 import { formatSignedBn } from "../../lib/formatters";
 import ChartLogo from "../ChartLogo";
@@ -221,7 +221,7 @@ function SensitivityCurve({ rows, centralRetention, curve }) {
               ticks={ticks}
               width={56}
               tick={AXIS_STYLE}
-              tickFormatter={(v) => formatSignedBn(v, 0)}
+              tickFormatter={(v) => formatSignedBn(v, getTickDecimals(ticks))}
               tickLine={false}
               axisLine={false}
             />
