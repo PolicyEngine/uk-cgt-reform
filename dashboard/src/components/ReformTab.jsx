@@ -216,6 +216,15 @@ export default function ReformTab({ data, datasetKey, onNavigate, anchor }) {
     else if (searchParams.get("tab") === "explorer") replaceSchedule(null);
   }, [anchor, showEqualisation, shown, startLive, forms, policy, searchParams, replaceSchedule]);
 
+  // The tab stays mounted while others are shown, so a link from another tab
+  // to a Reform section (a new `anchor`) shows the results and scrolls there
+  // after mount too.
+  const lastAnchor = useRef(anchor);
+  useEffect(() => {
+    if (anchor && anchor !== lastAnchor.current) showEqualisation(anchor === "equalisation" ? null : anchor);
+    lastAnchor.current = anchor;
+  }, [anchor, showEqualisation]);
+
   const select = (id, toggle = false) => {
     setCollapsed(false);
     reset();
