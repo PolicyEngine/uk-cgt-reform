@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { getBenchmarks, getDatasetInfo, getHeadlineYear } from "../lib/dataHelpers";
-import { formatBn, formatPublished, formatSignedBn, formatSignedMn } from "../lib/formatters";
+import { formatBn, formatPublished, formatSignedBn, formatSignedMn, reckonerElasticities } from "../lib/formatters";
 import JrfComparisonChart, { buildJrfRows } from "./charts/JrfComparisonChart";
 import PackageEstimatesChart, { buildPackageRows } from "./charts/PackageEstimatesChart";
 import ReadyReckonerChart, { buildReckonerRows } from "./charts/ReadyReckonerChart";
@@ -32,9 +32,11 @@ const CENTAX_REPORT =
 const PE = "PolicyEngine";
 
 const percent = (rate) => `${Math.round(rate * 100)}%`;
-// "Exchequer receipts in £m ..." reads as the rest of a sentence.
-const lowerFirst = (text) => `${text[0].toLowerCase()}${text.slice(1)}`;
-// "Higher rate +10pp (18% / 34% / 34%)" → "higher rate +10pp".
+// "Exchequer receipts in £m ..." reads as the rest of a sentence; a proper
+// name ("Business Asset Disposal Relief") keeps its capital.
+const lowerFirst = (text) =>
+  text.startsWith("Business Asset") ? text : `${text[0].toLowerCase()}${text.slice(1)}`;
+// "Higher rate +10 points (18% / 34% / 34%)" → "higher rate +10 points".
 const shortRow = (label) => lowerFirst(label.replace(/\s*\(.*\)\s*$/, ""));
 const isNum = (v) => v !== null && v !== undefined && Number.isFinite(Number(v));
 
@@ -91,7 +93,7 @@ function AtAGlance({ benchmarks, baseline }) {
     },
     {
       id: "centax-2019-20",
-      title: "Equalising, 2019/20 rules",
+      title: "Equalising, 2019-20 rules",
       columns: [
         { ...pe(centax.year), value: formatUplift(centax.national.uplift_pct) },
         {
@@ -104,7 +106,7 @@ function AtAGlance({ benchmarks, baseline }) {
           value: formatUplift(centax.external.value),
         },
       ],
-      note: `Before behaviour; PolicyEngine on ${centax.year} data, the earliest year it has.`,
+      note: `Rise in CGT from equalising, before behaviour; PolicyEngine on ${centax.year} data, the earliest year it has.`,
     },
     jrf && {
       id: "jrf-static",
@@ -117,7 +119,7 @@ function AtAGlance({ benchmarks, baseline }) {
           value: formatBn(jrf.value, 0),
         },
       ],
-      note: `Both scale the OBR's receipts; ${jrf.prices}. PolicyEngine's static change on its own liabilities: ${formatBn(jrf.own, 1)}.`,
+      note: `Both scale the OBR's receipts; ${jrf.prices}. PolicyEngine's change with no behavioural response on its own liabilities: ${formatBn(jrf.own, 1)}.`,
     },
   ].filter(Boolean);
   return (
@@ -133,8 +135,9 @@ function AtAGlance({ benchmarks, baseline }) {
               {item.columns.map((column, i) => (
                 <div key={i} className="min-w-0">
                   <p className="text-xl font-bold tabular-nums text-slate-900">{column.value}</p>
+                  {/* A two-line slot, so the cards' notes start on one line. */}
                   <p
-                    className={`mt-0.5 text-xs leading-4 ${column.tone === "pe" ? "font-bold" : "text-slate-500"}`}
+                    className={`mt-0.5 text-xs leading-4 lg:min-h-8 ${column.tone === "pe" ? "font-bold" : "text-slate-500"}`}
                     style={column.tone === "pe" ? { color: colors.primary[700] } : undefined}
                   >
                     {column.label}
@@ -150,10 +153,10 @@ function AtAGlance({ benchmarks, baseline }) {
   );
 }
 
-// CenTax's package estimates' own years (not the rates-only derivation,
-// which is PolicyEngine's), as a range: "2025-26 to 2029-30".
+// The years the package chart shows, the rates-only derivation's 2019-20
+// included, as a range: "2019-20 to 2029-30".
 function packageYears(rows) {
-  const years = rows.filter((row) => !row.id.includes("rates_only")).map((row) => row.year).sort();
+  const years = rows.map((row) => row.year).sort();
   return years[0] === years.at(-1) ? years[0] : `${years[0]} to ${years.at(-1)}`;
 }
 
@@ -167,25 +170,25 @@ function StaticEqualisation({ block, dataset }) {
   return (
     <section className="section-card">
       <SectionHeading
-        title={`Static revenue: PolicyEngine and JRF, ${rows[0].year} to ${rows.at(-1).year}`}
+        title={`Revenue with no behavioural response: PolicyEngine and JRF, ${rows[0].year} to ${rows.at(-1).year}`}
         description={
           <>
-            {"Static change from equalising, in 2026/27 prices. "}
+            {"The change in CGT revenue from equalising if taxpayers realised the same gains, in 2026-27 prices. "}
             <SourceLink href={source.url}>JRF</SourceLink>
             {" scales the "}
             <SourceLink href={OBR_EFO}>OBR&apos;s</SourceLink>
             {` receipts. ${PE} shows its own microsimulated liabilities on `}
             <DatasetName label={dataset.shortLabel} />
-            {" (rings) and, for reference, its uplift applied to the OBR's receipts (light dots); JRF's figures are the dark dots."}
+            {` (teal rings) and, for reference, ${PE}'s percentage increase applied to the OBR's receipts (light dots); JRF's figures are the dark dots.`}
           </>
         }
       />
       <JrfComparisonChart
         rows={rows}
         labels={{
-          static: `${PE}, static`,
-          obr: `${PE} uplift applied to OBR receipts`,
-          jrf: "JRF, static (2026 report)",
+          static: `${PE}, no behavioural response`,
+          obr: `${PE}'s percentage increase applied to OBR receipts`,
+          jrf: "JRF, no behavioural response (2026 report)",
         }}
       />
       <Notes>
@@ -199,14 +202,15 @@ function StaticEqualisation({ block, dataset }) {
           <SourceLink href={OBR_EFO}>projection</SourceLink>, with no behavioural response.
         </p>
         <p>
-          The light dots apply the model&apos;s static uplift (the static change as a share of
-          baseline liability) to the OBR&apos;s cash receipts{" "}
+          The light dots apply {PE}&apos;s percentage increase (the change with no behavioural
+          response as a share of baseline liability) to the OBR&apos;s cash receipts{" "}
           <SourceLink href={OBR_EFO}>forecast</SourceLink> ({block.obr_receipts_source}), which ends in
           2030-31.
         </p>
         <p>
-          JRF states its figures in 2026/27 prices; {PE}&apos;s are deflated with the CPI{" "}
-          <SourceLink href={OBR_EFO}>path</SourceLink> in {block.price_index_source}.
+          JRF states its figures in 2026-27 prices; {PE}&apos;s are deflated with the CPI{" "}
+          <SourceLink href={OBR_EFO}>path</SourceLink> in{" "}
+          {block.price_index_source.replace(/^OBR EFO /, "the OBR's Economic and fiscal outlook (EFO), ")}.
         </p>
       </Notes>
     </section>
@@ -224,27 +228,27 @@ function CentaxRegions({ block, dataset }) {
         title={`Regional CGT: PolicyEngine ${block.year} and CenTax 2019-20`}
         description={
           <>
-            {`Each region's share of baseline CGT: ${PE} applies `}
+            {"Each region's share of baseline CGT under "}
             <SourceLink href={external.url}>CenTax&apos;s</SourceLink>
-            {" 2019/20 rules to "}
-            <DatasetName label={dataset.shortLabel} possessive />
-            {" data with no behavioural response, beside CenTax's (2024) estimate."}
+            {` 2019-20 rules, with no behavioural response. ${PE} uses ${block.year} data, the earliest year the model has; CenTax uses 2019-20. HMRC's own regional `}
+            <SourceLink href={CGT_STATISTICS}>shares</SourceLink>
+            {" move by up to 1.8 percentage points from year to year."}
           </>
         }
       />
       <RegionalComparisonChart
         rows={rows}
-        peLabel={`${PE} ${block.year} (2019/20 rules)`}
+        peLabel={`${PE} ${block.year} (2019-20 rules)`}
         centaxLabel="CenTax 2019-20 (2024 report)"
       />
       <Notes>
         <p>
-          {`Equalising at 2019/20 rules, nationally: ${PE} ${block.year} +${formatBn(national.change_bn, 1)} on a ${formatBn(national.baseline_cgt_bn, 1)} baseline (current law: ${formatBn(national.current_law_cgt_bn, 1)}); `}
+          {`Equalising at 2019-20 rules, nationally: ${PE} ${block.year} +${formatBn(national.change_bn, 1)} on a ${formatBn(national.baseline_cgt_bn, 1)} baseline (current law: ${formatBn(national.current_law_cgt_bn, 1)}); `}
           <SourceLink href={external.url}>CenTax</SourceLink>
           {` 2019-20, rates only, +${formatBn(external.details.change_bn, 1)} on a ${formatBn(external.details.baseline_bn, 1)} baseline.`}
         </p>
         <p>
-          {`The 2019/20 rules: main rates of ${percent(rules.main.basic_rate)} and ${percent(rules.main.higher_rate)}, ${percent(rules.residential_property.basic_rate)} and ${percent(rules.residential_property.higher_rate)} for residential property and carried interest, ${percent(rules.badr.rate)} under Business Asset Disposal`}{" "}
+          {`The 2019-20 rules: main rates of ${percent(rules.main.basic_rate)} and ${percent(rules.main.higher_rate)}, ${percent(rules.residential_property.basic_rate)} and ${percent(rules.residential_property.higher_rate)} for residential property and carried interest, ${percent(rules.badr.rate)} under Business Asset Disposal`}{" "}
           <SourceLink href={BADR_GUIDANCE}>Relief</SourceLink>, and a £
           {rules.annual_exempt_amount.toLocaleString("en-GB")} exempt{" "}
           <SourceLink href={EXEMPT_AMOUNT}>amount</SourceLink> (not uprated).
@@ -284,8 +288,9 @@ function CentaxPackage({ rows, onNavigate }) {
       <PackageEstimatesChart rows={built} />
       <Notes>
         <p>
-          The package adds a rate-of-return investment allowance, removes the death uplift, and
-          rebases on arrival with a deemed disposal on departure;{" "}
+          The package adds an allowance that exempts a normal return on investment, taxes gains
+          on assets held until death, values assets at market price when people arrive in the UK,
+          and taxes gains when they leave;{" "}
           <TabLink onNavigate={onNavigate} tab="methodology" section="elasticity">
             Methodology
           </TabLink>{" "}
@@ -345,7 +350,7 @@ function ReadyReckoner({ block, dataset, elasticities, rr, headlineYear, onNavig
         description={
           <>
             <SourceLink href={block.url}>HMRC&apos;s</SourceLink>
-            {` (June 2025) receipts from small rate changes, beside ${PE}'s change in the government balance at three elasticities: HMRC and the OBR's official one, ${upper} and CenTax's central one. Bars left of £0 reduce revenue.`}
+            {` table of small rate changes (its "ready reckoner", June 2025): HMRC's receipts beside ${PE}'s change in the government balance ${reckonerElasticities(elasticities.official, elasticities.central, block.elasticities.elasticity_3)}. Bars left of £0 reduce revenue.`}
           </>
         }
       />
@@ -368,7 +373,7 @@ function ReadyReckoner({ block, dataset, elasticities, rr, headlineYear, onNavig
         <p>
           {`Years: `}
           <SourceLink href={block.url}>HMRC&apos;s</SourceLink>
-          {` figures are receipts in £m, including knock-on income tax and SDLT, which arrive about a year after the tax is owed, so ${PE}'s ${currentPair.modelYear} liabilities sit beside HMRC's ${currentPair.hmrcYear} receipts. HMRC's ${firstYear} receipts have no pair: they would need ${PE} liabilities for the year before the rows start. ${PE}'s figures are the change in the government balance in the year, as for custom rates in the `}
+          {` figures are receipts in £m, including knock-on income tax and stamp duty land tax (SDLT), which arrive about a year after the tax is owed, so ${PE}'s ${currentPair.modelYear} liabilities sit beside HMRC's ${currentPair.hmrcYear} receipts. HMRC's ${firstYear} receipts have no pair: they would need ${PE} liabilities for the year before the rows start. ${PE}'s figures are the change in the government balance in the year, as for custom rates in the `}
           <TabLink onNavigate={onNavigate} tab="reform">
             Reform
           </TabLink>{" "}
@@ -381,8 +386,11 @@ function ReadyReckoner({ block, dataset, elasticities, rr, headlineYear, onNavig
         <p>
           Rows raise the named rate from April 2026; higher-rate rows move the higher and additional
           rates together; HMRC says rows can&apos;t be scaled. HMRC deferred its 2026 edition on 6 July
-          2026 pending a review of key assumptions; these figures are from the June 2025 edition. Source: <SourceLink href={block.url}>HMRC</SourceLink>,{" "}
-          {formatPublished(block.published).replace(/^\d+\s+/, "")}.
+          2026 pending a review of key assumptions, so these figures are provisional. Source:{" "}
+          <SourceLink href={block.url}>HMRC</SourceLink>.
+        </p>
+        <p>
+          {`${upper} is a value between CenTax's upper estimate (${elasticities.centax_range.upper.toFixed(1)}) and the official ${official}, applied as stated to every gain, including those qualifying for the relief.`}
         </p>
         <p>
           <SourceLink href={block.url}>HMRC&apos;s</SourceLink>
