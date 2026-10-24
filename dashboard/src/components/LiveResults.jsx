@@ -40,11 +40,13 @@ import SectionHeading from "./SectionHeading";
 
 const EXEMPT_AMOUNT = "https://www.gov.uk/capital-gains-tax/allowances";
 
-// "the behavioural case CenTax central (retention elasticity 1.0)", or for a
-// typed value "a custom retention elasticity of 2.5".
+// "CenTax central (elasticity 1.0)", or for a typed value "an elasticity of
+// 2.5".
 const elasticityName = (e) => {
   const option = elasticityOption(e);
-  return option ? `the behavioural case ${option.label}` : `a custom retention elasticity of ${e}`;
+  return option
+    ? option.label.replace("(retention elasticity", "(elasticity").replace("for BADR gains", "for gains qualifying for the relief")
+    : `an elasticity of ${e}`;
 };
 
 // Where a live run stands: a cache lookup for a shared link, a computation,
