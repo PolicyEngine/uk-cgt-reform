@@ -449,6 +449,15 @@ live run at 20/40/45 with the relief withdrawn builds the equalisation
 reform's own dict (same fingerprint) and reproduces the committed results,
 and 18/24/24 with the relief at current law gives zero change.
 
+A live run also splits its headline-year (2027-28) yield schedule by
+schedule, as the committed results do: the main rates, then residential
+property gains, then the relief (no relief step when it stays at current
+law), with no behavioural response, at CenTax's central elasticity and at the
+run's own (`explore.score_schedule_split`, the result's `schedule_split`).
+That costs up to two more reform simulations per case in that year only. For
+equalisation the run computes only its own case and the dashboard takes the
+other two bars from the committed results.
+
 The behavioural response is one of the five cases (static, CenTax lower,
 central and upper, HMRC/OBR official) or, with **Custom**, any
 retention-rate elasticity from 0 to 5 in steps of 0.1, applied to every gain

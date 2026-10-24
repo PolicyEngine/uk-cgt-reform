@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -27,10 +28,12 @@ const STEP_STYLE = {
   main_rates: { short: "Income tax rates on other gains", fill: colors.primary[700], text: "#FFFFFF" },
   residential: { short: "Income tax rates on residential property", fill: colors.primary[300], text: colors.gray[900] },
   badr_withdrawn: { short: "Relief withdrawn", fill: colors.gray[400], text: colors.gray[900] },
+  badr_changed: { short: "Relief changed", fill: colors.gray[400], text: colors.gray[900] },
 };
 const FALLBACK_FILLS = [colors.primary[500], colors.gray[600], colors.primary[100]];
 
-const CASES = [
+// The precomputed results' two bars; a live run passes its own (lib/yieldSplit).
+const DEFAULT_CASES = [
   { key: "static", label: ["No behavioural", "response"] },
   { key: "central", label: ["CenTax central", "elasticity"] },
 ];
@@ -39,18 +42,37 @@ const CASES = [
 // the text; narrow segments are read from the tooltip.
 const MIN_LABEL_PX = 46;
 
-function styleFor(step, index) {
-  return (
-    STEP_STYLE[step.step] ?? {
-      short: step.label,
-      fill: FALLBACK_FILLS[index % FALLBACK_FILLS.length],
-      text: colors.gray[900],
-    }
-  );
+// `names` overrides a step's short name (a live schedule's own rates).
+function styleFor(step, index, names = {}) {
+  const style = STEP_STYLE[step.step] ?? {
+    short: step.label,
+    fill: FALLBACK_FILLS[index % FALLBACK_FILLS.length],
+    text: colors.gray[900],
+  };
+  return names[step.step] ? { ...style, short: names[step.step] } : style;
 }
 
-function CaseTick({ x, y, payload }) {
-  const lines = CASES.find((c) => c.key === payload.value)?.label ?? [payload.value];
+// On a narrow screen the axis is dropped and each bar's name sits on one
+// line above it, from the chart's left edge (`above`: px from the band's
+// centre to the bar's top).
+function CaseTick({ x, y, payload, cases, above }) {
+  const lines = cases.find((c) => c.key === payload.value)?.label ?? [payload.value];
+  if (above) {
+    return (
+      <text
+        x={0}
+        y={y - above - 6}
+        textAnchor="start"
+        fontSize={12}
+        fill={colors.gray[700]}
+        stroke="#FFFFFF"
+        strokeWidth={4}
+        paintOrder="stroke"
+      >
+        {lines.join(" ")}
+      </text>
+    );
+  }
   return (
     <text x={x - 6} y={y} textAnchor="end" fontSize={12} fill={colors.gray[700]}>
       {lines.map((line, i) => (
@@ -106,17 +128,17 @@ function TotalLabel({ x, y, width, height, index, data }) {
   );
 }
 
-function YieldTooltip({ active, payload, label, steps }) {
+function YieldTooltip({ active, payload, label, steps, cases, names }) {
   if (!active || !payload?.length) return null;
   const row = payload[0].payload;
-  const caseLabel = CASES.find((c) => c.key === label)?.label.join(" ") ?? label;
+  const caseLabel = cases.find((c) => c.key === label)?.label.join(" ") ?? label;
   return (
     <TooltipCard
       title={caseLabel}
       rows={steps.map((step, i) => ({
-        label: styleFor(step, i).short,
+        label: styleFor(step, i, names).short,
         value: fmt(row[step.step]),
-        color: styleFor(step, i).fill,
+        color: styleFor(step, i, names).fill,
       }))}
       footer={{ label: "Total", value: fmt(row.total) }}
     />
@@ -125,9 +147,20 @@ function YieldTooltip({ active, payload, label, steps }) {
 
 // Where one year's yield comes from (schedule_split.year): each reform step's increment, stacked,
 // with no behavioural response and at the CenTax central elasticity.
-// `steps` is the pipeline's schedule_split.steps.
-export default function YieldChart({ steps }) {
-  const data = CASES.map(({ key }) => {
+// `steps` is the pipeline's schedule_split.steps; `cases` the bars, top first
+// (default: those two); `names` short names for the steps.
+export default function YieldChart({ steps, cases = DEFAULT_CASES, names = {} }) {
+  const wrap = useRef(null);
+  const [width, setWidth] = useState(0);
+  useEffect(() => {
+    const el = wrap.current;
+    if (!el || typeof ResizeObserver === "undefined") return undefined;
+    const observer = new ResizeObserver(([entry]) => setWidth(entry.contentRect.width));
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+  const narrow = width > 0 && width < 560;
+  const data = cases.map(({ key }) => {
     const row = { case: key };
     let pos = 0;
     let neg = 0;
@@ -152,17 +185,22 @@ export default function YieldChart({ steps }) {
   // The axis ends on a round tick; the chart margins hold the total labels.
   const ticks = getNiceTicks([minEnd, maxEnd], 4);
   const domain = getTickDomain(ticks);
+  const margin = { top: narrow ? 22 : 5, right: 64, bottom: 5, left: minEnd < 0 ? 64 : narrow ? 20 : 0 };
+  const height = (narrow ? 90 : 80) + (narrow ? 84 : 70) * cases.length;
+  // Half a bar's thickness: the plot's band per case less the category gaps.
+  const band = (height - margin.top - margin.bottom - 30) / cases.length;
+  const above = narrow ? (band * (1 - 2 * 0.28)) / 2 : 0;
 
   return (
     <>
-      <div className="h-[220px] w-full">
+      <div ref={wrap} className="w-full" style={{ height }}>
         <ResponsiveContainer>
           <BarChart
             data={data}
             layout="vertical"
             stackOffset="sign"
             barCategoryGap="28%"
-            margin={{ top: 5, right: 64, bottom: 5, left: minEnd < 0 ? 64 : 0 }}
+            margin={margin}
           >
             <CartesianGrid strokeDasharray="3 3" stroke={colors.border.light} horizontal={false} />
             <XAxis
@@ -177,15 +215,15 @@ export default function YieldChart({ steps }) {
             <YAxis
               type="category"
               dataKey="case"
-              width={108}
-              tick={<CaseTick />}
+              width={narrow ? 1 : 124}
+              tick={<CaseTick cases={cases} above={above} />}
               tickLine={false}
               axisLine={false}
             />
             <ReferenceLine x={0} stroke={colors.gray[400]} />
-            <Tooltip {...TOOLTIP_PROPS} content={<YieldTooltip steps={steps} />} />
+            <Tooltip {...TOOLTIP_PROPS} content={<YieldTooltip steps={steps} cases={cases} names={names} />} />
             {steps.map((step, i) => {
-              const style = styleFor(step, i);
+              const style = styleFor(step, i, names);
               const isLast = i === steps.length - 1;
               return (
                 <Bar
@@ -209,7 +247,10 @@ export default function YieldChart({ steps }) {
         </ResponsiveContainer>
       </div>
       <ChartLegend
-        items={steps.map((step, i) => ({ label: styleFor(step, i).short, fill: styleFor(step, i).fill }))}
+        items={steps.map((step, i) => {
+          const style = styleFor(step, i, names);
+          return { label: style.short, fill: style.fill };
+        })}
       />
       <ChartLogo />
     </>
