@@ -43,7 +43,7 @@ const BAND_HINTS = {
   additional_rate: "Above £125,140",
 };
 const BADR_NOTE =
-  "Gains on qualifying business disposals, Investors' Relief included. Withdrawn, those gains take the main rates. The relief's rate may not exceed the additional rate. The model charges it on every qualifying gain, without the claim a taxpayer makes in law.";
+  "A lower rate on gains from selling all or part of a business, or certain shares (Investors' Relief is included): 18% from April 2026, on up to £1m of such gains over a person's lifetime. Withdrawing it means these gains pay the main rates. The model gives it on every qualifying gain, as if each person claims it.";
 const ELASTICITY_NOTE =
   "The elasticity of realised gains with respect to the retention rate (1 − t): taxpayers realise fewer gains as the share of each gain they keep falls.";
 
