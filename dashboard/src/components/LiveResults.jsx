@@ -326,7 +326,8 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
             description="Each bar shows the change in the government's balance in one fiscal year, after taxpayers realise fewer gains."
           />
           <BudgetChart budget={result.budget} />
-          <Notes className="mt-auto">
+          <div className="mt-auto">
+          <Notes>
             <BeyondForecastNote />
             {entrantShare > 0.05 ? (
               <p>
@@ -339,6 +340,7 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
               </p>
             ) : null}
           </Notes>
+          </div>
         </Card>
 
         <Card className="flex min-w-0 flex-col">
@@ -347,7 +349,8 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
             defaultYear={headlineYear}
             description={GROUP_DESCRIPTION}
           />
-          <Notes className="mt-auto">
+          <div className="mt-auto">
+          <Notes>
             <GroupDefinitions>
               <li>
                 Changes in the gains taxpayers realise count as changes in income, alongside the
@@ -355,6 +358,7 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
               </li>
             </GroupDefinitions>
           </Notes>
+          </div>
         </Card>
       </div>
 

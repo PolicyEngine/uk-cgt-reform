@@ -159,7 +159,8 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
             description="Each bar shows the change in the government's balance in one fiscal year, after taxpayers realise fewer gains."
           />
           <BudgetChart budget={budget} />
-          <Notes className="mt-auto">
+          <div className="mt-auto">
+          <Notes>
             <p>
               Baseline revenue grows as gains are uprated with the OBR&apos;s{" "}
               <SourceLink href={OBR_EFO}>forecast</SourceLink> of GDP per head;{" "}
@@ -180,6 +181,7 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
               </p>
             ) : null}
           </Notes>
+          </div>
         </Card>
 
         <Card className="flex min-w-0 flex-col">
@@ -188,7 +190,8 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
             defaultYear={headlineYear}
             description={GROUP_DESCRIPTION}
           />
-          <Notes className="mt-auto">
+          <div className="mt-auto">
+          <Notes>
             <GroupDefinitions>
               <li>
                 Gains that taxpayers no longer realise count as lower income, alongside the extra
@@ -196,6 +199,7 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
               </li>
             </GroupDefinitions>
           </Notes>
+          </div>
         </Card>
       </div>
 

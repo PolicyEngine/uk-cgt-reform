@@ -98,7 +98,7 @@ function Dashboard() {
             in the UK, would affect <strong className={BOLD}>government revenue</strong> and{" "}
             <strong className={BOLD}>household incomes</strong>; a{" "}
             <strong className={BOLD}>custom option</strong> scores any other set of rates. It
-            models the <strong className={BOLD}>rate changes only</strong>, with fewer gains
+            models only these changes to <strong className={BOLD}>rates and the relief</strong>, with fewer gains
             realised as rates rise, and not the other measures{" "}
             <a href={CENTAX_REPORT} target="_blank" rel="noopener noreferrer" className={LINK}>CenTax</a>{" "}
             pair with them (an investment allowance, ending the uplift at death and an exit tax) or
