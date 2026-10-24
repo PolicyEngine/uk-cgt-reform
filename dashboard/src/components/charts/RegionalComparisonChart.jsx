@@ -69,14 +69,14 @@ function Dumbbell({ x, y, width, height, payload, format }) {
   return (
     <g>
       <line x1={left} x2={right} y1={cy} y2={cy} stroke={colors.gray[300]} strokeWidth={2} />
-      {/* CenTax under PolicyEngine, so the teal dot shows when they meet. */}
-      {[dots[1], dots[0]].map((d) => (
-        <circle key={d.s.fill} cx={d.cx} cy={cy} r={DOT_R} fill={d.s.fill} stroke="#FFFFFF" strokeWidth={1} />
-      ))}
+      {/* PolicyEngine a solid dot, CenTax a larger hollow ring around it, so
+          both stay visible when the values meet (as on the other charts). */}
+      <circle cx={dots[0].cx} cy={cy} r={DOT_R - 0.5} fill={PE.fill} stroke="#FFFFFF" strokeWidth={1} />
+      <circle cx={dots[1].cx} cy={cy} r={DOT_R + 1.5} fill="none" stroke={CENTAX.fill} strokeWidth={2} />
       {dots.map((d) => (
         <text
           key={`t${d.s.fill}`}
-          x={d.side === "left" ? d.cx - DOT_R - 4 : d.cx + DOT_R + 4}
+          x={d.side === "left" ? d.cx - DOT_R - 5 : d.cx + DOT_R + 5}
           y={cy}
           textAnchor={d.side === "left" ? "end" : "start"}
           dominantBaseline="central"
@@ -176,7 +176,7 @@ export default function RegionalComparisonChart({ rows, peLabel = "PolicyEngine"
       <ChartLegend
         items={[
           { label: peLabel, fill: PE.fill, marker: "dot" },
-          { label: centaxLabel, fill: CENTAX.fill, marker: "dot" },
+          { label: centaxLabel, fill: CENTAX.fill, marker: "ring" },
         ]}
       />
       <ChartLogo />
