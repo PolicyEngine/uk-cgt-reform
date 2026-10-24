@@ -72,3 +72,15 @@ describe("the Reform tab's flow", () => {
     expect(isStale(state)).toBe(false);
   });
 });
+
+describe("a custom elasticity in the flow", () => {
+  test("keys the schedule by its value, so the same number typed or chosen is one schedule", () => {
+    let state = apply(load(""), { type: "select", policy: "custom", toggle: true }, { type: "calculate", shown: "live" });
+    const form = state.forms.custom;
+    state = apply(state, { type: "edit", policy: "custom", form: { ...form, customElasticity: "2.5" } });
+    expect(isStale(state)).toBe(true);
+    // The central case typed as "1.0" is the schedule calculated.
+    state = apply(state, { type: "edit", policy: "custom", form: { ...form, customElasticity: "1.0" } });
+    expect(isStale(state)).toBe(false);
+  });
+});

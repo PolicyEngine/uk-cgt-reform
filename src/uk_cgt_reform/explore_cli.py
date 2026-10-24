@@ -18,7 +18,9 @@ from pathlib import Path
 
 from .explore import (
     DEFAULT_ELASTICITY,
+    ELASTICITY_BOUNDS,
     ELASTICITY_OPTIONS,
+    ELASTICITY_STEP,
     ExploreValidationError,
     api_options,
     cached_locally,
@@ -83,7 +85,9 @@ def build_parser() -> argparse.ArgumentParser:
         type=float,
         default=DEFAULT_ELASTICITY,
         help=(
-            "Elasticity of realised gains with respect to the retention rate (1 - t); one of "
+            "Elasticity of realised gains with respect to the retention rate (1 - t), from "
+            f"{ELASTICITY_BOUNDS[0]:g} to {ELASTICITY_BOUNDS[1]:g} in steps of "
+            f"{ELASTICITY_STEP:g}; the cases are "
             + ", ".join(str(o["e_retention"]) for o in ELASTICITY_OPTIONS)
             + f" (default {DEFAULT_ELASTICITY})."
         ),
