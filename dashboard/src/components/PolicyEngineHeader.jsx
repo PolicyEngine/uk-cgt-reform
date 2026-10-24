@@ -10,7 +10,7 @@ const NAV_LINKS = [
   { label: "Research", href: "https://policyengine.org/uk/research" },
   { label: "Model", href: "https://policyengine.org/uk/model", wide: true },
   { label: "API", href: "https://policyengine.org/uk/api", wide: true },
-  { label: "About", href: "https://policyengine.org/uk/about" },
+  { label: "About", href: "https://policyengine.org/uk/team" },
   { label: "Donate", href: "https://policyengine.org/uk/donate" },
 ];
 
