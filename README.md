@@ -77,19 +77,21 @@ policyengine-uk 2.99.0 charges residential property gains, carried interest
 and gains qualifying for Business Asset Disposal Relief on their own
 schedules when a dataset records them, and a reform that touches only the
 three main rates no longer reaches them. The reform also takes residential
-property gains to 20/40/45% and withdraws Business Asset Disposal Relief
-(the engine's lifetime limit goes to zero, so qualifying gains, Investors'
-Relief included, fall to the main schedule), as CenTax's rates-only estimate
-does. Carried interest has been taxed as income since 6 April 2026 (the
+property gains to 20/40/45% and keeps Business Asset Disposal Relief at
+current law (18%, £1m lifetime limit). Every comparison shows this reform
+as it is; where a source also withdraws the relief (JRF's static estimate
+includes relief gains, CenTax's package abolishes the relief), that is
+listed with the other measures this repo does not model. Custom rates can
+withdraw it (the engine's lifetime limit goes to zero, so qualifying gains,
+Investors' Relief included, fall to the main schedule). Carried interest has been taxed as income since 6 April 2026 (the
 engine keeps a 32% CGT stand-in), so equalising CGT with income tax leaves
 it alone. On a dataset without these columns the parameters are inert.
 
 The results split each year's yield by schedule
-(`schedule_split`, static and central): the main rates first, then the
-residential property schedule (which is equalisation with the relief kept,
-one reading of Wes Streeting's proposed exemption for genuine entrepreneurs,
-which has not been defined), then the relief withdrawn. The Reform tab's Custom rates
-option scores any rate and lifetime limit for the relief, or withdraws it, for every year.
+(`schedule_split`, static and central, and across the sensitivity grid):
+the main rates first, then the residential property schedule. The Reform
+tab's Custom rates option scores any rate and lifetime limit for the relief,
+or withdraws it, for every year.
 
 ## Results (2027-28 unless stated)
 
@@ -99,31 +101,38 @@ sensitivity and the yield by schedule are in the results for every year.
 Engine policyengine-uk 2.132.6, wrapper policyengine.py 6.10.1, projection
 fingerprint `1f3d4d9bbc1a`.
 
-| | Microcosm UK 2024-25 | External benchmark |
+| | Microcosm UK 2024-25: 2027-28 (2024-25, no projection) | External benchmark |
 |---|---:|---|
-| CGT taxpayers (gains above the exempt amount) | 558k | HMRC Table 1: 382k (2023-24), 551k (2024-25, provisional) |
+| CGT taxpayers (gains above the exempt amount) | 558k (546k) | HMRC Table 1: 382k (2023-24), 551k (2024-25, provisional) |
 | of which entrants by uprating (see below) | 3.8k | none: HMRC counts only taxpayers with a liability |
 | CGT taxpayers excluding entrants | 554k | HMRC Table 1: 382k (2023-24), 551k (2024-25) |
-| Taxable gains | £133.1bn | HMRC Table 1: £66.6bn (2023-24), £119.3bn (2024-25) |
+| Taxable gains | £133.1bn (£118.3bn) | HMRC Table 1: £66.6bn (2023-24), £119.3bn (2024-25) |
 | Taxable gains excluding entrants | £133.1bn | HMRC Table 1: £66.6bn (2023-24), £119.3bn (2024-25) |
-| Baseline CGT liability | £30.1bn | HMRC Table 1: £12.1bn (2023-24), £22.5bn (2024-25); OBR receipts £20.8bn (2026-27), £25.5bn (2027-28) |
-| Residential property gains on their own schedule | £13.7bn | HMRC Table 8a (2024-25): £12.9bn including trusts, about £12.2bn for individuals; 205k taxpayers |
-| Gains qualifying for Business Asset Disposal Relief (and Investors' Relief) | £20.8bn, 61k people | HMRC Table 4 (individuals, BADR and Investors' Relief): 42k people and £11.0bn (2023-24), 61k and £18.4bn (2024-25) |
-| Share of gains from gains of £1m or more | 67% | HMRC Table 2: 61% (2023-24), 65% (2024-25) |
-| Taxpayers with gains over £500k | 37.8k | HMRC Table 2: 19k (2023-24), 33k (2024-25) |
-| Largest single gain | £584m | none: HMRC's top band is £5m and over (2k taxpayers, £23.6bn in 2023-24; 3k, £48.5bn in 2024-25) |
-| Static yield (e = 0) | +£27.0bn | JRF (2026): around £13bn, static, equalisation alone (see [Benchmarks](#benchmarks)) |
-| of which the relief withdrawn (static) | +£5.1bn | none |
-| Uplift from equalising at 2019/20 rules (static) | +130% | CenTax (2024), Table 3: +139% on 2019/20 data |
-| Yield, CenTax lower (retention 0.5) | +£18.3bn | none |
-| **Yield, CenTax central (retention 1.0)** | **+£10.8bn** | none for equalisation alone; CenTax's £14.3bn (2025-26), £11.3bn (2026-27) and £19.7bn (2029-30) add an investment allowance and base broadening |
-| of which the relief withdrawn (central) | +£2.9bn | none |
-| Yield, CenTax upper (retention 2.0) | −£0.8bn | none |
-| Yield, official HMRC/OBR elasticities (retention 3.6; 1.4 for gains qualifying for BADR) | −£9.9bn | none |
-| Five-year total, 2027-28 to 2031-32 | +£58.5bn | none |
-| Change in government balance, 2031-32 | +£12.6bn | none |
-| Top income decile, net income change | −8.1% (−£15,667/household) | none |
+| Baseline CGT liability | £30.1bn (£23.1bn; £21.6bn at the pre-30 October 2024 main rates all year, £25.2bn at the later ones) | HMRC Table 1: £12.1bn (2023-24), £22.5bn (2024-25); OBR receipts £20.8bn (2026-27), £25.5bn (2027-28) |
+| Residential property gains on their own schedule | £13.7bn (£12.2bn) | HMRC Table 8a (2024-25): £12.9bn including trusts, about £12.2bn for individuals; 205k taxpayers |
+| Gains qualifying for Business Asset Disposal Relief (and Investors' Relief) | £20.8bn, 61k people (£18.5bn, 60k) | HMRC Table 4 (individuals, BADR and Investors' Relief): 42k people and £11.0bn (2023-24), 61k and £18.4bn (2024-25) |
+| Share of gains from gains of £1m or more | 67% (65%) | HMRC Table 2: 61% (2023-24), 65% (2024-25) |
+| Taxpayers with gains over £500k | 37.8k (32.7k) | HMRC Table 2: 19k (2023-24), 33k (2024-25) |
+| Largest single gain | £584m (£527m) | none: HMRC's top band is £5m and over (2k taxpayers, £23.6bn in 2023-24; 3k, £48.5bn in 2024-25) |
+| Static yield (e = 0) | +£22.0bn | JRF (2026): around £13bn, static, including relief gains (see [Benchmarks](#benchmarks)) |
+| of which residential property (static) | +£2.3bn | none |
+| Yield, CenTax lower (retention 0.5) | +£14.3bn | none |
+| **Yield, CenTax central (retention 1.0)** | **+£7.9bn** | none for equal rates alone; CenTax's £14.3bn (2025-26), £11.3bn (2026-27) and £19.7bn (2029-30) withdraw the relief and add an investment allowance and base broadening |
+| of which residential property (central) | +£0.8bn | none |
+| Yield, CenTax upper (retention 2.0) | −£2.1bn | none |
+| Yield, official HMRC/OBR elasticities (retention 3.6; 1.4 for gains qualifying for BADR) | −£12.2bn | none |
+| Change in CGT revenue crosses £0 at (interpolated) | retention 1.76 | none |
+| Five-year total, 2027-28 to 2031-32 | +£42.3bn | none |
+| Change in government balance, 2031-32 | +£9.1bn | none |
+| Top income decile, net income change | −6.9% (−£13,410/household) | none |
 | Bottom income decile, net income change | −0.08% (−£12) | none |
+
+The bracketed figures are the baseline in 2024-25, the dataset's own year
+with no projection (`baseline_comparison`), which the Baseline tab sets
+beside HMRC's 2024-25 statistics. For 2024-25 the engine applies one rate
+schedule, the day-weighted average of the main rates before and after 30
+October 2024 (13.5% and 21.7%); HMRC publishes no split of the year by
+disposal date.
 
 Benchmarks are outturns for the tax year stated (HMRC Capital Gains Tax
 statistics, 2026 release, Tables 1, 2 and 8) or other institutions'
@@ -196,23 +205,20 @@ external figure with its source, locator, scope, year and basis.
   economic security](https://www.jrf.org.uk/income-savings-and-debt/rebuilding-living-standards-and-economic-security)
   puts equalisation at around £13bn in 2026/27, rising to £17bn in 2029/30 (2026/27
   prices), applying HMRC's CGT statistics by income band to the OBR's March
-  2026 receipts projection: an implied uplift of about 60% in 2026-27. This
-  repo's static uplift is 90% (about a fifth of the static yield comes from
-  withdrawing Business Asset Disposal Relief); applied to the same OBR
-  receipts that is £18.6bn in 2026-27 and £27.1bn in 2029-30 (deflated with
-  the OBR's CPI path).
-- **CenTax (2024), rates only at 2019/20 rules.** CenTax's static uplift from
-  equalising alone is +139% on 2019/20 data (Table 3). Applying the same
-  rules to this repo's 2026-27 data (main rates 10/20, residential and
-  carried interest 18/28, BADR at 10% with a £1m lifetime limit, an exempt
-  amount of £12,000; `reform.centax_1920_reforms`) and equalising gives
-  +130%. Investors' Relief, which CenTax's Table 3 also abolishes, shares the
-  engine's BADR input and is withdrawn with it.
-  By region (Table 8), this repo's shares of baseline CGT track CenTax's
-  (London 28.2% against 27.0%, South East 21.7% against 21.6%). CenTax's
-  uplift is lowest in London (+123%) and higher elsewhere (+137% to +163%);
-  here London's is +130% and the other regions range from +119% (West
-  Midlands) to +144% (Yorkshire and the Humber).
+  2026 receipts projection: an implied uplift of about 60% in 2026-27. JRF
+  take "account of gains from carried interest and gains subject to Business
+  Asset Disposal Relief", which this reform leaves at current law. This
+  repo's static uplift is 73%; applied to the same OBR receipts that is
+  £15.1bn in 2026-27 and £22.1bn in 2029-30 (deflated with the OBR's CPI
+  path).
+- **HMRC regional statistics, 2024-25.** Each region's share of CGT
+  liability on this repo's 2024-25 baseline (the dataset's own year, no
+  projection, no behavioural response) beside HMRC's Table 5.1 for the same
+  year (2026 release, provisional; regions by the postcode of each
+  taxpayer's residence; here, by household region): London 28.1% against
+  29.1%, South East 21.6% against 21.3%, and every other region within half
+  a point. CenTax's 2019-20 rates-only uplift (+139%, Table 3) is carried as
+  published: the dataset cannot reach 2019-20, so it is not re-scored.
 - **CenTax's package estimates** (Tables 5 and 6 of the 2024 report, the
   August 2025 technical note and "Taxes at the top", September 2026) add an
   investment allowance, the removal of the death uplift and a charge on
@@ -331,7 +337,8 @@ Asset Disposal Relief can respond at their own elasticity
 (`...separate_badr_elasticity` on, `...badr_elasticity` 1.4) while the rest of
 a person's gains respond at the main 3.6. Both respond to the same change in
 the person's share-weighted marginal rate, so only the elasticity differs.
-Qualifying gains keep 1.4 under a reform that withdraws the relief. CenTax
+Qualifying gains keep 1.4 whether the relief is kept, as in the headline
+reform, or withdrawn, as in a custom run. CenTax
 state one elasticity for every gain, so their cases leave the switch off.
 
 Until this change the pipeline converted CenTax's 1.0 into a
@@ -377,8 +384,8 @@ longer needed. The pipeline asserts that the static (e=0) and central
   claimants, budget
   impact by year with the entrants' contribution, distributional impacts,
   the elasticity sensitivity and the yield split by schedule, both for every year
-  (`schedule_split`: main rates, residential property, the relief withdrawn;
-  static and central), and a `benchmarks` block (see
+  (`schedule_split`: main rates, then residential property; static, central
+  and across the sensitivity grid), and a `benchmarks` block (see
   [Benchmarks](#benchmarks)).
 - `data/cgt_uprating_audit.json`: the projection audit below, with the
   per-year baseline block filled from the run.
@@ -431,7 +438,7 @@ engine's uprating cannot reuse cached simulation outputs.
 
 The dashboard has one **Reform** tab with two options. **Equalise with
 income tax** shows the committed results when a reader calculates it at its
-own values (20/40/45, relief withdrawn, central elasticity), with no backend
+own values (20/40/45, relief kept, central elasticity), with no backend
 call; with any value changed it runs live. **Custom rates** scores any
 schedule of CGT rates
 (basic / higher / additional, applied to the main schedule and to the
@@ -442,14 +449,30 @@ whole-point rate no higher than the additional rate and a lifetime limit of
 datasets, the cached baseline simulations, the `Policy.simulation_modifier`
 reform with the behavioural response, and `impacts.budget_impact` /
 `impacts.income_change_groups`. Nothing is precomputed or interpolated: a
-live run at 20/40/45 with the relief withdrawn builds the equalisation
+live run at 20/40/45 with the relief kept builds the equalisation
 reform's own dict (same fingerprint) and reproduces the committed results,
 and 18/24/24 with the relief at current law gives zero change.
 
+A live run also splits its headline-year (2027-28) yield schedule by
+schedule, as the committed results do: the main rates, then residential
+property gains, then the relief (no relief step when it stays at current
+law), with no behavioural response, at CenTax's central elasticity and at the
+run's own (`explore.score_schedule_split`, the result's `schedule_split`).
+That costs up to two more reform simulations per case in that year only. For
+equalisation the run computes only its own case and the dashboard takes the
+other two bars from the committed results.
+
+The behavioural response is one of the five cases (static, CenTax lower,
+central and upper, HMRC/OBR official) or, with **Custom**, any
+retention-rate elasticity from 0 to 5 in steps of 0.1, applied to every gain
+(URL parameter `e`, folded summary "Elasticity 2.5"). A typed value equal to
+a case is that case, so 3.6 is the official case with its 1.4 for gains
+qualifying for the relief.
+
 Links shared before the retention form carry a marginal-rate elasticity
 (−0.35, −0.7 or −2.52), which maps to the case it named. Those links have no
-relief fields, and one to 20/40/45 loads with the relief withdrawn, as the
-equalisation preset now does, so it still scores the equalisation reform.
+relief fields, and one to 20/40/45 loads with the equalisation preset's
+treatment of the relief (kept), so it scores the equalisation reform.
 Links to the former Rate explorer tab (`?tab=explorer`, with or without a
 schedule) open the Reform tab with Custom rates selected and that schedule;
 a schedule reaches the URL only once a calculation succeeds.
@@ -478,7 +501,7 @@ rate.
 
 ```bash
 uk-cgt-reform-explore --basic 0.18 --higher 0.30 --additional 0.30
-uk-cgt-reform-explore --basic 0.20 --higher 0.40 --additional 0.45 --withdraw-badr --json   # the equalisation reform, full result on stdout
+uk-cgt-reform-explore --basic 0.20 --higher 0.40 --additional 0.45 --json   # the equalisation reform, full result on stdout
 uk-cgt-reform-explore --basic 0.20 --higher 0.40 --additional 0.45 --badr-rate 0.24   # the relief kept at 24%
 uk-cgt-reform-explore --options > dashboard/public/data/explore_options.json   # bounds, presets, ready-reckoner rows
 ```
@@ -540,7 +563,8 @@ and one Dict (`uk-cgt-reform-results`):
 
 Abuse guards, because every visitor can start workers through the
 dashboard's route: custom rates are whole percentage points ordered basic ≤
-higher ≤ additional (about 76,000 schedules per dataset and elasticity);
+higher ≤ additional (about 76,000 schedules per dataset and elasticity),
+and the elasticity is a tenth from 0 to 5 (51 values);
 the gateway joins a request to a job already computing the same schedule,
 answers 429 when `MAX_IN_FLIGHT` (3) uncached schedules are computing, and
 starts at most `DAILY_COMPUTE_BUDGET` (250) new schedules per UTC day (a
@@ -679,9 +703,9 @@ are reported by value: a parameter equal to current law shows as `default`
 even when the case sets it, so on 2.132.6 the static case's elasticity reads
 `"default"` and the central case's `"override"`.
 Each release can move the projection fingerprint, so
-changing the pin is a deliberate re-pin that regenerates the results. A run needs the per-year builds, twenty-four stored simulations (baseline,
+changing the pin is a deliberate re-pin that regenerates the results. A run needs the per-year builds, the stored simulations (baseline,
 central and static reform for every year, three more sensitivity cases, the
-CenTax counterfactual pair and four schedule-split steps) and forty-two
+sensitivity curve's other grid points and four schedule-split steps) and forty-two
 in-memory ready-reckoner runs; a run with the stored outputs in place spends
 most of its time on the ready-reckoner runs. Copy
 `data/cgt_equalisation_results.json` into `dashboard/public/data/` for the

@@ -3,12 +3,16 @@ import results from "../../public/data/cgt_equalisation_results.json";
 import {
   PRESETS,
   checkForm,
+  elasticityShortName,
   formOf,
+  formSummary,
+  hasReliefControl,
   initialChoice,
   isPrecomputed,
   precomputedSchedule,
   readUrlState,
   scheduleParams,
+  validateElasticity,
 } from "./schedule";
 
 const precomputed = precomputedSchedule(results);
@@ -24,8 +28,9 @@ describe("the precomputed schedule", () => {
 
   test("any changed value makes it a live run", () => {
     const form = formOf(precomputed.rates, precomputed.badr, precomputed.elasticity);
-    expect(isPrecomputed(checkForm({ ...form, elasticity: 2.0 }), precomputed)).toBe(false);
-    expect(isPrecomputed(checkForm({ ...form, badrForm: { ...form.badrForm, mode: "keep" } }), precomputed)).toBe(false);
+    expect(isPrecomputed(checkForm({ ...form, elasticity: 2.0, customElasticity: null }), precomputed)).toBe(false);
+    expect(isPrecomputed(checkForm({ ...form, customElasticity: "2.5" }), precomputed)).toBe(false);
+    expect(isPrecomputed(checkForm({ ...form, badrForm: { ...form.badrForm, mode: "withdraw" } }), precomputed)).toBe(false);
     expect(
       isPrecomputed(checkForm({ ...form, percents: { ...form.percents, basic_rate: "21" } }), precomputed),
     ).toBe(false);
@@ -42,7 +47,7 @@ describe("initialChoice", () => {
     const opened = choice("");
     expect(opened.view).toBe("landing");
     expect(opened.forms.equalise.percents).toEqual({ basic_rate: "20", higher_rate: "40", additional_rate: "45" });
-    expect(opened.forms.equalise.badrForm.mode).toBe("withdraw");
+    expect(opened.forms.equalise.badrForm.mode).toBe("keep");
     expect(opened.forms.custom.percents).toEqual({ basic_rate: "18", higher_rate: "24", additional_rate: "24" });
   });
 
@@ -68,20 +73,20 @@ describe("initialChoice", () => {
   });
 
   test("a link to the precomputed schedule shows it at once", () => {
-    expect(choice("basic=20&higher=40&additional=45&bw=1&e=1")).toMatchObject({
+    expect(choice("basic=20&higher=40&additional=45&e=1")).toMatchObject({
       policy: "equalise",
       view: "precomputed",
     });
     // From the old tab it keeps Custom open, with the same instant results.
-    expect(choice("tab=explorer&basic=20&higher=40&additional=45&bw=1&e=1")).toMatchObject({
+    expect(choice("tab=explorer&basic=20&higher=40&additional=45&e=1")).toMatchObject({
       policy: "custom",
       view: "precomputed",
     });
   });
 
-  test("a pre-relief legacy link to 20/40/45 still loads the withdrawn relief", () => {
+  test("a pre-relief legacy link to 20/40/45 loads the equalisation preset's relief", () => {
     // e=-0.7 was the marginal-rate form of the central case.
-    expect(readUrlState(params("basic=20&higher=40&additional=45&e=-0.7")).badrForm.mode).toBe("withdraw");
+    expect(readUrlState(params("basic=20&higher=40&additional=45&e=-0.7")).badrForm.mode).toBe("keep");
     expect(choice("tab=explorer&basic=20&higher=40&additional=45&e=-0.7").view).toBe("precomputed");
   });
 
@@ -128,5 +133,94 @@ describe("scheduleParams", () => {
     const kept = checkForm(formOf({ basic_rate: 0.2, higher_rate: 0.4, additional_rate: 0.45 }, { withdrawn: false, rate: 0.1, lifetime_limit: 10_000_000 }, 3.6));
     const read = readUrlState(scheduleParams("", kept));
     expect(checkForm(read)).toEqual(kept);
+  });
+});
+
+describe("a custom elasticity", () => {
+  const base = formOf({ basic_rate: 0.18, higher_rate: 0.3, additional_rate: 0.3 }, null);
+  const typed = (value) => checkForm({ ...base, customElasticity: value });
+
+  test("accepts any tenth from 0 to 5 and normalises it", () => {
+    expect(validateElasticity("2.5")).toEqual({ elasticity: 2.5 });
+    expect(validateElasticity("0")).toEqual({ elasticity: 0 });
+    expect(validateElasticity("5")).toEqual({ elasticity: 5 });
+    expect(validateElasticity("0.30000000000000004")).toEqual({ elasticity: 0.3 });
+    expect(typed("2.5")).toMatchObject({ elasticity: 2.5, errorField: null });
+    expect(typed("2.5").rates).not.toBe(null);
+  });
+
+  test("refuses an empty, out-of-range or off-step value, and blocks the form", () => {
+    for (const value of ["", "abc", "-0.1", "5.1", "2.55"]) {
+      const check = typed(value);
+      expect(check.errorField).toBe("elasticity");
+      expect(check.rates).toBe(null);
+      expect(check.error).toBeTruthy();
+    }
+    expect(typed("5.1").error).toContain("between 0 and 5");
+    expect(typed("2.55").error).toContain("0.1");
+  });
+
+  test("a typed value equal to a case is that case", () => {
+    expect(typed("1.0").elasticity).toBe(1);
+    expect(elasticityShortName(typed("1.0").elasticity)).toBe("CenTax central");
+    expect(elasticityShortName(2.5)).toBe("Elasticity 2.5");
+  });
+
+  test("every form opens on the Custom box, holding its elasticity", () => {
+    expect(formOf({ basic_rate: 0.2, higher_rate: 0.4, additional_rate: 0.45 }, null, 2.5).customElasticity).toBe("2.5");
+    expect(formOf({ basic_rate: 0.2, higher_rate: 0.4, additional_rate: 0.45 }, null, 2.0).customElasticity).toBe("2.0");
+  });
+
+  test("round-trips through the URL, and a bad e falls back to the default", () => {
+    const check = typed("2.5");
+    const query = scheduleParams("", check);
+    expect(query.get("e")).toBe("2.5");
+    const read = readUrlState(query);
+    expect(read.customElasticity).toBe("2.5");
+    expect(checkForm(read)).toEqual(check);
+    expect(readUrlState(params("basic=18&higher=30&additional=30&e=7")).elasticity).toBe(1);
+    expect(readUrlState(params("basic=18&higher=30&additional=30&e=2.55")).customElasticity).toBe(null);
+    expect(readUrlState(params("basic=18&higher=30&additional=30&e=2")).customElasticity).toBe(null);
+  });
+
+  test("a link with a custom value opens Custom and looks it up live", () => {
+    const opened = choice("basic=20&higher=40&additional=45&bw=1&e=2.5");
+    expect(opened).toMatchObject({ policy: "custom", view: "live" });
+  });
+});
+
+describe("the equalise tile has no relief control", () => {
+  test("only Custom rates sets the relief", () => {
+    expect(hasReliefControl("equalise")).toBe(false);
+    expect(hasReliefControl("custom")).toBe(true);
+  });
+
+  test("its one-line summary drops the relief", () => {
+    const equalise = choice("").forms.equalise;
+    expect(formSummary(equalise, { relief: false })).toBe("20% · 40% · 45% · CenTax central");
+    expect(formSummary({ ...equalise, customElasticity: "2.5" }, { relief: false })).toBe(
+      "20% · 40% · 45% · Elasticity 2.5",
+    );
+    // Custom rates keeps it.
+    const withdrawn = { ...equalise, badrForm: { ...equalise.badrForm, mode: "withdraw" } };
+    expect(formSummary(withdrawn)).toBe("20% · 40% · 45% · Relief withdrawn · CenTax central");
+  });
+
+  test("its links never carry relief parameters", () => {
+    const equalise = choice("").forms.equalise;
+    expect(equalise.badrForm.mode).toBe("keep");
+    for (const customElasticity of [null, "2.5"]) {
+      const query = scheduleParams("", checkForm({ ...equalise, customElasticity }));
+      ["bw", "br", "bl"].forEach((key) => expect(query.get(key)).toBeNull());
+    }
+  });
+
+  test("an old equalise link with bw=1 opens Custom rates with the relief withdrawn", () => {
+    for (const e of ["1", "2.5"]) {
+      const opened = choice(`basic=20&higher=40&additional=45&bw=1&e=${e}`);
+      expect(opened).toMatchObject({ policy: "custom", view: "live" });
+      expect(opened.forms.custom.badrForm.mode).toBe("withdraw");
+      expect(opened.forms.equalise.badrForm.mode).toBe("keep");
+    }
   });
 });

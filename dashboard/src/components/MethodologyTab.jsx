@@ -149,8 +149,14 @@ const READY_RECKONER_URL =
   "https://assets.publishing.service.gov.uk/media/68552862b46781eacfd71d71/June_2025_TRR_ODS__1_.ods";
 const AGERSNAP_ZIDAR = "https://www.aeaweb.org/articles?id=10.1257/aeri.20200535";
 const CGT_RATES = "https://www.gov.uk/capital-gains-tax/rates";
+const POLICYENGINE_UK = "https://github.com/PolicyEngine/policyengine-uk";
+// The sub-exempt gains distribution Microcosm draws from (its build's source).
+const ADVANI_SUMMERS = "https://warwick.ac.uk/fac/soc/economics/research/centres/cage/manage/publications/wp465.2020.pdf";
 const CARRIED_INTEREST =
   "https://www.gov.uk/government/publications/reform-of-the-tax-treatment-of-carried-interest";
+
+// A calendar year as the fiscal year it starts ("2030" -> "2030-31").
+const fiscalYear = (year) => `${year}-${String(Number(year) + 1).slice(2)}`;
 
 // The dataset's own notes carry the figures the plain-language text needs;
 // pull them out so nothing is hardcoded, and fall back to the note itself.
@@ -194,16 +200,15 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
   const figures = datasetFigures(dataset);
   const metadata = getMetadata(data);
   const { central, official } = getBenchmarks(data).elasticities;
-  const centaxRange = getBenchmarks(data).elasticities.centax_range;
   const exemptAmount = data.validation?.entrants_by_uprating?.exempt_amount_gbp;
   // Entrants by uprating in the first year, beside the whole taxpayer base.
   const validation = data.validation;
   const entrants = validation?.entrants_by_uprating;
   const baseYear = metadata.projection.base_year;
   const baseYearLabel = `${baseYear}-${String(baseYear + 1).slice(2)}`;
-  // The ready reckoner's largest row: the higher rate from 24% to 34%.
-  const atCentral = responseTo(0.24, 0.34, central);
-  const atOfficial = responseTo(0.24, 0.34, official);
+  // A higher-rate taxpayer under the reform: 24% to 40%.
+  const atCentral = responseTo(0.24, 0.4, central);
+  const atOfficial = responseTo(0.24, 0.4, official);
 
   // A link to a section of this tab: open it if it folds, then scroll to it.
   const openSection = (id) => {
@@ -213,7 +218,16 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
   };
 
   const firstYear = getFirstYear(data);
-  const lastYear = data.budget.at(-1).year;
+  const yearLabels = Object.keys(data.sensitivity ?? {});
+  const lastYear = yearLabels.at(-1) ?? firstYear;
+  // The last year's growth in gains: the step in the projection's
+  // cumulative factor between the last two years.
+  const gainFactors = metadata.projection.cumulative_factors?.capital_gains_before_response ?? {};
+  const factorYears = Object.keys(gainFactors).sort();
+  const lastGrowth =
+    factorYears.length > 1
+      ? gainFactors[factorYears.at(-1)] / gainFactors[factorYears.at(-2)] - 1
+      : NaN;
 
   return (
     <div className="space-y-6">
@@ -223,10 +237,10 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
           description={
             <p className="">
               The estimates come from{" "}
-              <ExternalLink href="https://policyengine.org">PolicyEngine</ExternalLink> UK, a
-              model of UK taxes and benefits. It runs on a representative sample of UK households
-              for {firstYear} to {lastYear}. Capital gains are concentrated among few people, so
-              the results depend on how well the sample captures them.
+              <ExternalLink href={POLICYENGINE_UK}>PolicyEngine UK</ExternalLink>, a model of UK
+              taxes and benefits. It runs on a sample of UK households for {baseYearLabel},
+              projected to later years. Capital gains are concentrated among few people, so the
+              results depend on how well the sample captures them.
             </p>
           }
         />
@@ -252,9 +266,10 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
             Gain sizes come from HMRC&apos;s Table{" "}
             <ExternalLink href={HMRC_TABLE_3}>3</ExternalLink> (size of gain by taxable income).
             This keeps the largest gains, which carry most of the tax, and puts each gain in its
-            income tax band. Gains below the exempt <ExternalLink href={EXEMPT_AMOUNT}>amount</ExternalLink> (the
-            yearly tax-free allowance) follow the Advani&ndash;Summers distribution, their
-            estimate of how gains below it are spread, within each band.
+            income tax band. Within each band, gains below the exempt{" "}
+            <ExternalLink href={EXEMPT_AMOUNT}>amount</ExternalLink> (the yearly tax-free allowance)
+            are spread using Advani and Summers&apos;{" "}
+            <ExternalLink href={ADVANI_SUMMERS}>estimate</ExternalLink>.
           </p>
         </Topic>
         <Topic title="Asset types and reliefs">
@@ -264,37 +279,100 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
             <ExternalLink href={HMRC_TABLE_8}>8</ExternalLink>. Residential property gains are
             kept separate. Some gains qualify for Business Asset Disposal{" "}
             <ExternalLink href={BADR_GUIDANCE}>Relief</ExternalLink> or Investors&apos;{" "}
-            <ExternalLink href={INVESTORS_RELIEF}>Relief</ExternalLink>, which tax gains on
-            selling a business or certain shares at a lower rate. These gains are imputed from
-            HMRC Table <ExternalLink href={HMRC_TABLE_4}>4</ExternalLink>.
+            <ExternalLink href={INVESTORS_RELIEF}>Relief</ExternalLink>; these gains are assigned
+            from HMRC Table <ExternalLink href={HMRC_TABLE_4}>4</ExternalLink>.
           </p>
         </Topic>
         <Topic title="Calibration">
           <p>
-            Household weights are set so the sample matches {figures.targets ?? "a set of"}{" "}
-            statistics. These include HMRC&apos;s CGT{" "}
-            <ExternalLink href={CGT_STATISTICS}>totals</ExternalLink> and size bands, gains by taxable
-            income band, the relief&apos;s bands, residential property gains, age and region.
+            Household weights are calibrated to {figures.targets ?? "a set of"} statistics across
+            the tax and benefit system. The CGT ones are HMRC&apos;s{" "}
+            <ExternalLink href={CGT_STATISTICS}>totals</ExternalLink> and size bands, gains by
+            taxable income band, relief claims by size, and residential property gains.
           </p>
         </Topic>
         <Topic title="Which gains are taxed how">
           <p>
             Under current law, residential property gains and gains qualifying for Business Asset
-            Disposal Relief (with Investors&apos; Relief) have their own rate schedules. The reform taxes residential property gains at income tax rates and
-            withdraws the relief, so qualifying gains pay the new main rates, as in{" "}
-            <ExternalLink href={CENTAX_REPORT}>CenTax&apos;s</ExternalLink> rates-only estimate.
-            Carried interest (fund managers&apos; share of profits) has been taxed as{" "}
-            <ExternalLink href={CARRIED_INTEREST}>income</ExternalLink>, outside CGT, since 6 April
+            Disposal Relief (with Investors&apos; Relief) have their own rate schedules. The reform
+            taxes main and residential property gains at income tax rates (20%, 40%, 45%); how it
+            treats the relief is set out{" "}
+            <TabLink onNavigate={() => openSection("relief")}>below</TabLink>. Carried interest (fund
+            managers&apos; share of profits) has been taxed under income{" "}
+            <ExternalLink href={CARRIED_INTEREST}>tax</ExternalLink>, outside CGT, since 6 April
             2026, so the reform does not affect it.
           </p>
         </Topic>
         <Topic title="Results by group">
           <p>
             Budget figures and the breakdowns by income group, household type and region are
-            weighted totals over the simulated households.
+            weighted totals and averages over the simulated households.
           </p>
         </Topic>
 
+      </section>
+
+      <section className="section-card scroll-mt-24" id="relief">
+        <SectionHeading
+          title="How the relief is modelled"
+          description={<p>What the relief is, how this dashboard treats it, and the limits of the data.</p>}
+        />
+        <div className={`mt-4 ${COLUMN}`}>
+            <ul className="list-disc space-y-1.5 pl-5">
+              <li>
+                <strong className="font-semibold text-slate-800">What it is.</strong> Business Asset
+                Disposal <ExternalLink href={BADR_GUIDANCE}>Relief</ExternalLink> lowers the tax on
+                gains from selling a business or qualifying shares. Those gains pay one rate whatever
+                the person&apos;s income: 10% up to 2024-25, 14% in 2025-26 and 18% from April 2026.
+                This rate applies to up to £1m of such gains over a person&apos;s lifetime; gains above
+                that pay the main rates.
+              </li>
+              <li>
+                <strong className="font-semibold text-slate-800">In this reform.</strong> The relief
+                stays as under current law. Custom rates can withdraw it, as{" "}
+                <ExternalLink href={CENTAX_REPORT}>CenTax&apos;s</ExternalLink> rates-only estimate
+                does, or change its rate and limit (see{" "}
+                <TabLink onNavigate={() => openSection("explorer")}>Custom rates</TabLink>).
+              </li>
+              <li>
+                <strong className="font-semibold text-slate-800">The £1m lifetime limit.</strong> The
+                data show one year of gains, not past claims, so the model applies the £1m within each
+                year. This comes close: the 2024-25 data match what HMRC records people actually
+                claimed, after any earlier use (see{" "}
+                <TabLink onNavigate={onNavigate} tab="baseline" section="benchmarks">
+                  Baseline
+                </TabLink>
+                ), and HMRC and the{" "}
+                <ExternalLink href="https://obr.uk/docs/dlm_uploads/CGT-supplementary-release-Jan-2025.pdf">OBR</ExternalLink>{" "}
+                also cost it from one year&apos;s returns, split by rate (OBR, January 2025, para 1.4).
+                Gains that grow past £1m pay the main rates on the excess: £0.8bn of gains in
+                2027-28, adding about £0.05bn to baseline CGT and more each year as gains grow. The
+                reform taxes that excess at 40% or 45%.
+              </li>
+              <li>
+                <strong className="font-semibold text-slate-800">2024-25 was unusual.</strong> Claims
+                jumped from 42k people and £11.0bn of gains in 2023-24 to 61k and £18.4bn, as owners
+                sold before the rate rose in April 2025 (the OBR assumed +60%: January 2025, para
+                1.12). The model carries that level forward, so it may overstate these gains in later
+                years. This matters most for custom runs that change the relief; in the headline
+                reform it affects only the gains above £1m and the behavioural response.
+              </li>
+              <li>
+                <strong className="font-semibold text-slate-800">Investors&apos; Relief.</strong> The
+                model counts it with this relief under one £1m limit, as HMRC&apos;s statistics report
+                them together. In law it has its own £1m limit (£10m before 30 October 2024; TCGA
+                1992{" "}
+                <ExternalLink href="https://www.legislation.gov.uk/ukpga/1992/12/section/169VK">s.169VK</ExternalLink>
+                ).
+              </li>
+              <li>
+                <strong className="font-semibold text-slate-800">Behaviour.</strong> These gains
+                respond like other gains, except under the official HMRC/OBR assumption, which gives
+                them their own, lower elasticity (see{" "}
+                <TabLink onNavigate={() => openSection("elasticity-gap")}>below</TabLink>).
+              </li>
+            </ul>
+        </div>
       </section>
 
       <section className="section-card scroll-mt-24" id="projection">
@@ -303,9 +381,13 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
           description={
             <div className="space-y-2">
               <p>
-                The data describe one year, {baseYearLabel}. In each later year, capital gains
-                grow with the OBR&apos;s <ExternalLink href={OBR_EFO}>forecast</ExternalLink> of GDP
-                per head. Household weights grow with ONS population{" "}
+                The data describe one year, {baseYearLabel}. The results cover {firstYear} to{" "}
+                {lastYear}. In each later year, capital gains grow with cash GDP per person (the
+                OBR&apos;s March 2026 <ExternalLink href={OBR_EFO}>forecast</ExternalLink> of nominal
+                GDP, less population growth); the forecast ends in 2030-31, so in 2031-32 gains grow
+                at its 2030-31 rate
+                {Number.isFinite(lastGrowth) ? ` (${formatPct(100 * lastGrowth, 2)})` : ""}. Household
+                weights grow with ONS population{" "}
                 <ExternalLink href={ONS_PROJECTIONS}>projections</ExternalLink>. Nothing specific to
                 CGT enters the projection.
               </p>
@@ -323,9 +405,9 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
             . They owe nothing in the base year. As gains grow, some cross it and start paying.{" "}
             {figures.entrants ? (
               <>
-                The model adds about {figures.entrants.audit} such taxpayers by{" "}
-                {figures.entrants.year}. The dataset&apos;s own bound is {figures.entrants.bound}.
-                HMRC counted {figures.entrants.hmrc} taxpayers with gains of{" "}
+                By {fiscalYear(figures.entrants.year)} about {figures.entrants.audit} such
+                taxpayers are added (the dataset&apos;s build expects about{" "}
+                {figures.entrants.bound}). HMRC counted {figures.entrants.hmrc} taxpayers with gains of{" "}
                 {figures.entrants.band} in {figures.entrants.hmrcYear} (
                 <ExternalLink href={HMRC_TABLE_2}>HMRC</ExternalLink> {figures.entrants.table}).
               </>
@@ -333,7 +415,7 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
               dataset.notes
             )}
             {entrants
-              ? ` In ${firstYear} they are ${formatCount(entrants.count)} of ${formatCount(validation.cgt_taxpayers)} CGT taxpayers (${formatPct((100 * entrants.count) / validation.cgt_taxpayers, 1)}) and ${formatSmallBn(entrants.gains_bn)} of ${formatBn(validation.total_gains_bn, 1)} in taxable gains.`
+              ? ` In ${firstYear} they are ${formatCount(entrants.count)} of ${formatCount(validation.cgt_taxpayers)} CGT taxpayers (${formatPct((100 * entrants.count) / validation.cgt_taxpayers, 1)}) and ${formatSmallBn(entrants.gains_bn)} of ${formatBn(validation.total_gains_bn, 1)} in the gains of CGT taxpayers.`
               : ""}
           </p>
         </Topic>
@@ -361,13 +443,6 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
             <ExternalLink href={centaxPage(38)}>37</ExternalLink>).
           </p>
         </Topic>
-        <Topic title={`Central value: ${central.e_retention.toFixed(1)}`}>
-          <p>
-            This is CenTax&apos;s &ldquo;central elasticity estimate&rdquo; (p.{" "}
-            <ExternalLink href={central.url}>37</ExternalLink>). It is also PolicyEngine UK&apos;s
-            default.
-          </p>
-        </Topic>
         <Topic title="How it is applied">
           <p>For each person, realised gains are scaled as follows.</p>
           <ResponseFormula />
@@ -389,27 +464,9 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
           <p>
             CenTax apply one elasticity to total gains. This model applies it to each
             person&apos;s own marginal rate. It takes CenTax&apos;s convention but not their
-            calculation. The elasticity is a power, so values away from 1.0, such as 0.5 and 2.0, also differ
-            from a straight-line reading.
+            calculation. The elasticity is a power, so 2.0 does not give twice the response of 1.0.
           </p>
         </Topic>
-        <Topic title="Testing the assumption">
-          <p>
-            The{" "}
-            <TabLink onNavigate={onNavigate} tab="reform" section="sensitivity">
-              Reform
-            </TabLink>{" "}
-            tab&apos;s sensitivity chart shows the result in three ways: with no response, across
-            CenTax&apos;s range
-            {centaxRange
-              ? ` (${centaxRange.lower.toFixed(1)} to ${centaxRange.upper.toFixed(1)})`
-              : ""}
-            , and at the official HMRC/OBR value described{" "}
-            <TabLink onNavigate={() => openSection("elasticity-gap")}>below</TabLink>
-            .
-          </p>
-        </Topic>
-
         <aside
           aria-labelledby="main-caveat"
           className="mt-7 rounded-lg text-sm border border-amber-200 bg-amber-50/60 p-4 sm:p-5"
@@ -419,12 +476,11 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
           </h3>
           <div className={`mt-2 ${COLUMN}`}>
             <p>
-              CenTax&apos;s central value applies to a package that also ends the uplift at death,
-              under which gains on assets held until death are not taxed, and taxes gains when
-              people leave the UK; this dashboard models the rate changes only (see{" "}
+              CenTax&apos;s central value applies to a package that also adds an investment
+              allowance, ends the uplift at death and taxes gains when people leave the UK; this
+              dashboard models the rate changes only (see{" "}
               <TabLink onNavigate={() => openSection("not-modelled")}>below</TabLink>). CenTax
-              estimate a larger behavioural response when rates change without those measures, and
-              state that they would not equalise rates without them (Advani, Hughson &amp; Summers,{" "}
+              expect a larger response without those measures, and state that they would not equalise rates without them (Advani, Hughson &amp; Summers,{" "}
               <em>Taxes at the top</em>, CenTax, September 2026, pp.{" "}
               <ExternalLink href={taxesAtTheTopPage(19)}>17</ExternalLink>&ndash;
               <ExternalLink href={taxesAtTheTopPage(20)}>18</ExternalLink>).
@@ -451,13 +507,13 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
           How strongly people respond: CenTax and HMRC
         </summary>
         <p className="mt-3 text-sm leading-6 text-slate-600">
-          The elasticity measures how much people cut the gains they realise when the tax rate
-          rises. HMRC and the{" "}
+          HMRC and the{" "}
           <ExternalLink href={`${official.url}#page=3`}>OBR</ExternalLink> assume a stronger
           response than{" "}
           <ExternalLink href={CENTAX_REPORT}>CenTax</ExternalLink>. With HMRC&apos;s value, raising
-          the higher rate by 5 or 10 points loses revenue, as its ready{" "}
-          <ExternalLink href={READY_RECKONER_URL}>reckoner</ExternalLink> shows; with
+          the higher rate by 5 or 10 points loses revenue, as HMRC&apos;s{" "}
+          <ExternalLink href={READY_RECKONER_URL}>table</ExternalLink> of small rate changes (its
+          &lsquo;ready reckoner&rsquo;) shows; with
           CenTax&apos;s value, the same rises bring in more.
         </p>
 
@@ -467,13 +523,13 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
           </ValueCard>
           <ValueCard label="HMRC/OBR official" value={official.e_retention.toFixed(1)}>
             <p>
-              For the main CGT rates, and {official.badr_e_retention.toFixed(1)} for gains
+              For all other gains, residential property included, and{" "}
+              {official.badr_e_retention.toFixed(1)} for gains
               qualifying for Business Asset Disposal{" "}
               <ExternalLink href={BADR_GUIDANCE}>Relief</ExternalLink> (
               <ExternalLink href={`${official.url}#page=3`}>OBR</ExternalLink>,{" "}
               {formatPublished(official.published.slice(0, 7))}, para 1.9 and{" "}
-              <ExternalLink href={`${official.url}#page=5`}>Table</ExternalLink> 1.1). HMRC&apos;s
-              own estimate for 1998 to 2018 is 4.0 (para 1.10).
+              <ExternalLink href={`${official.url}#page=5`}>Table</ExternalLink> 1.1).
             </p>
           </ValueCard>
         </div>
@@ -481,8 +537,10 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
         <Topic title="Why the two values differ">
           <ul className="list-disc space-y-1.5 pl-5">
             <li>
-              <strong className="font-semibold text-slate-800">HMRC</strong> estimate theirs from
-              how UK taxpayers responded to past rate changes under today&apos;s rules.
+              <strong className="font-semibold text-slate-800">HMRC</strong> start from 4.0,
+              estimated from UK gains in 1998 to 2018, and lower it to{" "}
+              {official.e_retention.toFixed(1)} because aligned rates and the higher relief rate
+              leave fewer ways to avoid the rise (OBR, January 2025, para 1.10).
             </li>
             <li>
               <strong className="font-semibold text-slate-800">CenTax</strong> start from US
@@ -500,13 +558,15 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
                 </li>
               </ul>
             </li>
-            <li>CenTax make no adjustment for the charge on people leaving the UK.</li>
+            <li>
+              CenTax make no adjustment for leaving the country: the US and Canada already tax gains
+              on departure, as CenTax&apos;s package would.
+            </li>
           </ul>
         </Topic>
         <Topic title="A worked example">
           <p>
-            Take a taxpayer whose rate on gains rises from 24% to 34%, the ready{" "}
-            <ExternalLink href={READY_RECKONER_URL}>reckoner&apos;s</ExternalLink> largest row:
+            Take a higher-rate taxpayer whose rate on gains rises from 24% to 40% under the reform:
           </p>
           <div className="overflow-x-auto rounded-lg border border-slate-200 px-4 py-2">
             <table className="w-full text-left text-sm">
@@ -543,28 +603,20 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
           </div>
           <p>
             With CenTax&apos;s value the tax paid {atCentral.revenue >= 0 ? "rises" : "falls"}; with
-            the official value it {atOfficial.revenue >= 0 ? "rises" : "falls"}, as in HMRC&apos;s{" "}
-            <ExternalLink href={READY_RECKONER_URL}>table</ExternalLink>. Across all taxpayers, the result depends on each person&apos;s rate.
+            the official value it {atOfficial.revenue >= 0 ? "rises" : "falls"}. Across all
+            taxpayers, the result depends on each person&apos;s rate. The{" "}
+            <TabLink onNavigate={onNavigate} tab="reform" section="response">
+              Reform
+            </TabLink>{" "}
+            tab&apos;s revenue and behavioural response chart runs the reform at elasticities from 0
+            to 4; the{" "}
+            <TabLink onNavigate={onNavigate} tab="baseline" section="ready-reckoner">
+              Baseline
+            </TabLink>{" "}
+            tab scores HMRC&apos;s small rate changes at {official.e_retention.toFixed(1)},{" "}
+            {Number(getBenchmarks(data).ready_reckoner.elasticities.elasticity_3).toFixed(1)} and{" "}
+            {central.e_retention.toFixed(1)}.
           </p>
-        </Topic>
-        <Topic title="Where to see it">
-          <ul className="list-disc space-y-1.5 pl-5">
-            <li>
-              The{" "}
-              <TabLink onNavigate={onNavigate} tab="reform" section="sensitivity">
-                Reform
-              </TabLink>{" "}
-              tab&apos;s sensitivity chart shows the reform&apos;s revenue at each value.
-            </li>
-            <li>
-              The{" "}
-              <TabLink onNavigate={onNavigate} tab="baseline" section="ready-reckoner">
-                Baseline
-              </TabLink>{" "}
-              tab scores the ready reckoner&apos;s rows at the official values, 3.0 and{" "}
-              {central.e_retention.toFixed(1)}.
-            </li>
-          </ul>
         </Topic>
       </details>
 
@@ -588,8 +640,8 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
             ) : (
               dataset.shortLabel
             )}{" "}
-            for every modelled year, with the same model and assumptions
-            as the main results.
+            for every modelled year, with the same model as the main results; the behavioural
+            response is yours to choose.
           </p>
 
 
@@ -604,8 +656,9 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
         </Topic>
         <Topic title="Runs and saved results">
           <p>
-            Each schedule is simulated in full, with nothing interpolated. Equalisation with the
-            relief withdrawn shows its results at once; any other schedule, including
+            Each set of rates is run through the full model; nothing is estimated from other
+            runs. Equalisation with the
+            relief kept shows its results at once; any other schedule, including
             equalisation with one value changed, runs live. Completed runs are saved and reused
             for the same schedule; a change to the data or the model triggers a fresh run.
           </p>

@@ -58,6 +58,11 @@
     }
   ],
   "default_elasticity": 1.0,
+  "elasticity_bounds": [
+    0.0,
+    5.0
+  ],
+  "elasticity_step": 0.1,
   "elasticity_parameter": "gov.simulation.capital_gains_responses.elasticity",
   "presets": [
     {
@@ -76,20 +81,6 @@
     },
     {
       "id": "income_tax",
-      "label": "Equalise with income tax (20% / 40% / 45%), relief withdrawn",
-      "rates": {
-        "basic_rate": 0.2,
-        "higher_rate": 0.4,
-        "additional_rate": 0.45
-      },
-      "badr": {
-        "withdrawn": true,
-        "rate": null,
-        "lifetime_limit": null
-      }
-    },
-    {
-      "id": "income_tax_keep_badr",
       "label": "Equalise with income tax (20% / 40% / 45%), relief kept at 18%",
       "rates": {
         "basic_rate": 0.2,
@@ -100,6 +91,20 @@
         "withdrawn": false,
         "rate": 0.18,
         "lifetime_limit": 1000000
+      }
+    },
+    {
+      "id": "income_tax_withdraw_badr",
+      "label": "Equalise with income tax (20% / 40% / 45%), relief withdrawn",
+      "rates": {
+        "basic_rate": 0.2,
+        "higher_rate": 0.4,
+        "additional_rate": 0.45
+      },
+      "badr": {
+        "withdrawn": true,
+        "rate": null,
+        "lifetime_limit": null
       }
     },
     {
@@ -153,7 +158,7 @@
     "locator": "Capital gains tax rows; notes 13 and 14",
     "basis": "post_behavioural",
     "unit": "gbp_m",
-    "measure": "Exchequer receipts in \u00a3m (positive = yield), including income tax and SDLT effects, for a change from April 2026 on the OBR's March 2025 forecast",
+    "measure": "Exchequer receipts in \u00a3m (positive = yield), including income tax and stamp duty land tax (SDLT) effects, for a change to the named rate, on the OBR's March 2025 forecast",
     "note": "The higher-rate rows move the higher and additional rates together, for main and residential gains (note 13); rows are non-linear and must not be scaled (note 14). The BADR rows raise the relief's rate from its 18% in 2026-27. HMRC deferred the 2026 edition on 6 July 2026 pending a review of key assumptions, so these rows are provisional.",
     "hmrc_years": [
       "2026-27",
@@ -162,6 +167,10 @@
     ],
     "lag": [
       {
+        "model_year": "2026-27",
+        "hmrc_year": "2027-28"
+      },
+      {
         "model_year": "2027-28",
         "hmrc_year": "2028-29"
       }
@@ -169,7 +178,7 @@
     "rows": [
       {
         "id": "higher_plus_1",
-        "label": "Higher rate +1pp (18% / 25% / 25%)",
+        "label": "Higher rate +1 point (18% / 25% / 25%)",
         "rates": {
           "basic_rate": 0.18,
           "higher_rate": 0.25,
@@ -188,7 +197,7 @@
       },
       {
         "id": "higher_plus_5",
-        "label": "Higher rate +5pp (18% / 29% / 29%)",
+        "label": "Higher rate +5 points (18% / 29% / 29%)",
         "rates": {
           "basic_rate": 0.18,
           "higher_rate": 0.29,
@@ -207,7 +216,7 @@
       },
       {
         "id": "higher_plus_10",
-        "label": "Higher rate +10pp (18% / 34% / 34%)",
+        "label": "Higher rate +10 points (18% / 34% / 34%)",
         "rates": {
           "basic_rate": 0.18,
           "higher_rate": 0.34,
@@ -226,7 +235,7 @@
       },
       {
         "id": "lower_plus_1",
-        "label": "Lower rate +1pp (19% / 24% / 24%)",
+        "label": "Lower rate +1 point (19% / 24% / 24%)",
         "rates": {
           "basic_rate": 0.19,
           "higher_rate": 0.24,
@@ -245,7 +254,7 @@
       },
       {
         "id": "lower_plus_5",
-        "label": "Lower rate +5pp (23% / 24% / 24%)",
+        "label": "Lower rate +5 points (23% / 24% / 24%)",
         "rates": {
           "basic_rate": 0.23,
           "higher_rate": 0.24,
@@ -264,7 +273,7 @@
       },
       {
         "id": "badr_plus_1",
-        "label": "Business Asset Disposal Relief rate +1pp (19%)",
+        "label": "Business Asset Disposal Relief rate +1 point (19%)",
         "rates": {
           "basic_rate": 0.18,
           "higher_rate": 0.24,
@@ -283,7 +292,7 @@
       },
       {
         "id": "badr_plus_5",
-        "label": "Business Asset Disposal Relief rate +5pp (23%)",
+        "label": "Business Asset Disposal Relief rate +5 points (23%)",
         "rates": {
           "basic_rate": 0.18,
           "higher_rate": 0.24,

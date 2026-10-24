@@ -1,7 +1,7 @@
 "use client";
 
 import { colors } from "../../lib/colors";
-import { formatBn, formatCount, formatPct } from "../../lib/formatters";
+import { formatBn, formatCount, formatPct, formatSignedPoints } from "../../lib/formatters";
 import ChartLogo from "../ChartLogo";
 import { InfoTip } from "../controls";
 import ChartLegend from "./ChartLegend";
@@ -14,7 +14,7 @@ import { HoverTip, useHoverState } from "./ChartTooltip";
 const DOT_R = 5;
 const SERIES = [
   { key: "model", color: colors.primary[600], text: colors.primary[700] },
-  { key: "hmrc2024", label: "HMRC, 2024-25 (provisional)", color: colors.gray[400], text: colors.gray[600] },
+  { key: "hmrc2024", label: "HMRC (provisional)", color: colors.gray[400], text: colors.gray[600] },
 ];
 
 // How each unit's values read. Values arrive in their natural unit:
@@ -51,16 +51,16 @@ function Dot({ id, hover, series, left, title, lines }) {
       className={`absolute top-1/2 -translate-x-1/2 -translate-y-1/2 ${series.key === "model" ? "z-[2]" : "z-[1]"}`}
       style={{ left: `${left}%` }}
     >
+      {/* PolicyEngine a solid dot, HMRC a larger hollow ring around it, so
+          both stay visible when the values coincide. */}
       <span
         aria-hidden="true"
         className="block rounded-full"
-        style={{
-          // An r=5 circle with a 1px white stroke, as in the regional chart.
-          width: 2 * DOT_R + 1,
-          height: 2 * DOT_R + 1,
-          background: series.color,
-          border: "1px solid #FFFFFF",
-        }}
+        style={
+          series.key === "model"
+            ? { width: 2 * DOT_R - 1, height: 2 * DOT_R - 1, background: series.color, border: "1px solid #FFFFFF" }
+            : { width: 2 * DOT_R + 5, height: 2 * DOT_R + 5, background: "transparent", border: `2px solid ${series.color}` }
+        }
       />
     </HoverTip>
   );
@@ -75,13 +75,13 @@ function gapToLatest(row) {
   // Shares compare in points; everything else as a percentage difference.
   if (row.unit === "pct") {
     const pp = Math.round(row.model - row.hmrc2024);
-    return `${pp > 0 ? "+" : pp < 0 ? "−" : ""}${Math.abs(pp)} pp`;
+    return formatSignedPoints(pp);
   }
   const rel = Math.round(100 * (row.model / row.hmrc2024 - 1));
   return `${rel > 0 ? "+" : rel < 0 ? "−" : ""}${Math.abs(rel)}%`;
 }
 
-function Row({ row, seriesLabels, hover }) {
+function Row({ row, seriesLabels, modelColumn, hover }) {
   const format = FORMATS[row.unit] ?? ((v) => String(v));
   const values = SERIES.map((s) => row[s.key]).filter(Number.isFinite);
   // Shares sit on 0–100%; other rows scale to their largest value.
@@ -106,7 +106,7 @@ function Row({ row, seriesLabels, hover }) {
       {SERIES.map((s) => (
         <span key={s.key} className="text-sm tabular-nums md:text-right" style={{ color: s.text, fontWeight: s.key === "model" ? 700 : 500 }}>
           <span className="block text-[10px] font-medium uppercase tracking-wide text-slate-400 md:hidden">
-            {s.key === "model" ? "PolicyEngine" : "HMRC 2024-25"}
+            {s.key === "model" ? modelColumn : "HMRC 2024-25"}
           </span>
           {Number.isFinite(row[s.key]) ? format(row[s.key]) : "—"}
         </span>
@@ -155,7 +155,7 @@ function Row({ row, seriesLabels, hover }) {
 // unit: "bn" | "count" | "pct", model, hmrc2024 }]; `modelLabel`
 // names the model series. The gap column compares the model with HMRC's
 // latest year (in points for shares).
-export default function BenchmarkChart({ rows, modelLabel }) {
+export default function BenchmarkChart({ rows, modelLabel, modelColumn = "PolicyEngine" }) {
   const seriesLabels = { model: modelLabel, hmrc2024: SERIES[1].label };
   const hover = useHoverState();
   // Rows sharing a `group` sit under one heading, in the order given.
@@ -173,7 +173,7 @@ export default function BenchmarkChart({ rows, modelLabel }) {
         className={`hidden gap-x-3 border-b border-slate-200 pb-2 text-xs font-semibold text-slate-500 md:grid ${GRID}`}
       >
         <span>Quantity</span>
-        <span className="text-right">PolicyEngine</span>
+        <span className="text-right">{modelColumn}</span>
         <span className="text-right">HMRC 2024-25</span>
         <span className="text-right">Difference</span>
         <span>On one scale, from 0</span>
@@ -183,12 +183,12 @@ export default function BenchmarkChart({ rows, modelLabel }) {
           <h4 className="text-xs font-semibold uppercase tracking-wider text-[color:var(--pe-color-primary-700)]">{group}</h4>
           <ul>
             {groupRows.map((row) => (
-              <Row key={row.key} row={row} seriesLabels={seriesLabels} hover={hover} />
+              <Row key={row.key} row={row} seriesLabels={seriesLabels} modelColumn={modelColumn} hover={hover} />
             ))}
           </ul>
         </section>
       ))}
-      <ChartLegend items={SERIES.map((s) => ({ label: seriesLabels[s.key], fill: s.color, marker: "dot" }))} />
+      <ChartLegend items={SERIES.map((s) => ({ label: seriesLabels[s.key], fill: s.color, marker: s.key === "model" ? "dot" : "ring" }))} />
       <ChartLogo />
     </>
   );

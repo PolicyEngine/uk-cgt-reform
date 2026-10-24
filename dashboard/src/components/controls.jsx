@@ -1,5 +1,7 @@
 "use client";
 
+import { splitFiscalYears } from "../lib/formatters";
+
 // The dashboard's design system: one card, one field, one segmented
 // control, one pill, one tooltip, one primary and one text button. Every tab
 // draws its boxes and controls from here rather than repeating classes.
@@ -41,6 +43,12 @@ export function Card({ as: Tag = "section", variant = "section", selected = fals
     </Tag>
   );
 }
+
+// A card in a two-column pair whose five rows (title, pills, description,
+// chart, notes; the heading is a `paired` SectionHeading) are shared with
+// its neighbour, so both line up on desktop.
+export const PAIRED_CARD =
+  "flex min-w-0 flex-col lg:row-span-5 lg:grid lg:grid-cols-[minmax(0,1fr)] lg:grid-rows-subgrid lg:gap-y-0";
 
 // The title inside an inset card, optionally a field's label, with its tooltip.
 export function CardTitle({ children, htmlFor, id, tip, tipLabel }) {
@@ -116,27 +124,6 @@ export function Toggle({ options, value, onChange, label, fullWidth = false }) {
   );
 }
 
-// A chart control: a small label above a compact select. Several sit side
-// by side in a row of equal columns.
-export function LabelledSelect({ label, options, value, onChange }) {
-  return (
-    <label className="flex min-w-0 flex-col gap-1">
-      <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">{label}</span>
-      <select
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className={`${FIELD} ${fieldBorder()} h-10 w-full min-w-0 pr-8 text-sm`}
-      >
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-    </label>
-  );
-}
-
 // `valueColor`: the big number's colour, tying the card to its chart (a
 // palette colour, never a good/bad signal). Each card carries a thin teal
 // accent along its top.
@@ -186,6 +173,19 @@ export function Notes({ children, className = "" }) {
   );
 }
 
+// Text with each fiscal year ("2027-28") kept on one line.
+export function NoBreakYears({ text }) {
+  return splitFiscalYears(text).map((part, i) =>
+    part.year ? (
+      <span key={i} className="whitespace-nowrap">
+        {part.text}
+      </span>
+    ) : (
+      part.text
+    ),
+  );
+}
+
 // An external source, opened in a new tab.
 export const MICROCOSM_URL = "https://github.com/PolicyEngine/microcosm";
 
@@ -196,7 +196,7 @@ export function DatasetName({ label, possessive = false }) {
   return (
     <>
       <SourceLink href={MICROCOSM_URL}>Microcosm</SourceLink>
-      {`${label.slice("Microcosm".length)}${tail}`}
+      <NoBreakYears text={`${label.slice("Microcosm".length)}${tail}`} />
     </>
   );
 }
@@ -263,31 +263,46 @@ export function TableScroll({ className = "", children }) {
   return <div className={`table-scroll overflow-x-auto ${className}`}>{children}</div>;
 }
 
-// A compact year picker beside a section title: one pill reading
-// "Year 2027-28", with a chevron.
-export function YearPill({ years, value, onChange }) {
+// A compact chart control under a section title: one teal-tinted pill
+// reading "Year 2027-28", with a chevron. `options` are { value, label };
+// `ariaLabel` names the select when the visible `label` is shortened.
+// Several sit in the heading's action slot, in one left-aligned row.
+export function PillSelect({ label, ariaLabel, options, value, onChange }) {
   return (
-    <label className="relative inline-flex h-9 cursor-pointer items-center rounded-full border border-[color:var(--pe-color-primary-200)] bg-[color:var(--pe-color-primary-50)] pl-3.5 pr-8 text-sm transition-colors hover:border-[color:var(--pe-color-primary-400)] focus-within:ring-2 focus-within:ring-[color:var(--pe-color-primary-500)]">
-      <span className="mr-2 text-xs font-medium text-slate-500">Year</span>
+    <label className="relative inline-flex h-8 max-w-full shrink-0 cursor-pointer items-center whitespace-nowrap rounded-full border border-[color:var(--pe-color-primary-200)] bg-[color:var(--pe-color-primary-50)] pl-2.5 pr-6 text-sm transition-colors hover:border-[color:var(--pe-color-primary-400)] focus-within:ring-2 focus-within:ring-[color:var(--pe-color-primary-500)]">
+      <span className="mr-1.5 text-[11px] font-medium text-slate-500">{label}</span>
       <select
-        aria-label="Year"
+        aria-label={ariaLabel ?? label}
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="cursor-pointer appearance-none bg-transparent font-semibold tabular-nums text-[color:var(--pe-color-primary-800)] focus:outline-none"
+        className="min-w-0 max-w-full cursor-pointer appearance-none truncate bg-transparent font-semibold tabular-nums text-[color:var(--pe-color-primary-800)] focus:outline-none"
       >
-        {years.map((year) => (
-          <option key={year.value ?? year} value={year.value ?? year}>
-            {year.label ?? year}
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
           </option>
         ))}
       </select>
       <svg
         aria-hidden="true"
         viewBox="0 0 12 12"
-        className="pointer-events-none absolute right-3 top-1/2 h-3 w-3 -translate-y-1/2 text-[color:var(--pe-color-primary-700)]"
+        className="pointer-events-none absolute right-2 top-1/2 h-3 w-3 -translate-y-1/2 text-[color:var(--pe-color-primary-700)]"
       >
         <path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     </label>
+  );
+}
+
+// The year picker: a PillSelect labelled "Year". `years` are fiscal labels
+// or { value, label }.
+export function YearPill({ years, value, onChange }) {
+  return (
+    <PillSelect
+      label="Year"
+      options={years.map((year) => ({ value: year.value ?? year, label: year.label ?? year }))}
+      value={value}
+      onChange={onChange}
+    />
   );
 }

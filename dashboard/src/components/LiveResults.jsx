@@ -5,6 +5,7 @@ import { useState } from "react";
 import {
   BASELINE_SCHEDULE_RATES,
   badrLimitLabel,
+  getBenchmarks,
   getBudgetRow,
   getEntrants,
   getFiveYearTotal,
@@ -18,6 +19,7 @@ import {
   formatSignedCurrency,
   formatSignedMn,
   formatSignedPct,
+  reckonerElasticities,
 } from "../lib/formatters";
 import {
   BADR_CURRENT_LAW,
@@ -28,17 +30,43 @@ import {
   sameElasticity,
 } from "../lib/schedule";
 import { colors } from "../lib/colors";
+import { liveYieldSplit, stepNames } from "../lib/yieldSplit";
 import BudgetChart from "./charts/BudgetChart";
 import ChartLegend from "./charts/ChartLegend";
 import RateChangeChart from "./charts/RateChangeChart";
+import YieldChart from "./charts/YieldChart";
 import GroupImpactChart, { GROUP_DESCRIPTION, GroupDefinitions, HOUSEHOLD_COLOR } from "./charts/GroupImpactChart";
-import { Card, DatasetName, MetricCard, Notes, SourceLink, TabLink } from "./controls";
-import { BeyondForecastNote, SPEC_SUMMARY } from "./EqualisationResults";
+import { Card, MetricCard, Notes, PAIRED_CARD, SourceLink, TabLink } from "./controls";
+import { SPEC_SUMMARY } from "./EqualisationResults";
 import SectionHeading from "./SectionHeading";
 
 const EXEMPT_AMOUNT = "https://www.gov.uk/capital-gains-tax/allowances";
 
-const elasticityName = (e) => elasticityOption(e)?.label ?? `retention elasticity ${e}`;
+// The parts of a live schedule's yield, in the order they are applied.
+function yieldParts(steps, incomeTax) {
+  const rates = incomeTax ? "income tax rates" : "the new rates";
+  const parts = steps.map((row) =>
+    row.step === "main_rates"
+      ? `${rates} on other gains`
+      : row.step === "residential"
+        ? "then on residential property gains"
+        : row.step === "badr_withdrawn"
+          ? "withdrawing the relief"
+          : "the change to the relief",
+  );
+  return parts
+    .map((part, i) => (i > 0 && !part.startsWith("then") ? `then ${part}` : part))
+    .join(", ");
+}
+
+// "CenTax central (elasticity 1.0)", or for a typed value "an elasticity of
+// 2.5".
+const elasticityName = (e) => {
+  const option = elasticityOption(e);
+  return option
+    ? option.label.replace("(retention elasticity", "(elasticity").replace("for BADR gains", "for gains qualifying for the relief")
+    : `an elasticity of ${e}`;
+};
 
 // Where a live run stands: a cache lookup for a shared link, a computation,
 // or an error; a finished run shows its results instead.
@@ -54,7 +82,7 @@ export function StatusLine({ status, error }) {
     return (
       <p className="mt-4 text-sm leading-6 text-slate-600" role="status">
         Nobody has run this schedule yet, and a link does not start a computation on its own.
-        Press Calculate to compute it; it should take 1–2 minutes.
+        Press Calculate to compute it; it should take a few minutes.
       </p>
     );
   }
@@ -66,7 +94,7 @@ export function StatusLine({ status, error }) {
           className="h-8 w-8 animate-spin rounded-full border-[3px] border-slate-200 border-t-[color:var(--pe-color-primary-600)]"
         />
         <p className="text-base font-semibold text-slate-800">Processing…</p>
-        <p className="text-sm text-slate-500">This should take 1–2 minutes.</p>
+        <p className="text-sm text-slate-500">This should take a few minutes.</p>
       </div>
     );
   }
@@ -189,14 +217,13 @@ function ReckonerBars({ rows }) {
   );
 }
 
-function ReadyReckonerPanel({ row, result, onNavigate }) {
+function ReadyReckonerPanel({ row, result, elasticities, onNavigate }) {
   const liability = (year) =>
     1000 * result.budget.find((budgetRow) => budgetRow.year === year).gov_balance_change_bn;
-  const [contextYear] = READY_RECKONER.hmrc_years;
   return (
     <Card as="details" className="group min-w-0">
       <summary className="cursor-pointer select-none text-xl font-semibold tracking-tight text-slate-900 marker:text-[color:var(--pe-color-primary-600)]">
-        HMRC ready reckoner
+        HMRC&apos;s small rate changes
         <span className="ml-2 text-sm font-normal text-slate-500 group-open:hidden">
           (expand to compare with HMRC&apos;s figures)
         </span>
@@ -209,7 +236,11 @@ function ReadyReckonerPanel({ row, result, onNavigate }) {
         </>
       </p>
       <ReckonerBars
-        rows={READY_RECKONER.lag.map((lag) => ({
+        rows={READY_RECKONER.lag
+          // A run covers the modelled window only; the Baseline tab also
+          // scores 2026-27, which a run has no liability for.
+          .filter((lag) => result.budget.some((budgetRow) => budgetRow.year === lag.model_year))
+          .map((lag) => ({
           key: lag.hmrc_year,
           label: `HMRC ${lag.hmrc_year} receipts and this run's ${lag.model_year}`,
           hmrc: row.hmrc_m[lag.hmrc_year],
@@ -224,11 +255,7 @@ function ReadyReckonerPanel({ row, result, onNavigate }) {
           <TabLink onNavigate={onNavigate} tab="baseline" section="ready-reckoner">
             Baseline
           </TabLink>{" "}
-          tab scores every row at the official elasticity, 3.0 and the central one.
-        </p>
-        <p>
-          <SourceLink href={READY_RECKONER.url}>HMRC&apos;s</SourceLink>
-          {` ${contextYear} figure, receipts in the reform's first year: ${formatSignedMn(row.hmrc_m[contextYear])}.`}
+          tab scores every row {reckonerElasticities(elasticities.official, elasticities.central)}.
         </p>
       </Notes>
     </Card>
@@ -271,6 +298,9 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
   };
   const likeForLike = sameElasticity(resultE, equalisation.elasticity);
   const bn = (value) => formatSignedBn(value, 1);
+  // The headline year's yield split; a result cached before it has none.
+  const yieldSplit = liveYieldSplit(result, data.schedule_split?.[headlineYear]);
+  const names = stepNames(result.metadata.reform, data.metadata.reform);
 
   return (
     <>
@@ -279,9 +309,7 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
           title={`Headline results, ${headlineYear}`}
           description={
             <>
-              {`These figures use the behavioural case ${elasticityName(resultE)} and `}
-              <DatasetName label={result.metadata.dataset_short_label} />
-              {" data; the household figures cover every UK household. "}
+              {`These figures use ${elasticityName(resultE)}; the household figures cover every UK household. `}
               {likeForLike
                 ? `Compared with equalisation at the same response: ${difference(headlineRow.gov_balance_change_bn, equalisation.revenue)} in the year and ${difference(result.five_year_total_bn, equalisation.fiveYear)} over five years. `
                 : "Equalisation's results use another response, so they are not compared here. "}
@@ -294,7 +322,6 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
             label="Change in government balance"
             valueColor={colors.primary[700]}
             value={bn(headlineRow.gov_balance_change_bn)}
-            note={Number(resultE) === 0 ? "With no behavioural response." : "After the behavioural response."}
           />
           {topDecile ? (
             <MetricCard
@@ -315,35 +342,39 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
         </div>
       </Card>
 
+      {/* The two cards share five rows (title, pills, description, chart, notes), so titles,
+          pills, chart tops and Notes line up across the pair. */}
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card className="flex min-w-0 flex-col">
-          <SectionHeading
+        <Card className={PAIRED_CARD}>
+          <BudgetChart
+            budget={result.budget}
             title={`Budgetary impact by year, ${result.budget[0].year} to ${result.budget.at(-1).year}`}
             description="Each bar shows the change in the government's balance in one fiscal year, after taxpayers realise fewer gains."
           />
-          <BudgetChart budget={result.budget} />
-          <Notes className="mt-auto">
-            <BeyondForecastNote />
-            {entrantShare > 0.05 ? (
-              <p>
-                Entrants by uprating (see{" "}
-                <TabLink onNavigate={onNavigate} tab="methodology" section="new-taxpayers">
-                  Methodology
-                </TabLink>
-                ) contribute {formatSmallBn(headlineRow.cgt_change_from_entrants_bn)} of the{" "}
-                {headlineYear} change.
-              </p>
-            ) : null}
-          </Notes>
+          {entrantShare > 0.05 ? (
+            <div className="mt-auto lg:mt-0">
+              <Notes>
+                <p>
+                  Entrants by uprating (see{" "}
+                  <TabLink onNavigate={onNavigate} tab="methodology" section="new-taxpayers">
+                    Methodology
+                  </TabLink>
+                  ) contribute {formatSmallBn(headlineRow.cgt_change_from_entrants_bn)} of the{" "}
+                  {headlineYear} change.
+                </p>
+              </Notes>
+            </div>
+          ) : null}
         </Card>
 
-        <Card className="flex min-w-0 flex-col">
+        <Card className={PAIRED_CARD}>
           <GroupImpactChart
             groupsByYear={result.income_change_groups}
             defaultYear={headlineYear}
             description={GROUP_DESCRIPTION}
           />
-          <Notes className="mt-auto">
+          <div className="mt-auto lg:mt-0">
+          <Notes>
             <GroupDefinitions>
               <li>
                 Changes in the gains taxpayers realise count as changes in income, alongside the
@@ -351,10 +382,30 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
               </li>
             </GroupDefinitions>
           </Notes>
+          </div>
         </Card>
       </div>
 
-      {matchedRow ? <ReadyReckonerPanel row={matchedRow} result={result} onNavigate={onNavigate} /> : null}
+      {yieldSplit ? (
+        <Card className="min-w-0">
+          <SectionHeading
+            title={`Where the yield comes from, ${yieldSplit.year}`}
+            description={`Each bar is this schedule's whole change in CGT revenue, split into its ${["", "one", "two", "three"][yieldSplit.steps.length] ?? yieldSplit.steps.length} parts in the order they are applied: ${yieldParts(yieldSplit.steps, Object.keys(names).length === 0)}. The bars run from the smallest behavioural response at the top to the largest.`}
+          />
+          <YieldChart
+            steps={yieldSplit.steps}
+            cases={yieldSplit.cases}
+            names={names}
+          />
+        </Card>
+      ) : null}
+
+      {matchedRow ? <ReadyReckonerPanel
+          row={matchedRow}
+          result={result}
+          elasticities={getBenchmarks(data).elasticities}
+          onNavigate={onNavigate}
+        /> : null}
     </>
   );
 }
@@ -372,8 +423,7 @@ export function ScheduleSpec({ result }) {
       </summary>
       <div className="mt-4 space-y-3">
         <p className="text-sm leading-6 text-slate-600">
-          Effective in every modelled year. Current law is read from the installed engine for
-          the first year. Residential property gains take the same rates, and the annual exempt{" "}
+          Residential property gains take the same rates, and the annual exempt{" "}
           <SourceLink href={EXEMPT_AMOUNT}>amount</SourceLink> stays £3,000.
         </p>
         <ScheduleRates metadata={result.metadata} />

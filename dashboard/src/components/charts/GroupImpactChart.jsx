@@ -14,7 +14,7 @@ import { getNiceTicks, getTickDomain } from "../../lib/chartUtils";
 import { colors } from "../../lib/colors";
 import { formatSignedCurrency, formatSignedPct } from "../../lib/formatters";
 import ChartLogo from "../ChartLogo";
-import { LabelledSelect } from "../controls";
+import { PillSelect } from "../controls";
 import SectionHeading from "../SectionHeading";
 import ChartTooltip, { TOOLTIP_PROPS } from "./ChartTooltip";
 
@@ -71,30 +71,29 @@ export default function GroupImpactChart({ groupsByYear, defaultYear, descriptio
       <SectionHeading
         title={`Change in household net income by ${groupingTitle}, ${groupYear}`}
         description={description}
+        paired
+        action={
+          <>
+            <PillSelect
+              label="Year"
+              options={years.map((year) => ({ value: year, label: year }))}
+              value={groupYear}
+              onChange={setGroupYear}
+            />
+            <PillSelect label="Group" ariaLabel="Group by" options={groupingOptions} value={grouping} onChange={setGrouping} />
+            <PillSelect
+              label="Metric"
+              options={[
+                { value: "absolute", label: "Average £" },
+                { value: "relative", label: "Average %" },
+              ]}
+              value={groupMetric}
+              onChange={setGroupMetric}
+            />
+          </>
+        }
       />
-      <div className="mb-4 flex flex-wrap gap-2 sm:gap-3">
-        <LabelledSelect
-          label="Year"
-          options={years.map((year) => ({ value: year, label: year }))}
-          value={groupYear}
-          onChange={setGroupYear}
-        />
-        <LabelledSelect
-          label="Group by"
-          options={groupingOptions}
-          value={grouping}
-          onChange={setGrouping}
-        />
-        <LabelledSelect
-          label="Metric"
-          options={[
-            { value: "absolute", label: "Average £" },
-            { value: "relative", label: "Average %" },
-          ]}
-          value={groupMetric}
-          onChange={setGroupMetric}
-        />
-      </div>
+      <div>
       <div className="h-[340px] w-full">
         <ResponsiveContainer>
           <BarChart
@@ -159,19 +158,19 @@ export default function GroupImpactChart({ groupsByYear, defaultYear, descriptio
                   title={(_, payload) => {
                     const { group } = payload[0].payload;
                     const name = isDecile ? `Income decile ${decileOf(group)} (${group.toLowerCase()})` : group;
-                    return `${name}, ${groupYear}`;
+                    return `${name}, ${groupYear.replace("-", "\u2011")}`;
                   }}
                   rows={(payload) => [
                     {
-                      label: "Average change per household",
-                      value: formatSignedCurrency(payload[0].payload.avg_change_gbp),
+                      label: "Change in net income",
+                      value: formatSignedPct(payload[0].payload.relative_change_pct, 1),
                       color: colors.primary[600],
                     },
-                    {
-                      label: "Relative net income change",
-                      value: formatSignedPct(payload[0].payload.relative_change_pct, 1),
-                    },
                   ]}
+                  footer={(payload) => ({
+                    label: "Average per household",
+                    value: formatSignedCurrency(payload[0].payload.avg_change_gbp),
+                  })}
                 />
               }
             />
@@ -185,6 +184,7 @@ export default function GroupImpactChart({ groupsByYear, defaultYear, descriptio
         </ResponsiveContainer>
       </div>
       <ChartLogo />
+      </div>
     </>
   );
 }

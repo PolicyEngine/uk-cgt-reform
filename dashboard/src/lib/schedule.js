@@ -3,6 +3,8 @@
 // Relief and a behavioural elasticity. Validation, presets and the shareable
 // URL live here, apart from the components, so they can be tested.
 import options from "../../public/data/explore_options.json";
+import { describeBadr } from "./dataHelpers";
+import { formatPct } from "./formatters";
 
 // The request options come from the pipeline (uk-cgt-reform-explore
 // --options), bundled at build time so the controls never wait on a network.
@@ -11,7 +13,7 @@ export const BANDS = [
     key: "basic_rate",
     param: "basic",
     label: "Basic rate",
-    note: "Gains that fall within the basic rate band once stacked on the taxpayer's income.",
+    note: "Gains that fall within the basic rate band once counted on top of the taxpayer's income.",
   },
   {
     key: "higher_rate",
@@ -23,7 +25,7 @@ export const BANDS = [
     key: "additional_rate",
     param: "additional",
     label: "Additional rate",
-    note: "Gains stacked above £125,140 of income and gains. Current law has no separate rate here: set it equal to the higher rate for a single rate above the basic band.",
+    note: "Gains above £125,140 once counted on top of the taxpayer's income. Current law has no separate rate here: set it equal to the higher rate for a single rate above the basic band.",
   },
 ];
 export const PCT_MIN = options.rate_bounds[0] * 100;
@@ -53,6 +55,44 @@ export const sameElasticity = (a, b) => Math.abs(a - b) < 1e-9;
 export const elasticityOption = (e) =>
   ELASTICITIES.find((option) => sameElasticity(option.e_retention, e)) ?? null;
 
+// Any retention elasticity in these bounds, in tenths, can be typed instead
+// of a case (the Custom choice). A typed value equal to a case is that case.
+export const ELASTICITY_MIN = options.elasticity_bounds?.[0] ?? 0;
+export const ELASTICITY_MAX = options.elasticity_bounds?.[1] ?? 5;
+export const ELASTICITY_STEP = options.elasticity_step ?? 0.1;
+const roundTenth = (value) => Math.round(value * 10) / 10;
+
+export function validateElasticity(raw) {
+  const value = Number(raw);
+  const range = `between ${ELASTICITY_MIN} and ${ELASTICITY_MAX}`;
+  if (raw === "" || raw === null || raw === undefined || !Number.isFinite(value)) {
+    return { error: `Enter an elasticity ${range}.` };
+  }
+  if (value < ELASTICITY_MIN - 1e-9 || value > ELASTICITY_MAX + 1e-9) {
+    return { error: `The elasticity must be ${range}.` };
+  }
+  if (Math.abs(value / ELASTICITY_STEP - Math.round(value / ELASTICITY_STEP)) > 1e-6) {
+    return { error: `The elasticity steps by ${ELASTICITY_STEP}; ${value} is not a multiple of it.` };
+  }
+  return { elasticity: roundTenth(Math.round(value / ELASTICITY_STEP) * ELASTICITY_STEP) };
+}
+
+// The elasticity a form holds: a case's value, or the typed one when the
+// Custom choice is on (`customElasticity` a string; null for a case).
+export function formElasticity(form) {
+  if (form.customElasticity === null || form.customElasticity === undefined) {
+    return { elasticity: form.elasticity };
+  }
+  return validateElasticity(form.customElasticity);
+}
+
+// A short name for an elasticity: the case's ("CenTax central"), or
+// "Elasticity 2.5" for any other value.
+export function elasticityShortName(e) {
+  const option = elasticityOption(e);
+  return option ? option.label.replace(/\s*\(.*\)$/, "") : `Elasticity ${e}`;
+}
+
 export const toPercent = (fraction) => Math.round(fraction * 10000) / 100;
 const toFraction = (percent) => Math.round(Number(percent) * 100) / 10000;
 export const percentsOf = (rates) =>
@@ -66,11 +106,14 @@ export const badrFormOf = (badr) =>
     ? { mode: "withdraw", rate: String(toPercent(BADR_CURRENT_LAW.rate)), limit: BADR_CURRENT_LAW.lifetime_limit }
     : { mode: "keep", rate: String(toPercent(badr.rate)), limit: badr.lifetime_limit };
 
-// A form loaded with a schedule: rates and relief as stored, an elasticity.
+// A form loaded with a schedule: rates and relief as stored, and the
+// elasticity in the Custom box, which every form opens on; picking a case
+// from the select replaces it.
 export const formOf = (rates, badr, elasticity = DEFAULT_ELASTICITY) => ({
   percents: percentsOf(rates),
   badrForm: badrFormOf(badr ?? BADR_CURRENT_LAW),
   elasticity,
+  customElasticity: Number(elasticity).toFixed(1),
 });
 
 // The schedule the precomputed results file scored, read from the file
@@ -135,18 +178,20 @@ export function validateBadr(form, rates) {
   return { badr: { withdrawn: false, rate: toFraction(value), lifetime_limit: Number(form.limit) } };
 }
 
-// A whole form checked: `rates` and `badr` are set only when both are valid;
-// `errorField` names the input an error belongs to (a band key or "badr_rate").
+// A whole form checked: `rates` and `badr` are set only when the rates, the
+// relief and the elasticity are all valid; `errorField` names the input an
+// error belongs to (a band key, "badr_rate" or "elasticity").
 export function checkForm(form) {
   const rateCheck = validatePercents(form.percents);
   const badrCheck = validateBadr(form.badrForm, rateCheck.rates);
-  const valid = Boolean(rateCheck.rates && badrCheck.badr);
+  const elasticityCheck = formElasticity(form);
+  const valid = Boolean(rateCheck.rates && badrCheck.badr && elasticityCheck.error === undefined);
   return {
     rates: valid ? rateCheck.rates : null,
     badr: valid ? badrCheck.badr : null,
-    elasticity: form.elasticity,
-    error: rateCheck.error ?? badrCheck.error,
-    errorField: rateCheck.field ?? badrCheck.field ?? null,
+    elasticity: elasticityCheck.elasticity ?? null,
+    error: rateCheck.error ?? badrCheck.error ?? elasticityCheck.error,
+    errorField: rateCheck.field ?? badrCheck.field ?? (elasticityCheck.error ? "elasticity" : null),
     // The model charges the relief's rate on every qualifying gain. Above the
     // basic rate, a taxpayer with qualifying gains in the basic rate band
     // would not claim the relief, which the model does not capture.
@@ -195,7 +240,10 @@ export function readUrlState(searchParams) {
   const parsed = rawE === null || rawE.trim() === "" ? NaN : Number(rawE);
   const legacy = [...LEGACY_MTR_ELASTICITIES].find(([mtr]) => sameElasticity(mtr, parsed));
   const e = legacy ? legacy[1] : parsed;
-  const elasticity = elasticityOption(e) ? e : DEFAULT_ELASTICITY;
+  // A case, or a valid custom value; anything else falls back to the default.
+  const custom = validateElasticity(e).elasticity;
+  const elasticity = elasticityOption(e) ? e : (custom ?? DEFAULT_ELASTICITY);
+  const customElasticity = elasticityOption(elasticity) ? null : String(elasticity);
   // The relief: `bw=1` withdraws it; `br` (percent) and `bl` (£) keep it at
   // other than current law; neither means current law.
   const badrForm = badrFormOf(BADR_CURRENT_LAW);
@@ -204,17 +252,40 @@ export function readUrlState(searchParams) {
   const limit = Number(searchParams.get("bl"));
   if (BADR_LIMITS.includes(limit)) badrForm.limit = limit;
   // A link from before the relief lever carries a marginal-rate elasticity
-  // and no relief fields. Its 20% / 40% / 45% was the "Equalise with income
-  // tax" preset, which now withdraws the relief, so it loads that way and
-  // still scores the equalisation reform.
+  // and no relief fields. Its 20% / 40% / 45% loads with the "Equalise with
+  // income tax" preset's treatment of the relief, so it scores the
+  // equalisation reform.
   const equalisation = PRESETS.find((preset) => preset.id === "income_tax");
   const relieflessLegacyLink =
     legacy && ["bw", "br", "bl"].every((key) => searchParams.get(key) === null);
   const equalisationRates = BANDS.every(
     (band) => Number(percents[band.key]) === toPercent(equalisation.rates[band.key]),
   );
-  if (relieflessLegacyLink && equalisationRates) badrForm.mode = "withdraw";
-  return { percents, elasticity, badrForm };
+  if (relieflessLegacyLink && equalisationRates && equalisation.badr.withdrawn) badrForm.mode = "withdraw";
+  return { percents, elasticity, customElasticity, badrForm };
+}
+
+// Whether a policy's form has the relief control. "Equalise with income tax"
+// keeps the relief at current law, as the headline reform does, so its form
+// sets only the rates and the behavioural response, and its links never carry
+// relief parameters; Custom rates can keep, change or withdraw it.
+export function hasReliefControl(policy) {
+  return policy !== "equalise";
+}
+
+// A form in one line: "20% · 40% · 45% · Relief withdrawn · CenTax central"
+// (or "Elasticity 2.5" for a typed value). Without the relief control the
+// relief part is dropped: "20% · 40% · 45% · CenTax central".
+export function formSummary(form, { relief = true } = {}) {
+  const check = checkForm(form);
+  if (!check.rates) return "";
+  const rates = BANDS.map((band) => formatPct(check.rates[band.key] * 100, 0)).join(" · ");
+  const reliefPart = !relief
+    ? null
+    : check.badr.withdrawn
+      ? "Relief withdrawn"
+      : `Relief ${describeBadr(check.badr)}`;
+  return [rates, reliefPart, elasticityShortName(check.elasticity)].filter(Boolean).join(" · ");
 }
 
 // What a page load opens: which policy a link selects, each policy's form,

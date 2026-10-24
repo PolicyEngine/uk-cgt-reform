@@ -2,14 +2,15 @@
 
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { describeBadr, getDatasetInfo, getFirstYear } from "../lib/dataHelpers";
+import { getFirstYear } from "../lib/dataHelpers";
 import { formatPct } from "../lib/formatters";
 import { useExploration } from "../lib/exploreApi";
 import { initialState, isStale, reformReducer } from "../lib/reformState";
 import {
   BANDS,
   checkForm,
-  elasticityOption,
+  formSummary,
+  hasReliefControl,
   isPrecomputed,
   precomputedSchedule,
   scheduleParams,
@@ -18,7 +19,7 @@ import EqualisationResults, { EqualisationSpec } from "./EqualisationResults";
 import LiveResults, { ScheduleSpec, StatusLine } from "./LiveResults";
 import ScheduleForm from "./ScheduleForm";
 import SectionHeading from "./SectionHeading";
-import { Card, DatasetName, Pill, TEXT_BUTTON, TabLink, cardClass } from "./controls";
+import { Card, Pill, TEXT_BUTTON, TabLink, cardClass } from "./controls";
 
 const CENTAX_URL =
   "https://centax.org.uk/wp-content/uploads/2024/10/AdvaniLonsdaleSummers2024_CGTReform.pdf#page=38";
@@ -96,16 +97,6 @@ function PolicyTab({ id, sentence, selected, onSelect }) {
   );
 }
 
-// A form in one line: "20% · 40% · 45% · Relief withdrawn · CenTax central".
-function summarise(form) {
-  const check = checkForm(form);
-  if (!check.rates) return "";
-  const rates = BANDS.map((band) => formatPct(check.rates[band.key] * 100, 0)).join(" · ");
-  const relief = check.badr.withdrawn ? "Relief withdrawn" : `Relief ${describeBadr(check.badr)}`;
-  const response = elasticityOption(check.elasticity)?.label.replace(/\s*\(.*\)$/, "") ?? "";
-  return [rates, relief, response].filter(Boolean).join(" · ");
-}
-
 // The Reform tab: choose equalisation with income tax or custom rates, set
 // the parameters, and calculate. Nothing shows until Calculate, except for a
 // link that carries a schedule or asks for equalisation's results.
@@ -114,7 +105,6 @@ function summarise(form) {
 export default function ReformTab({ data, datasetKey, onNavigate, anchor }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const dataset = getDatasetInfo(data);
   const firstYear = getFirstYear(data);
   const precomputed = useMemo(() => precomputedSchedule(data), [data]);
   // Read once: a shared link arrives with a full schedule in the URL.
@@ -217,6 +207,15 @@ export default function ReformTab({ data, datasetKey, onNavigate, anchor }) {
     else if (searchParams.get("tab") === "explorer") replaceSchedule(null);
   }, [anchor, showEqualisation, shown, startLive, forms, policy, searchParams, replaceSchedule]);
 
+  // The tab stays mounted while others are shown, so a link from another tab
+  // to a Reform section (a new `anchor`) shows the results and scrolls there
+  // after mount too.
+  const lastAnchor = useRef(anchor);
+  useEffect(() => {
+    if (anchor && anchor !== lastAnchor.current) showEqualisation(anchor === "equalisation" ? null : anchor);
+    lastAnchor.current = anchor;
+  }, [anchor, showEqualisation]);
+
   const select = (id, toggle = false) => {
     setCollapsed(false);
     reset();
@@ -227,13 +226,12 @@ export default function ReformTab({ data, datasetKey, onNavigate, anchor }) {
   const setForm = (id) => (form) => dispatch({ type: "edit", policy: id, form });
   // "20% · 40% · 45%" and "Relief withdrawn": the precomputed schedule in brief.
   const equaliseRates = BANDS.map((band) => formatPct(precomputed.rates[band.key] * 100, 0)).join(" · ");
-  const equaliseRelief = precomputed.badr.withdrawn ? "Relief withdrawn" : `Relief ${describeBadr(precomputed.badr)}`;
   const stale = isStale(state);
   const POLICIES = [
     {
       id: "equalise",
       sentence: "Set each CGT rate to the matching income tax rate.",
-      pills: [equaliseRates, equaliseRelief],
+      pills: [equaliseRates],
     },
     {
       id: "custom",
@@ -255,7 +253,7 @@ export default function ReformTab({ data, datasetKey, onNavigate, anchor }) {
                 <a href={BADR_GUIDANCE} target="_blank" rel="noopener noreferrer" className="underline decoration-1 underline-offset-2 hover:opacity-80">
                   Relief
                 </a>{" "}
-                is withdrawn, so qualifying gains take the new rates.
+                stays at current law; Custom rates can withdraw it.
               </li>
               <li>
                 Taxpayers realise fewer gains, using CenTax&apos;s central{" "}
@@ -267,7 +265,7 @@ export default function ReformTab({ data, datasetKey, onNavigate, anchor }) {
                   Methodology
                 </TabLink>{" "}
                 explains that elasticity; the{" "}
-                <TabLink onNavigate={() => showEqualisation("sensitivity")}>sensitivity</TabLink>{" "}
+                <TabLink onNavigate={() => showEqualisation("response")}>revenue</TabLink>{" "}
                 chart in the results shows other values.
               </li>
               <li>
@@ -292,8 +290,6 @@ export default function ReformTab({ data, datasetKey, onNavigate, anchor }) {
                 </a>{" "}
                 can be kept, at a chosen rate and lifetime limit, or withdrawn.
               </li>
-              <li>Each run uses the same pipeline as the equalisation results.</li>
-              <li>Completed runs are stored, so a schedule run before shows at once.</li>
               <li>
                 Not modelled: an exit charge or people moving in or out of the UK; see{" "}
                 <TabLink onNavigate={onNavigate} tab="methodology" section="not-modelled">
@@ -313,9 +309,7 @@ export default function ReformTab({ data, datasetKey, onNavigate, anchor }) {
           description={
             policy ? null : (
               <>
-                <strong className="font-semibold text-slate-800">Pick one to start.</strong> Both
-                cover the same five years on <DatasetName label={dataset.shortLabel} />, with the same behavioural
-                response.
+                <strong className="font-semibold text-slate-800">Pick one to start.</strong>
               </>
             )
           }
@@ -341,7 +335,7 @@ export default function ReformTab({ data, datasetKey, onNavigate, anchor }) {
             >
               {collapsed ? (
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <p className="text-sm leading-6 text-slate-700">{summarise(forms[policy])}</p>
+                  <p className="text-sm leading-6 text-slate-700">{formSummary(forms[policy], { relief: hasReliefControl(policy) })}</p>
                   <button
                     type="button"
                     onClick={() => setCollapsed(false)}
@@ -359,6 +353,7 @@ export default function ReformTab({ data, datasetKey, onNavigate, anchor }) {
                   running={inFlight}
                   onNavigate={onNavigate}
                   about={about}
+                  relief={hasReliefControl(policy)}
                 />
               )}
               {/* The specification of the results shown, folded, under the

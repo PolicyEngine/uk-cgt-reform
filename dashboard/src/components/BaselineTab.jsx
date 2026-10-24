@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
-import { getDatasetInfo, getHeadlineYear, getValidation } from "../lib/dataHelpers";
+import { getBaselineComparison, getDatasetInfo } from "../lib/dataHelpers";
+import { formatBn } from "../lib/formatters";
 import { Notes, SourceLink } from "./controls";
 import BenchmarkChart, { parseBenchmark } from "./charts/BenchmarkChart";
 import BenchmarksTab from "./BenchmarksTab";
@@ -88,11 +89,13 @@ export default function BaselineTab({ data, anchor, onNavigate }) {
     element?.scrollIntoView();
   }, [anchor]);
 
-  const validation = getValidation(data);
+  // PolicyEngine in HMRC's own year: 2024-25, the dataset's own year, with
+  // no projection (the pipeline's ``baseline_comparison`` block).
+  const comparison = getBaselineComparison(data);
+  const validation = comparison.validation;
   const dataset = getDatasetInfo(data);
-  // The baseline is checked in the headline year, against HMRC's latest
-  // (provisional) outturn.
-  const modelYear = getHeadlineYear(data);
+  const modelYear = comparison.year;
+  const rates = comparison.rates;
   const bench = (group, key, label, unit, model) => ({
     group,
     key,
@@ -101,20 +104,11 @@ export default function BaselineTab({ data, anchor, onNavigate }) {
     model,
     hmrc2024: parseBenchmark(BENCHMARKS[key].y2024?.value),
   });
-  // Why the liabilities differ more than the gains: the rates, not the data.
-  function liabilityTip(v, year) {
-    const pe = v.baseline_cgt_revenue_bn / v.total_gains_bn;
-    const hmrc = parseBenchmark(BENCHMARKS.liability.y2024?.value) / parseBenchmark(BENCHMARKS.totalGains.y2024?.value);
-    const pct = (x) => `${Math.round(100 * x)}%`;
-    return `Most of this gap comes from the tax rates, not the data. CGT rates rose from 10% and 20% to 18% and 24% on 30 October 2024, so HMRC's 2024-25 liability is partly at the old rates, while PolicyEngine's ${year} figure is at the new rates all year: tax is ${pct(pe)} of taxable gains here against ${pct(hmrc)} in HMRC's figures. Gains also grow between the two years.`;
-  }
+  const pct1 = (rate) => `${(100 * rate).toFixed(1)}%`;
   const benchmarkRows = [
     bench("Overall", "totalGains", "Total taxable gains", "bn", validation.total_gains_bn),
     bench("Overall", "taxpayers", "CGT taxpayers", "count", validation.cgt_taxpayers),
-    {
-      ...bench("Overall", "liability", "Baseline CGT liability", "bn", validation.baseline_cgt_revenue_bn),
-      tip: liabilityTip(validation, modelYear),
-    },
+    bench("Overall", "liability", "Baseline CGT liability", "bn", validation.baseline_cgt_revenue_bn),
     bench("Large gains", "shareOver1m", "Share of gains from gains of £1m or more", "pct", validation.share_gains_over_1m_pct),
     bench("Large gains", "shareOver5m", "Share of gains from gains of £5m or more", "pct", validation.share_gains_over_5m_pct),
     bench("Large gains", "taxpayersOver500k", "Taxpayers with gains over £500k", "count", validation.taxpayers_over_500k),
@@ -135,6 +129,7 @@ export default function BaselineTab({ data, anchor, onNavigate }) {
         hmrcYear: "2024-25",
         url: CGT_STATISTICS,
         gains: { model: validation.total_gains_bn, hmrc: BENCHMARKS.totalGains.y2024.value },
+        taxpayers: { model: validation.cgt_taxpayers, hmrc: BENCHMARKS.taxpayers.y2024.value },
         liability: { model: validation.baseline_cgt_revenue_bn, hmrc: BENCHMARKS.liability.y2024.value },
       }}
     >
@@ -149,18 +144,27 @@ export default function BaselineTab({ data, anchor, onNavigate }) {
             </>
           }
         />
-        <BenchmarkChart rows={benchmarkRows} modelLabel={`PolicyEngine (${dataset.shortLabel})`} />
+        <BenchmarkChart
+          rows={benchmarkRows}
+          modelLabel={`PolicyEngine (${dataset.shortLabel.replace(/\s*\d{4}-\d{2}$/, "")})`}
+          modelColumn={`PolicyEngine ${modelYear}`}
+        />
         <Notes>
           <p>
             The Family Resources <SourceLink href={FRS}>Survey</SourceLink> records few capital
             gains, so the dataset imputes them from HMRC data and weights households to
-            HMRC&apos;s CGT <SourceLink href={CGT_STATISTICS}>statistics</SourceLink>.
+            HMRC&apos;s 2024-25 CGT <SourceLink href={CGT_STATISTICS}>statistics</SourceLink>. Every
+            row here is a calibration target or built from one (the totals, the liability, the
+            size-of-gain bands and the relief&apos;s bands), so in 2024-25 the differences in these rows are the weighting&apos;s remaining distance
+            from its targets, not an independent comparison.
           </p>
-          <p>
-            {"PolicyEngine's liabilities are higher relative to gains than HMRC's because CGT "}
-            <SourceLink href={CGT_RATES}>rates</SourceLink>
-            {" rose from 10% and 20% to 18% and 24% partway through HMRC's year."}
-          </p>
+          {rates?.main_blended ? (
+            <p>
+              {"The main CGT "}
+              <SourceLink href={CGT_RATES}>rates</SourceLink>
+              {` rose from 10% and 20% to 18% and 24% on 30 October 2024. PolicyEngine applies one schedule to the whole of ${modelYear}: main rates of ${pct1(rates.main.basic_rate)} and ${pct1(rates.main.higher_rate)}, the average of the two weighted by days. HMRC's figures follow when each gain was realised; HMRC publishes no split of the year by disposal date, so the model does not split it.`}
+            </p>
+          ) : null}
         </Notes>
       </section>
     </BenchmarksTab>

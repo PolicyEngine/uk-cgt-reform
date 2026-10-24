@@ -7,7 +7,7 @@ import { colors } from "../../lib/colors";
 import { formatSignedMn } from "../../lib/formatters";
 import ChartLogo from "../ChartLogo";
 import ChartLegend from "./ChartLegend";
-import { LabelledSelect } from "../controls";
+import { PillSelect } from "../controls";
 import { EndLabel, RowAxis, SignedBar, rowHeight } from "./benchmarkRows";
 import { TOOLTIP_PROPS, TooltipCard } from "./ChartTooltip";
 
@@ -18,10 +18,10 @@ const BAR_SIZE = 14;
 const GAP = 4;
 
 const SERIES = {
-  hmrc: { fill: colors.gray[700], text: colors.gray[800], weight: 700 },
+  hmrc: { fill: colors.gray[400], text: colors.gray[700], weight: 700 },
   central: { fill: colors.primary[600], text: colors.primary[700], weight: 600 },
   upper: { fill: colors.primary[300], text: colors.primary[600], weight: 600 },
-  official: { fill: colors.error, opacity: 0.45, text: "#B42318", weight: 600 },
+  official: { fill: colors.primary[900], text: colors.primary[900], weight: 600 },
 };
 // Top to bottom in each row, and in the legend: HMRC, then the model from
 // the strongest response to the weakest.
@@ -145,8 +145,8 @@ export default function ReadyReckonerChart({ pairs, rows, labels, pairKey, onPai
   return (
     <>
       {pairs.length > 1 && !controlled ? (
-        <div className="mb-1 w-full max-w-xs">
-          <LabelledSelect
+        <div className="mb-3 flex">
+          <PillSelect
             label="HMRC receipts year"
             options={pairs.map((p) => ({ value: p.key, label: p.label }))}
             value={current.key}
