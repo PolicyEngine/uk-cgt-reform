@@ -207,8 +207,10 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
             }
             description={
               <>
-                Each bar adds the reform&apos;s parts one at a time, first with no behavioural
-                response and then with{" "}
+                Each bar is the reform&apos;s whole change in CGT revenue, split into its three
+                parts in the order they are applied: income tax rates on most gains, then on
+                residential property gains, then withdrawing the relief. The top bar has no
+                behavioural response; the bottom one uses{" "}
                 <SourceLink href={CENTAX_SOURCE.url}>CenTax&apos;s</SourceLink> central response.
               </>
             }
