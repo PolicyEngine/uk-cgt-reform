@@ -2,7 +2,7 @@
 // ChartLogo). Centred, text-xs slate, 12px markers.
 //
 // `items`: [{ label, fill, marker?, opacity?, stroke?, dashed? }] where
-// `marker` is "bar" (a rounded square, the default), "dot" or "diamond";
+// `marker` is "bar" (a rounded square, the default), "dot", "ring" or "diamond";
 // `stroke`/`dashed` outline a bar marker (e.g. a dashed derived series).
 // `className` adds to the list's classes.
 export default function ChartLegend({ items, className = "" }) {
@@ -22,6 +22,9 @@ export default function ChartLegend({ items, className = "" }) {
 function LegendMarker({ marker = "bar", fill, opacity, stroke, dashed }) {
   if (marker === "dot") {
     return <span className="inline-block h-3 w-3 shrink-0 rounded-full" style={{ background: fill, opacity }} />;
+  }
+  if (marker === "ring") {
+    return <span className="inline-block h-3 w-3 shrink-0 rounded-full" style={{ border: `2px solid ${fill}`, opacity }} />;
   }
   if (marker === "diamond") {
     return (

@@ -51,16 +51,16 @@ function Dot({ id, hover, series, left, title, lines }) {
       className={`absolute top-1/2 -translate-x-1/2 -translate-y-1/2 ${series.key === "model" ? "z-[2]" : "z-[1]"}`}
       style={{ left: `${left}%` }}
     >
+      {/* PolicyEngine a solid dot, HMRC a larger hollow ring around it, so
+          both stay visible when the values coincide. */}
       <span
         aria-hidden="true"
         className="block rounded-full"
-        style={{
-          // An r=5 circle with a 1px white stroke, as in the regional chart.
-          width: 2 * DOT_R + 1,
-          height: 2 * DOT_R + 1,
-          background: series.color,
-          border: "1px solid #FFFFFF",
-        }}
+        style={
+          series.key === "model"
+            ? { width: 2 * DOT_R - 1, height: 2 * DOT_R - 1, background: series.color, border: "1px solid #FFFFFF" }
+            : { width: 2 * DOT_R + 5, height: 2 * DOT_R + 5, background: "transparent", border: `2px solid ${series.color}` }
+        }
       />
     </HoverTip>
   );
@@ -188,7 +188,7 @@ export default function BenchmarkChart({ rows, modelLabel, modelColumn = "Policy
           </ul>
         </section>
       ))}
-      <ChartLegend items={SERIES.map((s) => ({ label: seriesLabels[s.key], fill: s.color, marker: "dot" }))} />
+      <ChartLegend items={SERIES.map((s) => ({ label: seriesLabels[s.key], fill: s.color, marker: s.key === "model" ? "dot" : "ring" }))} />
       <ChartLogo />
     </>
   );

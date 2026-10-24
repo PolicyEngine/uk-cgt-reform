@@ -96,7 +96,6 @@ export default function BaselineTab({ data, anchor, onNavigate }) {
   const dataset = getDatasetInfo(data);
   const modelYear = comparison.year;
   const rates = comparison.rates;
-  const liability = comparison.liability_bn;
   const bench = (group, key, label, unit, model) => ({
     group,
     key,
@@ -105,19 +104,11 @@ export default function BaselineTab({ data, anchor, onNavigate }) {
     model,
     hmrc2024: parseBenchmark(BENCHMARKS[key].y2024?.value),
   });
-  // The liability under each rate schedule for the year: the main rates in
-  // force before 30 October 2024 for the whole year, and those after it.
-  const liabilityTip = liability
-    ? `Charged at the main rates in force before 30 October 2024 (10% and 20%) for the whole year, PolicyEngine's ${modelYear} liability would be ${formatBn(liability.pre_30_october_rates_all_year, 1)}; at the rates from that date (18% and 24%), ${formatBn(liability.post_30_october_rates_all_year, 1)}. The notes below give the schedule PolicyEngine applies.`
-    : null;
   const pct1 = (rate) => `${(100 * rate).toFixed(1)}%`;
   const benchmarkRows = [
     bench("Overall", "totalGains", "Total taxable gains", "bn", validation.total_gains_bn),
     bench("Overall", "taxpayers", "CGT taxpayers", "count", validation.cgt_taxpayers),
-    {
-      ...bench("Overall", "liability", "Baseline CGT liability", "bn", validation.baseline_cgt_revenue_bn),
-      tip: liabilityTip,
-    },
+    bench("Overall", "liability", "Baseline CGT liability", "bn", validation.baseline_cgt_revenue_bn),
     bench("Large gains", "shareOver1m", "Share of gains from gains of £1m or more", "pct", validation.share_gains_over_1m_pct),
     bench("Large gains", "shareOver5m", "Share of gains from gains of £5m or more", "pct", validation.share_gains_over_5m_pct),
     bench("Large gains", "taxpayersOver500k", "Taxpayers with gains over £500k", "count", validation.taxpayers_over_500k),
