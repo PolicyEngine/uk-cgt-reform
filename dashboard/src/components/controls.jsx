@@ -1,5 +1,7 @@
 "use client";
 
+import { splitFiscalYears } from "../lib/formatters";
+
 // The dashboard's design system: one card, one field, one segmented
 // control, one pill, one tooltip, one primary and one text button. Every tab
 // draws its boxes and controls from here rather than repeating classes.
@@ -171,6 +173,19 @@ export function Notes({ children, className = "" }) {
   );
 }
 
+// Text with each fiscal year ("2027-28") kept on one line.
+export function NoBreakYears({ text }) {
+  return splitFiscalYears(text).map((part, i) =>
+    part.year ? (
+      <span key={i} className="whitespace-nowrap">
+        {part.text}
+      </span>
+    ) : (
+      part.text
+    ),
+  );
+}
+
 // An external source, opened in a new tab.
 export const MICROCOSM_URL = "https://github.com/PolicyEngine/microcosm";
 
@@ -181,7 +196,7 @@ export function DatasetName({ label, possessive = false }) {
   return (
     <>
       <SourceLink href={MICROCOSM_URL}>Microcosm</SourceLink>
-      {`${label.slice("Microcosm".length)}${tail}`}
+      <NoBreakYears text={`${label.slice("Microcosm".length)}${tail}`} />
     </>
   );
 }

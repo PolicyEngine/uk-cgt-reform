@@ -1,4 +1,4 @@
-import { splitFiscalYears } from "../lib/formatters";
+import { NoBreakYears } from "./controls";
 
 // Single source of section typography: every titled block in every tab uses
 // this. `size="lg"` is for the group intros that sit between section cards.
@@ -33,18 +33,5 @@ export default function SectionHeading({ title, description, size = "base", acti
         <div className={`mt-2 text-sm leading-6 text-slate-600${paired ? " lg:mb-5" : ""}`}>{description}</div>
       ) : null}
     </div>
-  );
-}
-
-// Text with each fiscal year ("2027-28") kept on one line.
-export function NoBreakYears({ text }) {
-  return splitFiscalYears(text).map((part, i) =>
-    part.year ? (
-      <span key={i} className="whitespace-nowrap">
-        {part.text}
-      </span>
-    ) : (
-      part.text
-    ),
   );
 }
