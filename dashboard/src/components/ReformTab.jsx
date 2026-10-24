@@ -254,7 +254,7 @@ export default function ReformTab({ data, datasetKey, onNavigate, anchor }) {
                 <a href={BADR_GUIDANCE} target="_blank" rel="noopener noreferrer" className="underline decoration-1 underline-offset-2 hover:opacity-80">
                   Relief
                 </a>{" "}
-                is withdrawn, so qualifying gains take the new rates.
+                stays at current law; Custom rates can withdraw it.
               </li>
               <li>
                 Taxpayers realise fewer gains, using CenTax&apos;s central{" "}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { getBenchmarks, getDatasetInfo, getHeadlineYear } from "../lib/dataHelpers";
+import { getBenchmarks, getDatasetInfo, getHeadlineYear, getSensitivityYears } from "../lib/dataHelpers";
 import { formatBn, formatPublished, formatSignedBn, formatSignedMn, reckonerElasticities } from "../lib/formatters";
 import JrfComparisonChart, { buildJrfRows } from "./charts/JrfComparisonChart";
 import PackageEstimatesChart, { buildPackageRows } from "./charts/PackageEstimatesChart";
@@ -143,8 +143,8 @@ function StaticEqualisation({ block, dataset }) {
       <JrfComparisonChart
         rows={rows}
         labels={{
-          static: `${PE}, no behavioural response`,
-          obr: `${PE}'s percentage increase applied to OBR receipts`,
+          static: `${PE}, equal rates and relief withdrawn (JRF's scope), no behavioural response`,
+          obr: `${PE}'s percentage increase applied to OBR receipts (JRF's scope)`,
           jrf: "JRF, no behavioural response (2026 report)",
         }}
       />
@@ -156,7 +156,11 @@ function StaticEqualisation({ block, dataset }) {
         <p>
           JRF applies HMRC&apos;s grouped CGT <SourceLink href={CGT_STATISTICS}>statistics</SourceLink>{" "}
           by income band to the OBR&apos;s March 2026 CGT{" "}
-          <SourceLink href={OBR_EFO}>projection</SourceLink>, with no behavioural response.
+          <SourceLink href={OBR_EFO}>projection</SourceLink>, with no behavioural response,
+          &quot;taking account of gains from carried interest and gains subject to Business Asset
+          Disposal Relief&quot;. {PE} reads that as equalising those gains too, so its figures
+          here withdraw the relief, unlike the headline reform; they are scored for this
+          comparison only.
         </p>
         <p>
           The light dots apply {PE}&apos;s percentage increase (the change with no behavioural
@@ -187,7 +191,7 @@ function RegionalShares({ block, centax }) {
       <RegionalComparisonChart rows={rows} peLabel={`${PE} ${block.year}`} otherLabel={hmrcLabel} />
       <Notes>
         <p>
-          {"Regional gains are among Microcosm's calibration targets (HMRC Table 5), so the closeness of the two sets of shares is partly by construction."}
+          {`Microcosm's weights are calibrated towards HMRC Table 5's regional gains and taxpayer counts for ${external.year}, so the regional liability shares here are close partly by construction.`}
         </p>
         <p>
           {`HMRC assign each taxpayer to the region of their residence, by postcode; ${PE} assigns each person to their household's region. Each side's shares are of its own total across the twelve regions.`}
@@ -204,24 +208,27 @@ function RegionalShares({ block, centax }) {
   );
 }
 
-function CentaxPackage({ rows: allRows, onNavigate }) {
+function CentaxPackage({ rows: allRows, model, windowYears, onNavigate }) {
   // CenTax's own published figures only; the file's rates-only derivation
   // (PolicyEngine's arithmetic on CenTax's tables) is left out.
   const rows = allRows.filter((row) => !row.id.endsWith("_derived"));
-  const built = buildPackageRows(rows);
+  const built = buildPackageRows(rows, model?.rows ?? []);
+  // Years scored for this comparison only, outside the Reform tab's window.
+  const outside = [...new Set((model?.rows ?? []).map((r) => r.year))].filter(
+    (year) => !windowYears.includes(year),
+  );
   return (
-    <section className="section-card">
-      <SectionHeading
-        title={`CenTax's own estimates for a wider package, ${packageYears(rows)}`}
-        description={
-          <>
-            Every bar is a figure <SourceLink href={CENTAX_REPORT}>CenTax</SourceLink> published,
-            not a PolicyEngine estimate. Each is for equal rates together with wider changes to
-            how gains are taxed, which this dashboard does not model, so they are context, not a
-            comparison.
-          </>
-        }
-      />
+    <details className="section-card group scroll-mt-24" id="centax-package">
+      <summary className="cursor-pointer select-none text-xl font-semibold tracking-tight text-slate-900 marker:text-[color:var(--pe-color-primary-600)]">
+        {`CenTax's wider package and PolicyEngine's rates-only estimate, ${packageYears(rows)}`}
+      </summary>
+      <p className="mb-5 mt-3 text-sm leading-6 text-slate-600">
+        <SourceLink href={CENTAX_REPORT}>CenTax&apos;s</SourceLink> published estimates for equal
+        rates together with wider changes to how gains are taxed, beside PolicyEngine&apos;s
+        estimate for the same year and elasticity of the part it models (equal rates and the
+        relief withdrawn). The gap reflects the measures PolicyEngine does not model as well as
+        data and method.
+      </p>
       <PackageEstimatesChart rows={built} />
       <Notes>
         <p>
@@ -233,6 +240,11 @@ function CentaxPackage({ rows: allRows, onNavigate }) {
           </TabLink>{" "}
           covers what that means for the elasticity.
         </p>
+        {model ? (
+          <p>
+            {`PolicyEngine's bars are the change in CGT revenue on its own liabilities for the year, nominal, after the response at the elasticity shown, under the year's current law. CenTax's are a percentage rise applied to the OBR's CGT forecast. ${outside.length ? `${outside.join(" and ")} lie outside the Reform tab's years and are scored for this comparison only.` : ""}`}
+          </p>
+        ) : null}
         {rows.map((row) => (
           <p key={row.id}>
             <SourceLabel href={row.url} label={row.source} />, {row.locator} ({row.year}):{" "}
@@ -240,7 +252,7 @@ function CentaxPackage({ rows: allRows, onNavigate }) {
           </p>
         ))}
       </Notes>
-    </section>
+    </details>
   );
 }
 
@@ -378,13 +390,18 @@ export default function BenchmarksTab({ data, onNavigate, baselineGlance, childr
       {benchmarks.regional ? (
         <RegionalShares block={benchmarks.regional} centax={benchmarks.centax_2019_20} />
       ) : null}
-      <CentaxPackage rows={benchmarks.centax_package_context} onNavigate={onNavigate} />
       <ReadyReckoner
         block={benchmarks.ready_reckoner}
         headlineYear={getHeadlineYear(data)}
         dataset={dataset}
         elasticities={elasticities}
         rr={rr}
+        onNavigate={onNavigate}
+      />
+      <CentaxPackage
+        rows={benchmarks.centax_package_context}
+        model={benchmarks.centax_package_model}
+        windowYears={getSensitivityYears(data)}
         onNavigate={onNavigate}
       />
     </div>

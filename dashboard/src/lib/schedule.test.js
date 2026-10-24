@@ -25,7 +25,7 @@ describe("the precomputed schedule", () => {
   test("any changed value makes it a live run", () => {
     const form = formOf(precomputed.rates, precomputed.badr, precomputed.elasticity);
     expect(isPrecomputed(checkForm({ ...form, elasticity: 2.0 }), precomputed)).toBe(false);
-    expect(isPrecomputed(checkForm({ ...form, badrForm: { ...form.badrForm, mode: "keep" } }), precomputed)).toBe(false);
+    expect(isPrecomputed(checkForm({ ...form, badrForm: { ...form.badrForm, mode: "withdraw" } }), precomputed)).toBe(false);
     expect(
       isPrecomputed(checkForm({ ...form, percents: { ...form.percents, basic_rate: "21" } }), precomputed),
     ).toBe(false);
@@ -42,7 +42,7 @@ describe("initialChoice", () => {
     const opened = choice("");
     expect(opened.view).toBe("landing");
     expect(opened.forms.equalise.percents).toEqual({ basic_rate: "20", higher_rate: "40", additional_rate: "45" });
-    expect(opened.forms.equalise.badrForm.mode).toBe("withdraw");
+    expect(opened.forms.equalise.badrForm.mode).toBe("keep");
     expect(opened.forms.custom.percents).toEqual({ basic_rate: "18", higher_rate: "24", additional_rate: "24" });
   });
 
@@ -68,20 +68,20 @@ describe("initialChoice", () => {
   });
 
   test("a link to the precomputed schedule shows it at once", () => {
-    expect(choice("basic=20&higher=40&additional=45&bw=1&e=1")).toMatchObject({
+    expect(choice("basic=20&higher=40&additional=45&e=1")).toMatchObject({
       policy: "equalise",
       view: "precomputed",
     });
     // From the old tab it keeps Custom open, with the same instant results.
-    expect(choice("tab=explorer&basic=20&higher=40&additional=45&bw=1&e=1")).toMatchObject({
+    expect(choice("tab=explorer&basic=20&higher=40&additional=45&e=1")).toMatchObject({
       policy: "custom",
       view: "precomputed",
     });
   });
 
-  test("a pre-relief legacy link to 20/40/45 still loads the withdrawn relief", () => {
+  test("a pre-relief legacy link to 20/40/45 loads the equalisation preset's relief", () => {
     // e=-0.7 was the marginal-rate form of the central case.
-    expect(readUrlState(params("basic=20&higher=40&additional=45&e=-0.7")).badrForm.mode).toBe("withdraw");
+    expect(readUrlState(params("basic=20&higher=40&additional=45&e=-0.7")).badrForm.mode).toBe("keep");
     expect(choice("tab=explorer&basic=20&higher=40&additional=45&e=-0.7").view).toBe("precomputed");
   });
 

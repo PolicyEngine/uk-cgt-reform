@@ -95,15 +95,12 @@ function Dashboard() {
               taxing capital{" "}
               <a href="https://www.gov.uk/capital-gains-tax" target="_blank" rel="noopener noreferrer" className={LINK}>gains</a>{" "}
               at income tax rates
-            </strong>{" "}
-            and
-            withdrawing Business Asset Disposal{" "}
-            <a href="https://www.gov.uk/business-asset-disposal-relief" target="_blank" rel="noopener noreferrer" className={LINK}>Relief</a>, a reform{" "}
+            </strong>, a reform{" "}
             <a href="https://ifs.org.uk/sites/default/files/2024-10/Captial-gains-tax-reform.pdf" target="_blank" rel="noopener noreferrer" className={LINK}>debated</a>{" "}
             in the UK, would affect <strong className={BOLD}>government revenue</strong> and{" "}
             <strong className={BOLD}>household incomes</strong>; a{" "}
             <strong className={BOLD}>custom option</strong> scores any other set of rates. It
-            models only these changes to <strong className={BOLD}>rates and the relief</strong>, with fewer gains
+            models only these changes to <strong className={BOLD}>rates</strong>, with fewer gains
             realised as rates rise, and not the other measures{" "}
             <a href={CENTAX_REPORT} target="_blank" rel="noopener noreferrer" className={LINK}>CenTax</a>{" "}
             pair with them (an investment allowance, ending the uplift at death and an exit tax) or

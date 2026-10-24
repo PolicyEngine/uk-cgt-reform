@@ -59,7 +59,7 @@ describe("the Reform tab's flow", () => {
   });
 
   test("a link to the precomputed schedule shows it; an old explorer link alone shows nothing", () => {
-    expect(load("basic=20&higher=40&additional=45&bw=1&e=1")).toMatchObject({ policy: "equalise", shown: "precomputed" });
+    expect(load("basic=20&higher=40&additional=45&e=1")).toMatchObject({ policy: "equalise", shown: "precomputed" });
     expect(load("tab=explorer")).toMatchObject({ policy: "custom", shown: null });
   });
 

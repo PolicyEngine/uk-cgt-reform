@@ -285,9 +285,10 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
         <Topic title="Which gains are taxed how">
           <p>
             Under current law, residential property gains and gains qualifying for Business Asset
-            Disposal Relief (with Investors&apos; Relief) have their own rate schedules. The reform taxes residential property gains at income tax rates and
-            withdraws the relief, so qualifying gains pay the new main rates, as in{" "}
-            <ExternalLink href={CENTAX_REPORT}>CenTax&apos;s</ExternalLink> rates-only estimate.
+            Disposal Relief (with Investors&apos; Relief) have their own rate schedules. The reform
+            taxes residential property gains at income tax rates and keeps the relief at current
+            law; Custom rates can withdraw it, as{" "}
+            <ExternalLink href={CENTAX_REPORT}>CenTax&apos;s</ExternalLink> rates-only estimate does.
             Carried interest (fund managers&apos; share of profits) has been taxed as{" "}
             <ExternalLink href={CARRIED_INTEREST}>income</ExternalLink> (income tax and National
             Insurance), outside CGT, since 6 April
@@ -343,8 +344,8 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
                 <strong className="font-semibold text-slate-800">2024-25 claims.</strong> Claims
                 rose in 2024-25, before the relief&apos;s rate went up from April 2025, as some
                 business owners sold earlier. The model carries 2024-25&apos;s level of qualifying
-                gains into later years, so it may overstate those gains, and the yield from
-                withdrawing the relief, in 2027-28 onwards.
+                gains into later years, so it may overstate those gains in 2027-28 onwards, and the
+                yield from withdrawing the relief in a custom run.
               </li>
               <li>
                 <strong className="font-semibold text-slate-800">Investors&apos; Relief.</strong>{" "}
@@ -355,9 +356,9 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
               </li>
               <li>
                 <strong className="font-semibold text-slate-800">Under the reform.</strong>{" "}
-                Withdrawing the relief sets the limit to zero, so all qualifying gains pay the new
-                main rates. Custom rates can instead keep the relief at a chosen rate and a lifetime
-                limit of £500k, £1m or £10m.
+                The headline reform keeps the relief at current law. Custom rates can withdraw it,
+                which sets the limit to zero so all qualifying gains pay the new main rates, or keep
+                it at a chosen rate and a lifetime limit of £500k, £1m or £10m.
               </li>
               <li>
                 <strong className="font-semibold text-slate-800">Behaviour.</strong> Qualifying gains
@@ -656,7 +657,7 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
         <Topic title="Runs and saved results">
           <p>
             Each schedule is simulated in full, with nothing interpolated. Equalisation with the
-            relief withdrawn shows its results at once; any other schedule, including
+            relief kept shows its results at once; any other schedule, including
             equalisation with one value changed, runs live. Completed runs are saved and reused
             for the same schedule; a change to the data or the model triggers a fresh run.
           </p>

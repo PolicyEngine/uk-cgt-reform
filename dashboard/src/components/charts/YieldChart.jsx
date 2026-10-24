@@ -1,8 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import {
+  Area,
   Bar,
   BarChart,
+  ComposedChart,
+  Line,
+  ReferenceDot,
   CartesianGrid,
   LabelList,
   ReferenceLine,
@@ -17,6 +22,7 @@ import { formatSignedBn } from "../../lib/formatters";
 import ChartLogo from "../ChartLogo";
 import ChartLegend from "./ChartLegend";
 import { TOOLTIP_PROPS, TooltipCard } from "./ChartTooltip";
+import { elasticityLayout, markLines, xAxisProps, yAxisProps } from "./elasticityAxis";
 
 const AXIS_STYLE = { fontSize: 12, fill: colors.gray[500] };
 const fmt = (v) => formatSignedBn(v, 1);
@@ -123,10 +129,148 @@ function YieldTooltip({ active, payload, label, steps }) {
   );
 }
 
-// Where one year's yield comes from (schedule_split.year): each reform step's increment, stacked,
-// with no behavioural response and at the CenTax central elasticity.
+// Where one year's yield comes from (schedule_split[year]): with the
+// pipeline's grid (`grid`), each step's increment stacked across the
+// retention elasticity, 0 to 4, its top edge the sensitivity curve; without
+// it, two bars, no behavioural response and the CenTax central elasticity.
 // `steps` is the pipeline's schedule_split.steps.
-export default function YieldChart({ steps }) {
+// `official` (optional) is the year's official HMRC/OBR sensitivity row,
+// drawn as a ring at its total, as on the sensitivity chart.
+export default function YieldChart({ steps, grid, centralRetention = 1, official }) {
+  if (grid?.length)
+    return <YieldArea steps={steps} grid={grid} centralRetention={centralRetention} official={official} />;
+  return <YieldBars steps={steps} />;
+}
+
+const TOTAL_LINE = colors.gray[900];
+const OFFICIAL = colors.gray[700];
+
+function OfficialRing({ cx, cy }) {
+  if (!Number.isFinite(cx) || !Number.isFinite(cy)) return null;
+  return <circle cx={cx} cy={cy} r={6.5} fill="#FFFFFF" fillOpacity={0.6} stroke={OFFICIAL} strokeWidth={2} />;
+}
+
+function YieldAreaTooltip({ active, payload, steps, official }) {
+  if (!active || !payload?.length) return null;
+  const point = payload[0].payload;
+  const atOfficial = official && point.elasticity === Number(official.e_retention);
+  return (
+    <TooltipCard
+      title={`Retention elasticity ${point.elasticity.toFixed(1)}`}
+      rows={[
+        ...steps.map((step, i) => ({
+          label: styleFor(step, i).short,
+          value: fmt(point[step.step]),
+          color: styleFor(step, i).fill,
+        })),
+        ...(atOfficial
+          ? [
+              {
+                label: `Official case total (relief gains ${Number(official.badr_elasticity).toFixed(1)})`,
+                value: fmt(Number(official.revenue_bn)),
+                color: OFFICIAL,
+              },
+            ]
+          : []),
+      ]}
+      footer={{ label: "Total", value: fmt(point.total) }}
+    />
+  );
+}
+
+// The parts stacked by sign at each elasticity (positive parts up from £0,
+// negative ones down), with the total, the sensitivity curve, as a line.
+function YieldArea({ steps, grid, centralRetention, official }) {
+  const [chartWidth, setChartWidth] = useState(0);
+  const { narrow, marks, margin } = elasticityLayout(chartWidth, centralRetention);
+  const data = grid.map((p) => {
+    const row = { elasticity: Number(p.elasticity), total: Number(p.total_bn) };
+    for (const step of steps) row[step.step] = Number(p[`${step.step}_bn`]) || 0;
+    return row;
+  });
+  const ends = data.flatMap((row) => {
+    const parts = steps.map((step) => row[step.step]);
+    return [
+      parts.filter((v) => v > 0).reduce((a, b) => a + b, 0),
+      parts.filter((v) => v < 0).reduce((a, b) => a + b, 0),
+      row.total,
+    ];
+  });
+  if (official) ends.push(Number(official.revenue_bn));
+  return (
+    <>
+      <div className="h-[340px] w-full">
+        <ResponsiveContainer onResize={(width) => setChartWidth(width)}>
+          <ComposedChart data={data} margin={margin} stackOffset="sign">
+            <CartesianGrid strokeDasharray="3 3" stroke={colors.border.light} vertical={false} />
+            <XAxis {...xAxisProps(narrow)} />
+            <YAxis {...yAxisProps(Math.min(...ends), Math.max(...ends))} />
+            {steps.map((step, i) => (
+              <Area
+                key={step.step}
+                type="linear"
+                dataKey={step.step}
+                name={styleFor(step, i).short}
+                stackId="yield"
+                stroke={styleFor(step, i).fill}
+                strokeWidth={1}
+                fill={styleFor(step, i).fill}
+                fillOpacity={0.75}
+                isAnimationActive={false}
+                activeDot={false}
+              />
+            ))}
+            {markLines(marks, chartWidth)}
+            <ReferenceLine y={0} stroke={colors.gray[600]} strokeWidth={1.5} />
+            <Line
+              type="linear"
+              dataKey="total"
+              name="Total"
+              stroke={TOTAL_LINE}
+              strokeWidth={2}
+              dot={false}
+              activeDot={{ r: 4, fill: TOTAL_LINE, stroke: "#FFFFFF", strokeWidth: 2 }}
+              isAnimationActive={false}
+            />
+            {official ? (
+              <ReferenceDot
+                x={Number(official.e_retention)}
+                y={Number(official.revenue_bn)}
+                r={0}
+                ifOverflow="visible"
+                shape={(props) => <OfficialRing {...props} />}
+              />
+            ) : null}
+            <Tooltip
+              {...TOOLTIP_PROPS}
+              cursor={{ stroke: colors.gray[400], strokeWidth: 1 }}
+              content={<YieldAreaTooltip steps={steps} official={official} />}
+            />
+          </ComposedChart>
+        </ResponsiveContainer>
+      </div>
+      <ChartLegend
+        items={[
+          ...steps.map((step, i) => ({ label: styleFor(step, i).short, fill: styleFor(step, i).fill })),
+          { label: "Total change in CGT revenue", fill: TOTAL_LINE, marker: "dot" },
+          ...(official
+            ? [
+                {
+                  label: `Official case total: ${Number(official.e_retention).toFixed(1)}, ${Number(official.badr_elasticity).toFixed(1)} for relief gains`,
+                  fill: OFFICIAL,
+                  marker: "ring",
+                },
+              ]
+            : []),
+        ]}
+      />
+      <ChartLogo />
+    </>
+  );
+}
+
+// The bar form, for a year without the grid.
+function YieldBars({ steps }) {
   const data = CASES.map(({ key }) => {
     const row = { case: key };
     let pos = 0;

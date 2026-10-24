@@ -204,16 +204,16 @@ export function readUrlState(searchParams) {
   const limit = Number(searchParams.get("bl"));
   if (BADR_LIMITS.includes(limit)) badrForm.limit = limit;
   // A link from before the relief lever carries a marginal-rate elasticity
-  // and no relief fields. Its 20% / 40% / 45% was the "Equalise with income
-  // tax" preset, which now withdraws the relief, so it loads that way and
-  // still scores the equalisation reform.
+  // and no relief fields. Its 20% / 40% / 45% loads with the "Equalise with
+  // income tax" preset's treatment of the relief, so it scores the
+  // equalisation reform.
   const equalisation = PRESETS.find((preset) => preset.id === "income_tax");
   const relieflessLegacyLink =
     legacy && ["bw", "br", "bl"].every((key) => searchParams.get(key) === null);
   const equalisationRates = BANDS.every(
     (band) => Number(percents[band.key]) === toPercent(equalisation.rates[band.key]),
   );
-  if (relieflessLegacyLink && equalisationRates) badrForm.mode = "withdraw";
+  if (relieflessLegacyLink && equalisationRates && equalisation.badr.withdrawn) badrForm.mode = "withdraw";
   return { percents, elasticity, badrForm };
 }
 

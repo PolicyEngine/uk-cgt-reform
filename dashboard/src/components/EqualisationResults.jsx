@@ -96,8 +96,6 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
     ? topDecile.avg_change_gbp / deciles.reduce((sum, group) => sum + group.avg_change_gbp, 0)
     : null;
   const split = getScheduleSplit(data, splitYear);
-  // Equalisation with the relief kept: the step before it is withdrawn.
-  const keptRelief = split.steps.find((row) => row.step === "residential");
 
   return (
     <div className="space-y-6">
@@ -189,30 +187,43 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
               <YearSelect years={getScheduleSplitYears(data)} value={splitYear} onChange={setSplitYear} />
             }
             description={
-              <>
-                Each bar is the reform&apos;s whole change in CGT revenue, split into its three
-                parts in the order they are applied: income tax rates on other gains, then on
-                residential property gains, then withdrawing the relief. The top bar has no
-                behavioural response; the bottom one uses{" "}
-                <SourceLink href={CENTAX_SOURCE.url}>CenTax&apos;s</SourceLink> central response.
-              </>
+              split.grid?.length ? (
+                <>
+                  The reform&apos;s change in CGT revenue at each retention elasticity from 0 to 4,
+                  split into its two parts in the order they are applied: income tax rates on
+                  other gains, then on residential property gains. The line is the total; the
+                  vertical lines mark the same values as the sensitivity chart.
+                </>
+              ) : (
+                <>
+                  Each bar is the reform&apos;s whole change in CGT revenue, split into its two
+                  parts in the order they are applied: income tax rates on other gains, then on
+                  residential property gains. The top bar has no
+                  behavioural response; the bottom one uses{" "}
+                  <SourceLink href={CENTAX_SOURCE.url}>CenTax&apos;s</SourceLink> central response.
+                </>
+              )
             }
           />
-          <YieldChart key={splitYear} steps={split.steps} />
-          <Notes>
-            {validation.badr_gains_bn > 0 ? null : (
-              <p>
-                {dataset.shortLabel} records no gains that qualify for Business Asset Disposal{" "}
-                <SourceLink href={BADR_GUIDANCE}>Relief</SourceLink>, so withdrawing it
-                changes nothing here.
-              </p>
+          <YieldChart
+            key={splitYear}
+            steps={split.steps}
+            grid={split.grid}
+            centralRetention={central.e_retention}
+            official={getSensitivity(data, split.year).find(
+              (row) => row.e_retention === official.e_retention && row.badr_elasticity !== row.e_retention,
             )}
+          />
+          <Notes>
+            {split.grid?.length ? (
+              <p>
+                {`Each of the ${split.grid.length} elasticities on the sensitivity curve is scored twice, adding one part at a time, with one elasticity for every gain; between computed points the areas are straight lines. Where a part turns negative it stacks below £0.`}
+              </p>
+            ) : null}
             <p>
-              Equalising the rates but keeping the relief changes CGT revenue by{" "}
-              {formatSignedBn(keptRelief.static_cgt_change_bn, 1)} with no behavioural response and{" "}
-              {formatSignedBn(keptRelief.central_cgt_change_bn, 1)} at the central elasticity;{" "}
-              <TabLink onNavigate={onChooseCustom}>Custom</TabLink> rates can score any rate for the
-              relief.
+              Business Asset Disposal <SourceLink href={BADR_GUIDANCE}>Relief</SourceLink> stays at
+              current law in this reform; <TabLink onNavigate={onChooseCustom}>Custom</TabLink> rates
+              can score withdrawing it or any rate for it.
             </p>
           </Notes>
         </Card>
@@ -320,7 +331,7 @@ export function EqualisationSpec({ data }) {
               baseline: BASELINE_SCHEDULE_RATES.badr.rate,
               reform: schedules.badr.withdrawn ? null : schedules.badr.rate,
               baselineNote: `${badrLimitLabel(BASELINE_SCHEDULE_RATES.badr.lifetime_limit)} lifetime limit`,
-              reformNote: schedules.badr.withdrawn ? "gains pay the main rates" : undefined,
+              reformNote: schedules.badr.withdrawn ? "gains pay the main rates" : "unchanged",
             },
           ]}
         />

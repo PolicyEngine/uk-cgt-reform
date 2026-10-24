@@ -14,6 +14,10 @@ const BAR_SIZE = 16;
 
 const CENTAX = { fill: colors.gray[500], text: colors.gray[700] };
 const DERIVED = { fill: "#FFFFFF", stroke: colors.gray[500], text: colors.gray[700] };
+// PolicyEngine's rates-only estimate: an outlined, dashed teal bar.
+const MODEL = { fill: "#FFFFFF", stroke: colors.primary[600], text: colors.primary[700] };
+export const MODEL_LEGEND =
+  "PolicyEngine, equal rates and relief withdrawn only (no investment allowance, no change at death, no exit tax)";
 
 // Short row labels, keyed by the results file's ids; an id not listed here
 // falls back to its source and locator.
@@ -32,9 +36,18 @@ const isNum = (v) => v !== null && v !== undefined && Number.isFinite(Number(v))
 // The props from the results file's `benchmarks.centax_package_context`.
 // CenTax's 2024 package appears twice in the file: Table 5 (at the central
 // elasticity) and Table 6 (across elasticities). They become one row with a
-// bar per elasticity, so the central figure is not shown twice.
-export function buildPackageRows(rows) {
+// bar per elasticity, so the central figure is not shown twice. `model`
+// (`benchmarks.centax_package_model.rows`, optional) adds PolicyEngine's
+// rates-only estimate for the same year and elasticity under each CenTax bar.
+export function buildPackageRows(rows, model = []) {
   const table5 = rows.find((row) => row.id === "centax_2024_table5_package");
+  const modelBar = (id, elasticity, stated) => {
+    const m = model.find((r) => r.source_id === id && Math.abs(r.elasticity - elasticity) < 1e-9);
+    if (!m) return [];
+    const text = `${formatBn(m.cgt_change_bn, 1)} at elasticity ${m.elasticity.toFixed(1)}`;
+    const short = `${formatBn(m.cgt_change_bn, 1)} at ${m.elasticity.toFixed(1)}`;
+    return [{ kind: "model", value: m.cgt_change_bn, elasticity: m.elasticity, text, short, stated }];
+  };
   const built = [];
   for (const row of rows) {
     const base = {
@@ -52,39 +65,62 @@ export function buildPackageRows(rows) {
         label: SHORT_LABELS.centax_2024_table5_package,
         bars: [...points]
           .sort((a, b) => a.retention_elasticity - b.retention_elasticity)
-          .map((p) => {
+          .flatMap((p) => {
             const main = `${formatBn(p.value, 1)} at elasticity ${p.retention_elasticity.toFixed(1)}`;
+            const short = `${formatBn(p.value, 1)} at ${p.retention_elasticity.toFixed(1)}`;
             const extra =
               p === central && table5.details?.uplift_pct ? ` (+${table5.details.uplift_pct}%, CenTax's central case)` : "";
-            return {
-              value: p.value,
-              elasticity: p.retention_elasticity,
-              central: p === central,
-              text: `${main}${extra}`,
-              main,
-              extra,
-            };
+            return [
+              {
+                kind: "centax",
+                value: p.value,
+                elasticity: p.retention_elasticity,
+                central: p === central,
+                text: `${main}${extra}`,
+                main: short,
+                short,
+                extra,
+              },
+              ...modelBar(row.id, p.retention_elasticity, true),
+            ];
           }),
-        note: "One bar per elasticity CenTax tested, from 0.5 to 2.0: the stronger the response, the less the package raises.",
+        note: "One pair of bars per retention elasticity CenTax tested, 0.5 to 2.0, CenTax's above PolicyEngine's: the stronger the response, the less each raises.",
       });
       continue;
     }
     if (row === table5 && rows.some((r) => r.details?.by_retention_elasticity?.length)) continue;
     const uplift = row.details?.uplift_pct;
     const withCarried = row.details?.with_carried_interest_bn;
+    const text = `${formatBn(row.value, 1)}${uplift ? ` (+${uplift}%)` : ""}`;
+    const modelRow = model.find((r) => r.source_id === row.id);
+    // The 2026 report states no elasticity; PolicyEngine's bar is at the central value.
+    const stated = !/no elasticity/i.test(row.note ?? "");
+    const notes = [
+      withCarried ? `${formatBn(withCarried, 1)} with carried interest.` : null,
+      modelRow && !stated
+        ? `The report states no elasticity; PolicyEngine's bar uses the central ${modelRow.elasticity.toFixed(1)}.`
+        : null,
+    ].filter(Boolean);
     built.push({
       ...base,
       value: row.value,
-      text: `${formatBn(row.value, 1)}${uplift ? ` (+${uplift}%)` : ""}`,
-      note: withCarried ? `${formatBn(withCarried, 1)} with carried interest.` : null,
+      text,
+      bars: modelRow
+        ? [
+            { kind: "centax", value: row.value, text, elasticity: null },
+            ...modelBar(row.id, modelRow.elasticity, stated),
+          ].map((bar) => ({ ...bar, short: bar.text }))
+        : undefined,
+      note: notes.length ? notes.join(" ") : null,
     });
   }
   return built;
 }
 
 // `label`: the text beside the bar, if not `text` (the tooltip's).
-function RowChart({ value, text, label, title, derived = false, emphasis = false, domain, ticks }) {
-  const style = derived ? DERIVED : CENTAX;
+function RowChart({ value, text, label, title, derived = false, kind = "centax", emphasis = false, domain, ticks }) {
+  const style = kind === "model" ? MODEL : derived ? DERIVED : CENTAX;
+  const outlined = kind === "model" || derived;
   const data = [{ key: "v", hasValue: isNum(value), value: Number(value) }];
   return (
     <div style={{ height: BAR_SIZE + MARGIN.top + MARGIN.bottom + 4 }} className="w-full">
@@ -102,9 +138,14 @@ function RowChart({ value, text, label, title, derived = false, emphasis = false
                   title={title}
                   rows={[
                     {
-                      label: derived ? "PolicyEngine's derivation" : "CenTax estimate",
+                      label:
+                        kind === "model"
+                          ? "PolicyEngine, rates only"
+                          : derived
+                            ? "PolicyEngine's derivation"
+                            : "CenTax estimate",
                       value: text,
-                      color: derived ? DERIVED.stroke : CENTAX.fill,
+                      color: outlined ? style.stroke : CENTAX.fill,
                     },
                   ]}
                 />
@@ -115,7 +156,7 @@ function RowChart({ value, text, label, title, derived = false, emphasis = false
             dataKey="value"
             barSize={BAR_SIZE}
             fill={style.fill}
-            shape={<SignedBar stroke={derived ? DERIVED.stroke : undefined} strokeDasharray={derived ? "4 3" : undefined} />}
+            shape={<SignedBar stroke={outlined ? style.stroke : undefined} strokeDasharray={outlined ? "4 3" : undefined} />}
             isAnimationActive={false}
           >
             <LabelList
@@ -132,13 +173,18 @@ function RowChart({ value, text, label, title, derived = false, emphasis = false
 }
 
 // CenTax's estimates after behavioural responses, one row each, on one £bn
-// scale; the 2024 package has one bar per elasticity.
+// scale; the 2024 package has one bar per elasticity, and PolicyEngine's
+// rates-only estimate for the same year and elasticity sits under each.
 // `rows`: buildPackageRows(benchmarks.centax_package_context). Legend below.
 export default function PackageEstimatesChart({ rows }) {
   const values = rows.flatMap((r) => (r.bars ? r.bars.map((b) => b.value) : [r.value])).filter(isNum);
+  // Round ticks from £0 up; a small negative bar gets just enough room left
+  // of £0 rather than a whole tick step.
   const ticks = getNiceTicks([0, Math.max(0, ...values)], 4);
-  const domain = getTickDomain(ticks);
+  const lowest = Math.min(0, ...values);
+  const domain = [lowest < 0 ? lowest - 0.04 * ticks.at(-1) : 0, getTickDomain(ticks)[1]];
   const anyDerived = rows.some((r) => r.derived);
+  const anyModel = rows.some((r) => r.bars?.some((b) => b.kind === "model"));
   return (
     <>
       <RowAxis domain={domain} ticks={ticks} format={(v) => formatBn(v, 0)} margin={MARGIN} />
@@ -159,11 +205,12 @@ export default function PackageEstimatesChart({ rows }) {
             <div aria-hidden="true">
               {row.bars ? (
                 row.bars.map((bar) => (
-                  <div key={bar.text}>
+                  <div key={`${bar.kind}-${bar.text}`}>
                     {/* A long label's parenthesis moves under its bar on phones,
                         where it would run past the chart's edge. */}
                     <RowChart
-                      title={`${row.label}, ${row.year}`}
+                      title={bar.kind === "model" ? `PolicyEngine, ${row.year}` : `${row.label}, ${row.year}`}
+                      kind={bar.kind}
                       value={bar.value}
                       text={bar.text}
                       label={
@@ -172,7 +219,9 @@ export default function PackageEstimatesChart({ rows }) {
                             {bar.main}
                             <tspan className="hidden sm:inline">{bar.extra}</tspan>
                           </>
-                        ) : undefined
+                        ) : (
+                          bar.short
+                        )
                       }
                       emphasis={bar.central}
                       domain={domain}
@@ -200,6 +249,7 @@ export default function PackageEstimatesChart({ rows }) {
       <ChartLegend
         items={[
           { label: "CenTax's published estimate", fill: CENTAX.fill },
+          ...(anyModel ? [{ label: MODEL_LEGEND, fill: MODEL.fill, stroke: MODEL.stroke, dashed: true }] : []),
           ...(anyDerived
             ? [{ label: "PolicyEngine's derivation from CenTax's tables", fill: DERIVED.fill, stroke: DERIVED.stroke, dashed: true }]
             : []),

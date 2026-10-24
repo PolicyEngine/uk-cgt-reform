@@ -298,7 +298,7 @@ export function SensitivityNotes({ onNavigate, curve, central, centaxRange, offi
         HMRC/OBR {official.e_retention.toFixed(1)} is the official assumption (
         <SourceLabel href={officialHref} label="OBR" />, January 2025, para 1.9). The official case
         gives gains qualifying for BADR their own {Number(official.badr_e_retention).toFixed(1)}, so
-        its ring sits off the line;{" "}
+        it is a ring beside the line rather than a point on it;{" "}
         <TabLink onNavigate={onNavigate} tab="methodology" section="elasticity-gap">
           Methodology
         </TabLink>{" "}

@@ -65,3 +65,32 @@ describe("sensitivity curve", () => {
     expect(getSensitivityCurve({ sensitivity: {} }, "2027-28")).toBeNull();
   });
 });
+
+describe("yield by schedule across the grid", () => {
+  test("each year's stacked parts add to the sensitivity curve", () => {
+    for (const year of Object.keys(results.schedule_split)) {
+      const { grid } = results.schedule_split[year];
+      const curve = getSensitivityCurve(results, year).grid;
+      expect(grid.map((p) => p.elasticity)).toEqual(curve.map((p) => p.elasticity));
+      grid.forEach((point, i) => {
+        const steps = results.schedule_split[year].steps.map((step) => step.step);
+        const parts = steps.reduce((sum, step) => sum + point[`${step}_bn`], 0);
+        expect(parts).toBeCloseTo(point.total_bn, 9);
+        expect(point.total_bn).toBeCloseTo(curve[i].revenue_bn, 9);
+      });
+    }
+  });
+});
+
+describe("CenTax package beside PolicyEngine", () => {
+  test("every PolicyEngine bar sits under a CenTax figure for the same year", async () => {
+    const { buildPackageRows } = await import("../components/charts/PackageEstimatesChart");
+    const { centax_package_context: rows, centax_package_model: model } = results.benchmarks;
+    const built = buildPackageRows(rows.filter((r) => !r.id.endsWith("_derived")), model.rows);
+    const modelBars = built.flatMap((row) => (row.bars ?? []).filter((b) => b.kind === "model"));
+    expect(modelBars).toHaveLength(model.rows.length);
+    for (const m of model.rows) {
+      expect(built.find((row) => row.year === m.year && row.bars?.some((b) => b.kind === "model"))).toBeTruthy();
+    }
+  });
+});
