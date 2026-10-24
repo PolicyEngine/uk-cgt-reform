@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+  splitFiscalYears,
   formatBn,
   formatCount,
   formatCurrency,
@@ -100,5 +101,19 @@ describe("other formatters", () => {
     expect(formatPublished("2026-09")).toBe("September 2026");
     expect(formatPublished("2026-06-29")).toBe("29 June 2026");
     expect(formatPublished("2026")).toBe("2026");
+  });
+});
+
+describe("splitFiscalYears", () => {
+  test("marks each fiscal-year label", () => {
+    expect(splitFiscalYears("Budgetary impact by year, 2027-28 to 2031-32")).toEqual([
+      { text: "Budgetary impact by year, ", year: false },
+      { text: "2027-28", year: true },
+      { text: " to ", year: false },
+      { text: "2031-32", year: true },
+    ]);
+  });
+  test("leaves text without years whole", () => {
+    expect(splitFiscalYears("Notes")).toEqual([{ text: "Notes", year: false }]);
   });
 });

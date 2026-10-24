@@ -143,3 +143,12 @@ export function formatPublished(isoDate) {
   if (!monthName) return String(year);
   return day ? `${day} ${monthName} ${year}` : `${monthName} ${year}`;
 }
+
+// Splits text into plain parts and fiscal-year labels ("2027-28"), so a
+// title can keep each year on one line (a browser may break after its hyphen).
+export function splitFiscalYears(text) {
+  return String(text)
+    .split(/(\b\d{4}-\d{2}\b)/)
+    .filter((part) => part !== "")
+    .map((part) => ({ text: part, year: /^\d{4}-\d{2}$/.test(part) }));
+}
