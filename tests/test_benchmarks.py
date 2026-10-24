@@ -9,9 +9,9 @@ from uk_cgt_reform.comparison import (
     BASES,
     CENTAX_PACKAGE_CONTEXT,
     CENTAX_TABLE_3,
-    CENTAX_TABLE_8,
-    CENTAX_TABLE_8_REGIONS,
     EXTERNAL_ROW_KEYS,
+    HMRC_TABLE_5,
+    HMRC_TABLE_5_REGIONS,
     JRF_STATIC,
     READY_RECKONER,
     READY_RECKONER_ELASTICITIES,
@@ -19,13 +19,13 @@ from uk_cgt_reform.comparison import (
     UNITS,
     price_factors,
     ready_reckoner_block,
+    regional_block,
 )
 from uk_cgt_reform.explore import ELASTICITY_OPTIONS
 from uk_cgt_reform.impacts import (
     REGION_NAMES,
     UNASSIGNED_REGION,
     cgt_by_region,
-    cgt_uplift,
     sensitivity,
 )
 from uk_cgt_reform.reform import ELASTICITY_PARAMETER
@@ -60,22 +60,19 @@ def test_cgt_by_region_sums_weighted_person_cgt_by_household_region():
     assert totals["Scotland"] == 0.0
 
 
-def test_cgt_uplift_reports_national_and_regional_changes():
-    uplift = cgt_uplift(fake_sim([100.0, 50.0, 10.0, 7.0]), fake_sim([200.0, 100.0, 15.0, 7.0]))
-    national = uplift["national"]
-    assert national["baseline_cgt_bn"] == pytest.approx(331 / 1e9)
-    assert national["change_bn"] == pytest.approx(305 / 1e9)
-    assert national["uplift_pct"] == pytest.approx(100 * 305 / 331)
-    regions = {row["region"]: row for row in uplift["regions"]}
+def test_regional_block_puts_each_side_on_its_own_twelve_region_total():
+    model = cgt_by_region(fake_sim([100.0, 50.0, 10.0, 7.0]))
+    block = regional_block(model, "2024-25")
+    regions = {row["region"]: row for row in block["regions"]}
     assert list(regions) == list(REGION_NAMES.values())
-    assert regions["London"]["uplift_pct"] == pytest.approx(100.0)
-    assert regions["Wales"]["uplift_pct"] == pytest.approx(50.0)
-    assert regions["Scotland"]["uplift_pct"] is None
-    assert uplift["unassigned_cgt_bn"] == {"baseline": 21 / 1e9, "reform": 21 / 1e9}
-    total = sum(row["baseline_cgt_bn"] for row in uplift["regions"])
-    assert total + uplift["unassigned_cgt_bn"]["baseline"] == pytest.approx(
-        national["baseline_cgt_bn"]
-    )
+    # London 300 and Wales 10 of 310 in the regions; the unassigned 21 is
+    # reported, not shared out.
+    assert regions["London"]["model_share_pct"] == pytest.approx(100 * 300 / 310)
+    assert regions["Wales"]["model_share_pct"] == pytest.approx(100 * 10 / 310)
+    assert block["unassigned_cgt_bn"] == pytest.approx(21 / 1e9)
+    assert sum(r["hmrc_share_pct"] for r in block["regions"]) == pytest.approx(100.0)
+    assert regions["London"]["hmrc_share_pct"] == pytest.approx(100 * 7_036 / 24_168)
+    assert block["year"] == block["external"]["year"] == "2024-25"
 
 
 def test_price_factors_express_each_year_in_the_first_years_prices():
@@ -115,7 +112,7 @@ def test_sensitivity_rows_record_how_each_case_was_applied():
 # --- the external figures, pinned to their sources ----------------------------
 
 
-EXTERNAL_ROWS = [*JRF_STATIC, CENTAX_TABLE_3, CENTAX_TABLE_8, *CENTAX_PACKAGE_CONTEXT]
+EXTERNAL_ROWS = [*JRF_STATIC, CENTAX_TABLE_3, HMRC_TABLE_5, *CENTAX_PACKAGE_CONTEXT]
 
 
 @pytest.mark.parametrize("row", EXTERNAL_ROWS, ids=lambda row: row["id"])
@@ -133,21 +130,23 @@ def test_external_figures_are_pinned():
     ]
     assert CENTAX_TABLE_3["value"] == 139.0
     assert CENTAX_TABLE_3["details"] == {"change_bn": 15.2, "baseline_bn": 10.9}
-    assert [(r["region"], r["baseline_bn"], r["uplift_pct"]) for r in CENTAX_TABLE_8_REGIONS] == [
-        ("London", 3.0, 123),
-        ("South East", 2.4, 139),
-        ("East of England", 1.1, 137),
-        ("North West", 0.9, 146),
-        ("South West", 0.8, 144),
-        ("West Midlands", 0.6, 151),
-        ("Yorkshire and the Humber", 0.6, 152),
-        ("East Midlands", 0.6, 151),
-        ("Scotland", 0.5, 160),
-        ("Wales", 0.2, 148),
-        ("North East", 0.2, 163),
-        ("Northern Ireland", 0.2, 154),
+    # HMRC Table 5.1, 2024-25 (2026 release): tax liabilities, £m.
+    assert [(r["region"], r["tax_m"]) for r in HMRC_TABLE_5_REGIONS] == [
+        ("North East", 274),
+        ("North West", 1_711),
+        ("Yorkshire and the Humber", 1_385),
+        ("East Midlands", 1_224),
+        ("West Midlands", 1_136),
+        ("East of England", 2_324),
+        ("London", 7_036),
+        ("South East", 5_150),
+        ("South West", 2_059),
+        ("Wales", 447),
+        ("Scotland", 1_090),
+        ("Northern Ireland", 332),
     ]
-    assert {r["region"] for r in CENTAX_TABLE_8_REGIONS} == set(REGION_NAMES.values())
+    assert sum(r["tax_m"] for r in HMRC_TABLE_5_REGIONS) == 24_168
+    assert HMRC_TABLE_5["value"] == 24_169 and HMRC_TABLE_5["year"] == "2024-25"
     context = {r["id"]: r for r in CENTAX_PACKAGE_CONTEXT}
     assert not any(r["comparable"] for r in CENTAX_PACKAGE_CONTEXT)
     assert context["centax_2024_rates_only_post_behavioural_derived"]["value"] == 8.2

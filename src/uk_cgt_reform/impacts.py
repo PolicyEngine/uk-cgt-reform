@@ -309,32 +309,6 @@ def cgt_by_region(sim) -> dict[str, float]:
     return {region: float(totals.get(region, 0.0)) for region in order}
 
 
-def cgt_uplift(baseline, reformed) -> dict:
-    """The change in CGT from ``baseline`` to ``reformed``, nationally and by
-    region, with each as a percentage of its baseline CGT."""
-    base, ref = cgt_by_region(baseline), cgt_by_region(reformed)
-
-    def entry(b: float, r: float) -> dict:
-        return {
-            "baseline_cgt_bn": b / 1e9,
-            "reform_cgt_bn": r / 1e9,
-            "change_bn": (r - b) / 1e9,
-            "uplift_pct": 100 * (r - b) / b if b else None,
-        }
-
-    return {
-        "national": entry(sum(base.values()), sum(ref.values())),
-        "regions": [
-            {"region": region, **entry(base[region], ref[region])}
-            for region in REGION_NAMES.values()
-        ],
-        "unassigned_cgt_bn": {
-            "baseline": base[UNASSIGNED_REGION] / 1e9,
-            "reform": ref[UNASSIGNED_REGION] / 1e9,
-        },
-    }
-
-
 def sensitivity(baseline_cgt: float, cases: dict[str, float], run_case, year: int) -> list[dict]:
     """Re-run the reform in ``year`` under each institution's elasticity
     assumption.

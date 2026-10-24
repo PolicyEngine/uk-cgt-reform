@@ -129,6 +129,7 @@ export default function BaselineTab({ data, anchor, onNavigate }) {
         hmrcYear: "2024-25",
         url: CGT_STATISTICS,
         gains: { model: validation.total_gains_bn, hmrc: BENCHMARKS.totalGains.y2024.value },
+        taxpayers: { model: validation.cgt_taxpayers, hmrc: BENCHMARKS.taxpayers.y2024.value },
         liability: { model: validation.baseline_cgt_revenue_bn, hmrc: BENCHMARKS.liability.y2024.value },
       }}
     >

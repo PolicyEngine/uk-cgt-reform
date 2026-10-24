@@ -2666,7 +2666,7 @@
           "comparable": true,
           "year": "2026-27",
           "basis": "static",
-          "price_basis": "2026/27 prices",
+          "price_basis": "2026-27 prices",
           "value": 13.0,
           "unit": "gbp_bn",
           "details": {
@@ -2684,7 +2684,7 @@
           "comparable": true,
           "year": "2029-30",
           "basis": "static",
-          "price_basis": "2026/27 prices",
+          "price_basis": "2026-27 prices",
           "value": 17.0,
           "unit": "gbp_bn",
           "details": {
@@ -2694,240 +2694,208 @@
         }
       ]
     },
-    "centax_2019_20_rules": {
+    "regional": {
       "year": "2024-25",
-      "rules": {
-        "baseline": {
-          "main": {
-            "basic_rate": 0.1,
-            "higher_rate": 0.2,
-            "additional_rate": 0.2
-          },
-          "residential_property": {
-            "basic_rate": 0.18,
-            "higher_rate": 0.28,
-            "additional_rate": 0.28
-          },
-          "carried_interest": {
-            "basic_rate": 0.18,
-            "higher_rate": 0.28,
-            "additional_rate": 0.28
-          },
-          "badr": {
-            "rate": 0.1,
-            "lifetime_limit": 1000000
-          },
-          "annual_exempt_amount": 12000
-        },
-        "reform": {
-          "main": {
-            "basic_rate": 0.2,
-            "higher_rate": 0.4,
-            "additional_rate": 0.45
-          },
-          "residential_property": {
-            "basic_rate": 0.2,
-            "higher_rate": 0.4,
-            "additional_rate": 0.45
-          },
-          "carried_interest": {
-            "basic_rate": 0.2,
-            "higher_rate": 0.4,
-            "additional_rate": 0.45
-          },
-          "badr": {
-            "withdrawn": true,
-            "rate": null,
-            "lifetime_limit": null
-          },
-          "annual_exempt_amount": 12000
-        },
-        "elasticity": 0.0,
-        "not_modelled": "Investors' Relief, which CenTax's Table 3 also abolishes, shares the engine's BADR input (capital_gains_badr): it is charged at the BADR rate within the BADR lifetime limit and withdrawn with it; its own \u00a310m limit is not modelled. On a dataset without BADR gains the relief settings are inert."
-      },
-      "reform_fingerprints": {
-        "baseline": "851025bbd2b3",
-        "reform": "a4f59fee472f"
-      },
-      "national": {
-        "current_law_cgt_bn": 23.14765374547481,
-        "baseline_cgt_bn": 21.205474584192753,
-        "reform_cgt_bn": 48.978489829305204,
-        "change_bn": 27.773015245112454,
-        "uplift_pct": 130.97096759067753
-      },
-      "unassigned_cgt_bn": {
-        "baseline": 0.0,
-        "reform": 0.0
-      },
+      "basis": "current law, no projection, no behavioural response",
+      "model_cgt_bn": 23.14765374547481,
+      "unassigned_cgt_bn": 0.0,
       "regions": [
         {
           "region": "North East",
-          "baseline_cgt_bn": 0.24772639413659694,
-          "reform_cgt_bn": 0.5704861085936378,
-          "change_bn": 0.3227597144570409,
-          "uplift_pct": 130.2887871847319,
-          "baseline_share_pct": 1.1682190518917233,
-          "centax_baseline_bn": 0.2,
-          "centax_baseline_share_pct": 1.8018018018018018,
-          "centax_uplift_pct": 163
+          "model_cgt_bn": 0.2796801557103474,
+          "model_share_pct": 1.2082440785819286,
+          "hmrc_tax_m": 274,
+          "hmrc_share_pct": 1.1337305527970871
         },
         {
           "region": "North West",
-          "baseline_cgt_bn": 1.5493062982262396,
-          "reform_cgt_bn": 3.5637566474218336,
-          "change_bn": 2.0144503491955943,
-          "uplift_pct": 130.02273026979145,
-          "baseline_share_pct": 7.306161869072916,
-          "centax_baseline_bn": 0.9,
-          "centax_baseline_share_pct": 8.108108108108109,
-          "centax_uplift_pct": 146
+          "model_cgt_bn": 1.6886397805144637,
+          "model_share_pct": 7.295079661559998,
+          "hmrc_tax_m": 1711,
+          "hmrc_share_pct": 7.079609400860642
         },
         {
           "region": "Yorkshire and the Humber",
-          "baseline_cgt_bn": 1.128545541075705,
-          "reform_cgt_bn": 2.7743974219176644,
-          "change_bn": 1.6458518808419595,
-          "uplift_pct": 145.83832206480292,
-          "baseline_share_pct": 5.321953708675586,
-          "centax_baseline_bn": 0.6,
-          "centax_baseline_share_pct": 5.405405405405405,
-          "centax_uplift_pct": 152
+          "model_cgt_bn": 1.226512014360548,
+          "model_share_pct": 5.298645071534828,
+          "hmrc_tax_m": 1385,
+          "hmrc_share_pct": 5.730718305196954
         },
         {
           "region": "East Midlands",
-          "baseline_cgt_bn": 1.1585090183793787,
-          "reform_cgt_bn": 2.574060840900308,
-          "change_bn": 1.415551822520929,
-          "uplift_pct": 122.1873805092276,
-          "baseline_share_pct": 5.4632543769756925,
-          "centax_baseline_bn": 0.6,
-          "centax_baseline_share_pct": 5.405405405405405,
-          "centax_uplift_pct": 151
+          "model_cgt_bn": 1.2808128267450651,
+          "model_share_pct": 5.5332295913379745,
+          "hmrc_tax_m": 1224,
+          "hmrc_share_pct": 5.06454816285998
         },
         {
           "region": "West Midlands",
-          "baseline_cgt_bn": 1.069813264446575,
-          "reform_cgt_bn": 2.3423592329813947,
-          "change_bn": 1.2725459685348195,
-          "uplift_pct": 118.95028887991216,
-          "baseline_share_pct": 5.0449861907077915,
-          "centax_baseline_bn": 0.6,
-          "centax_baseline_share_pct": 5.405405405405405,
-          "centax_uplift_pct": 151
+          "model_cgt_bn": 1.1827652488044462,
+          "model_share_pct": 5.109655007845743,
+          "hmrc_tax_m": 1136,
+          "hmrc_share_pct": 4.700430321085733
         },
         {
           "region": "East of England",
-          "baseline_cgt_bn": 2.005921397844984,
-          "reform_cgt_bn": 4.722089086363701,
-          "change_bn": 2.7161676885187167,
-          "uplift_pct": 135.40748363504022,
-          "baseline_share_pct": 9.459450623850987,
-          "centax_baseline_bn": 1.1,
-          "centax_baseline_share_pct": 9.909909909909912,
-          "centax_uplift_pct": 137
+          "model_cgt_bn": 2.199638043053718,
+          "model_share_pct": 9.502639305219997,
+          "hmrc_tax_m": 2324,
+          "hmrc_share_pct": 9.616021185038067
         },
         {
           "region": "London",
-          "baseline_cgt_bn": 5.995736478583563,
-          "reform_cgt_bn": 13.789976875204287,
-          "change_bn": 7.794240396620724,
-          "uplift_pct": 129.99638033561544,
-          "baseline_share_pct": 28.274474380559152,
-          "centax_baseline_bn": 3.0,
-          "centax_baseline_share_pct": 27.027027027027028,
-          "centax_uplift_pct": 123
+          "model_cgt_bn": 6.506305934916753,
+          "model_share_pct": 28.10784197162396,
+          "hmrc_tax_m": 7036,
+          "hmrc_share_pct": 29.112876530950018
         },
         {
           "region": "South East",
-          "baseline_cgt_bn": 4.5977752785406345,
-          "reform_cgt_bn": 10.629222440983485,
-          "change_bn": 6.03144716244285,
-          "uplift_pct": 131.18186072715744,
-          "baseline_share_pct": 21.68202017967551,
-          "centax_baseline_bn": 2.4,
-          "centax_baseline_share_pct": 21.62162162162162,
-          "centax_uplift_pct": 139
+          "model_cgt_bn": 4.999297694222294,
+          "model_share_pct": 21.597427321115077,
+          "hmrc_tax_m": 5150,
+          "hmrc_share_pct": 21.309169149288316
         },
         {
           "region": "South West",
-          "baseline_cgt_bn": 1.7868833324621223,
-          "reform_cgt_bn": 4.144079257768418,
-          "change_bn": 2.3571959253062955,
-          "uplift_pct": 131.91661047385492,
-          "baseline_share_pct": 8.426518941453557,
-          "centax_baseline_bn": 0.8,
-          "centax_baseline_share_pct": 7.207207207207207,
-          "centax_uplift_pct": 144
+          "model_cgt_bn": 1.9467690919860048,
+          "model_share_pct": 8.41022210454735,
+          "hmrc_tax_m": 2059,
+          "hmrc_share_pct": 8.519529956967892
         },
         {
           "region": "Wales",
-          "baseline_cgt_bn": 0.3881499526739803,
-          "reform_cgt_bn": 0.9290596764043553,
-          "change_bn": 0.540909723730375,
-          "uplift_pct": 139.35586491870646,
-          "baseline_share_pct": 1.8304233236228524,
-          "centax_baseline_bn": 0.2,
-          "centax_baseline_share_pct": 1.8018018018018018,
-          "centax_uplift_pct": 148
+          "model_cgt_bn": 0.42389922653141315,
+          "model_share_pct": 1.8312837715324917,
+          "hmrc_tax_m": 447,
+          "hmrc_share_pct": 1.849553128103277
         },
         {
           "region": "Scotland",
-          "baseline_cgt_bn": 0.9781365094862157,
-          "reform_cgt_bn": 2.2402127747927723,
-          "change_bn": 1.2620762653065567,
-          "uplift_pct": 129.02864304385136,
-          "baseline_share_pct": 4.612660309028643,
-          "centax_baseline_bn": 0.5,
-          "centax_baseline_share_pct": 4.504504504504505,
-          "centax_uplift_pct": 160
+          "model_cgt_bn": 1.082761874245215,
+          "model_share_pct": 4.677631202500974,
+          "hmrc_tax_m": 1090,
+          "hmrc_share_pct": 4.5100959947037405
         },
         {
           "region": "Northern Ireland",
-          "baseline_cgt_bn": 0.29897111833675727,
-          "reform_cgt_bn": 0.6987894659733538,
-          "change_bn": 0.3998183476365965,
-          "uplift_pct": 133.73142859446585,
-          "baseline_share_pct": 1.4098770444855784,
-          "centax_baseline_bn": 0.2,
-          "centax_baseline_share_pct": 1.8018018018018018,
-          "centax_uplift_pct": 154
+          "model_cgt_bn": 0.3305718543845407,
+          "model_share_pct": 1.428100912599684,
+          "hmrc_tax_m": 332,
+          "hmrc_share_pct": 1.3737173121482953
         }
       ],
       "external": {
-        "id": "centax_2024_table3_rates_only_static",
-        "source": "CenTax, Reforming Capital Gains Tax: revenue and distributional effects (Advani, Lonsdale and Summers)",
-        "published": "2024-10",
-        "url": "https://centax.org.uk/wp-content/uploads/2024/10/AdvaniLonsdaleSummers2024_CGTReform.pdf#page=29",
-        "locator": "Table 3, p.28",
-        "scope": "Equalisation with income tax rates (20/40/45, gains stacked on income), one rate for all assets: BADR, Investors' Relief and the separate residential and carried-interest rates abolished; principal private residence relief kept",
+        "id": "hmrc_2026_table5_regions_2024_25",
+        "source": "HMRC, Capital Gains Tax statistics, 2026 release",
+        "published": "2026-08-27",
+        "url": "https://assets.publishing.service.gov.uk/media/6a7b2444114277b327805c10/Table_5_2026_Regional_and_country_statistics.ods",
+        "locator": "Table 5.1 (sheet 5_1_2024-25)",
+        "scope": "CGT liabilities of individuals by UK country and English region, current law",
         "comparable": true,
-        "year": "2019-20",
+        "year": "2024-25",
         "basis": "static",
-        "price_basis": "nominal, 2019/20",
-        "value": 139.0,
-        "unit": "pct",
+        "price_basis": "nominal, 2024-25",
+        "value": 24169,
+        "unit": "gbp_m",
         "details": {
-          "change_bn": 15.2,
-          "baseline_bn": 10.9
+          "regions": [
+            {
+              "region": "North East",
+              "taxpayers_k": 12,
+              "gains_m": 1599,
+              "tax_m": 274
+            },
+            {
+              "region": "North West",
+              "taxpayers_k": 44,
+              "gains_m": 9384,
+              "tax_m": 1711
+            },
+            {
+              "region": "Yorkshire and the Humber",
+              "taxpayers_k": 34,
+              "gains_m": 7442,
+              "tax_m": 1385
+            },
+            {
+              "region": "East Midlands",
+              "taxpayers_k": 33,
+              "gains_m": 6725,
+              "tax_m": 1224
+            },
+            {
+              "region": "West Midlands",
+              "taxpayers_k": 35,
+              "gains_m": 6289,
+              "tax_m": 1136
+            },
+            {
+              "region": "East of England",
+              "taxpayers_k": 62,
+              "gains_m": 12326,
+              "tax_m": 2324
+            },
+            {
+              "region": "London",
+              "taxpayers_k": 113,
+              "gains_m": 34717,
+              "tax_m": 7036
+            },
+            {
+              "region": "South East",
+              "taxpayers_k": 121,
+              "gains_m": 27337,
+              "tax_m": 5150
+            },
+            {
+              "region": "South West",
+              "taxpayers_k": 64,
+              "gains_m": 11040,
+              "tax_m": 2059
+            },
+            {
+              "region": "Wales",
+              "taxpayers_k": 18,
+              "gains_m": 2518,
+              "tax_m": 447
+            },
+            {
+              "region": "Scotland",
+              "taxpayers_k": 37,
+              "gains_m": 6064,
+              "tax_m": 1090
+            },
+            {
+              "region": "Northern Ireland",
+              "taxpayers_k": 10,
+              "gains_m": 1876,
+              "tax_m": 332
+            }
+          ],
+          "status": "provisional"
         },
-        "note": "2019/20 rules and data: main rates 10/20, residential and carried interest 18/28, BADR 10%, exempt amount \u00a312,000; resident individuals; CGT and income tax counted together"
-      },
-      "external_regions": {
-        "id": "centax_2024_table8_regions_static",
-        "source": "CenTax, Reforming Capital Gains Tax: revenue and distributional effects (Advani, Lonsdale and Summers)",
-        "published": "2024-10",
-        "url": "https://centax.org.uk/wp-content/uploads/2024/10/AdvaniLonsdaleSummers2024_CGTReform.pdf#page=47",
-        "locator": "Table 8, p.46",
-        "scope": "Equalisation with income tax rates (20/40/45, gains stacked on income), one rate for all assets: BADR, Investors' Relief and the separate residential and carried-interest rates abolished; principal private residence relief kept",
-        "comparable": true,
-        "year": "2019-20",
-        "basis": "static",
-        "price_basis": "nominal, 2019/20",
-        "value": null,
-        "unit": "pct",
-        "note": "2019/20 rules and data: main rates 10/20, residential and carried interest 18/28, BADR 10%, exempt amount \u00a312,000; resident individuals; CGT and income tax counted together. Regions are taxpayers' regions of residence; the rows sum to \u00a311.1bn against the national \u00a310.9bn (rounding)."
+        "note": "Provisional. Regions by the postcode of each individual's residence (HMRC's commentary, Table 5). Gains after losses, before the annual exempt amount; tax in \u00a3m. The twelve rows sum to \u00a324,168m against the table's \u00a324,169m (rounding)."
       }
+    },
+    "centax_2019_20": {
+      "id": "centax_2024_table3_rates_only_static",
+      "source": "CenTax, Reforming Capital Gains Tax: revenue and distributional effects (Advani, Lonsdale and Summers)",
+      "published": "2024-10",
+      "url": "https://centax.org.uk/wp-content/uploads/2024/10/AdvaniLonsdaleSummers2024_CGTReform.pdf#page=29",
+      "locator": "Table 3, p.28",
+      "scope": "Equalisation with income tax rates (20/40/45, gains stacked on income), one rate for all assets: BADR, Investors' Relief and the separate residential and carried-interest rates abolished; principal private residence relief kept",
+      "comparable": true,
+      "year": "2019-20",
+      "basis": "static",
+      "price_basis": "nominal, 2019-20",
+      "value": 139.0,
+      "unit": "pct",
+      "details": {
+        "change_bn": 15.2,
+        "baseline_bn": 10.9
+      },
+      "note": "2019-20 rules and data: main rates 10/20, residential and carried interest 18/28, BADR 10%, exempt amount \u00a312,000; resident individuals; CGT and income tax counted together"
     },
     "centax_package_context": [
       {
@@ -2940,14 +2908,14 @@
         "comparable": false,
         "year": "2019-20",
         "basis": "post_behavioural",
-        "price_basis": "nominal, 2019/20",
+        "price_basis": "nominal, 2019-20",
         "value": 8.2,
         "unit": "gbp_bn",
         "details": {
           "share_of_static_pct": 54,
           "retention_elasticity": 1.0
         },
-        "note": "Not a CenTax figure. CenTax adds the death-uplift (\u00a31.3bn) and exit-charge (\u00a34.3bn) components without a behavioural response; subtracting them from the no-allowance package (\u00a313.8bn, Table 4) leaves about \u00a38.2bn for rates alone. CenTax expects a rates-only reform to face a higher elasticity than its package."
+        "note": "Not a CenTax figure. CenTax adds the uplift at death (gains on assets held until death are not taxed; \u00a31.3bn) and exit-charge (\u00a34.3bn) components without a behavioural response; subtracting them from the no-allowance package (\u00a313.8bn, Table 4) leaves about \u00a38.2bn for rates alone."
       },
       {
         "id": "centax_2024_table5_package",
@@ -2959,14 +2927,14 @@
         "comparable": false,
         "year": "2025-26",
         "basis": "post_behavioural",
-        "price_basis": "nominal, scaled to the OBR's 2025/26 CGT forecast",
+        "price_basis": "nominal, scaled to the OBR's 2025-26 CGT forecast",
         "value": 14.3,
         "unit": "gbp_bn",
         "details": {
           "uplift_pct": 88,
           "retention_elasticity": 1.0
         },
-        "note": "The headline \u00a314bn: a medium-term effect on the 2025/26 base."
+        "note": "The headline \u00a314bn: a medium-term effect on the 2025-26 base."
       },
       {
         "id": "centax_2024_table6_package_range",
@@ -2978,7 +2946,7 @@
         "comparable": false,
         "year": "2025-26",
         "basis": "post_behavioural",
-        "price_basis": "nominal, scaled to the OBR's 2025/26 CGT forecast",
+        "price_basis": "nominal, scaled to the OBR's 2025-26 CGT forecast",
         "value": null,
         "unit": "gbp_bn",
         "details": {
@@ -3042,7 +3010,7 @@
           "uplift_pct": 62,
           "previous_uplift_pct": 88
         },
-        "note": "Uplift 62%, down from 88% in the 2024 report; no elasticity value stated."
+        "note": "Increase in revenue 62%, down from 88% in the 2024 report; no elasticity value stated."
       }
     ],
     "ready_reckoner": {
@@ -3053,7 +3021,7 @@
       "locator": "Capital gains tax rows; notes 13 and 14",
       "basis": "post_behavioural",
       "unit": "gbp_m",
-      "measure": "Exchequer receipts in \u00a3m (positive = yield), including income tax and SDLT effects, for a change from April 2026 on the OBR's March 2025 forecast",
+      "measure": "Exchequer receipts in \u00a3m (positive = yield), including income tax and stamp duty land tax (SDLT) effects, for a change to the named rate, on the OBR's March 2025 forecast",
       "note": "The higher-rate rows move the higher and additional rates together, for main and residential gains (note 13); rows are non-linear and must not be scaled (note 14). The BADR rows raise the relief's rate from its 18% in 2026-27. HMRC deferred the 2026 edition on 6 July 2026 pending a review of key assumptions, so these rows are provisional.",
       "hmrc_years": [
         "2026-27",
@@ -3104,7 +3072,7 @@
       "rows": [
         {
           "id": "higher_plus_1",
-          "label": "Higher rate +1pp (18% / 25% / 25%)",
+          "label": "Higher rate +1 point (18% / 25% / 25%)",
           "rates": {
             "basic_rate": 0.18,
             "higher_rate": 0.25,
@@ -3137,7 +3105,7 @@
         },
         {
           "id": "higher_plus_5",
-          "label": "Higher rate +5pp (18% / 29% / 29%)",
+          "label": "Higher rate +5 points (18% / 29% / 29%)",
           "rates": {
             "basic_rate": 0.18,
             "higher_rate": 0.29,
@@ -3170,7 +3138,7 @@
         },
         {
           "id": "higher_plus_10",
-          "label": "Higher rate +10pp (18% / 34% / 34%)",
+          "label": "Higher rate +10 points (18% / 34% / 34%)",
           "rates": {
             "basic_rate": 0.18,
             "higher_rate": 0.34,
@@ -3203,7 +3171,7 @@
         },
         {
           "id": "lower_plus_1",
-          "label": "Lower rate +1pp (19% / 24% / 24%)",
+          "label": "Lower rate +1 point (19% / 24% / 24%)",
           "rates": {
             "basic_rate": 0.19,
             "higher_rate": 0.24,
@@ -3236,7 +3204,7 @@
         },
         {
           "id": "lower_plus_5",
-          "label": "Lower rate +5pp (23% / 24% / 24%)",
+          "label": "Lower rate +5 points (23% / 24% / 24%)",
           "rates": {
             "basic_rate": 0.23,
             "higher_rate": 0.24,
@@ -3269,7 +3237,7 @@
         },
         {
           "id": "badr_plus_1",
-          "label": "Business Asset Disposal Relief rate +1pp (19%)",
+          "label": "Business Asset Disposal Relief rate +1 point (19%)",
           "rates": {
             "basic_rate": 0.18,
             "higher_rate": 0.24,
@@ -3302,7 +3270,7 @@
         },
         {
           "id": "badr_plus_5",
-          "label": "Business Asset Disposal Relief rate +5pp (23%)",
+          "label": "Business Asset Disposal Relief rate +5 points (23%)",
           "rates": {
             "basic_rate": 0.18,
             "higher_rate": 0.24,

@@ -6,10 +6,7 @@ import { formatBn, formatPublished, formatSignedBn, formatSignedMn, reckonerElas
 import JrfComparisonChart, { buildJrfRows } from "./charts/JrfComparisonChart";
 import PackageEstimatesChart, { buildPackageRows } from "./charts/PackageEstimatesChart";
 import ReadyReckonerChart, { buildReckonerRows } from "./charts/ReadyReckonerChart";
-import RegionalComparisonChart, {
-  buildRegionRows,
-  formatUplift,
-} from "./charts/RegionalComparisonChart";
+import RegionalComparisonChart, { buildRegionRows } from "./charts/RegionalComparisonChart";
 import { colors } from "../lib/colors";
 import { DatasetName, Notes, SourceLabel, SourceLink, TabLink, YearPill } from "./controls";
 import SectionHeading from "./SectionHeading";
@@ -23,15 +20,12 @@ import SectionHeading from "./SectionHeading";
 
 const CGT_STATISTICS = "https://www.gov.uk/government/statistics/capital-gains-tax-statistics";
 const OBR_EFO = "https://obr.uk/efo/economic-and-fiscal-outlook-march-2026/";
-const BADR_GUIDANCE = "https://www.gov.uk/business-asset-disposal-relief";
-const EXEMPT_AMOUNT = "https://www.gov.uk/capital-gains-tax/allowances";
 const CENTAX_REPORT =
   "https://centax.org.uk/wp-content/uploads/2024/10/AdvaniLonsdaleSummers2024_CGTReform.pdf";
 
 // Legend names, short and parallel across the tab's charts.
 const PE = "PolicyEngine";
 
-const percent = (rate) => `${Math.round(rate * 100)}%`;
 // "Exchequer receipts in £m ..." reads as the rest of a sentence; a proper
 // name ("Business Asset Disposal Relief") keeps its capital.
 const lowerFirst = (text) =>
@@ -51,25 +45,10 @@ function Takeaway({ lead, children }) {
 // ---- At a glance: one line per section, every number from the data. ----
 
 // `baseline`: the Baseline tab's model and HMRC figures, { modelYear,
-// hmrcYear, url, gains: { model, hmrc }, liability: { model, hmrc } }, the
+// hmrcYear, url, gains: { model, hmrc }, taxpayers: { model, hmrc },
+// liability: { model, hmrc } }, the
 // HMRC values as the benchmark chart shows them ("£119.3bn").
-function AtAGlance({ benchmarks, baseline }) {
-  const centax = benchmarks.centax_2019_20_rules;
-  // JRF's latest published year that PolicyEngine also scores on the OBR's
-  // receipts: the same reform, scaled the same way, before behaviour.
-  const statics = benchmarks.static_equalisation;
-  const jrf = statics?.external
-    .map((row) => ({ row, model: statics.by_year.find((y) => y.year === row.year) }))
-    .filter(({ model }) => Number.isFinite(model?.uplift_on_obr_receipts_real_bn))
-    .map(({ row, model }) => ({
-      year: row.year,
-      url: row.url,
-      value: row.value,
-      prices: row.price_basis,
-      model: model.uplift_on_obr_receipts_real_bn,
-      own: model.static_cgt_change_real_bn,
-    }))
-    .at(-1);
+function AtAGlance({ baseline }) {
   // Each card: a title, one column per source (value, then its source and
   // year in the source's chart colour: PolicyEngine teal, the other grey),
   // and at most one short note.
@@ -91,35 +70,13 @@ function AtAGlance({ benchmarks, baseline }) {
         { ...hmrc, value: baseline.gains.hmrc },
       ],
     },
-    {
-      id: "centax-2019-20",
-      title: "Equalising, 2019-20 rules",
+    baseline?.taxpayers && {
+      id: "baseline-taxpayers",
+      title: "CGT taxpayers",
       columns: [
-        { ...pe(centax.year), value: formatUplift(centax.national.uplift_pct) },
-        {
-          label: (
-            <>
-              <SourceLink href={centax.external.url}>CenTax</SourceLink> 2019-20
-            </>
-          ),
-          tone: "other",
-          value: formatUplift(centax.external.value),
-        },
+        { ...pe(baseline.modelYear), value: `${Math.round(baseline.taxpayers.model / 1000)}k` },
+        { ...hmrc, value: baseline.taxpayers.hmrc },
       ],
-      note: `Rise in CGT from equalising, before behaviour; PolicyEngine on ${centax.year} data, the earliest year it has.`,
-    },
-    jrf && {
-      id: "jrf-static",
-      title: `Equalising before behaviour, ${jrf.year}`,
-      columns: [
-        { ...pe("on OBR receipts"), value: formatBn(jrf.model, 1) },
-        {
-          label: <SourceLink href={jrf.url}>JRF</SourceLink>,
-          tone: "other",
-          value: formatBn(jrf.value, 0),
-        },
-      ],
-      note: `Both scale the OBR's receipts; ${jrf.prices}. PolicyEngine's change with no behavioural response on its own liabilities: ${formatBn(jrf.own, 1)}.`,
     },
   ].filter(Boolean);
   return (
@@ -127,7 +84,8 @@ function AtAGlance({ benchmarks, baseline }) {
       <h2 id="benchmarks-glance" className="text-xl font-semibold tracking-tight text-slate-900">
         At a glance
       </h2>
-      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {/* Literal class strings, so Tailwind sees both. */}
+      <div className={`mt-4 grid gap-3 ${items.length > 2 ? "sm:grid-cols-2 lg:grid-cols-3" : "sm:grid-cols-2"}`}>
         {items.map((item) => (
           <div key={item.id} className="flex flex-col rounded-xl border border-slate-200 bg-slate-50/60 p-4">
             <p className="text-xs font-semibold leading-snug text-slate-600">{item.title}</p>
@@ -216,54 +174,30 @@ function StaticEqualisation({ block, dataset }) {
   );
 }
 
-function CentaxRegions({ block, dataset }) {
-  const national = block.national;
+function RegionalShares({ block, centax }) {
   const external = block.external;
-  const rules = block.rules.baseline;
   const rows = buildRegionRows(block.regions);
+  const hmrcLabel = `HMRC ${external.year} (provisional)`;
   return (
     <section className="section-card">
       <SectionHeading
-        title={`Regional CGT: PolicyEngine ${block.year} and CenTax 2019-20`}
-        description={
-          <>
-            {"Each region's share of baseline CGT under "}
-            <SourceLink href={external.url}>CenTax&apos;s</SourceLink>
-            {` 2019-20 rules, with no behavioural response. ${PE} uses ${block.year} data, the earliest year the model has; CenTax uses 2019-20. HMRC's own regional `}
-            <SourceLink href={CGT_STATISTICS}>shares</SourceLink>
-            {" move by up to 1.8 percentage points from year to year."}
-          </>
-        }
+        title={`Regional CGT: ${PE} ${block.year} and HMRC ${external.year}`}
+        description={`Each region's share of CGT liability under current law in ${block.year}: ${PE}'s baseline, with no projection and no behavioural response, beside HMRC's statistics for the same year.`}
       />
-      <RegionalComparisonChart
-        rows={rows}
-        peLabel={`${PE} ${block.year} (2019-20 rules)`}
-        centaxLabel="CenTax 2019-20 (2024 report)"
-      />
+      <RegionalComparisonChart rows={rows} peLabel={`${PE} ${block.year}`} otherLabel={hmrcLabel} />
       <Notes>
         <p>
-          {`Equalising at 2019-20 rules, nationally: ${PE} ${block.year} +${formatBn(national.change_bn, 1)} on a ${formatBn(national.baseline_cgt_bn, 1)} baseline (current law: ${formatBn(national.current_law_cgt_bn, 1)}); `}
-          <SourceLink href={external.url}>CenTax</SourceLink>
-          {` 2019-20, rates only, +${formatBn(external.details.change_bn, 1)} on a ${formatBn(external.details.baseline_bn, 1)} baseline.`}
+          {"Regional gains are among Microcosm's calibration targets (HMRC Table 5), so the closeness of the two sets of shares is partly by construction."}
         </p>
         <p>
-          {`The 2019-20 rules: main rates of ${percent(rules.main.basic_rate)} and ${percent(rules.main.higher_rate)}, ${percent(rules.residential_property.basic_rate)} and ${percent(rules.residential_property.higher_rate)} for residential property and carried interest, ${percent(rules.badr.rate)} under Business Asset Disposal`}{" "}
-          <SourceLink href={BADR_GUIDANCE}>Relief</SourceLink>, and a £
-          {rules.annual_exempt_amount.toLocaleString("en-GB")} exempt{" "}
-          <SourceLink href={EXEMPT_AMOUNT}>amount</SourceLink> (not uprated).
+          {`HMRC assign each taxpayer to the region of their residence, by postcode; ${PE} assigns each person to their household's region. Each side's shares are of its own total across the twelve regions.`}
         </p>
         <p>
-          {`Years: ${PE} applies those rules to ${block.year}, the dataset's own year, with no projection, because its data do not reach back to 2019-20; incomes, gains and income tax thresholds are ${block.year}'s. CenTax's figures are for 2019-20.`}
+          <SourceLink href={centax.url}>CenTax</SourceLink>
+          {` (2024) estimate that equalising at 2019-20 rules raises CGT by ${Math.round(centax.value)}% before behaviour; ${PE} cannot run 2019-20, so it is not compared here.`}
         </p>
         <p>
-          <SourceLink href={external.url}>CenTax</SourceLink> cover resident individuals (they put
-          trusts and non-residents at about 5% of revenue) and count CGT and income tax together;{" "}
-          {PE} covers individuals in UK households and counts CGT. CenTax&apos;s regions are
-          taxpayers&apos; regions of residence; {PE}&apos;s are households&apos; regions.
-        </p>
-        <p>
-          Sources: <SourceLabel href={external.url} label={external.source} />, {external.locator}{" "}
-          and {block.external_regions.locator}.
+          Source: <SourceLabel href={external.url} label={external.source} />, {external.locator}.
         </p>
       </Notes>
     </section>
@@ -437,10 +371,13 @@ export default function BenchmarksTab({ data, onNavigate, baselineGlance, childr
           }
         />
       </section>
-      <AtAGlance benchmarks={benchmarks} baseline={baselineGlance} />
+      <AtAGlance baseline={baselineGlance} />
       {children}
       <StaticEqualisation block={benchmarks.static_equalisation} dataset={dataset} />
-      <CentaxRegions block={benchmarks.centax_2019_20_rules} dataset={dataset} />
+      {/* A results file from before the regional block has no section. */}
+      {benchmarks.regional ? (
+        <RegionalShares block={benchmarks.regional} centax={benchmarks.centax_2019_20} />
+      ) : null}
       <CentaxPackage rows={benchmarks.centax_package_context} onNavigate={onNavigate} />
       <ReadyReckoner
         block={benchmarks.ready_reckoner}

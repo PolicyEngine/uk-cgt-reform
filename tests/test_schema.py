@@ -9,8 +9,8 @@ from uk_cgt_reform.comparison import (
     SENSITIVITY_CASES,
     baseline_comparison_block,
     benchmarks_block,
-    centax_1920_block,
     ready_reckoner_block,
+    regional_block,
     static_equalisation_block,
 )
 from uk_cgt_reform.impacts import (
@@ -24,7 +24,6 @@ from uk_cgt_reform.reform import (
     HEADLINE_YEAR,
     SENSITIVITY_GRID,
     YEARS,
-    centax_1920_rules,
     elasticity_convention,
     reform_schedules,
 )
@@ -63,25 +62,6 @@ def fake_benchmarks(scale: float = 1.0) -> dict:
         for label in labels
     ]
     factors = {label: 1.02**i for i, label in enumerate(labels)}
-    uplift = {
-        "national": {
-            "baseline_cgt_bn": 8.0 * scale,
-            "reform_cgt_bn": 20.0 * scale,
-            "change_bn": 12.0 * scale,
-            "uplift_pct": 150.0,
-        },
-        "regions": [
-            {
-                "region": region,
-                "baseline_cgt_bn": 1.0 * scale,
-                "reform_cgt_bn": 2.5 * scale,
-                "change_bn": 1.5 * scale,
-                "uplift_pct": 150.0,
-            }
-            for region in REGION_NAMES.values()
-        ],
-        "unassigned_cgt_bn": {"baseline": 0.0, "reform": 0.0},
-    }
     model_m = {
         row["id"]: {
             elasticity_id: {lag["model_year"]: -100.0 * scale for lag in READY_RECKONER["lag"]}
@@ -93,12 +73,8 @@ def fake_benchmarks(scale: float = 1.0) -> dict:
         static_equalisation=static_equalisation_block(
             static_budget, factors, "45576cc53935", "OBR EFO March 2026 (Table A.1)"
         ),
-        centax_2019_20_rules=centax_1920_block(
-            17.2 * scale,
-            uplift,
-            centax_1920_rules(),
-            {"baseline": "a2eab6466ee5", "reform": "2367c58b5ba5"},
-            "2027-28",
+        regional=regional_block(
+            {region: 1e9 * scale for region in REGION_NAMES.values()}, "2024-25"
         ),
         ready_reckoner=ready_reckoner_block(model_m),
     )
@@ -444,7 +420,8 @@ def test_benchmarks_block_shape():
     assert set(bench) == {
         "elasticities",
         "static_equalisation",
-        "centax_2019_20_rules",
+        "regional",
+        "centax_2019_20",
         "centax_package_context",
         "ready_reckoner",
     }
@@ -461,12 +438,12 @@ def test_benchmarks_block_shape():
     # The OBR forecast ends in 2030-31: no receipts for 2031-32.
     assert static["by_year"][-1]["obr_receipts_bn"] is None
     assert static["by_year"][3]["static_cgt_change_real_bn"] == pytest.approx(14.0 / 1.02**3)
-    centax = bench["centax_2019_20_rules"]
-    assert [row["region"] for row in centax["regions"]] == list(REGION_NAMES.values())
-    london = next(row for row in centax["regions"] if row["region"] == "London")
-    assert london["centax_uplift_pct"] == 123
-    assert london["baseline_share_pct"] == pytest.approx(100 / 12)
-    assert centax["external"]["value"] == 139.0
+    regional = bench["regional"]
+    assert regional["year"] == regional["external"]["year"] == "2024-25"
+    assert [row["region"] for row in regional["regions"]] == list(REGION_NAMES.values())
+    london = next(row for row in regional["regions"] if row["region"] == "London")
+    assert london["model_share_pct"] == pytest.approx(100 / 12)
+    assert bench["centax_2019_20"]["value"] == 139.0
     rows = bench["ready_reckoner"]["rows"]
     assert [row["id"] for row in rows] == [row["id"] for row in READY_RECKONER["rows"]]
     assert set(rows[0]["model_m"]) == set(READY_RECKONER_ELASTICITIES)

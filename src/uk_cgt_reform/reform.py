@@ -210,18 +210,6 @@ EXPLORER_SCOPE = "main_residential_and_badr"
 
 EXEMPT_AMOUNT_PARAMETER = "gov.hmrc.cgt.annual_exempt_amount"
 
-# The rules CenTax's rates-only estimate starts from (Advani, Lonsdale and
-# Summers 2024, Table 3: 2019/20). Applied to this repo's data as a static
-# counterfactual, so the percentage uplift is comparable with theirs.
-CENTAX_1920_MAIN_RATES = {"basic_rate": 0.10, "higher_rate": 0.20, "additional_rate": 0.20}
-CENTAX_1920_SCHEDULE_RATES = {"basic_rate": 0.18, "higher_rate": 0.28, "additional_rate": 0.28}
-CENTAX_1920_EXEMPT_AMOUNT = 12_000
-# Business Asset Disposal Relief (then Entrepreneurs' Relief) charged 10% in
-# 2019/20; CenTax's baseline applies the £1m lifetime limit of March 2020.
-# Investors' Relief gains sit in the engine's BADR input and follow it.
-CENTAX_1920_BADR_RATE = 0.10
-CENTAX_1920_BADR_LIFETIME_LIMIT = 1_000_000
-
 
 def elasticity_assignment(elasticity: float, *, single: bool = False) -> dict[str, float | bool]:
     """The engine parameters (and values) that carry a behavioural case: the
@@ -311,57 +299,6 @@ def schedule_step_reforms(elasticity: float) -> list[tuple[str, str, dict]]:
         (step, label, cgt_rate_reform(INCOME_TAX_RATES, elasticity, schedules=schedules, badr=badr))
         for step, label, schedules, badr in SCHEDULE_STEPS
     ]
-
-
-def centax_1920_reforms() -> tuple[dict, dict]:
-    """The static counterfactual pair for the CenTax rates-only benchmark:
-    2019/20 rules (main 10/20, residential and carried interest 18/28, BADR
-    at 10% with a £1m lifetime limit, a £12,000 exempt amount) and the same
-    rules with every schedule, carried interest included, at income tax
-    rates and the relief withdrawn, as CenTax's Table 3 has it. Both at
-    e = 0, so each is exact against the current-law baseline and their
-    difference is the uplift from equalising at 2019/20 rules."""
-    exempt = {EXEMPT_AMOUNT_PARAMETER: {PERIOD: CENTAX_1920_EXEMPT_AMOUNT}}
-    baseline = cgt_rate_reform(CENTAX_1920_MAIN_RATES, 0.0, schedules=())
-    for schedule in (*SCHEDULES, CARRIED_INTEREST_SCHEDULE):
-        for band in RATE_BANDS:
-            baseline[f"gov.hmrc.cgt.{schedule}.{band}"] = {PERIOD: CENTAX_1920_SCHEDULE_RATES[band]}
-    baseline[BADR_RATE_PARAMETER] = {PERIOD: CENTAX_1920_BADR_RATE}
-    baseline[BADR_LIFETIME_LIMIT_PARAMETER] = {PERIOD: CENTAX_1920_BADR_LIFETIME_LIMIT}
-    carried = {
-        f"gov.hmrc.cgt.{CARRIED_INTEREST_SCHEDULE}.{band}": {PERIOD: INCOME_TAX_RATES[band]}
-        for band in RATE_BANDS
-    }
-    return {**baseline, **exempt}, {**equalisation_reform(0.0), **carried, **exempt}
-
-
-def centax_1920_rules() -> dict:
-    """The counterfactual's rules, for the results metadata."""
-    schedules = (*SCHEDULES, CARRIED_INTEREST_SCHEDULE)
-    return {
-        "baseline": {
-            "main": dict(CENTAX_1920_MAIN_RATES),
-            **{schedule: dict(CENTAX_1920_SCHEDULE_RATES) for schedule in schedules},
-            "badr": {
-                "rate": CENTAX_1920_BADR_RATE,
-                "lifetime_limit": CENTAX_1920_BADR_LIFETIME_LIMIT,
-            },
-            "annual_exempt_amount": CENTAX_1920_EXEMPT_AMOUNT,
-        },
-        "reform": {
-            "main": dict(INCOME_TAX_RATES),
-            **{schedule: dict(INCOME_TAX_RATES) for schedule in schedules},
-            "badr": BADR_WITHDRAWN.to_dict(),
-            "annual_exempt_amount": CENTAX_1920_EXEMPT_AMOUNT,
-        },
-        "elasticity": 0.0,
-        "not_modelled": (
-            "Investors' Relief, which CenTax's Table 3 also abolishes, shares the engine's "
-            "BADR input (capital_gains_badr): it is charged at the BADR rate within the BADR "
-            "lifetime limit and withdrawn with it; its own £10m limit is not modelled. On a "
-            "dataset without BADR gains the relief settings are inert."
-        ),
-    }
 
 
 def dated(reform: dict, start: str) -> dict:

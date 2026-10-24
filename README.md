@@ -208,19 +208,14 @@ external figure with its source, locator, scope, year and basis.
   withdrawing Business Asset Disposal Relief); applied to the same OBR
   receipts that is £18.6bn in 2026-27 and £27.1bn in 2029-30 (deflated with
   the OBR's CPI path).
-- **CenTax (2024), rates only at 2019/20 rules.** CenTax's static uplift from
-  equalising alone is +139% on 2019/20 data (Table 3). Applying the same
-  rules to this repo's 2024-25 data (the dataset's own year, unprojected:
-  the nearest it has to 2019-20) (main rates 10/20, residential and
-  carried interest 18/28, BADR at 10% with a £1m lifetime limit, an exempt
-  amount of £12,000; `reform.centax_1920_reforms`) and equalising gives
-  +131% (+130% on 2027-28 data before the like-for-like change). Investors' Relief, which CenTax's Table 3 also abolishes, shares the
-  engine's BADR input and is withdrawn with it.
-  By region (Table 8), this repo's shares of baseline CGT sit beside CenTax's
-  (London 28.3% against 27.0%, South East 21.7% against 21.6%). CenTax's
-  uplift is lowest in London (+123%) and higher elsewhere (+137% to +163%);
-  here London's is +130% and the other regions range from +119% (West
-  Midlands) to +146% (Yorkshire and the Humber).
+- **HMRC regional statistics, 2024-25.** Each region's share of CGT
+  liability on this repo's 2024-25 baseline (the dataset's own year, no
+  projection, no behavioural response) beside HMRC's Table 5.1 for the same
+  year (2026 release, provisional; regions by the postcode of each
+  taxpayer's residence; here, by household region): London 28.1% against
+  29.1%, South East 21.6% against 21.3%, and every other region within half
+  a point. CenTax's 2019-20 rates-only uplift (+139%, Table 3) is carried as
+  published: the dataset cannot reach 2019-20, so it is not re-scored.
 - **CenTax's package estimates** (Tables 5 and 6 of the 2024 report, the
   August 2025 technical note and "Taxes at the top", September 2026) add an
   investment allowance, the removal of the death uplift and a charge on
@@ -687,9 +682,9 @@ are reported by value: a parameter equal to current law shows as `default`
 even when the case sets it, so on 2.132.6 the static case's elasticity reads
 `"default"` and the central case's `"override"`.
 Each release can move the projection fingerprint, so
-changing the pin is a deliberate re-pin that regenerates the results. A run needs the per-year builds, twenty-four stored simulations (baseline,
+changing the pin is a deliberate re-pin that regenerates the results. A run needs the per-year builds, the stored simulations (baseline,
 central and static reform for every year, three more sensitivity cases, the
-CenTax counterfactual pair and four schedule-split steps) and forty-two
+sensitivity curve's other grid points and four schedule-split steps) and forty-two
 in-memory ready-reckoner runs; a run with the stored outputs in place spends
 most of its time on the ready-reckoner runs. Copy
 `data/cgt_equalisation_results.json` into `dashboard/public/data/` for the

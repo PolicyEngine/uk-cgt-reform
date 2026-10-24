@@ -90,8 +90,8 @@ export function getSensitivityYears(data) {
 }
 
 // External benchmarks beside this dataset's own scores (issue #7): the
-// static reform against JRF, the 2019/20-rules uplift against CenTax, and
-// HMRC's ready-reckoner rows.
+// static reform against JRF, regional shares against HMRC's for the same year,
+// and HMRC's ready-reckoner rows.
 export function getBenchmarks(data) {
   return data.benchmarks;
 }

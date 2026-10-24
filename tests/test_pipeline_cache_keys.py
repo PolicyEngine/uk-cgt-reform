@@ -7,7 +7,6 @@ from dataclasses import replace
 
 from uk_cgt_reform.pipeline import (
     DATASET_FOLDER,
-    counterfactual_sim_id,
     dataset_folder,
     equalisation_sim_id,
     simulation_stem,
@@ -71,12 +70,6 @@ def test_the_curves_single_elasticity_changes_only_the_official_value():
     single = equalisation_reform(OFFICIAL_ELASTICITY, single=True)
     assert single != equalisation_reform(OFFICIAL_ELASTICITY)
     assert not any("badr_elasticity" in key for key in single)
-
-
-def test_counterfactual_ids_name_their_side():
-    assert counterfactual_sim_id("STEM", "baseline", "710d8df0d472", 2026) == (
-        "STEM_centax1920_baseline_710d8df0d472_2026"
-    )
 
 
 def test_schedule_step_ids_name_the_step_and_the_case():

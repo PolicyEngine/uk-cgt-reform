@@ -17,8 +17,8 @@ totals, the schedule components and the entrants by uprating) rather than
 adjusting anything away.
 
 The results also carry a ``benchmarks`` block (issue #7): the
-static reform by year beside JRF's estimate, a static re-score at CenTax's
-2019/20 rules beside its Tables 3 and 8, and HMRC's ready-reckoner rows
+static reform by year beside JRF's estimate, each region's share of 2024-25
+CGT beside HMRC's Table 5.1 for the same year, and HMRC's ready-reckoner rows
 scored at the central elasticity, CenTax's upper value (2.0) and the
 official one (``comparison.py``).
 """
@@ -38,17 +38,17 @@ from .comparison import (
     SENSITIVITY_CASES,
     baseline_comparison_block,
     benchmarks_block,
-    centax_1920_block,
     jrf_comparison_years,
     price_factors,
     ready_reckoner_block,
     reckoner_comparison_years,
+    regional_block,
     static_equalisation_block,
 )
 from .impacts import (
     budget_impact,
+    cgt_by_region,
     cgt_revenue,
-    cgt_uplift,
     fiscal_year_label,
     income_change_groups,
     schedule_split,
@@ -58,7 +58,6 @@ from .impacts import (
 )
 from .reform import (
     BADR_ELASTICITY_BY_CASE,
-    COMPARISON_PERIOD,
     COMPARISON_YEAR,
     ELASTICITY,
     ELASTICITY_PARAMETER,
@@ -68,10 +67,7 @@ from .reform import (
     PRICE_BASE_YEAR,
     SENSITIVITY_GRID,
     YEARS,
-    centax_1920_reforms,
-    centax_1920_rules,
     comparison_rate_reforms,
-    dated,
     elasticity_convention,
     equalisation_reform,
     reform_fingerprint,
@@ -131,12 +127,6 @@ def step_sim_id(sim_stem: str, step: str, elasticity: float, digest: str, year: 
     """A simulation id for one step of the schedule-by-schedule split of the
     equalisation reform (``reform.SCHEDULE_STEPS``)."""
     return f"{sim_stem}_step_{step}_r{round(100 * elasticity):03d}_{digest}_{year}"
-
-
-def counterfactual_sim_id(sim_stem: str, role: str, digest: str, year: int) -> str:
-    """A simulation id for one side (``baseline`` or ``reform``) of the
-    CenTax 2019/20-rules counterfactual."""
-    return f"{sim_stem}_centax1920_{role}_{digest}_{year}"
 
 
 def comparison_sim_id(sim_stem: str, role: str, digest: str, year: int) -> str:
@@ -505,36 +495,15 @@ def run_dataset(
         cy_digests,
     )
 
-    # ── Step 3b: CenTax's rates-only reform at its 2019/20 rules, static,
-    # on the comparator year's data ───────────────────────────────────────
-    print(
-        f"Step 3b {tag}: Equalisation at CenTax's 2019/20 rules "
-        f"({fiscal_year_label(cy)}, static)..."
-    )
-    cf_sims, cf_digests = {}, {}
-    for role, reform in zip(("baseline", "reform"), centax_1920_reforms(), strict=True):
-        reform = dated(reform, COMPARISON_PERIOD)
-        cf_digests[role] = reform_fingerprint(reform)
-        cf_sims[role] = run_simulation(
-            cy_dataset,
-            policy=make_policy(reform, f"centax1920_{role}"),
-            sim_id=counterfactual_sim_id(sim_stem, role, cf_digests[role], cy),
+    # ── Step 3e: each region's share of CGT liability in the comparator
+    # year, beside HMRC's Table 5.1 for the same year ────────────────────
+    print(f"Step 3e {tag}: Regional CGT, {fiscal_year_label(cy)}, beside HMRC Table 5.1...")
+    regional = regional_block(cgt_by_region(cy_baseline), fiscal_year_label(cy))
+    for row in regional["regions"]:
+        print(
+            f"    {row['region']}: {row['model_share_pct']:.1f}% "
+            f"(HMRC {row['hmrc_share_pct']:.1f}%)"
         )
-    uplift = cgt_uplift(cf_sims["baseline"], cf_sims["reform"])
-    current_law_cgt_bn = cy_cgt / 1e9
-    national = uplift["national"]
-    assert national["baseline_cgt_bn"] < current_law_cgt_bn, (
-        f"2019/20 rules raised more CGT ({national['baseline_cgt_bn']:.2f}bn) than current "
-        f"law ({current_law_cgt_bn:.2f}bn) on {spec.key}; the counterfactual did not apply."
-    )
-    assert national["uplift_pct"] > 0, f"Equalising at 2019/20 rules raised nothing on {spec.key}."
-    print(
-        f"    £{national['baseline_cgt_bn']:.1f}bn -> £{national['reform_cgt_bn']:.1f}bn "
-        f"({national['uplift_pct']:+.0f}%; CenTax +139%)"
-    )
-    centax_1920 = centax_1920_block(
-        current_law_cgt_bn, uplift, centax_1920_rules(), cf_digests, fiscal_year_label(cy)
-    )
 
     # ── Step 3c: HMRC's ready-reckoner rows through the explorer's path ───
     model_years = ", ".join(lag["model_year"] for lag in READY_RECKONER["lag"])
@@ -587,7 +556,7 @@ def run_dataset(
             cpi["reference"][0]["title"],
             comparison_budget,
         ),
-        centax_2019_20_rules=centax_1920,
+        regional=regional,
         ready_reckoner=ready_reckoner,
     )
 

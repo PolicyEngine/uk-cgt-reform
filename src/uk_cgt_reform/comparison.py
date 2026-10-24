@@ -7,10 +7,11 @@ so the dashboard can say how comparable it is:
 - JRF (2026): static yield of equalising CGT with income tax rates, 2026-27
   and 2029-30, grouped HMRC statistics scaled to the OBR's March 2026
   receipts projection.
-- CenTax (Advani, Lonsdale and Summers 2024), Table 3 and Table 8: the
-  static uplift from equalising rates alone, nationally and by region, on
-  2019/20 rules. The pipeline re-scores that reform on this repo's data at
-  the same rules (``reform.centax_1920_reforms``).
+- HMRC's regional statistics (2026 release, Table 5.1): CGT liability by
+  region in 2024-25, beside this repo's 2024-25 baseline by region.
+- CenTax (Advani, Lonsdale and Summers 2024), Table 3: the static uplift
+  from equalising rates alone on 2019-20 rules, carried as published; the
+  dataset cannot reach 2019-20, so it is not re-scored.
 - CenTax's package estimates (Tables 5 and 6, the August 2025 technical
   note, "Taxes at the top" 2026), which add an investment allowance and
   base broadening: context only, a different scope.
@@ -22,7 +23,7 @@ so the dashboard can say how comparable it is:
 
 from __future__ import annotations
 
-from .impacts import REGION_NAMES
+from .impacts import REGION_NAMES, UNASSIGNED_REGION
 from .reform import (
     BADR_CURRENT_LAW,
     CENTAX_LOWER_ELASTICITY,
@@ -168,44 +169,6 @@ CENTAX_TABLE_3 = _external(
     unit="pct",
     details={"change_bn": 15.2, "baseline_bn": 10.9},
     note=CENTAX_1920_RULES_NOTE,
-)
-
-# Table 8 ("Equalisation (no allowance)", 2020 tax year): baseline CGT and
-# the static uplift by taxpayers' region of residence.
-CENTAX_TABLE_8_REGIONS = [
-    {"region": "London", "baseline_bn": 3.0, "uplift_pct": 123},
-    {"region": "South East", "baseline_bn": 2.4, "uplift_pct": 139},
-    {"region": "East of England", "baseline_bn": 1.1, "uplift_pct": 137},
-    {"region": "North West", "baseline_bn": 0.9, "uplift_pct": 146},
-    {"region": "South West", "baseline_bn": 0.8, "uplift_pct": 144},
-    {"region": "West Midlands", "baseline_bn": 0.6, "uplift_pct": 151},
-    {"region": "Yorkshire and the Humber", "baseline_bn": 0.6, "uplift_pct": 152},
-    {"region": "East Midlands", "baseline_bn": 0.6, "uplift_pct": 151},
-    {"region": "Scotland", "baseline_bn": 0.5, "uplift_pct": 160},
-    {"region": "Wales", "baseline_bn": 0.2, "uplift_pct": 148},
-    {"region": "North East", "baseline_bn": 0.2, "uplift_pct": 163},
-    {"region": "Northern Ireland", "baseline_bn": 0.2, "uplift_pct": 154},
-]
-assert {row["region"] for row in CENTAX_TABLE_8_REGIONS} == set(REGION_NAMES.values())
-
-CENTAX_TABLE_8 = _external(
-    id="centax_2024_table8_regions_static",
-    source=CENTAX_2024_SOURCE,
-    published="2024-10",
-    url=f"{CENTAX_2024_URL}#page=47",
-    locator="Table 8, p.46",
-    scope=CENTAX_RATES_ONLY_SCOPE,
-    comparable=True,
-    year="2019-20",
-    basis="static",
-    price_basis="nominal, 2019-20",
-    value=None,
-    unit="pct",
-    details={"regions": CENTAX_TABLE_8_REGIONS},
-    note=(
-        f"{CENTAX_1920_RULES_NOTE}. Regions are taxpayers' regions of residence; "
-        "the rows sum to £11.1bn against the national £10.9bn (rounding)."
-    ),
 )
 
 CENTAX_PACKAGE_CONTEXT = [
@@ -513,42 +476,6 @@ def static_equalisation_block(
     }
 
 
-def centax_1920_block(
-    current_law_cgt_bn: float,
-    uplift: dict,
-    rules: dict,
-    fingerprints: dict[str, str],
-    year: str,
-) -> dict:
-    """This repo's static uplift at 2019/20 rules beside CenTax Tables 3 and 8.
-    ``uplift`` is :func:`impacts.cgt_uplift` of the counterfactual pair."""
-    centax = {row["region"]: row for row in CENTAX_TABLE_8_REGIONS}
-    centax_total = sum(row["baseline_bn"] for row in CENTAX_TABLE_8_REGIONS)
-    model_total = sum(row["baseline_cgt_bn"] for row in uplift["regions"])
-    regions = []
-    for row in uplift["regions"]:
-        ref = centax[row["region"]]
-        regions.append(
-            {
-                **row,
-                "baseline_share_pct": 100 * row["baseline_cgt_bn"] / model_total,
-                "centax_baseline_bn": ref["baseline_bn"],
-                "centax_baseline_share_pct": 100 * ref["baseline_bn"] / centax_total,
-                "centax_uplift_pct": ref["uplift_pct"],
-            }
-        )
-    return {
-        "year": year,
-        "rules": rules,
-        "reform_fingerprints": dict(fingerprints),
-        "national": {"current_law_cgt_bn": current_law_cgt_bn, **uplift["national"]},
-        "unassigned_cgt_bn": dict(uplift["unassigned_cgt_bn"]),
-        "regions": regions,
-        "external": dict(CENTAX_TABLE_3),
-        "external_regions": {k: v for k, v in CENTAX_TABLE_8.items() if k != "details"},
-    }
-
-
 def ready_reckoner_block(model_m: dict[str, dict[str, dict[str, float]]]) -> dict:
     """HMRC's rows beside this repo's scores. ``model_m`` maps row id to
     elasticity id to model year to the change in government balance, £m."""
@@ -575,6 +502,79 @@ HMRC_CGT_STATISTICS = {
     "year": "2024-25",
     "status": "provisional",
 }
+
+
+# HMRC's regional statistics for 2024-25 (2026 release, Table 5.1, provisional):
+# taxpayers (thousands), gains (£m, after losses, before the annual exempt
+# amount) and tax (£m), by UK country and English region. The table's own
+# "All" row is £24,169m of tax; the twelve rows sum to £24,168m (rounding).
+HMRC_TABLE_5_REGIONS = [
+    {"region": "North East", "taxpayers_k": 12, "gains_m": 1_599, "tax_m": 274},
+    {"region": "North West", "taxpayers_k": 44, "gains_m": 9_384, "tax_m": 1_711},
+    {"region": "Yorkshire and the Humber", "taxpayers_k": 34, "gains_m": 7_442, "tax_m": 1_385},
+    {"region": "East Midlands", "taxpayers_k": 33, "gains_m": 6_725, "tax_m": 1_224},
+    {"region": "West Midlands", "taxpayers_k": 35, "gains_m": 6_289, "tax_m": 1_136},
+    {"region": "East of England", "taxpayers_k": 62, "gains_m": 12_326, "tax_m": 2_324},
+    {"region": "London", "taxpayers_k": 113, "gains_m": 34_717, "tax_m": 7_036},
+    {"region": "South East", "taxpayers_k": 121, "gains_m": 27_337, "tax_m": 5_150},
+    {"region": "South West", "taxpayers_k": 64, "gains_m": 11_040, "tax_m": 2_059},
+    {"region": "Wales", "taxpayers_k": 18, "gains_m": 2_518, "tax_m": 447},
+    {"region": "Scotland", "taxpayers_k": 37, "gains_m": 6_064, "tax_m": 1_090},
+    {"region": "Northern Ireland", "taxpayers_k": 10, "gains_m": 1_876, "tax_m": 332},
+]
+assert [row["region"] for row in HMRC_TABLE_5_REGIONS] == list(REGION_NAMES.values())
+
+HMRC_TABLE_5 = _external(
+    id="hmrc_2026_table5_regions_2024_25",
+    source="HMRC, Capital Gains Tax statistics, 2026 release",
+    published="2026-08-27",
+    url=(
+        "https://assets.publishing.service.gov.uk/media/6a7b2444114277b327805c10/"
+        "Table_5_2026_Regional_and_country_statistics.ods"
+    ),
+    locator="Table 5.1 (sheet 5_1_2024-25)",
+    scope="CGT liabilities of individuals by UK country and English region, current law",
+    comparable=True,
+    year="2024-25",
+    basis="static",
+    price_basis="nominal, 2024-25",
+    value=24_169,
+    unit="gbp_m",
+    details={"regions": HMRC_TABLE_5_REGIONS, "status": "provisional"},
+    note=(
+        "Provisional. Regions by the postcode of each individual's residence (HMRC's "
+        "commentary, Table 5). Gains after losses, before the annual exempt amount; tax in £m. "
+        "The twelve rows sum to £24,168m against the table's £24,169m (rounding)."
+    ),
+)
+
+
+def regional_block(model_cgt: dict[str, float], year: str) -> dict:
+    """Each region's share of CGT liability under current law: this repo's
+    baseline in ``year`` (``impacts.cgt_by_region``, £, households' regions,
+    no projection and no behavioural response) beside HMRC's Table 5.1. Each
+    side's shares are of its own twelve-region total."""
+    regions = list(REGION_NAMES.values())
+    model_total = sum(model_cgt[region] for region in regions)
+    hmrc = {row["region"]: row for row in HMRC_TABLE_5_REGIONS}
+    hmrc_total = sum(row["tax_m"] for row in HMRC_TABLE_5_REGIONS)
+    return {
+        "year": year,
+        "basis": "current law, no projection, no behavioural response",
+        "model_cgt_bn": model_total / 1e9,
+        "unassigned_cgt_bn": model_cgt.get(UNASSIGNED_REGION, 0.0) / 1e9,
+        "regions": [
+            {
+                "region": region,
+                "model_cgt_bn": model_cgt[region] / 1e9,
+                "model_share_pct": 100 * model_cgt[region] / model_total,
+                "hmrc_tax_m": hmrc[region]["tax_m"],
+                "hmrc_share_pct": 100 * hmrc[region]["tax_m"] / hmrc_total,
+            }
+            for region in regions
+        ],
+        "external": dict(HMRC_TABLE_5),
+    }
 
 
 def reckoner_comparison_years(window: list[int]) -> list[int]:
@@ -639,14 +639,15 @@ def elasticities_block() -> dict:
     }
 
 
-def benchmarks_block(
-    *, static_equalisation: dict, centax_2019_20_rules: dict, ready_reckoner: dict
-) -> dict:
-    """The results file's ``benchmarks`` block."""
+def benchmarks_block(*, static_equalisation: dict, regional: dict, ready_reckoner: dict) -> dict:
+    """The results file's ``benchmarks`` block. CenTax's 2019-20 rates-only
+    uplift (Table 3) is carried as published, for the regional section's
+    notes: the dataset cannot reach 2019-20, so it is not scored here."""
     return {
         "elasticities": elasticities_block(),
         "static_equalisation": static_equalisation,
-        "centax_2019_20_rules": centax_2019_20_rules,
+        "regional": regional,
+        "centax_2019_20": dict(CENTAX_TABLE_3),
         "centax_package_context": [dict(row) for row in CENTAX_PACKAGE_CONTEXT],
         "ready_reckoner": ready_reckoner,
     }
