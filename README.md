@@ -453,6 +453,22 @@ live run at 20/40/45 with the relief kept builds the equalisation
 reform's own dict (same fingerprint) and reproduces the committed results,
 and 18/24/24 with the relief at current law gives zero change.
 
+A live run also splits its headline-year (2027-28) yield schedule by
+schedule, as the committed results do: the main rates, then residential
+property gains, then the relief (no relief step when it stays at current
+law), with no behavioural response, at CenTax's central elasticity and at the
+run's own (`explore.score_schedule_split`, the result's `schedule_split`).
+That costs up to two more reform simulations per case in that year only. For
+equalisation the run computes only its own case and the dashboard takes the
+other two bars from the committed results.
+
+The behavioural response is one of the five cases (static, CenTax lower,
+central and upper, HMRC/OBR official) or, with **Custom**, any
+retention-rate elasticity from 0 to 5 in steps of 0.1, applied to every gain
+(URL parameter `e`, folded summary "Elasticity 2.5"). A typed value equal to
+a case is that case, so 3.6 is the official case with its 1.4 for gains
+qualifying for the relief.
+
 Links shared before the retention form carry a marginal-rate elasticity
 (−0.35, −0.7 or −2.52), which maps to the case it named. Those links have no
 relief fields, and one to 20/40/45 loads with the equalisation preset's
@@ -547,7 +563,8 @@ and one Dict (`uk-cgt-reform-results`):
 
 Abuse guards, because every visitor can start workers through the
 dashboard's route: custom rates are whole percentage points ordered basic ≤
-higher ≤ additional (about 76,000 schedules per dataset and elasticity);
+higher ≤ additional (about 76,000 schedules per dataset and elasticity),
+and the elasticity is a tenth from 0 to 5 (51 values);
 the gateway joins a request to a job already computing the same schedule,
 answers 429 when `MAX_IN_FLIGHT` (3) uncached schedules are computing, and
 starts at most `DAILY_COMPUTE_BUDGET` (250) new schedules per UTC day (a

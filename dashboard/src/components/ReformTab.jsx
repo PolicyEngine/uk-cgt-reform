@@ -2,14 +2,15 @@
 
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { describeBadr, getFirstYear } from "../lib/dataHelpers";
+import { getFirstYear } from "../lib/dataHelpers";
 import { formatPct } from "../lib/formatters";
 import { useExploration } from "../lib/exploreApi";
 import { initialState, isStale, reformReducer } from "../lib/reformState";
 import {
   BANDS,
   checkForm,
-  elasticityOption,
+  formSummary,
+  hasReliefControl,
   isPrecomputed,
   precomputedSchedule,
   scheduleParams,
@@ -94,16 +95,6 @@ function PolicyTab({ id, sentence, selected, onSelect }) {
       <span className="mt-0.5 hidden text-sm leading-6 text-slate-500 sm:block">{sentence}</span>
     </button>
   );
-}
-
-// A form in one line: "20% · 40% · 45% · Relief withdrawn · CenTax central".
-function summarise(form) {
-  const check = checkForm(form);
-  if (!check.rates) return "";
-  const rates = BANDS.map((band) => formatPct(check.rates[band.key] * 100, 0)).join(" · ");
-  const relief = check.badr.withdrawn ? "Relief withdrawn" : `Relief ${describeBadr(check.badr)}`;
-  const response = elasticityOption(check.elasticity)?.label.replace(/\s*\(.*\)$/, "") ?? "";
-  return [rates, relief, response].filter(Boolean).join(" · ");
 }
 
 // The Reform tab: choose equalisation with income tax or custom rates, set
@@ -235,13 +226,12 @@ export default function ReformTab({ data, datasetKey, onNavigate, anchor }) {
   const setForm = (id) => (form) => dispatch({ type: "edit", policy: id, form });
   // "20% · 40% · 45%" and "Relief withdrawn": the precomputed schedule in brief.
   const equaliseRates = BANDS.map((band) => formatPct(precomputed.rates[band.key] * 100, 0)).join(" · ");
-  const equaliseRelief = precomputed.badr.withdrawn ? "Relief withdrawn" : `Relief ${describeBadr(precomputed.badr)}`;
   const stale = isStale(state);
   const POLICIES = [
     {
       id: "equalise",
       sentence: "Set each CGT rate to the matching income tax rate.",
-      pills: [equaliseRates, equaliseRelief],
+      pills: [equaliseRates],
     },
     {
       id: "custom",
@@ -345,7 +335,7 @@ export default function ReformTab({ data, datasetKey, onNavigate, anchor }) {
             >
               {collapsed ? (
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <p className="text-sm leading-6 text-slate-700">{summarise(forms[policy])}</p>
+                  <p className="text-sm leading-6 text-slate-700">{formSummary(forms[policy], { relief: hasReliefControl(policy) })}</p>
                   <button
                     type="button"
                     onClick={() => setCollapsed(false)}
@@ -363,6 +353,7 @@ export default function ReformTab({ data, datasetKey, onNavigate, anchor }) {
                   running={inFlight}
                   onNavigate={onNavigate}
                   about={about}
+                  relief={hasReliefControl(policy)}
                 />
               )}
               {/* The specification of the results shown, folded, under the

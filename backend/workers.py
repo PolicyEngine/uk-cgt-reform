@@ -7,6 +7,10 @@ and writes it to both cache layers (the ``modal.Dict`` and the Volume's
 ``explore_results/``) before returning. Workers scale to zero: no
 ``min_containers`` or ``keep_warm`` anywhere.
 
+The headline year's container also splits the yield schedule by schedule
+(``explore.score_schedule_split``, the result's ``schedule_split``): up to
+two more in-memory reform runs per case, so it finishes last.
+
 Deploy order: ``modal deploy backend/workers.py`` → ``modal run
 backend/warm.py`` → ``modal deploy backend/modal_app.py``.
 """
@@ -38,7 +42,8 @@ app = modal.App(WORKERS_APP_NAME)
     max_containers=10,
 )
 def run_year(payload: dict, year: int) -> dict:
-    """One (dataset, year): cached baseline versus an in-memory reform run.
+    """One (dataset, year): cached baseline versus an in-memory reform run,
+    plus the yield split in the headline year.
     ``payload`` is the validated request's own payload (``to_payload``), so
     every field a request carries reaches the worker."""
     from uk_cgt_reform.explore import engine_context, validate_request

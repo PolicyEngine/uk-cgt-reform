@@ -33,7 +33,7 @@ describe("the Reform tab's flow", () => {
   test("editing after Calculate marks the results stale; undoing the edit does not", () => {
     let state = apply(load(""), { type: "select", policy: "equalise", toggle: true }, { type: "calculate", shown: "precomputed" });
     const original = state.forms.equalise;
-    state = apply(state, { type: "edit", policy: "equalise", form: { ...original, elasticity: 2.0 } });
+    state = apply(state, { type: "edit", policy: "equalise", form: { ...original, customElasticity: "2" } });
     expect(isStale(state)).toBe(true);
     expect(state.shown).toBe("precomputed");
     // "20.0" is the same schedule as "20".
@@ -69,6 +69,18 @@ describe("the Reform tab's flow", () => {
     state = apply(state, { type: "showEqualisation", precomputed });
     expect(state).toMatchObject({ policy: "equalise", shown: "precomputed" });
     expect(state.forms.equalise.elasticity).toBe(precomputed.elasticity);
+    expect(isStale(state)).toBe(false);
+  });
+});
+
+describe("a custom elasticity in the flow", () => {
+  test("keys the schedule by its value, so the same number typed or chosen is one schedule", () => {
+    let state = apply(load(""), { type: "select", policy: "custom", toggle: true }, { type: "calculate", shown: "live" });
+    const form = state.forms.custom;
+    state = apply(state, { type: "edit", policy: "custom", form: { ...form, customElasticity: "2.5" } });
+    expect(isStale(state)).toBe(true);
+    // The central case typed as "1.0" is the schedule calculated.
+    state = apply(state, { type: "edit", policy: "custom", form: { ...form, customElasticity: "1.0" } });
     expect(isStale(state)).toBe(false);
   });
 });

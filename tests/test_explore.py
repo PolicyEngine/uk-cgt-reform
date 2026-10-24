@@ -8,6 +8,7 @@ from test_schema import fake_results
 
 from uk_cgt_reform.comparison import READY_RECKONER, SENSITIVITY_CASES
 from uk_cgt_reform.explore import (
+    CODE_FINGERPRINT_FILES,
     CONTEXT_KEYS,
     ELASTICITY_OPTIONS,
     PRESETS,
@@ -18,10 +19,13 @@ from uk_cgt_reform.explore import (
     assemble_response,
     cache_key,
     cached_locally,
+    is_equalisation,
     mark_cache_hit,
+    score_schedule_split,
+    split_cases,
     validate_request,
 )
-from uk_cgt_reform.impacts import fiscal_year_label
+from uk_cgt_reform.impacts import fiscal_year_label, schedule_split
 from uk_cgt_reform.reform import (
     BADR_CURRENT_LAW,
     BADR_ELASTICITY_PARAMETER,
@@ -30,6 +34,7 @@ from uk_cgt_reform.reform import (
     ELASTICITY,
     ELASTICITY_PARAMETER,
     EXPLORER_SCOPE,
+    HEADLINE_YEAR,
     INCOME_TAX_RATES,
     MTR_ELASTICITY_PARAMETER,
     OFFICIAL_ELASTICITY,
@@ -38,6 +43,7 @@ from uk_cgt_reform.reform import (
     BadrPolicy,
     equalisation_reform,
     reform_fingerprint,
+    schedule_step_reforms,
 )
 from uk_cgt_reform.simulations import CANDIDATE, DATASETS, DEFAULT_DATASET_KEY
 
@@ -125,8 +131,13 @@ def test_validate_request_rounds_rates():
         ({"rates": {**FLAT_30, "higher_rate": 0.305}}, "whole percentage point"),
         ({"rates": {**FLAT_30, "basic_rate": "18"}}, "must be a number"),
         ({"rates": {**FLAT_30, "basic_rate": True}}, "must be a number"),
-        ({"rates": FLAT_30, "elasticity": -0.5}, "elasticity must be one of"),
-        ({"rates": FLAT_30, "elasticity": 1.4}, "elasticity must be one of"),
+        ({"rates": FLAT_30, "elasticity": -0.5}, "elasticity must be between 0 and 5"),
+        ({"rates": FLAT_30, "elasticity": 5.1}, "elasticity must be between 0 and 5"),
+        ({"rates": FLAT_30, "elasticity": float("nan")}, "elasticity must be between"),
+        ({"rates": FLAT_30, "elasticity": float("inf")}, "elasticity must be between"),
+        ({"rates": FLAT_30, "elasticity": 2.55}, "multiple of 0.1"),
+        ({"rates": FLAT_30, "elasticity": "2.5"}, "elasticity must be a number"),
+        ({"rates": FLAT_30, "elasticity": True}, "elasticity must be a number"),
         ({"rates": "18/30/30"}, "rates must be an object"),
         ({"rates": FLAT_30, "badr": "withdraw"}, "badr must be an object"),
         ({"rates": FLAT_30, "badr": {"cap": 1}}, "unknown fields"),
@@ -185,6 +196,30 @@ def test_every_case_applies_the_retention_parameter():
     assert options["official"]["elasticity_parameter"] == ELASTICITY_PARAMETER
     assert api_options()["elasticity_parameter"] == ELASTICITY_PARAMETER
     assert api_options()["default_elasticity"] == ELASTICITY
+
+
+def test_a_custom_elasticity_is_any_tenth_from_0_to_5_applied_to_every_gain():
+    for value, expected in ((2.5, 2.5), (0.1, 0.1), (5.0, 5.0), (5, 5.0), (1.4, 1.4)):
+        assert validate_request({"rates": FLAT_30, "elasticity": value}).elasticity == expected
+    # Float noise in a typed value normalises to the tenth it names.
+    assert validate_request({"rates": FLAT_30, "elasticity": 0.30000000000000004}).elasticity == 0.3
+    assert validate_request({"rates": FLAT_30, "elasticity": 2.4999999999}).elasticity == 2.5
+    req = validate_request({"rates": FLAT_30, "elasticity": 2.5})
+    reform = req.reform()
+    assert reform[ELASTICITY_PARAMETER] == {"2026-01-01": 2.5}
+    # One value for every gain: the relief's own elasticity is not switched on.
+    assert SEPARATE_BADR_ELASTICITY_PARAMETER not in reform
+    assert BADR_ELASTICITY_PARAMETER not in reform
+    assert MTR_ELASTICITY_PARAMETER not in reform
+    md = assemble_response(req, context(), year_rows())["metadata"]
+    assert md["elasticity"] == 2.5
+    assert md["elasticity_applied"] == {ELASTICITY_PARAMETER: 2.5}
+    # A typed value equal to a case is that case: 3.6 is the official one.
+    official = validate_request({"rates": FLAT_30, "elasticity": 3.6}).reform()
+    assert official[BADR_ELASTICITY_PARAMETER] == {"2026-01-01": 1.4}
+    options = api_options()
+    assert options["elasticity_bounds"] == [0.0, 5.0]
+    assert options["elasticity_step"] == 0.1
 
 
 def test_links_from_before_the_retention_form_map_to_the_case_they_named():
@@ -322,6 +357,24 @@ def test_cache_key_tracks_every_input_and_nothing_else():
     # key does not track.
     again = validate_request({"dataset": CANDIDATE.key, "rates": dict(FLAT_30), "elasticity": 1.0})
     assert cache_key(again, context(base_year=2023)) == key
+
+
+def test_cache_key_carries_a_custom_elasticity():
+    def key_at(e):
+        return cache_key(
+            validate_request({"dataset": CANDIDATE.key, "rates": FLAT_30, "elasticity": e}),
+            context(),
+        )
+
+    custom = key_at(2.5)
+    # Each value keys apart, from its neighbours and from every case.
+    assert custom != key_at(2.4) and custom != key_at(2.6)
+    assert custom not in {key_at(o["e_retention"]) for o in ELASTICITY_OPTIONS}
+    assert len({key_at(round(0.1 * i, 1)) for i in range(51)}) == 51
+    # Spellings of one value share a key, and a typed case is the case's key.
+    assert key_at(2.5000000001) == custom
+    assert key_at(2) == key_at(2.0) == key_at(2.0000000001)
+    assert key_at(0.30000000000000004) == key_at(0.3)
 
 
 def test_cache_key_needs_the_context_fields():
@@ -502,3 +555,127 @@ def test_run_year_refuses_to_recompute_a_missing_baseline(tmp_path):
     req = validate_request({"dataset": CANDIDATE.key, "rates": FLAT_30})
     with pytest.raises(FileNotFoundError, match="Baseline output"):
         run_year(req, 2026, tmp_path, context())
+
+
+# --- the headline year's yield split ------------------------------------------
+
+
+def _fake_revenue(baseline=10e9):
+    """A revenue per (case, step) that rises step by step and falls with the
+    elasticity, and a log of every reform it was asked for."""
+    calls = []
+    order = {"main_rates": 1, "residential": 2, "badr_withdrawn": 3, "badr_changed": 3}
+
+    def revenue(case, step, reform):
+        calls.append((case, step, reform))
+        e = reform[ELASTICITY_PARAMETER]["2026-01-01"]
+        return baseline + order[step] * 1e9 / (1 + e)
+
+    return revenue, calls
+
+
+def test_split_cases_add_the_users_elasticity_beside_the_references():
+    flat = {"rates": FLAT_30}
+    assert split_cases(validate_request({**flat, "elasticity": 2.5})) == {
+        "static": 0.0,
+        "central": ELASTICITY,
+        "user": 2.5,
+    }
+    # A value equal to a reference case is that case: no third bar.
+    for e in (0.0, ELASTICITY):
+        assert split_cases(validate_request({**flat, "elasticity": e})) == {
+            "static": 0.0,
+            "central": ELASTICITY,
+        }
+    # Equalisation's references come from the results file.
+    # The headline reform keeps the relief at current law.
+    equalise = {"rates": dict(INCOME_TAX_RATES)}
+    assert is_equalisation(validate_request(equalise))
+    assert split_cases(validate_request({**equalise, "elasticity": 2.5})) == {"user": 2.5}
+    assert split_cases(validate_request({**equalise, "elasticity": ELASTICITY})) == {}
+    # Income tax rates with the relief withdrawn is not equalisation.
+    withdrawn = validate_request(
+        {"rates": dict(INCOME_TAX_RATES), "badr": {"withdrawn": True}, "elasticity": 2.5}
+    )
+    assert not is_equalisation(withdrawn)
+    assert set(split_cases(withdrawn)) == {"static", "central", "user"}
+
+
+def test_schedule_split_of_a_custom_schedule_has_its_own_steps():
+    req = validate_request({"rates": FLAT_30, "elasticity": 2.5})
+    revenue, calls = _fake_revenue()
+    split = score_schedule_split(req, HEADLINE_YEAR, 10e9, revenue)
+    assert split["year"] == fiscal_year_label(HEADLINE_YEAR)
+    assert split["elasticities"] == {"static": 0.0, "central": ELASTICITY, "user": 2.5}
+    assert split["reference_cases_from_results_file"] is False
+    # The relief stays at current law, so there is no relief step.
+    assert [row["step"] for row in split["steps"]] == ["main_rates", "residential"]
+    assert split["steps"][0]["label"] == "Main rates at 18% / 30% / 30%"
+    last = split["steps"][-1]
+    for case, e in split["elasticities"].items():
+        increments = sum(row[f"{case}_increment_bn"] for row in split["steps"])
+        assert increments == pytest.approx(last[f"{case}_cgt_change_bn"])
+        assert last[f"{case}_cgt_change_bn"] == pytest.approx(2 / (1 + e))
+        assert set(split["reform_fingerprints"][case]) == {"main_rates", "residential"}
+    # The user's whole schedule is the run's own reform, so run_year can
+    # reuse the run instead of simulating it again.
+    assert ("user", "residential", req.reform()) in calls
+    assert len(calls) == 6
+    json.dumps(split)
+
+
+def test_schedule_split_names_the_reliefs_step():
+    withdrawn = validate_request({"rates": FLAT_30, "badr": {"withdrawn": True}, "elasticity": 2.5})
+    revenue, _ = _fake_revenue()
+    steps = score_schedule_split(withdrawn, HEADLINE_YEAR, 10e9, revenue)["steps"]
+    assert [row["step"] for row in steps] == ["main_rates", "residential", "badr_withdrawn"]
+    changed = validate_request(
+        {"rates": FLAT_30, "badr": {"rate": 0.1, "lifetime_limit": 500_000}, "elasticity": 2.5}
+    )
+    steps = score_schedule_split(changed, HEADLINE_YEAR, 10e9, revenue)["steps"]
+    assert steps[-1]["step"] == "badr_changed"
+    assert steps[-1]["label"] == "Business Asset Disposal Relief at 10% up to £500k"
+
+
+def test_schedule_split_of_equalisation_computes_only_the_users_case():
+    req = validate_request({"rates": dict(INCOME_TAX_RATES), "elasticity": 2.5})
+    revenue, calls = _fake_revenue()
+    split = score_schedule_split(req, HEADLINE_YEAR, 10e9, revenue)
+    assert split["reference_cases_from_results_file"] is True
+    # The relief is kept, so the split has two parts and no relief step.
+    assert [row["step"] for row in split["steps"]] == ["main_rates", "residential"]
+    assert {case for case, _, _ in calls} == {"user"}
+    # The steps are the pipeline's, so the file's rows line up with them.
+    assert [(row["step"], row["label"]) for row in split["steps"]] == [
+        (step, label) for step, label, _ in schedule_step_reforms(0.0)
+    ]
+    assert split["reform_fingerprints"]["user"] == {
+        step: reform_fingerprint(reform) for step, _, reform in schedule_step_reforms(2.5)
+    }
+
+
+def test_assemble_response_carries_the_headline_years_split():
+    req = validate_request({"rates": FLAT_30, "elasticity": 2.5})
+    revenue, _ = _fake_revenue()
+    split = {**score_schedule_split(req, HEADLINE_YEAR, 10e9, revenue), "seconds": 12.5}
+    rows = year_rows()
+    headline = fiscal_year_label(HEADLINE_YEAR)
+    for row in rows:
+        if row["year"] == headline:
+            row["schedule_split"] = split
+    result = assemble_response(req, context(), rows)
+    assert result["schedule_split"] == split
+    assert result["metadata"]["timing"]["schedule_split_seconds"] == 12.5
+    # A row set without a split (a worker from before it) assembles without one.
+    assert "schedule_split" not in assemble_response(req, context(), year_rows())
+
+
+def test_the_split_is_in_the_cache_key():
+    # The key's code fingerprint digests the files that define the split, so
+    # a result cached before it (or with other split logic) cannot be served.
+    from pathlib import Path
+
+    for fn in (score_schedule_split, schedule_step_reforms, schedule_split):
+        assert Path(fn.__code__.co_filename).name in CODE_FINGERPRINT_FILES
+    req = validate_request({"rates": FLAT_30, "elasticity": 2.5})
+    assert cache_key(req, context()) != cache_key(req, context(code_fingerprint="0ther0ther00"))

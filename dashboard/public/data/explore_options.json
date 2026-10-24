@@ -58,6 +58,11 @@
     }
   ],
   "default_elasticity": 1.0,
+  "elasticity_bounds": [
+    0.0,
+    5.0
+  ],
+  "elasticity_step": 0.1,
   "elasticity_parameter": "gov.simulation.capital_gains_responses.elasticity",
   "presets": [
     {

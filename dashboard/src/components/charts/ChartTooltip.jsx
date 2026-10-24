@@ -53,9 +53,9 @@ export function TooltipCard({ title, rows = [], footer }) {
         <Line key={`${row.label}-${i}`} {...row} />
       ))}
       {footer ? (
-        <span className="mt-1 flex justify-between gap-3 border-t border-slate-100 pt-1 font-semibold text-slate-900">
+        <span className={`${rows.length ? "mt-1 border-t border-slate-100 pt-1" : "mt-1"} flex items-baseline justify-between gap-3 font-semibold text-slate-900`}>
           <span>{footer.label}</span>
-          <span className="tabular-nums">{footer.value}</span>
+          <span className="whitespace-nowrap tabular-nums">{footer.value}</span>
         </span>
       ) : null}
     </div>
@@ -70,12 +70,13 @@ export default function ChartTooltip({ active, payload, label, title, rows, foot
   const lines = rows
     ? rows(payload)
     : payload.map((p) => ({ label: p.name, value: format(p.value), color: p.color ?? p.fill }));
-  if (!lines?.length) return null;
+  const total = footer ? footer(payload) : undefined;
+  if (!lines?.length && !total) return null;
   return (
     <TooltipCard
       title={title ? title(label, payload) : label}
-      rows={lines}
-      footer={footer ? footer(payload) : undefined}
+      rows={lines ?? []}
+      footer={total}
     />
   );
 }

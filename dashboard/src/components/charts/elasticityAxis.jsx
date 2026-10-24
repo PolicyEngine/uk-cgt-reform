@@ -1,7 +1,7 @@
 "use client";
 
 import { ReferenceLine } from "recharts";
-import { getNiceTicks } from "../../lib/chartUtils";
+import { getNiceTicks, getTickDecimals } from "../../lib/chartUtils";
 import { colors } from "../../lib/colors";
 import { formatSignedBn } from "../../lib/formatters";
 
@@ -131,7 +131,7 @@ export function yAxisProps(lo, hi) {
     ticks,
     width: 56,
     tick: AXIS_STYLE,
-    tickFormatter: (v) => formatSignedBn(v, 0),
+    tickFormatter: (v) => formatSignedBn(v, getTickDecimals(ticks)),
     tickLine: false,
     axisLine: false,
   };
