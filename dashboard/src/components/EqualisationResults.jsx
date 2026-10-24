@@ -35,7 +35,7 @@ import GroupImpactChart, { GROUP_DESCRIPTION, GroupDefinitions, HOUSEHOLD_COLOR 
 import SensitivityChart from "./charts/SensitivityChart";
 import RateChangeChart from "./charts/RateChangeChart";
 import YieldChart from "./charts/YieldChart";
-import { Card, DatasetName, MetricCard, Notes, SourceLabel, SourceLink, TabLink, YearPill } from "./controls";
+import { Card, DatasetName, MetricCard, Notes, PAIRED_CARD, SourceLabel, SourceLink, TabLink, YearPill } from "./controls";
 import SectionHeading from "./SectionHeading";
 
 // Where each sensitivity scenario's elasticity comes from: the static case
@@ -152,13 +152,15 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
         </div>
       </Card>
 
+      {/* The two cards share five rows (title, pills, description, chart, notes), so titles,
+          pills, chart tops and Notes line up across the pair. */}
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card className="flex min-w-0 flex-col">
-          <SectionHeading
+        <Card className={PAIRED_CARD}>
+          <BudgetChart
+            budget={budget}
             title={`Budgetary impact by year, ${budget[0].year} to ${budget.at(-1).year}`}
             description="Each bar shows the change in the government's balance in one fiscal year, after taxpayers realise fewer gains."
           />
-          <BudgetChart budget={budget} />
           <div className="mt-auto">
           <Notes>
             <p>
@@ -184,7 +186,7 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
           </div>
         </Card>
 
-        <Card className="flex min-w-0 flex-col">
+        <Card className={PAIRED_CARD}>
           <GroupImpactChart
             groupsByYear={getIncomeChangeGroupsByYear(data)}
             defaultYear={headlineYear}

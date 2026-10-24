@@ -32,7 +32,7 @@ import BudgetChart from "./charts/BudgetChart";
 import ChartLegend from "./charts/ChartLegend";
 import RateChangeChart from "./charts/RateChangeChart";
 import GroupImpactChart, { GROUP_DESCRIPTION, GroupDefinitions, HOUSEHOLD_COLOR } from "./charts/GroupImpactChart";
-import { Card, DatasetName, MetricCard, Notes, SourceLink, TabLink } from "./controls";
+import { Card, DatasetName, MetricCard, Notes, PAIRED_CARD, SourceLink, TabLink } from "./controls";
 import { BeyondForecastNote, SPEC_SUMMARY } from "./EqualisationResults";
 import SectionHeading from "./SectionHeading";
 
@@ -319,13 +319,15 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
         </div>
       </Card>
 
+      {/* The two cards share five rows (title, pills, description, chart, notes), so titles,
+          pills, chart tops and Notes line up across the pair. */}
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card className="flex min-w-0 flex-col">
-          <SectionHeading
+        <Card className={PAIRED_CARD}>
+          <BudgetChart
+            budget={result.budget}
             title={`Budgetary impact by year, ${result.budget[0].year} to ${result.budget.at(-1).year}`}
             description="Each bar shows the change in the government's balance in one fiscal year, after taxpayers realise fewer gains."
           />
-          <BudgetChart budget={result.budget} />
           <div className="mt-auto">
           <Notes>
             <BeyondForecastNote />
@@ -343,7 +345,7 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
           </div>
         </Card>
 
-        <Card className="flex min-w-0 flex-col">
+        <Card className={PAIRED_CARD}>
           <GroupImpactChart
             groupsByYear={result.income_change_groups}
             defaultYear={headlineYear}

@@ -7,7 +7,7 @@ import { colors } from "../../lib/colors";
 import { formatSignedMn } from "../../lib/formatters";
 import ChartLogo from "../ChartLogo";
 import ChartLegend from "./ChartLegend";
-import { LabelledSelect } from "../controls";
+import { PillSelect } from "../controls";
 import { EndLabel, RowAxis, SignedBar, rowHeight } from "./benchmarkRows";
 import { TOOLTIP_PROPS, TooltipCard } from "./ChartTooltip";
 
@@ -145,8 +145,8 @@ export default function ReadyReckonerChart({ pairs, rows, labels, pairKey, onPai
   return (
     <>
       {pairs.length > 1 && !controlled ? (
-        <div className="mb-1 w-full max-w-xs">
-          <LabelledSelect
+        <div className="mb-3">
+          <PillSelect
             label="HMRC receipts year"
             options={pairs.map((p) => ({ value: p.key, label: p.label }))}
             value={current.key}
