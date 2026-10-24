@@ -523,13 +523,14 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
           </ValueCard>
           <ValueCard label="HMRC/OBR official" value={official.e_retention.toFixed(1)}>
             <p>
-              For all other gains, residential property included, and{" "}
-              {official.badr_e_retention.toFixed(1)} for gains
+              For the main rates, and {official.badr_e_retention.toFixed(1)} for gains
               qualifying for Business Asset Disposal{" "}
               <ExternalLink href={BADR_GUIDANCE}>Relief</ExternalLink> (
               <ExternalLink href={`${official.url}#page=3`}>OBR</ExternalLink>,{" "}
               {formatPublished(official.published.slice(0, 7))}, para 1.9 and{" "}
-              <ExternalLink href={`${official.url}#page=5`}>Table</ExternalLink> 1.1).
+              <ExternalLink href={`${official.url}#page=5`}>Table</ExternalLink> 1.1). This
+              dashboard also applies it to residential property gains, whose rates that measure did
+              not change.
             </p>
           </ValueCard>
         </div>
@@ -537,10 +538,13 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
         <Topic title="Why the two values differ">
           <ul className="list-disc space-y-1.5 pl-5">
             <li>
-              <strong className="font-semibold text-slate-800">HMRC</strong> start from 4.0,
-              estimated from UK gains in 1998 to 2018, and lower it to{" "}
-              {official.e_retention.toFixed(1)} because aligned rates and the higher relief rate
-              leave fewer ways to avoid the rise (OBR, January 2025, para 1.10).
+              <strong className="font-semibold text-slate-800">HMRC</strong> start from 4.0, the
+              value for shares and non-residential property agreed with the OBR in 2020 after HMRC
+              analysed UK gains from 1998 to 2018. They lower it to{" "}
+              {official.e_retention.toFixed(1)} for three reasons: aligned rates and the higher relief
+              rate leave fewer ways to avoid the rise; forestalling is already in the baseline
+              forecast; and the UK&apos;s effective rate stays near the average of advanced
+              economies (OBR, January 2025, para 1.10).
             </li>
             <li>
               <strong className="font-semibold text-slate-800">CenTax</strong> start from US
