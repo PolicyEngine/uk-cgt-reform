@@ -224,7 +224,7 @@ function CentaxRegions({ block, dataset }) {
   return (
     <section className="section-card">
       <SectionHeading
-        title={`Regional CGT under 2019-20 rules: PolicyEngine (${block.year} data) and CenTax (2019-20 data)`}
+        title={`Regional CGT: PolicyEngine ${block.year} and CenTax 2019-20`}
         description={
           <>
             {"Each region's share of baseline CGT under "}
