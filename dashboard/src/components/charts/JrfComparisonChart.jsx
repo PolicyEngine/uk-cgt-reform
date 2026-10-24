@@ -9,11 +9,11 @@ import { HoverTip, useHoverState } from "./ChartTooltip";
 
 // The three estimates compared each year, as dots on one £bn line: the
 // model's own static change, the model's uplift applied to the OBR's
-// receipts (JRF's method), and JRF's published figure as a ring.
+// receipts (JRF's method), and JRF's published figure as a dark dot.
 const SERIES = [
-  { key: "static", fill: colors.primary[600], text: colors.primary[700], size: 9, marker: "dot" },
+  { key: "static", fill: colors.primary[600], text: colors.primary[700], size: 15, marker: "ring" },
   { key: "obr", fill: colors.primary[300], text: colors.primary[700], size: 9, marker: "dot" },
-  { key: "jrf", fill: colors.gray[400], text: colors.gray[600], size: 15, marker: "ring" },
+  { key: "jrf", fill: colors.gray[700], text: colors.gray[800], size: 9, marker: "dot" },
 ];
 
 // Year, the three values, then the dot strip; a row stacks below `md`.
@@ -63,7 +63,7 @@ function Marker({ id, hover, series, left, title, label, value }) {
       value={value}
       color={series.fill}
       align={left > 60 ? "end" : left < 40 ? "start" : "center"}
-      className={`absolute top-1/2 -translate-x-1/2 -translate-y-1/2 ${series.key === "jrf" ? "z-[1]" : "z-[2]"}`}
+      className={`absolute top-1/2 -translate-x-1/2 -translate-y-1/2 ${series.key === "static" ? "z-[1]" : "z-[2]"}`}
       style={{ left: `${left}%` }}
     >
       <span
@@ -72,8 +72,8 @@ function Marker({ id, hover, series, left, title, label, value }) {
         style={{
           width: series.size,
           height: series.size,
-          // PolicyEngine solid dots; JRF a larger hollow ring around them,
-          // as on the Baseline chart, so coinciding values stay visible.
+          // PolicyEngine's static figure a hollow ring, the other two solid
+          // dots that show through it when values coincide.
           background: series.marker === "ring" ? "transparent" : series.fill,
           borderRadius: "9999px",
           border: series.marker === "ring" ? `2px solid ${series.fill}` : "1px solid #FFFFFF",
