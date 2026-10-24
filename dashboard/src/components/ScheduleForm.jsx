@@ -47,6 +47,9 @@ const BADR_NOTE =
 const ELASTICITY_NOTE =
   "The elasticity of realised gains with respect to the retention rate (1 − t): taxpayers realise fewer gains as the share of each gain they keep falls.";
 
+const RETENTION_ELASTICITY_NOTE =
+  "How much taxpayers cut the gains they realise when the tax rate on them rises. At 0 they do not respond; at 1.0, CenTax's central value, a 10% fall in the share of each gain kept after tax cuts realised gains by 10%; the HMRC/OBR official value is 3.6 for the main rates.";
+
 // The select's value for a typed elasticity.
 const CUSTOM = "custom";
 
@@ -435,7 +438,12 @@ export default function ScheduleForm({ form, onChange, onCalculate, running, onN
               />
               {custom ? (
                 <div className="mt-4">
-                  <FieldLabel htmlFor="elasticity-custom">Retention elasticity</FieldLabel>
+                  <div className="mb-1.5 flex items-center gap-2">
+                    <label htmlFor="elasticity-custom" className="text-xs font-semibold text-slate-600">
+                      Retention elasticity
+                    </label>
+                    <InfoTip label="About the retention elasticity">{RETENTION_ELASTICITY_NOTE}</InfoTip>
+                  </div>
                   <div className="max-w-[10rem]">
                     <SteppedInput
                       id="elasticity-custom"
