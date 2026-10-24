@@ -107,7 +107,7 @@ JRF_STATIC = [
         comparable=True,
         year="2026-27",
         basis="static",
-        price_basis="2026/27 prices",
+        price_basis="2026-27 prices",
         value=13.0,
         unit="gbp_bn",
         details={"method": JRF_METHOD},
@@ -123,7 +123,7 @@ JRF_STATIC = [
         comparable=True,
         year="2029-30",
         basis="static",
-        price_basis="2026/27 prices",
+        price_basis="2026-27 prices",
         value=17.0,
         unit="gbp_bn",
         details={"method": JRF_METHOD},
@@ -144,7 +144,7 @@ CENTAX_RATES_ONLY_SCOPE = (
     "carried-interest rates abolished; principal private residence relief kept"
 )
 CENTAX_1920_RULES_NOTE = (
-    "2019/20 rules and data: main rates 10/20, residential and carried interest "
+    "2019-20 rules and data: main rates 10/20, residential and carried interest "
     "18/28, BADR 10%, exempt amount £12,000; resident individuals; CGT and income tax "
     "counted together"
 )
@@ -163,7 +163,7 @@ CENTAX_TABLE_3 = _external(
     comparable=True,
     year="2019-20",
     basis="static",
-    price_basis="nominal, 2019/20",
+    price_basis="nominal, 2019-20",
     value=139.0,
     unit="pct",
     details={"change_bn": 15.2, "baseline_bn": 10.9},
@@ -198,7 +198,7 @@ CENTAX_TABLE_8 = _external(
     comparable=True,
     year="2019-20",
     basis="static",
-    price_basis="nominal, 2019/20",
+    price_basis="nominal, 2019-20",
     value=None,
     unit="pct",
     details={"regions": CENTAX_TABLE_8_REGIONS},
@@ -219,15 +219,15 @@ CENTAX_PACKAGE_CONTEXT = [
         comparable=False,
         year="2019-20",
         basis="post_behavioural",
-        price_basis="nominal, 2019/20",
+        price_basis="nominal, 2019-20",
         value=8.2,
         unit="gbp_bn",
         details={"share_of_static_pct": 54, "retention_elasticity": 1.0},
         note=(
-            "Not a CenTax figure. CenTax adds the death-uplift (£1.3bn) and exit-charge "
-            "(£4.3bn) components without a behavioural response; subtracting them from the "
-            "no-allowance package (£13.8bn, Table 4) leaves about £8.2bn for rates alone. "
-            "CenTax expects a rates-only reform to face a higher elasticity than its package."
+            "Not a CenTax figure. CenTax adds the uplift at death (gains on assets held "
+            "until death are not taxed; £1.3bn) and exit-charge (£4.3bn) components without "
+            "a behavioural response; subtracting them from the no-allowance package "
+            "(£13.8bn, Table 4) leaves about £8.2bn for rates alone."
         ),
     ),
     _external(
@@ -240,11 +240,11 @@ CENTAX_PACKAGE_CONTEXT = [
         comparable=False,
         year="2025-26",
         basis="post_behavioural",
-        price_basis="nominal, scaled to the OBR's 2025/26 CGT forecast",
+        price_basis="nominal, scaled to the OBR's 2025-26 CGT forecast",
         value=14.3,
         unit="gbp_bn",
         details={"uplift_pct": 88, "retention_elasticity": 1.0},
-        note="The headline £14bn: a medium-term effect on the 2025/26 base.",
+        note="The headline £14bn: a medium-term effect on the 2025-26 base.",
     ),
     _external(
         id="centax_2024_table6_package_range",
@@ -256,7 +256,7 @@ CENTAX_PACKAGE_CONTEXT = [
         comparable=False,
         year="2025-26",
         basis="post_behavioural",
-        price_basis="nominal, scaled to the OBR's 2025/26 CGT forecast",
+        price_basis="nominal, scaled to the OBR's 2025-26 CGT forecast",
         value=None,
         unit="gbp_bn",
         details={
@@ -299,7 +299,7 @@ CENTAX_PACKAGE_CONTEXT = [
         value=19.7,
         unit="gbp_bn",
         details={"uplift_pct": 62, "previous_uplift_pct": 88},
-        note="Uplift 62%, down from 88% in the 2024 report; no elasticity value stated.",
+        note="Increase in revenue 62%, down from 88% in the 2024 report; no elasticity value stated.",
     ),
 ]
 
@@ -362,8 +362,9 @@ READY_RECKONER = {
     "basis": "post_behavioural",
     "unit": "gbp_m",
     "measure": (
-        "Exchequer receipts in £m (positive = yield), including income tax and SDLT "
-        "effects, for a change from April 2026 on the OBR's March 2025 forecast"
+        "Exchequer receipts in £m (positive = yield), including income tax and stamp duty "
+        "land tax (SDLT) effects, for a change to the named rate, on the OBR's March 2025 "
+        "forecast"
     ),
     "note": (
         "The higher-rate rows move the higher and additional rates together, for main "
@@ -385,44 +386,44 @@ READY_RECKONER = {
     "rows": [
         _row(
             "higher_plus_1",
-            "Higher rate +1pp (18% / 25% / 25%)",
+            "Higher rate +1 point (18% / 25% / 25%)",
             _rates(0.18, 0.25, 0.25),
             {"2026-27": -15, "2027-28": 80, "2028-29": -30},
         ),
         _row(
             "higher_plus_5",
-            "Higher rate +5pp (18% / 29% / 29%)",
+            "Higher rate +5 points (18% / 29% / 29%)",
             _rates(0.18, 0.29, 0.29),
             {"2026-27": -170, "2027-28": -235, "2028-29": -870},
         ),
         _row(
             "higher_plus_10",
-            "Higher rate +10pp (18% / 34% / 34%)",
+            "Higher rate +10 points (18% / 34% / 34%)",
             _rates(0.18, 0.34, 0.34),
             {"2026-27": -540, "2027-28": -2060, "2028-29": -3565},
         ),
         _row(
             "lower_plus_1",
-            "Lower rate +1pp (19% / 24% / 24%)",
+            "Lower rate +1 point (19% / 24% / 24%)",
             _rates(0.19, 0.24, 0.24),
             {"2026-27": -5, "2027-28": 10, "2028-29": 5},
         ),
         _row(
             "lower_plus_5",
-            "Lower rate +5pp (23% / 24% / 24%)",
+            "Lower rate +5 points (23% / 24% / 24%)",
             _rates(0.23, 0.24, 0.24),
             {"2026-27": -40, "2027-28": 20, "2028-29": -10},
         ),
         _row(
             "badr_plus_1",
-            "Business Asset Disposal Relief rate +1pp (19%)",
+            "Business Asset Disposal Relief rate +1 point (19%)",
             _CURRENT_RATES,
             {"2026-27": 10, "2027-28": 135, "2028-29": 180},
             badr=BadrPolicy(rate=0.19),
         ),
         _row(
             "badr_plus_5",
-            "Business Asset Disposal Relief rate +5pp (23%)",
+            "Business Asset Disposal Relief rate +5 points (23%)",
             _CURRENT_RATES,
             {"2026-27": 40, "2027-28": 635, "2028-29": 840},
             badr=BadrPolicy(rate=0.23),
