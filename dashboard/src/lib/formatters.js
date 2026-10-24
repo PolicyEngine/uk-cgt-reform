@@ -152,3 +152,10 @@ export function splitFiscalYears(text) {
     .filter((part) => part !== "")
     .map((part) => ({ text: part, year: /^\d{4}-\d{2}$/.test(part) }));
 }
+
+// The three elasticities HMRC's table of small rate changes is scored at, in
+// one wording everywhere: "at the official 3.6 (1.4 for the relief), at 3.0
+// and at CenTax's central 1.0".
+export function reckonerElasticities(official, central, third = 3) {
+  return `at the official ${official.e_retention.toFixed(1)} (${official.badr_e_retention.toFixed(1)} for the relief), at ${third.toFixed(1)} and at CenTax's central ${central.e_retention.toFixed(1)}`;
+}

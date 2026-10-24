@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+  reckonerElasticities,
   splitFiscalYears,
   formatBn,
   formatCount,
@@ -115,5 +116,13 @@ describe("splitFiscalYears", () => {
   });
   test("leaves text without years whole", () => {
     expect(splitFiscalYears("Notes")).toEqual([{ text: "Notes", year: false }]);
+  });
+});
+
+describe("reckonerElasticities", () => {
+  test("names the three cases in one wording", () => {
+    expect(reckonerElasticities({ e_retention: 3.6, badr_e_retention: 1.4 }, { e_retention: 1 })).toBe(
+      "at the official 3.6 (1.4 for the relief), at 3.0 and at CenTax's central 1.0",
+    );
   });
 });

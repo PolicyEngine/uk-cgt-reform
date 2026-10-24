@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { getBenchmarks, getDatasetInfo, getFirstYear, getMetadata } from "../lib/dataHelpers";
-import { formatBn, formatCount, formatPct, formatPublished, formatSmallBn } from "../lib/formatters";
+import { formatBn, formatCount, formatPct, formatPublished, formatSmallBn, reckonerElasticities } from "../lib/formatters";
 import { MICROCOSM_URL, TabLink } from "./controls";
 import SectionHeading from "./SectionHeading";
 
@@ -149,8 +149,14 @@ const READY_RECKONER_URL =
   "https://assets.publishing.service.gov.uk/media/68552862b46781eacfd71d71/June_2025_TRR_ODS__1_.ods";
 const AGERSNAP_ZIDAR = "https://www.aeaweb.org/articles?id=10.1257/aeri.20200535";
 const CGT_RATES = "https://www.gov.uk/capital-gains-tax/rates";
+const POLICYENGINE_UK = "https://github.com/PolicyEngine/policyengine-uk";
+// The sub-exempt gains distribution Microcosm draws from (its build's source).
+const ADVANI_SUMMERS = "https://warwick.ac.uk/fac/soc/economics/research/centres/cage/manage/publications/wp465.2020.pdf";
 const CARRIED_INTEREST =
   "https://www.gov.uk/government/publications/reform-of-the-tax-treatment-of-carried-interest";
+
+// A calendar year as the fiscal year it starts ("2030" -> "2030-31").
+const fiscalYear = (year) => `${year}-${String(Number(year) + 1).slice(2)}`;
 
 // The dataset's own notes carry the figures the plain-language text needs;
 // pull them out so nothing is hardcoded, and fall back to the note itself.
@@ -194,7 +200,6 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
   const figures = datasetFigures(dataset);
   const metadata = getMetadata(data);
   const { central, official } = getBenchmarks(data).elasticities;
-  const centaxRange = getBenchmarks(data).elasticities.centax_range;
   const exemptAmount = data.validation?.entrants_by_uprating?.exempt_amount_gbp;
   // Entrants by uprating in the first year, beside the whole taxpayer base.
   const validation = data.validation;
@@ -213,7 +218,6 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
   };
 
   const firstYear = getFirstYear(data);
-  const lastYear = data.budget.at(-1).year;
 
   return (
     <div className="space-y-6">
@@ -223,10 +227,10 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
           description={
             <p className="">
               The estimates come from{" "}
-              <ExternalLink href="https://policyengine.org">PolicyEngine</ExternalLink> UK, a
-              model of UK taxes and benefits. It runs on a representative sample of UK households
-              for {firstYear} to {lastYear}. Capital gains are concentrated among few people, so
-              the results depend on how well the sample captures them.
+              <ExternalLink href={POLICYENGINE_UK}>PolicyEngine UK</ExternalLink>, a model of UK
+              taxes and benefits. It runs on a sample of UK households for {baseYearLabel},
+              projected to later years. Capital gains are concentrated among few people, so the
+              results depend on how well the sample captures them.
             </p>
           }
         />
@@ -253,7 +257,8 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
             <ExternalLink href={HMRC_TABLE_3}>3</ExternalLink> (size of gain by taxable income).
             This keeps the largest gains, which carry most of the tax, and puts each gain in its
             income tax band. Gains below the exempt <ExternalLink href={EXEMPT_AMOUNT}>amount</ExternalLink> (the
-            yearly tax-free allowance) follow the Advani&ndash;Summers distribution, their
+            yearly tax-free allowance) follow the Advani&ndash;Summers{" "}
+            <ExternalLink href={ADVANI_SUMMERS}>distribution</ExternalLink>, their
             estimate of how gains below it are spread, within each band.
           </p>
         </Topic>
@@ -271,8 +276,8 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
         </Topic>
         <Topic title="Calibration">
           <p>
-            Household weights are set so the sample matches {figures.targets ?? "a set of"}{" "}
-            statistics. These include HMRC&apos;s CGT{" "}
+            Household weights are calibrated towards {figures.targets ?? "a set of"} statistics.
+            These include HMRC&apos;s CGT{" "}
             <ExternalLink href={CGT_STATISTICS}>totals</ExternalLink> and size bands, gains by taxable
             income band, the relief&apos;s bands, residential property gains, age and region.
           </p>
@@ -284,7 +289,8 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
             withdraws the relief, so qualifying gains pay the new main rates, as in{" "}
             <ExternalLink href={CENTAX_REPORT}>CenTax&apos;s</ExternalLink> rates-only estimate.
             Carried interest (fund managers&apos; share of profits) has been taxed as{" "}
-            <ExternalLink href={CARRIED_INTEREST}>income</ExternalLink>, outside CGT, since 6 April
+            <ExternalLink href={CARRIED_INTEREST}>income</ExternalLink> (income tax and National
+            Insurance), outside CGT, since 6 April
             2026, so the reform does not affect it.
           </p>
         </Topic>
@@ -353,6 +359,10 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
                 <ExternalLink href={ONS_PROJECTIONS}>projections</ExternalLink>. Nothing specific to
                 CGT enters the projection.
               </p>
+              <p>
+                The OBR&apos;s <ExternalLink href={OBR_EFO}>forecast</ExternalLink> ends in 2030-31,
+                so in 2031-32 gains grow at its 2030-31 growth rate of GDP per head (3.15%).
+              </p>
             </div>
           }
         />
@@ -367,9 +377,9 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
             . They owe nothing in the base year. As gains grow, some cross it and start paying.{" "}
             {figures.entrants ? (
               <>
-                The model adds about {figures.entrants.audit} such taxpayers by{" "}
-                {figures.entrants.year}. The dataset&apos;s own bound is {figures.entrants.bound}.
-                HMRC counted {figures.entrants.hmrc} taxpayers with gains of{" "}
+                By {fiscalYear(figures.entrants.year)} about {figures.entrants.audit} such
+                taxpayers are added (the dataset&apos;s build expects about{" "}
+                {figures.entrants.bound}). HMRC counted {figures.entrants.hmrc} taxpayers with gains of{" "}
                 {figures.entrants.band} in {figures.entrants.hmrcYear} (
                 <ExternalLink href={HMRC_TABLE_2}>HMRC</ExternalLink> {figures.entrants.table}).
               </>
@@ -405,13 +415,6 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
             <ExternalLink href={centaxPage(38)}>37</ExternalLink>).
           </p>
         </Topic>
-        <Topic title={`Central value: ${central.e_retention.toFixed(1)}`}>
-          <p>
-            This is CenTax&apos;s &ldquo;central elasticity estimate&rdquo; (p.{" "}
-            <ExternalLink href={central.url}>37</ExternalLink>). It is also PolicyEngine UK&apos;s
-            default.
-          </p>
-        </Topic>
         <Topic title="How it is applied">
           <p>For each person, realised gains are scaled as follows.</p>
           <ResponseFormula />
@@ -433,27 +436,9 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
           <p>
             CenTax apply one elasticity to total gains. This model applies it to each
             person&apos;s own marginal rate. It takes CenTax&apos;s convention but not their
-            calculation. The elasticity is a power, so values away from 1.0, such as 0.5 and 2.0, also differ
-            from a straight-line reading.
+            calculation. The elasticity is a power, so 2.0 does not give twice the response of 1.0.
           </p>
         </Topic>
-        <Topic title="Testing the assumption">
-          <p>
-            The{" "}
-            <TabLink onNavigate={onNavigate} tab="reform" section="sensitivity">
-              Reform
-            </TabLink>{" "}
-            tab&apos;s sensitivity chart shows the result in three ways: with no response, across
-            CenTax&apos;s range
-            {centaxRange
-              ? ` (${centaxRange.lower.toFixed(1)} to ${centaxRange.upper.toFixed(1)})`
-              : ""}
-            , and at the official HMRC/OBR value described{" "}
-            <TabLink onNavigate={() => openSection("elasticity-gap")}>below</TabLink>
-            .
-          </p>
-        </Topic>
-
         <aside
           aria-labelledby="main-caveat"
           className="mt-7 rounded-lg text-sm border border-amber-200 bg-amber-50/60 p-4 sm:p-5"
@@ -500,8 +485,9 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
           <ExternalLink href={`${official.url}#page=3`}>OBR</ExternalLink> assume a stronger
           response than{" "}
           <ExternalLink href={CENTAX_REPORT}>CenTax</ExternalLink>. With HMRC&apos;s value, raising
-          the higher rate by 5 or 10 points loses revenue, as its ready{" "}
-          <ExternalLink href={READY_RECKONER_URL}>reckoner</ExternalLink> shows; with
+          the higher rate by 5 or 10 points loses revenue, as HMRC&apos;s{" "}
+          <ExternalLink href={READY_RECKONER_URL}>table</ExternalLink> of small rate changes (its
+          &lsquo;ready reckoner&rsquo;) shows; with
           CenTax&apos;s value, the same rises bring in more.
         </p>
 
@@ -549,8 +535,8 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
         </Topic>
         <Topic title="A worked example">
           <p>
-            Take a taxpayer whose rate on gains rises from 24% to 34%, the ready{" "}
-            <ExternalLink href={READY_RECKONER_URL}>reckoner&apos;s</ExternalLink> largest row:
+            Take a taxpayer whose rate on gains rises from 24% to 34%, the largest row in
+            HMRC&apos;s <ExternalLink href={READY_RECKONER_URL}>table</ExternalLink>:
           </p>
           <div className="overflow-x-auto rounded-lg border border-slate-200 px-4 py-2">
             <table className="w-full text-left text-sm">
@@ -605,8 +591,7 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
               <TabLink onNavigate={onNavigate} tab="baseline" section="ready-reckoner">
                 Baseline
               </TabLink>{" "}
-              tab scores the ready reckoner&apos;s rows at the official values, 3.0 and{" "}
-              {central.e_retention.toFixed(1)}.
+              tab scores the rows of HMRC&apos;s table {reckonerElasticities(official, central)}.
             </li>
           </ul>
         </Topic>
@@ -632,8 +617,8 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
             ) : (
               dataset.shortLabel
             )}{" "}
-            for every modelled year, with the same model and assumptions
-            as the main results.
+            for every modelled year, with the same model as the main results; the behavioural
+            response is yours to choose.
           </p>
 
 
