@@ -35,7 +35,7 @@ import GroupImpactChart, { GROUP_DESCRIPTION, GroupDefinitions, HOUSEHOLD_COLOR 
 import SensitivityChart from "./charts/SensitivityChart";
 import RateChangeChart from "./charts/RateChangeChart";
 import YieldChart from "./charts/YieldChart";
-import { Card, DatasetName, MetricCard, Notes, PAIRED_CARD, SourceLabel, SourceLink, TabLink, YearPill } from "./controls";
+import { Card, MetricCard, Notes, PAIRED_CARD, SourceLabel, SourceLink, TabLink, YearPill } from "./controls";
 import SectionHeading from "./SectionHeading";
 
 // Where each sensitivity scenario's elasticity comes from: the static case
@@ -48,9 +48,6 @@ const CENTAX_SOURCE = {
 
 const BADR_GUIDANCE = "https://www.gov.uk/business-asset-disposal-relief";
 const EXEMPT_AMOUNT = "https://www.gov.uk/capital-gains-tax/allowances";
-const HMRC_TABLE_4 =
-  "https://assets.publishing.service.gov.uk/media/6a7b242a347b198efd290ed7/Table_4_2026_Business_asset_disposal_and_investors_reliefs.ods";
-const OBR_EFO = "https://obr.uk/efo/economic-and-fiscal-outlook-march-2026/";
 const SAVINGS_PROPERTY_RATES =
   "https://www.gov.uk/government/publications/changes-to-tax-rates-for-property-savings-and-dividend-income";
 const SCOTTISH_INCOME_TAX = "https://www.gov.uk/scottish-income-tax";
@@ -100,16 +97,6 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
   const split = getScheduleSplit(data, splitYear);
   // Equalisation with the relief kept: the step before it is withdrawn.
   const keptRelief = split.steps.find((row) => row.step === "residential");
-  // The spread of the yield across the behavioural cases in the
-  // sensitivity chart (the static case excluded): the official case and
-  // CenTax's upper case can turn it negative.
-  const behavioural = headlineSensitivity.filter((row) => row.e_retention !== 0);
-  const lowest = behavioural.reduce((a, b) => (b.revenue_bn < a.revenue_bn ? b : a));
-  const highest = behavioural.reduce((a, b) => (b.revenue_bn > a.revenue_bn ? b : a));
-  const caseName = (row) =>
-    row.e_retention === official.e_retention
-      ? "the official HMRC/OBR elasticity"
-      : `a retention elasticity of ${row.e_retention.toFixed(1)}`;
 
   return (
     <div className="space-y-6">
@@ -119,9 +106,8 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
           description={
             <>
               These figures assume taxpayers realise fewer gains as rates rise, by as much as{" "}
-              <SourceLink href={CENTAX_SOURCE.url}>CenTax&apos;s</SourceLink> central estimate, and
-              use <DatasetName label={dataset.shortLabel} /> data; the household figures cover every
-              UK household.
+              <SourceLink href={CENTAX_SOURCE.url}>CenTax&apos;s</SourceLink> central estimate; the
+              household figures cover every UK household.
             </>
           }
         />
@@ -130,8 +116,7 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
             label="Change in government balance"
             valueColor={colors.primary[700]}
             value={formatSignedBn(headlineRow.gov_balance_change_bn, 1)}
-            note="After taxpayers realise fewer gains."
-            tip={`Across the behavioural cases in the sensitivity chart, the ${lowest.year} change in CGT revenue runs from ${formatSignedBn(lowest.revenue_bn, 1)} at ${caseName(lowest)} to ${formatSignedBn(highest.revenue_bn, 1)} at ${caseName(highest)}.`}
+            tip="The sensitivity chart below shows this figure under other behavioural responses."
           />
           {topDecile ? (
             <MetricCard
@@ -161,29 +146,20 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
             title={`Budgetary impact by year, ${budget[0].year} to ${budget.at(-1).year}`}
             description="Each bar shows the change in the government's balance in one fiscal year, after taxpayers realise fewer gains."
           />
-          <div className="mt-auto lg:mt-0">
-          <Notes>
-            <p>
-              Baseline revenue grows as gains are uprated with the OBR&apos;s{" "}
-              <SourceLink href={OBR_EFO}>forecast</SourceLink> of GDP per head;{" "}
-              <TabLink onNavigate={onNavigate} tab="methodology" section="projection">
-                Methodology
-              </TabLink>{" "}
-              describes the projection.
-            </p>
-            <BeyondForecastNote />
-            {entrantShare > 0.05 ? (
-              <p>
-                Entrants by uprating (see{" "}
-                <TabLink onNavigate={onNavigate} tab="methodology" section="new-taxpayers">
-                  Methodology
-                </TabLink>
-                ) contribute {formatSmallBn(headlineRow.cgt_change_from_entrants_bn)} of the{" "}
-                {headlineYear} change ({formatPct(100 * entrantShareOfChange, 0)}).
-              </p>
-            ) : null}
-          </Notes>
-          </div>
+          {entrantShare > 0.05 ? (
+            <div className="mt-auto lg:mt-0">
+              <Notes>
+                <p>
+                  Entrants by uprating (see{" "}
+                  <TabLink onNavigate={onNavigate} tab="methodology" section="new-taxpayers">
+                    Methodology
+                  </TabLink>
+                  ) contribute {formatSmallBn(headlineRow.cgt_change_from_entrants_bn)} of the{" "}
+                  {headlineYear} change ({formatPct(100 * entrantShareOfChange, 0)}).
+                </p>
+              </Notes>
+            </div>
+          ) : null}
         </Card>
 
         <Card className={PAIRED_CARD}>
@@ -214,7 +190,7 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
             description={
               <>
                 Each bar is the reform&apos;s whole change in CGT revenue, split into its three
-                parts in the order they are applied: income tax rates on most gains, then on
+                parts in the order they are applied: income tax rates on other gains, then on
                 residential property gains, then withdrawing the relief. The top bar has no
                 behavioural response; the bottom one uses{" "}
                 <SourceLink href={CENTAX_SOURCE.url}>CenTax&apos;s</SourceLink> central response.
@@ -223,19 +199,7 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
           />
           <YieldChart key={splitYear} steps={split.steps} />
           <Notes>
-            <p>Each segment is what that step adds once the ones before it are in place.</p>
-            {validation.badr_gains_bn > 0 ? (
-              <p>
-                <DatasetName label={dataset.shortLabel} /> charges gains qualifying for Business Asset
-                Disposal{" "}
-                <SourceLink href={BADR_GUIDANCE}>Relief</SourceLink> on their own schedule; the{" "}
-                <TabLink onNavigate={onNavigate} tab="baseline" section="benchmarks">
-                  Baseline
-                </TabLink>{" "}
-                tab compares them with HMRC&apos;s{" "}
-                <SourceLink href={HMRC_TABLE_4}>statistics</SourceLink>.
-              </p>
-            ) : (
+            {validation.badr_gains_bn > 0 ? null : (
               <p>
                 {dataset.shortLabel} records no gains that qualify for Business Asset Disposal{" "}
                 <SourceLink href={BADR_GUIDANCE}>Relief</SourceLink>, so withdrawing it
@@ -325,17 +289,6 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
   );
 }
 
-// The modelled window's last year lies beyond the OBR's forecast: the one
-// extrapolation in the projection, stated under each budget chart.
-export function BeyondForecastNote() {
-  return (
-    <p>
-      The OBR&apos;s <SourceLink href={OBR_EFO}>forecast</SourceLink> ends in 2030-31, so in
-      2031-32 gains grow at its 2030-31 growth rate of GDP per head (3.15%).
-    </p>
-  );
-}
-
 // The compact year select the per-year sections share; none when the
 // results cover a single year.
 function YearSelect({ years, value, onChange }) {
@@ -366,17 +319,24 @@ export function EqualisationSpec({ data }) {
         </span>
       </summary>
       <div className="mt-4 space-y-3">
-        <p className="text-sm leading-6 text-slate-600">
-          Effective in every modelled year. All results on
-          this page compare this reform with current policy on the same baseline. The reformed
-          rates are the income tax rates on earnings; from April 2027 savings and property{" "}
-          <SourceLink href={SAVINGS_PROPERTY_RATES}>income</SourceLink> face 22%, 42% and 47% (the
-          property rates in England, Wales and Northern Ireland), and Scottish taxpayers&apos;
-          earnings face Scotland&apos;s own <SourceLink href={SCOTTISH_INCOME_TAX}>bands</SourceLink>,
-          which the reform does not follow. Residential property gains take the same rates, and the annual exempt{" "}
-          <SourceLink href={EXEMPT_AMOUNT}>amount</SourceLink> stays £3,000.
-          {recorded(validation.residential_property_gains_bn)}
-        </p>
+        <ul className="list-disc space-y-1.5 pl-5 text-sm leading-6 text-slate-600">
+          <li>All results on this page compare this reform with current policy on the same baseline.</li>
+          <li>The reformed rates are the income tax rates on earnings.</li>
+          <li>
+            From April 2027 savings and property{" "}
+            <SourceLink href={SAVINGS_PROPERTY_RATES}>income</SourceLink> face 22%, 42% and 47% (the
+            property rates in England, Wales and Northern Ireland).
+          </li>
+          <li>
+            Scottish taxpayers&apos; earnings face Scotland&apos;s own{" "}
+            <SourceLink href={SCOTTISH_INCOME_TAX}>bands</SourceLink>, which the reform does not follow.
+          </li>
+          <li>
+            Residential property gains take the same rates, and the annual exempt{" "}
+            <SourceLink href={EXEMPT_AMOUNT}>amount</SourceLink> stays £3,000.
+            {recorded(validation.residential_property_gains_bn)}
+          </li>
+        </ul>
         <RateChangeChart
           rows={[
             { key: "basic", label: "Basic rate", baseline: reform.basic_rate.baseline, reform: reform.basic_rate.reform },

@@ -5,6 +5,7 @@ import { useState } from "react";
 import {
   BASELINE_SCHEDULE_RATES,
   badrLimitLabel,
+  getBenchmarks,
   getBudgetRow,
   getEntrants,
   getFiveYearTotal,
@@ -18,6 +19,7 @@ import {
   formatSignedCurrency,
   formatSignedMn,
   formatSignedPct,
+  reckonerElasticities,
 } from "../lib/formatters";
 import {
   BADR_CURRENT_LAW,
@@ -32,8 +34,8 @@ import BudgetChart from "./charts/BudgetChart";
 import ChartLegend from "./charts/ChartLegend";
 import RateChangeChart from "./charts/RateChangeChart";
 import GroupImpactChart, { GROUP_DESCRIPTION, GroupDefinitions, HOUSEHOLD_COLOR } from "./charts/GroupImpactChart";
-import { Card, DatasetName, MetricCard, Notes, PAIRED_CARD, SourceLink, TabLink } from "./controls";
-import { BeyondForecastNote, SPEC_SUMMARY } from "./EqualisationResults";
+import { Card, MetricCard, Notes, PAIRED_CARD, SourceLink, TabLink } from "./controls";
+import { SPEC_SUMMARY } from "./EqualisationResults";
 import SectionHeading from "./SectionHeading";
 
 const EXEMPT_AMOUNT = "https://www.gov.uk/capital-gains-tax/allowances";
@@ -189,14 +191,13 @@ function ReckonerBars({ rows }) {
   );
 }
 
-function ReadyReckonerPanel({ row, result, onNavigate }) {
+function ReadyReckonerPanel({ row, result, elasticities, onNavigate }) {
   const liability = (year) =>
     1000 * result.budget.find((budgetRow) => budgetRow.year === year).gov_balance_change_bn;
-  const [contextYear] = READY_RECKONER.hmrc_years;
   return (
     <Card as="details" className="group min-w-0">
       <summary className="cursor-pointer select-none text-xl font-semibold tracking-tight text-slate-900 marker:text-[color:var(--pe-color-primary-600)]">
-        HMRC ready reckoner
+        HMRC&apos;s small rate changes
         <span className="ml-2 text-sm font-normal text-slate-500 group-open:hidden">
           (expand to compare with HMRC&apos;s figures)
         </span>
@@ -228,11 +229,7 @@ function ReadyReckonerPanel({ row, result, onNavigate }) {
           <TabLink onNavigate={onNavigate} tab="baseline" section="ready-reckoner">
             Baseline
           </TabLink>{" "}
-          tab scores every row at the official elasticity, 3.0 and the central one.
-        </p>
-        <p>
-          <SourceLink href={READY_RECKONER.url}>HMRC&apos;s</SourceLink>
-          {` ${contextYear} figure, receipts in the reform's first year: ${formatSignedMn(row.hmrc_m[contextYear])}.`}
+          tab scores every row {reckonerElasticities(elasticities.official, elasticities.central)}.
         </p>
       </Notes>
     </Card>
@@ -283,9 +280,7 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
           title={`Headline results, ${headlineYear}`}
           description={
             <>
-              {`These figures use the behavioural case ${elasticityName(resultE)} and `}
-              <DatasetName label={result.metadata.dataset_short_label} />
-              {" data; the household figures cover every UK household. "}
+              {`These figures use the behavioural case ${elasticityName(resultE)}; the household figures cover every UK household. `}
               {likeForLike
                 ? `Compared with equalisation at the same response: ${difference(headlineRow.gov_balance_change_bn, equalisation.revenue)} in the year and ${difference(result.five_year_total_bn, equalisation.fiveYear)} over five years. `
                 : "Equalisation's results use another response, so they are not compared here. "}
@@ -298,7 +293,6 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
             label="Change in government balance"
             valueColor={colors.primary[700]}
             value={bn(headlineRow.gov_balance_change_bn)}
-            note={Number(resultE) === 0 ? "With no behavioural response." : "After the behavioural response."}
           />
           {topDecile ? (
             <MetricCard
@@ -328,21 +322,20 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
             title={`Budgetary impact by year, ${result.budget[0].year} to ${result.budget.at(-1).year}`}
             description="Each bar shows the change in the government's balance in one fiscal year, after taxpayers realise fewer gains."
           />
-          <div className="mt-auto lg:mt-0">
-          <Notes>
-            <BeyondForecastNote />
-            {entrantShare > 0.05 ? (
-              <p>
-                Entrants by uprating (see{" "}
-                <TabLink onNavigate={onNavigate} tab="methodology" section="new-taxpayers">
-                  Methodology
-                </TabLink>
-                ) contribute {formatSmallBn(headlineRow.cgt_change_from_entrants_bn)} of the{" "}
-                {headlineYear} change.
-              </p>
-            ) : null}
-          </Notes>
-          </div>
+          {entrantShare > 0.05 ? (
+            <div className="mt-auto lg:mt-0">
+              <Notes>
+                <p>
+                  Entrants by uprating (see{" "}
+                  <TabLink onNavigate={onNavigate} tab="methodology" section="new-taxpayers">
+                    Methodology
+                  </TabLink>
+                  ) contribute {formatSmallBn(headlineRow.cgt_change_from_entrants_bn)} of the{" "}
+                  {headlineYear} change.
+                </p>
+              </Notes>
+            </div>
+          ) : null}
         </Card>
 
         <Card className={PAIRED_CARD}>
@@ -364,7 +357,12 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
         </Card>
       </div>
 
-      {matchedRow ? <ReadyReckonerPanel row={matchedRow} result={result} onNavigate={onNavigate} /> : null}
+      {matchedRow ? <ReadyReckonerPanel
+          row={matchedRow}
+          result={result}
+          elasticities={getBenchmarks(data).elasticities}
+          onNavigate={onNavigate}
+        /> : null}
     </>
   );
 }
@@ -382,8 +380,7 @@ export function ScheduleSpec({ result }) {
       </summary>
       <div className="mt-4 space-y-3">
         <p className="text-sm leading-6 text-slate-600">
-          Effective in every modelled year. Current law is read from the installed engine for
-          the first year. Residential property gains take the same rates, and the annual exempt{" "}
+          Residential property gains take the same rates, and the annual exempt{" "}
           <SourceLink href={EXEMPT_AMOUNT}>amount</SourceLink> stays £3,000.
         </p>
         <ScheduleRates metadata={result.metadata} />
