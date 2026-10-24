@@ -33,7 +33,7 @@ describe("the Reform tab's flow", () => {
   test("editing after Calculate marks the results stale; undoing the edit does not", () => {
     let state = apply(load(""), { type: "select", policy: "equalise", toggle: true }, { type: "calculate", shown: "precomputed" });
     const original = state.forms.equalise;
-    state = apply(state, { type: "edit", policy: "equalise", form: { ...original, elasticity: 2.0 } });
+    state = apply(state, { type: "edit", policy: "equalise", form: { ...original, customElasticity: "2" } });
     expect(isStale(state)).toBe(true);
     expect(state.shown).toBe("precomputed");
     // "20.0" is the same schedule as "20".
