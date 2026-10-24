@@ -18,7 +18,7 @@ const BAR_SIZE = 14;
 const GAP = 4;
 
 const SERIES = {
-  hmrc: { fill: colors.gray[700], text: colors.gray[800], weight: 700 },
+  hmrc: { fill: colors.gray[400], text: colors.gray[700], weight: 700 },
   central: { fill: colors.primary[600], text: colors.primary[700], weight: 600 },
   upper: { fill: colors.primary[300], text: colors.primary[600], weight: 600 },
   official: { fill: colors.primary[900], text: colors.primary[900], weight: 600 },

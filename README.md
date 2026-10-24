@@ -99,22 +99,22 @@ sensitivity and the yield by schedule are in the results for every year.
 Engine policyengine-uk 2.132.6, wrapper policyengine.py 6.10.1, projection
 fingerprint `1f3d4d9bbc1a`.
 
-| | Microcosm UK 2024-25 | External benchmark |
+| | Microcosm UK 2024-25: 2027-28 (2024-25, no projection) | External benchmark |
 |---|---:|---|
-| CGT taxpayers (gains above the exempt amount) | 558k | HMRC Table 1: 382k (2023-24), 551k (2024-25, provisional) |
+| CGT taxpayers (gains above the exempt amount) | 558k (546k) | HMRC Table 1: 382k (2023-24), 551k (2024-25, provisional) |
 | of which entrants by uprating (see below) | 3.8k | none: HMRC counts only taxpayers with a liability |
 | CGT taxpayers excluding entrants | 554k | HMRC Table 1: 382k (2023-24), 551k (2024-25) |
-| Taxable gains | £133.1bn | HMRC Table 1: £66.6bn (2023-24), £119.3bn (2024-25) |
+| Taxable gains | £133.1bn (£118.3bn) | HMRC Table 1: £66.6bn (2023-24), £119.3bn (2024-25) |
 | Taxable gains excluding entrants | £133.1bn | HMRC Table 1: £66.6bn (2023-24), £119.3bn (2024-25) |
-| Baseline CGT liability | £30.1bn | HMRC Table 1: £12.1bn (2023-24), £22.5bn (2024-25); OBR receipts £20.8bn (2026-27), £25.5bn (2027-28) |
-| Residential property gains on their own schedule | £13.7bn | HMRC Table 8a (2024-25): £12.9bn including trusts, about £12.2bn for individuals; 205k taxpayers |
-| Gains qualifying for Business Asset Disposal Relief (and Investors' Relief) | £20.8bn, 61k people | HMRC Table 4 (individuals, BADR and Investors' Relief): 42k people and £11.0bn (2023-24), 61k and £18.4bn (2024-25) |
-| Share of gains from gains of £1m or more | 67% | HMRC Table 2: 61% (2023-24), 65% (2024-25) |
-| Taxpayers with gains over £500k | 37.8k | HMRC Table 2: 19k (2023-24), 33k (2024-25) |
-| Largest single gain | £584m | none: HMRC's top band is £5m and over (2k taxpayers, £23.6bn in 2023-24; 3k, £48.5bn in 2024-25) |
+| Baseline CGT liability | £30.1bn (£23.1bn; £21.6bn at the pre-30 October 2024 main rates all year, £25.2bn at the later ones) | HMRC Table 1: £12.1bn (2023-24), £22.5bn (2024-25); OBR receipts £20.8bn (2026-27), £25.5bn (2027-28) |
+| Residential property gains on their own schedule | £13.7bn (£12.2bn) | HMRC Table 8a (2024-25): £12.9bn including trusts, about £12.2bn for individuals; 205k taxpayers |
+| Gains qualifying for Business Asset Disposal Relief (and Investors' Relief) | £20.8bn, 61k people (£18.5bn, 60k) | HMRC Table 4 (individuals, BADR and Investors' Relief): 42k people and £11.0bn (2023-24), 61k and £18.4bn (2024-25) |
+| Share of gains from gains of £1m or more | 67% (65%) | HMRC Table 2: 61% (2023-24), 65% (2024-25) |
+| Taxpayers with gains over £500k | 37.8k (32.7k) | HMRC Table 2: 19k (2023-24), 33k (2024-25) |
+| Largest single gain | £584m (£527m) | none: HMRC's top band is £5m and over (2k taxpayers, £23.6bn in 2023-24; 3k, £48.5bn in 2024-25) |
 | Static yield (e = 0) | +£27.0bn | JRF (2026): around £13bn, static, equalisation alone (see [Benchmarks](#benchmarks)) |
 | of which the relief withdrawn (static) | +£5.1bn | none |
-| Uplift from equalising at 2019/20 rules (static) | +130% | CenTax (2024), Table 3: +139% on 2019/20 data |
+| Uplift from equalising at 2019/20 rules (static, on 2024-25 data) | +131% | CenTax (2024), Table 3: +139% on 2019/20 data |
 | Yield, CenTax lower (retention 0.5) | +£18.3bn | none |
 | **Yield, CenTax central (retention 1.0)** | **+£10.8bn** | none for equalisation alone; CenTax's £14.3bn (2025-26), £11.3bn (2026-27) and £19.7bn (2029-30) add an investment allowance and base broadening |
 | of which the relief withdrawn (central) | +£2.9bn | none |
@@ -124,6 +124,13 @@ fingerprint `1f3d4d9bbc1a`.
 | Change in government balance, 2031-32 | +£12.6bn | none |
 | Top income decile, net income change | −8.1% (−£15,667/household) | none |
 | Bottom income decile, net income change | −0.08% (−£12) | none |
+
+The bracketed figures are the baseline in 2024-25, the dataset's own year
+with no projection (`baseline_comparison`), which the Baseline tab sets
+beside HMRC's 2024-25 statistics. For 2024-25 the engine applies one rate
+schedule, the day-weighted average of the main rates before and after 30
+October 2024 (13.5% and 21.7%); HMRC publishes no split of the year by
+disposal date.
 
 Benchmarks are outturns for the tax year stated (HMRC Capital Gains Tax
 statistics, 2026 release, Tables 1, 2 and 8) or other institutions'
@@ -203,16 +210,17 @@ external figure with its source, locator, scope, year and basis.
   the OBR's CPI path).
 - **CenTax (2024), rates only at 2019/20 rules.** CenTax's static uplift from
   equalising alone is +139% on 2019/20 data (Table 3). Applying the same
-  rules to this repo's 2026-27 data (main rates 10/20, residential and
+  rules to this repo's 2024-25 data (the dataset's own year, unprojected:
+  the nearest it has to 2019-20) (main rates 10/20, residential and
   carried interest 18/28, BADR at 10% with a £1m lifetime limit, an exempt
   amount of £12,000; `reform.centax_1920_reforms`) and equalising gives
-  +130%. Investors' Relief, which CenTax's Table 3 also abolishes, shares the
+  +131% (+130% on 2027-28 data before the like-for-like change). Investors' Relief, which CenTax's Table 3 also abolishes, shares the
   engine's BADR input and is withdrawn with it.
-  By region (Table 8), this repo's shares of baseline CGT track CenTax's
-  (London 28.2% against 27.0%, South East 21.7% against 21.6%). CenTax's
+  By region (Table 8), this repo's shares of baseline CGT sit beside CenTax's
+  (London 28.3% against 27.0%, South East 21.7% against 21.6%). CenTax's
   uplift is lowest in London (+123%) and higher elsewhere (+137% to +163%);
   here London's is +130% and the other regions range from +119% (West
-  Midlands) to +144% (Yorkshire and the Humber).
+  Midlands) to +146% (Yorkshire and the Humber).
 - **CenTax's package estimates** (Tables 5 and 6 of the 2024 report, the
   August 2025 technical note and "Taxes at the top", September 2026) add an
   investment allowance, the removal of the death uplift and a charge on
