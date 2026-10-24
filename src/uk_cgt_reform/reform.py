@@ -72,6 +72,15 @@ YEARS = [2027, 2028, 2029, 2030, 2031]
 # The year the dashboard reports by default: the headline cards, and the
 # first year of every chart with a year select.
 HEADLINE_YEAR = 2027  # 2027-28
+# The year PolicyEngine is computed in beside HMRC's statistics and
+# CenTax's 2019/20-rules estimate: 2024-25, the dataset's own year, with no
+# projection (the engine's per-year file for 2024 is the published file:
+# same inputs, same weights). HMRC's latest outturn is for 2024-25; CenTax's
+# 2019-20 is out of the dataset's reach, so the dataset's own year stands in.
+COMPARISON_YEAR = 2024  # 2024-25
+# Reform dicts for that year must take effect from its start: PERIOD (2026)
+# would leave 2024-25 at current law.
+COMPARISON_PERIOD = "2024-01-01"
 # The price base of the static comparison with JRF, which reports in
 # 2026/27 prices.
 PRICE_BASE_YEAR = 2026
@@ -339,6 +348,29 @@ def centax_1920_rules() -> dict:
             "lifetime limit and withdrawn with it; its own £10m limit is not modelled. On a "
             "dataset without BADR gains the relief settings are inert."
         ),
+    }
+
+
+def dated(reform: dict, start: str) -> dict:
+    """``reform`` with every value taking effect from ``start`` instead of
+    its own date: the same reform for a year before :data:`PERIOD`."""
+    return {
+        path: {start: value for value in dates.values()} for path, dates in reform.items()
+    }
+
+
+def comparison_rate_reforms() -> dict[str, dict]:
+    """The two bounds on the 2024-25 liability: the main rates before
+    30 October 2024 (10% / 20%) and after it (18% / 24%) charged for the
+    whole year, in place of the engine's day-weighted blend of the two.
+    Residential property (18% / 24%) and the relief (10%) did not change on
+    30 October 2024 and stay as they are."""
+    return {
+        role: dated(cgt_rate_reform(rates, 0.0, schedules=()), COMPARISON_PERIOD)
+        for role, rates in (
+            ("pre_30_october_rates_all_year", dict(zip(RATE_BANDS, (0.10, 0.20, 0.20)))),
+            ("post_30_october_rates_all_year", dict(zip(RATE_BANDS, (0.18, 0.24, 0.24)))),
+        )
     }
 
 

@@ -28,6 +28,15 @@ export function getValidation(data) {
   return data.validation;
 }
 
+// The baseline in HMRC's own year (2024-25, the dataset's own year, no
+// projection), for the Baseline tab: { year, validation, rates,
+// liability_bn, ... }. A results file from before the block existed falls
+// back to the headline year's validation, with no rates or liability bounds.
+export function getBaselineComparison(data) {
+  if (data.baseline_comparison) return data.baseline_comparison;
+  return { year: getHeadlineYear(data), validation: data.validation, rates: null, liability_bn: null };
+}
+
 // The revenue cards read each year's change in the government balance.
 export function getBudget(data) {
   for (const row of data.budget) requireNumber(row, "gov_balance_change_bn", `budget row ${row.year}`);

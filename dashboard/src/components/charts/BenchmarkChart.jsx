@@ -81,7 +81,7 @@ function gapToLatest(row) {
   return `${rel > 0 ? "+" : rel < 0 ? "−" : ""}${Math.abs(rel)}%`;
 }
 
-function Row({ row, seriesLabels, hover }) {
+function Row({ row, seriesLabels, modelColumn, hover }) {
   const format = FORMATS[row.unit] ?? ((v) => String(v));
   const values = SERIES.map((s) => row[s.key]).filter(Number.isFinite);
   // Shares sit on 0–100%; other rows scale to their largest value.
@@ -106,7 +106,7 @@ function Row({ row, seriesLabels, hover }) {
       {SERIES.map((s) => (
         <span key={s.key} className="text-sm tabular-nums md:text-right" style={{ color: s.text, fontWeight: s.key === "model" ? 700 : 500 }}>
           <span className="block text-[10px] font-medium uppercase tracking-wide text-slate-400 md:hidden">
-            {s.key === "model" ? "PolicyEngine" : "HMRC 2024-25"}
+            {s.key === "model" ? modelColumn : "HMRC 2024-25"}
           </span>
           {Number.isFinite(row[s.key]) ? format(row[s.key]) : "—"}
         </span>
@@ -155,7 +155,7 @@ function Row({ row, seriesLabels, hover }) {
 // unit: "bn" | "count" | "pct", model, hmrc2024 }]; `modelLabel`
 // names the model series. The gap column compares the model with HMRC's
 // latest year (in points for shares).
-export default function BenchmarkChart({ rows, modelLabel }) {
+export default function BenchmarkChart({ rows, modelLabel, modelColumn = "PolicyEngine" }) {
   const seriesLabels = { model: modelLabel, hmrc2024: SERIES[1].label };
   const hover = useHoverState();
   // Rows sharing a `group` sit under one heading, in the order given.
@@ -173,7 +173,7 @@ export default function BenchmarkChart({ rows, modelLabel }) {
         className={`hidden gap-x-3 border-b border-slate-200 pb-2 text-xs font-semibold text-slate-500 md:grid ${GRID}`}
       >
         <span>Quantity</span>
-        <span className="text-right">PolicyEngine</span>
+        <span className="text-right">{modelColumn}</span>
         <span className="text-right">HMRC 2024-25</span>
         <span className="text-right">Difference</span>
         <span>On one scale, from 0</span>
@@ -183,7 +183,7 @@ export default function BenchmarkChart({ rows, modelLabel }) {
           <h4 className="text-xs font-semibold uppercase tracking-wider text-[color:var(--pe-color-primary-700)]">{group}</h4>
           <ul>
             {groupRows.map((row) => (
-              <Row key={row.key} row={row} seriesLabels={seriesLabels} hover={hover} />
+              <Row key={row.key} row={row} seriesLabels={seriesLabels} modelColumn={modelColumn} hover={hover} />
             ))}
           </ul>
         </section>

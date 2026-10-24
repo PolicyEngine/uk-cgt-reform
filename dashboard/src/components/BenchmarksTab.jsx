@@ -103,7 +103,7 @@ function AtAGlance({ benchmarks, baseline }) {
           value: formatUplift(centax.external.value),
         },
       ],
-      note: "Before behaviour.",
+      note: `Before behaviour; PolicyEngine on ${centax.year} data, the earliest year it has.`,
     },
     jrf && {
       id: "jrf-static",
@@ -244,8 +244,10 @@ function CentaxRegions({ block, dataset }) {
           {`The 2019/20 rules: main rates of ${percent(rules.main.basic_rate)} and ${percent(rules.main.higher_rate)}, ${percent(rules.residential_property.basic_rate)} and ${percent(rules.residential_property.higher_rate)} for residential property and carried interest, ${percent(rules.badr.rate)} under Business Asset Disposal`}{" "}
           <SourceLink href={BADR_GUIDANCE}>Relief</SourceLink>, and a £
           {rules.annual_exempt_amount.toLocaleString("en-GB")} exempt{" "}
-          <SourceLink href={EXEMPT_AMOUNT}>amount</SourceLink> (not uprated), applied to that
-          year&apos;s incomes, thresholds and gains.
+          <SourceLink href={EXEMPT_AMOUNT}>amount</SourceLink> (not uprated).
+        </p>
+        <p>
+          {`Years: ${PE} applies those rules to ${block.year}, the dataset's own year, with no projection, because its data do not reach back to 2019-20; incomes, gains and income tax thresholds are ${block.year}'s. CenTax's figures are for 2019-20.`}
         </p>
         <p>
           <SourceLink href={external.url}>CenTax</SourceLink> cover resident individuals, putting trusts and non-residents at about 5% of
@@ -326,7 +328,7 @@ function ReadyReckoner({ block, dataset, elasticities, rr, headlineYear, onNavig
   return (
     <section className="section-card scroll-mt-24" id="ready-reckoner">
       <SectionHeading
-        title={`Small rate changes: PolicyEngine and HMRC, ${currentPair.modelYear}`}
+        title={`Small rate changes: PolicyEngine ${currentPair.modelYear} and HMRC ${currentPair.hmrcYear}`}
         action={
           rr.pairs.length > 1 ? (
             <YearPill
@@ -360,10 +362,9 @@ function ReadyReckoner({ block, dataset, elasticities, rr, headlineYear, onNavig
           {`Why bars point different ways: a higher rate raises more tax on each gain sold, but fewer gains are sold. With a weaker response (${central}) the first effect is larger, so revenue rises; with a stronger one (${official}) the second is larger on the higher-rate rows, so revenue falls there.${upperClause}`}
         </p>
         <p>
-          <SourceLink href={block.url}>HMRC&apos;s</SourceLink> figures are receipts in £m, including knock-on income tax and SDLT, and arrive
-          a year after the tax is owed, so the chart shows HMRC&apos;s receipts in{" "}
-          {currentPair.hmrcYear}; {PE}&apos;s are the change in the government balance in the
-          year, as for custom rates in the{" "}
+          {`Years: `}
+          <SourceLink href={block.url}>HMRC&apos;s</SourceLink>
+          {` figures are receipts in £m, including knock-on income tax and SDLT, which arrive about a year after the tax is owed, so ${PE}'s ${currentPair.modelYear} liabilities sit beside HMRC's ${currentPair.hmrcYear} receipts. HMRC's ${firstYear} receipts have no pair: they would need ${PE} liabilities for the year before the rows start. ${PE}'s figures are the change in the government balance in the year, as for custom rates in the `}
           <TabLink onNavigate={onNavigate} tab="reform">
             Reform
           </TabLink>{" "}

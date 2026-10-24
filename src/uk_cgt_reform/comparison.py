@@ -374,9 +374,12 @@ READY_RECKONER = {
     ),
     "hmrc_years": ["2026-27", "2027-28", "2028-29"],
     # Receipts lag liabilities by about a year: this repo's liabilities in
-    # a year are compared with HMRC's receipts in the next.
-    # The modelled window starts in 2027-28, so one pair remains.
+    # a year are compared with HMRC's receipts in the next. 2026-27 sits
+    # before the modelled window and is scored for this comparison only;
+    # HMRC's 2026-27 receipts would need 2025-26 liabilities, before the
+    # rows' April 2026 start, so they have no pair.
     "lag": [
+        {"model_year": "2026-27", "hmrc_year": "2027-28"},
         {"model_year": "2027-28", "hmrc_year": "2028-29"},
     ],
     "rows": [
@@ -562,6 +565,49 @@ def ready_reckoner_block(model_m: dict[str, dict[str, dict[str, float]]]) -> dic
             "3.6 to main-rate gains and 1.4 to gains qualifying for the relief"
         ),
         "rows": [{**row, "model_m": model_m[row["id"]]} for row in READY_RECKONER["rows"]],
+    }
+
+
+HMRC_CGT_STATISTICS = {
+    "source": "HMRC, Capital Gains Tax statistics, 2026 release",
+    "url": "https://www.gov.uk/government/statistics/capital-gains-tax-statistics",
+    "year": "2024-25",
+    "status": "provisional",
+}
+
+
+def reckoner_comparison_years(window: list[int]) -> list[int]:
+    """Ready-reckoner model years outside the modelled window (2026-27),
+    scored for that comparison only."""
+    return sorted({int(lag["model_year"][:4]) for lag in READY_RECKONER["lag"]} - set(window))
+
+
+def baseline_comparison_block(
+    year: str,
+    validation: dict,
+    rates: dict,
+    liability_bn: dict[str, float],
+    fingerprints: dict[str, str],
+) -> dict:
+    """PolicyEngine's baseline in HMRC's own year (2024-25, the dataset's own
+    year, no projection) for the Baseline tab, apart from the reform window.
+    ``rates`` is the rate schedule the engine applies in that year and
+    ``liability_bn`` the year's liability at that schedule and with the main
+    rates from before and after 30 October 2024 charged for the whole year."""
+    return {
+        "year": year,
+        "projection": "none: the dataset's own year, its inputs and weights as published",
+        "comparator": dict(HMRC_CGT_STATISTICS),
+        "validation": validation,
+        "rates": rates,
+        "rates_note": (
+            "One schedule for the year: the main rates are the day-weighted average of the "
+            "rates before and after 30 October 2024 (policyengine-uk's fiscal_year_blend); "
+            "HMRC's figures reflect when each gain was realised, and HMRC publishes no "
+            "split of the year by disposal date."
+        ),
+        "liability_bn": dict(liability_bn),
+        "reform_fingerprints": dict(fingerprints),
     }
 
 

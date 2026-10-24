@@ -241,3 +241,20 @@ def test_centax_counterfactual_pair_is_pinned():
     rules = centax_1920_rules()
     assert rules["reform"]["badr"] == BADR_WITHDRAWN.to_dict()
     assert set(rules["reform"]) >= {"residential_property", "carried_interest"}
+
+
+def test_comparison_rate_reforms_take_effect_in_2024_25():
+    from uk_cgt_reform.reform import COMPARISON_PERIOD, comparison_rate_reforms, dated
+
+    assert dated({"a": {"2026-01-01": 1}}, "2024-01-01") == {"a": {"2024-01-01": 1}}
+    reforms = comparison_rate_reforms()
+    assert set(reforms) == {"pre_30_october_rates_all_year", "post_30_october_rates_all_year"}
+    for reform in reforms.values():
+        assert all(list(dates) == [COMPARISON_PERIOD] for dates in reform.values())
+        # Only the main rates move: residential property and the relief did
+        # not change on 30 October 2024.
+        assert not any("residential" in path or "badr" in path for path in reform)
+    pre = reforms["pre_30_october_rates_all_year"]
+    post = reforms["post_30_october_rates_all_year"]
+    assert pre["gov.hmrc.cgt.higher_rate"][COMPARISON_PERIOD] == 0.20
+    assert post["gov.hmrc.cgt.higher_rate"][COMPARISON_PERIOD] == 0.24

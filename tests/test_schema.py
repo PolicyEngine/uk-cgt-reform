@@ -7,6 +7,7 @@ from uk_cgt_reform.comparison import (
     READY_RECKONER,
     READY_RECKONER_ELASTICITIES,
     SENSITIVITY_CASES,
+    baseline_comparison_block,
     benchmarks_block,
     centax_1920_block,
     ready_reckoner_block,
@@ -33,6 +34,7 @@ TOP_LEVEL_KEYS = {
     "sensitivity",
     "benchmarks",
     "schedule_split",
+    "baseline_comparison",
 }
 
 
@@ -249,7 +251,36 @@ def fake_results(spec=CANDIDATE, scale: float = 1.0) -> dict:
         },
         "benchmarks": fake_benchmarks(scale),
         "schedule_split": {label: fake_schedule_split(scale, label) for label in YEAR_LABELS},
+        "baseline_comparison": baseline_comparison_block(
+            "2024-25",
+            {"total_gains_bn": 118.0 * scale, "baseline_cgt_revenue_bn": 23.0 * scale},
+            {
+                "main": {"basic_rate": 0.1346, "higher_rate": 0.2173, "additional_rate": 0.2173},
+                "residential_property": {"basic_rate": 0.18, "higher_rate": 0.24, "additional_rate": 0.24},
+                "badr": {"rate": 0.10, "lifetime_limit": 1_000_000.0},
+                "main_blended": True,
+            },
+            {
+                "engine_schedule": 23.0 * scale,
+                "pre_30_october_rates_all_year": 21.6 * scale,
+                "post_30_october_rates_all_year": 25.2 * scale,
+            },
+            {"pre_30_october_rates_all_year": "a", "post_30_october_rates_all_year": "b"},
+        ),
     }
+
+
+def test_baseline_comparison_is_in_hmrcs_year_apart_from_the_window():
+    block = fake_results()["baseline_comparison"]
+    assert block["year"] == "2024-25" == block["comparator"]["year"]
+    assert block["year"] not in YEAR_LABELS
+    assert block["projection"].startswith("none")
+    bounds = block["liability_bn"]
+    assert (
+        bounds["pre_30_october_rates_all_year"]
+        < bounds["engine_schedule"]
+        < bounds["post_30_october_rates_all_year"]
+    )
 
 
 def test_top_level_keys():
@@ -375,7 +406,7 @@ def test_benchmarks_block_shape():
     rows = bench["ready_reckoner"]["rows"]
     assert [row["id"] for row in rows] == [row["id"] for row in READY_RECKONER["rows"]]
     assert set(rows[0]["model_m"]) == set(READY_RECKONER_ELASTICITIES)
-    assert set(rows[0]["model_m"]["official"]) == {"2027-28"}
+    assert set(rows[0]["model_m"]["official"]) == {"2026-27", "2027-28"}
 
 
 def test_schedule_split_builds_the_yield_up_step_by_step():

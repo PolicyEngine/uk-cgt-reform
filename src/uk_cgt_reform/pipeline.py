@@ -36,11 +36,13 @@ from .comparison import (
     READY_RECKONER,
     READY_RECKONER_ELASTICITIES,
     SENSITIVITY_CASES,
+    baseline_comparison_block,
     benchmarks_block,
     centax_1920_block,
     jrf_comparison_years,
     price_factors,
     ready_reckoner_block,
+    reckoner_comparison_years,
     static_equalisation_block,
 )
 from .impacts import (
@@ -55,6 +57,8 @@ from .impacts import (
 )
 from .reform import (
     BADR_ELASTICITY_BY_CASE,
+    COMPARISON_PERIOD,
+    COMPARISON_YEAR,
     ELASTICITY,
     ELASTICITY_PARAMETER,
     HEADLINE_YEAR,
@@ -64,6 +68,8 @@ from .reform import (
     YEARS,
     centax_1920_reforms,
     centax_1920_rules,
+    comparison_rate_reforms,
+    dated,
     elasticity_convention,
     equalisation_reform,
     reform_fingerprint,
@@ -131,7 +137,18 @@ def counterfactual_sim_id(sim_stem: str, role: str, digest: str, year: int) -> s
     return f"{sim_stem}_centax1920_{role}_{digest}_{year}"
 
 
-def score_ready_reckoner(spec: DatasetSpec, folder: Path, fingerprint: str) -> dict:
+def comparison_sim_id(sim_stem: str, role: str, digest: str, year: int) -> str:
+    """A simulation id for one rate schedule of the 2024-25 baseline
+    comparison (``reform.comparison_rate_reforms``)."""
+    return f"{sim_stem}_cmp_{role}_{digest}_{year}"
+
+
+def score_ready_reckoner(
+    spec: DatasetSpec,
+    folder: Path,
+    fingerprint: str,
+    extra_years: tuple[dict, dict] | None = None,
+) -> dict:
     """Score HMRC's ready-reckoner rows on one dataset through the rate
     explorer's code path (the explorer's scope, the cached baselines, the
     reform in memory), at each elasticity in ``READY_RECKONER_ELASTICITIES``
@@ -139,7 +156,11 @@ def score_ready_reckoner(spec: DatasetSpec, folder: Path, fingerprint: str) -> d
     treatment of Business Asset Disposal Relief; the official case applies
     3.6 to main-rate gains and 1.4 to gains qualifying for the relief in
     every row. The 3.0 case is not an explorer option, so the request is
-    validated at the central case and then given the row's elasticity. Returns ``{row id: {elasticity id: {model year: change in
+    validated at the central case and then given the row's elasticity.
+    ``extra_years`` holds the exempt amounts and entrant ceilings of model
+    years outside the window (2026-27), whose per-year files and baselines
+    the pipeline built for the comparisons; the explorer's own context is
+    left as it is. Returns ``{row id: {elasticity id: {model year: change in
     government balance, £m}}}``."""
     from .explore import engine_context, run_year, validate_request
 
@@ -149,6 +170,13 @@ def score_ready_reckoner(spec: DatasetSpec, folder: Path, fingerprint: str) -> d
             f"Explorer projection {context['projection_fingerprint']} differs from the "
             f"pipeline's {fingerprint}; refusing to mix them."
         )
+    if extra_years:
+        aea, ceilings = extra_years
+        context = {
+            **context,
+            "exempt_amounts": {**context["exempt_amounts"], **aea},
+            "entrant_ceilings": {**context["entrant_ceilings"], **ceilings},
+        }
     scores = {}
     for row in READY_RECKONER["rows"]:
         scores[row["id"]] = {}
@@ -304,10 +332,12 @@ def run_dataset(
     }
 
     # ── Step 2c: the static reform in JRF's years outside the window
-    # (2026-27), for the JRF comparison only ─────────────────────────────
-    comparison_years = jrf_comparison_years(YEARS)
+    # (2026-27), for the JRF comparison only; the same year's baseline also
+    # serves the ready reckoner's 2026-27 liabilities ──────────────────────
+    comparison_years = sorted({*jrf_comparison_years(YEARS), *reckoner_comparison_years(YEARS)})
     print(f"Step 2c {tag}: Static reform (e=0) for the JRF comparison, {comparison_years}...")
     comparison_budget = []
+    cmp_aea, cmp_ceilings = {}, {}
     if comparison_years:
         cmp_datasets = ensure_uk_datasets(spec, comparison_years, folder)
         cmp_audit = engine_audit(spec.base_year, comparison_years)
@@ -323,9 +353,8 @@ def run_dataset(
                 policy=static_policy,
                 sim_id=equalisation_sim_id(sim_stem, 0.0, static_digest, year),
             )
-        comparison_budget = budget_impact(
-            cmp_baselines, cmp_statics, comparison_years, cmp_aea, cmp_ceilings
-        )
+        jrf_years = jrf_comparison_years(YEARS)
+        comparison_budget = budget_impact(cmp_baselines, cmp_statics, jrf_years, cmp_aea, cmp_ceilings)
         for row in comparison_budget:
             print(f"    {row['year']}: static CGT {row['cgt_change_bn']:+.2f}bn")
 
@@ -418,21 +447,51 @@ def run_dataset(
                 f"central {row['central_increment_bn']:+.2f}bn"
             )
 
-    # ── Step 3b: CenTax's rates-only reform at its 2019/20 rules, static ──
+    # ── Step 2d: the comparator year, 2024-25: the dataset's own year, no
+    # projection. HMRC's statistics are for it, and it stands in for
+    # CenTax's 2019-20, which the dataset cannot reach ───────────────────
+    cy = COMPARISON_YEAR
+    print(f"Step 2d {tag}: Baseline in the comparator year, {fiscal_year_label(cy)}...")
+    cy_dataset = ensure_uk_datasets(spec, [cy], folder)[cy]
+    cy_aea = exempt_amounts([cy])[cy]
+    cy_baseline = run_simulation(cy_dataset, sim_id=f"{sim_stem}_baseline_{cy}")
+    cy_cgt = cgt_revenue(cy_baseline)
+    cy_liability = {"engine_schedule": cy_cgt / 1e9}
+    cy_digests = {}
+    for role, reform in comparison_rate_reforms().items():
+        cy_digests[role] = reform_fingerprint(reform)
+        sim = run_simulation(
+            cy_dataset,
+            policy=make_policy(reform, f"cmp_{role}"),
+            sim_id=comparison_sim_id(sim_stem, role, cy_digests[role], cy),
+        )
+        cy_liability[role] = cgt_revenue(sim) / 1e9
+    print("    liability " + ", ".join(f"{k} £{v:.2f}bn" for k, v in cy_liability.items()))
+    baseline_comparison = baseline_comparison_block(
+        fiscal_year_label(cy),
+        validation_stats(cy_baseline, cy_aea),
+        comparison_rates(cy),
+        cy_liability,
+        cy_digests,
+    )
+
+    # ── Step 3b: CenTax's rates-only reform at its 2019/20 rules, static,
+    # on the comparator year's data ───────────────────────────────────────
     print(
         f"Step 3b {tag}: Equalisation at CenTax's 2019/20 rules "
-        f"({fiscal_year_label(hy)}, static)..."
+        f"({fiscal_year_label(cy)}, static)..."
     )
     cf_sims, cf_digests = {}, {}
     for role, reform in zip(("baseline", "reform"), centax_1920_reforms(), strict=True):
+        reform = dated(reform, COMPARISON_PERIOD)
         cf_digests[role] = reform_fingerprint(reform)
         cf_sims[role] = run_simulation(
-            datasets[hy],
+            cy_dataset,
             policy=make_policy(reform, f"centax1920_{role}"),
-            sim_id=counterfactual_sim_id(sim_stem, role, cf_digests[role], hy),
+            sim_id=counterfactual_sim_id(sim_stem, role, cf_digests[role], cy),
         )
     uplift = cgt_uplift(cf_sims["baseline"], cf_sims["reform"])
-    current_law_cgt_bn = base_cgt[hy] / 1e9
+    current_law_cgt_bn = cy_cgt / 1e9
     national = uplift["national"]
     assert national["baseline_cgt_bn"] < current_law_cgt_bn, (
         f"2019/20 rules raised more CGT ({national['baseline_cgt_bn']:.2f}bn) than current "
@@ -444,13 +503,15 @@ def run_dataset(
         f"({national['uplift_pct']:+.0f}%; CenTax +139%)"
     )
     centax_1920 = centax_1920_block(
-        current_law_cgt_bn, uplift, centax_1920_rules(), cf_digests, fiscal_year_label(hy)
+        current_law_cgt_bn, uplift, centax_1920_rules(), cf_digests, fiscal_year_label(cy)
     )
 
     # ── Step 3c: HMRC's ready-reckoner rows through the explorer's path ───
     model_years = ", ".join(lag["model_year"] for lag in READY_RECKONER["lag"])
     print(f"Step 3c {tag}: Ready-reckoner rows ({model_years} liabilities)...")
-    ready_reckoner = ready_reckoner_block(score_ready_reckoner(spec, folder, fingerprint))
+    ready_reckoner = ready_reckoner_block(
+        score_ready_reckoner(spec, folder, fingerprint, (cmp_aea, cmp_ceilings))
+    )
     for row in ready_reckoner["rows"]:
         print(f"    {row['label']}: {row['model_m']}")
 
@@ -566,8 +627,31 @@ def run_dataset(
         "sensitivity": sens,
         "schedule_split": split,
         "benchmarks": benchmarks,
+        "baseline_comparison": baseline_comparison,
     }
     return output, baseline_sims
+
+
+def comparison_rates(year: int) -> dict:
+    """The rate schedule the engine applies in ``year``: main, residential
+    property and the relief's rate, each band's value for the fiscal year
+    (blended where the parameter says so)."""
+    from policyengine_uk.system import system
+
+    cgt = system.parameters.gov.hmrc.cgt
+    instant = str(year)
+    return {
+        "main": {band: float(getattr(cgt, band)(instant)) for band in INCOME_TAX_RATES},
+        "residential_property": {
+            band: float(getattr(cgt.residential_property, band)(instant))
+            for band in INCOME_TAX_RATES
+        },
+        "badr": {
+            "rate": float(cgt.badr.rate(instant)),
+            "lifetime_limit": float(cgt.badr.lifetime_limit(instant)),
+        },
+        "main_blended": bool(cgt.basic_rate.metadata.get("fiscal_year_blend", False)),
+    }
 
 
 def checked_assumption(reform: dict, elasticity: float, year: int) -> dict:

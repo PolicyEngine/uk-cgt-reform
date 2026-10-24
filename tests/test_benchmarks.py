@@ -199,6 +199,7 @@ def test_ready_reckoner_rows_are_pinned():
         if "badr" not in rid
     )
     assert READY_RECKONER["lag"] == [
+        {"model_year": "2026-27", "hmrc_year": "2027-28"},
         {"model_year": "2027-28", "hmrc_year": "2028-29"},
     ]
     assert [row["hmrc_label"] for row in READY_RECKONER["excluded"]] == [
