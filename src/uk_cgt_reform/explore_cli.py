@@ -141,6 +141,16 @@ def print_headline(result: dict) -> None:
     timing = md.get("timing", {})
     if timing.get("total_seconds") is not None:
         print(f"  Simulation time: {timing['total_seconds']}s ({timing['per_year_seconds']})")
+    split = result.get("schedule_split")
+    if split:
+        print(f"  Yield by schedule, {split['year']} (change in CGT, £bn):")
+        for row in split["steps"]:
+            parts = ", ".join(
+                f"{case} {row[f'{case}_increment_bn']:+.2f}" for case in split["elasticities"]
+            )
+            print(f"    {row['label']}: {parts}")
+        if timing.get("schedule_split_seconds") is not None:
+            print(f"  Of which the split: {timing['schedule_split_seconds']}s")
     print(f"  Cache key: {cache.get('key')}")
 
 

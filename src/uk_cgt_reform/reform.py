@@ -292,21 +292,61 @@ SCHEDULE_STEPS = (
 )
 
 
+def _pct(rate: float) -> str:
+    return f"{100 * rate:g}%"
+
+
+#: The relief's step when a schedule withdraws it (the equalisation reform
+#: keeps it, so its own steps end at the residential schedule).
+BADR_WITHDRAWN_STEP = ("badr_withdrawn", "Business Asset Disposal Relief withdrawn")
+
+
+def _badr_step(badr: BadrPolicy) -> tuple[str, str]:
+    """The relief's step id and label: withdrawn, or kept at a changed rate
+    or lifetime limit."""
+    if badr.withdrawn:
+        return BADR_WITHDRAWN_STEP
+    limit = badr.lifetime_limit
+    limit_label = f"£{limit / 1e6:g}m" if limit >= 1_000_000 else f"£{limit / 1e3:g}k"
+    return (
+        "badr_changed",
+        f"Business Asset Disposal Relief at {_pct(badr.rate)} up to {limit_label}",
+    )
+
+
 def schedule_step_reforms(
-    elasticity: float, *, single: bool = False
+    elasticity: float,
+    rates: dict | None = None,
+    badr: BadrPolicy = BADR_CURRENT_LAW,
+    *,
+    single: bool = False,
 ) -> list[tuple[str, str, dict]]:
-    """``(step id, label, reform dict)`` for each step of
-    :data:`SCHEDULE_STEPS`; the last is the equalisation reform itself.
-    ``single`` applies one elasticity to every gain (``elasticity_assignment``)."""
+    """``(step id, label, reform dict)`` for each step of a rate schedule
+    built up schedule by schedule: the main rates alone, then the residential
+    property schedule at the same rates, then the relief's treatment when the
+    schedule changes it. The last is the whole schedule (:func:`cgt_rate_reform`
+    with the explorer's schedules). By default the schedule is equalisation
+    (:data:`SCHEDULE_STEPS`), whose last step is :func:`equalisation_reform`.
+    A schedule that leaves the relief at current law, as equalisation does,
+    has no relief step: it would equal the one before. ``single`` applies one
+    elasticity to every gain (``elasticity_assignment``)."""
+    rates = dict(INCOME_TAX_RATES if rates is None else rates)
+    main_label = "Main rates at " + " / ".join(_pct(rates[band]) for band in RATE_BANDS)
+    steps = [
+        ("main_rates", main_label, (), BADR_CURRENT_LAW),
+        (SCHEDULE_STEPS[1][0], SCHEDULE_STEPS[1][1], SCHEDULES, BADR_CURRENT_LAW),
+    ]
+    if not badr.is_current_law:
+        steps.append((*_badr_step(badr), SCHEDULES, badr))
     return [
         (
             step,
             label,
             cgt_rate_reform(
-                INCOME_TAX_RATES, elasticity, schedules=schedules, badr=badr, single=single
+                rates, elasticity, schedules=schedules, badr=step_badr, single=single
             ),
         )
-        for step, label, schedules, badr in SCHEDULE_STEPS
+        for step, label, schedules, step_badr in steps
     ]
 
 
