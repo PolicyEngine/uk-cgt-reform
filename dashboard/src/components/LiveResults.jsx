@@ -40,7 +40,12 @@ import SectionHeading from "./SectionHeading";
 
 const EXEMPT_AMOUNT = "https://www.gov.uk/capital-gains-tax/allowances";
 
-const elasticityName = (e) => elasticityOption(e)?.label ?? `retention elasticity ${e}`;
+// "the behavioural case CenTax central (retention elasticity 1.0)", or for a
+// typed value "a custom retention elasticity of 2.5".
+const elasticityName = (e) => {
+  const option = elasticityOption(e);
+  return option ? `the behavioural case ${option.label}` : `a custom retention elasticity of ${e}`;
+};
 
 // Where a live run stands: a cache lookup for a shared link, a computation,
 // or an error; a finished run shows its results instead.
@@ -280,7 +285,7 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
           title={`Headline results, ${headlineYear}`}
           description={
             <>
-              {`These figures use the behavioural case ${elasticityName(resultE)}; the household figures cover every UK household. `}
+              {`These figures use ${elasticityName(resultE)}; the household figures cover every UK household. `}
               {likeForLike
                 ? `Compared with equalisation at the same response: ${difference(headlineRow.gov_balance_change_bn, equalisation.revenue)} in the year and ${difference(result.five_year_total_bn, equalisation.fiveYear)} over five years. `
                 : "Equalisation's results use another response, so they are not compared here. "}

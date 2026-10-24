@@ -98,6 +98,15 @@ ELASTICITY_OPTIONS = tuple(
     )
 )
 DEFAULT_ELASTICITY = ELASTICITY
+#: A request may also carry any retention-rate elasticity in this closed
+#: interval, in steps of :data:`ELASTICITY_STEP` (the dashboard's Custom
+#: choice). It applies to every gain; a value equal to a case above is that
+#: case, so 3.6 is the official case with its 1.4 for gains qualifying for
+#: the relief (``reform.elasticity_assignment``). The step bounds the values
+#: a visitor can ask the backend to compute to 51.
+ELASTICITY_BOUNDS = (0.0, 5.0)
+ELASTICITY_STEP = 0.1
+ELASTICITY_DECIMALS = 1
 #: Requests from before the retention form keyed each case by a
 #: marginal-tax-rate value; shared links still carry them, so they map to
 #: the case they named.
@@ -235,18 +244,32 @@ def _as_rate(value, band: str) -> float:
 
 
 def _as_elasticity(value) -> float:
+    """A retention-rate elasticity within :data:`ELASTICITY_BOUNDS`, a
+    multiple of :data:`ELASTICITY_STEP`, rounded so that every spelling of
+    one value builds the same reform dict and cache key. A legacy
+    marginal-rate value maps to the case it named."""
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise ExploreValidationError("elasticity must be a number.")
+    value = float(value)
     for legacy, retention in LEGACY_MTR_ELASTICITIES.items():
-        if math.isclose(legacy, float(value), abs_tol=1e-9):
-            value = retention
+        if math.isclose(legacy, value, abs_tol=1e-9):
+            return retention
+    lo, hi = ELASTICITY_BOUNDS
+    if not math.isfinite(value) or not lo - 1e-9 <= value <= hi + 1e-9:
+        raise ExploreValidationError(
+            f"elasticity must be between {lo:g} and {hi:g} (a retention-rate elasticity); "
+            f"got {value:g}."
+        )
+    steps = value / ELASTICITY_STEP
+    if abs(steps - round(steps)) > 1e-6:
+        raise ExploreValidationError(
+            f"elasticity must be a multiple of {ELASTICITY_STEP:g}; got {value:g}."
+        )
+    elasticity = round(round(steps) * ELASTICITY_STEP, ELASTICITY_DECIMALS)
     for option in ELASTICITY_OPTIONS:
-        if math.isclose(option["e_retention"], float(value), abs_tol=1e-9):
+        if math.isclose(option["e_retention"], elasticity, abs_tol=1e-9):
             return option["e_retention"]
-    allowed = ", ".join(str(o["e_retention"]) for o in ELASTICITY_OPTIONS)
-    raise ExploreValidationError(
-        f"elasticity must be one of {allowed} (a retention-rate elasticity); got {value}."
-    )
+    return elasticity
 
 
 _BADR_KEYS = {"withdrawn", "rate", "lifetime_limit"}
@@ -301,7 +324,7 @@ def validate_request(payload) -> ExploreRequest:
     ``payload`` is ``{"dataset": key, "rates": {band: fraction}, "badr": {...},
     "elasticity": e}``; ``badr`` (see :func:`_as_badr`) defaults to current law,
     ``dataset`` to the dashboard's default dataset and ``elasticity``
-    to the central case. Every band must be present, within
+    to the central case (any value :func:`_as_elasticity` accepts). Every band must be present, within
     :data:`RATE_BOUNDS`, a whole percentage point (:data:`RATE_STEP`), and
     ordered basic <= higher <= additional: the engine splits gains above the
     basic rate band only so that a reform can charge an additional rate on
@@ -348,6 +371,8 @@ def api_options() -> dict:
         "rate_step": RATE_STEP,
         "elasticity_options": [dict(o) for o in ELASTICITY_OPTIONS],
         "default_elasticity": DEFAULT_ELASTICITY,
+        "elasticity_bounds": list(ELASTICITY_BOUNDS),
+        "elasticity_step": ELASTICITY_STEP,
         # The default option's parameter; each option names its own.
         "elasticity_parameter": elasticity_convention(DEFAULT_ELASTICITY)["elasticity_parameter"],
         "presets": [{**p, "rates": dict(p["rates"]), "badr": dict(p["badr"])} for p in PRESETS],

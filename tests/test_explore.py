@@ -125,8 +125,13 @@ def test_validate_request_rounds_rates():
         ({"rates": {**FLAT_30, "higher_rate": 0.305}}, "whole percentage point"),
         ({"rates": {**FLAT_30, "basic_rate": "18"}}, "must be a number"),
         ({"rates": {**FLAT_30, "basic_rate": True}}, "must be a number"),
-        ({"rates": FLAT_30, "elasticity": -0.5}, "elasticity must be one of"),
-        ({"rates": FLAT_30, "elasticity": 1.4}, "elasticity must be one of"),
+        ({"rates": FLAT_30, "elasticity": -0.5}, "elasticity must be between 0 and 5"),
+        ({"rates": FLAT_30, "elasticity": 5.1}, "elasticity must be between 0 and 5"),
+        ({"rates": FLAT_30, "elasticity": float("nan")}, "elasticity must be between"),
+        ({"rates": FLAT_30, "elasticity": float("inf")}, "elasticity must be between"),
+        ({"rates": FLAT_30, "elasticity": 2.55}, "multiple of 0.1"),
+        ({"rates": FLAT_30, "elasticity": "2.5"}, "elasticity must be a number"),
+        ({"rates": FLAT_30, "elasticity": True}, "elasticity must be a number"),
         ({"rates": "18/30/30"}, "rates must be an object"),
         ({"rates": FLAT_30, "badr": "withdraw"}, "badr must be an object"),
         ({"rates": FLAT_30, "badr": {"cap": 1}}, "unknown fields"),
@@ -185,6 +190,30 @@ def test_every_case_applies_the_retention_parameter():
     assert options["official"]["elasticity_parameter"] == ELASTICITY_PARAMETER
     assert api_options()["elasticity_parameter"] == ELASTICITY_PARAMETER
     assert api_options()["default_elasticity"] == ELASTICITY
+
+
+def test_a_custom_elasticity_is_any_tenth_from_0_to_5_applied_to_every_gain():
+    for value, expected in ((2.5, 2.5), (0.1, 0.1), (5.0, 5.0), (5, 5.0), (1.4, 1.4)):
+        assert validate_request({"rates": FLAT_30, "elasticity": value}).elasticity == expected
+    # Float noise in a typed value normalises to the tenth it names.
+    assert validate_request({"rates": FLAT_30, "elasticity": 0.30000000000000004}).elasticity == 0.3
+    assert validate_request({"rates": FLAT_30, "elasticity": 2.4999999999}).elasticity == 2.5
+    req = validate_request({"rates": FLAT_30, "elasticity": 2.5})
+    reform = req.reform()
+    assert reform[ELASTICITY_PARAMETER] == {"2026-01-01": 2.5}
+    # One value for every gain: the relief's own elasticity is not switched on.
+    assert SEPARATE_BADR_ELASTICITY_PARAMETER not in reform
+    assert BADR_ELASTICITY_PARAMETER not in reform
+    assert MTR_ELASTICITY_PARAMETER not in reform
+    md = assemble_response(req, context(), year_rows())["metadata"]
+    assert md["elasticity"] == 2.5
+    assert md["elasticity_applied"] == {ELASTICITY_PARAMETER: 2.5}
+    # A typed value equal to a case is that case: 3.6 is the official one.
+    official = validate_request({"rates": FLAT_30, "elasticity": 3.6}).reform()
+    assert official[BADR_ELASTICITY_PARAMETER] == {"2026-01-01": 1.4}
+    options = api_options()
+    assert options["elasticity_bounds"] == [0.0, 5.0]
+    assert options["elasticity_step"] == 0.1
 
 
 def test_links_from_before_the_retention_form_map_to_the_case_they_named():
@@ -322,6 +351,24 @@ def test_cache_key_tracks_every_input_and_nothing_else():
     # key does not track.
     again = validate_request({"dataset": CANDIDATE.key, "rates": dict(FLAT_30), "elasticity": 1.0})
     assert cache_key(again, context(base_year=2023)) == key
+
+
+def test_cache_key_carries_a_custom_elasticity():
+    def key_at(e):
+        return cache_key(
+            validate_request({"dataset": CANDIDATE.key, "rates": FLAT_30, "elasticity": e}),
+            context(),
+        )
+
+    custom = key_at(2.5)
+    # Each value keys apart, from its neighbours and from every case.
+    assert custom != key_at(2.4) and custom != key_at(2.6)
+    assert custom not in {key_at(o["e_retention"]) for o in ELASTICITY_OPTIONS}
+    assert len({key_at(round(0.1 * i, 1)) for i in range(51)}) == 51
+    # Spellings of one value share a key, and a typed case is the case's key.
+    assert key_at(2.5000000001) == custom
+    assert key_at(2) == key_at(2.0) == key_at(2.0000000001)
+    assert key_at(0.30000000000000004) == key_at(0.3)
 
 
 def test_cache_key_needs_the_context_fields():

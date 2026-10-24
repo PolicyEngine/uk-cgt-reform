@@ -62,6 +62,8 @@ function cliArgs(body) {
   }
   const dataset = body.dataset ?? "";
   if (dataset && !DATASET_KEY.test(dataset)) return { error: "Unknown dataset." };
+  // A case's value or a custom one: the CLI checks the bounds (0 to 5) and
+  // the 0.1 step, and answers 400 with its message (exit status 2).
   const elasticity = body.elasticity ?? 1.0;
   if (typeof elasticity !== "number" || !Number.isFinite(elasticity)) {
     return { error: "elasticity must be a number." };

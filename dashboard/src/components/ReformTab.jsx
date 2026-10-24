@@ -9,7 +9,7 @@ import { initialState, isStale, reformReducer } from "../lib/reformState";
 import {
   BANDS,
   checkForm,
-  elasticityOption,
+  elasticityShortName,
   isPrecomputed,
   precomputedSchedule,
   scheduleParams,
@@ -96,13 +96,14 @@ function PolicyTab({ id, sentence, selected, onSelect }) {
   );
 }
 
-// A form in one line: "20% · 40% · 45% · Relief withdrawn · CenTax central".
+// A form in one line: "20% · 40% · 45% · Relief withdrawn · CenTax central"
+// (or "Elasticity 2.5" for a typed value).
 function summarise(form) {
   const check = checkForm(form);
   if (!check.rates) return "";
   const rates = BANDS.map((band) => formatPct(check.rates[band.key] * 100, 0)).join(" · ");
   const relief = check.badr.withdrawn ? "Relief withdrawn" : `Relief ${describeBadr(check.badr)}`;
-  const response = elasticityOption(check.elasticity)?.label.replace(/\s*\(.*\)$/, "") ?? "";
+  const response = elasticityShortName(check.elasticity);
   return [rates, relief, response].filter(Boolean).join(" · ");
 }
 
