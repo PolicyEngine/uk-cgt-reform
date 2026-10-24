@@ -9,10 +9,15 @@ import {
   BANDS,
   CURRENT_LAW,
   ELASTICITIES,
+  ELASTICITY_MAX,
+  ELASTICITY_MIN,
+  ELASTICITY_STEP,
   PCT_MAX,
   PCT_MIN,
   STEP_PCT,
   checkForm,
+  elasticityOption,
+  elasticityShortName,
 } from "../lib/schedule";
 import {
   FIELD,
@@ -38,9 +43,15 @@ const BAND_HINTS = {
   additional_rate: "Above £125,140",
 };
 const BADR_NOTE =
-  "Gains on qualifying business disposals, Investors' Relief included. Withdrawn, those gains take the main rates. The relief's rate may not exceed the additional rate. The model charges it on every qualifying gain, without the claim a taxpayer makes in law.";
+  "A lower rate on gains from selling all or part of a business, or certain shares (Investors' Relief is included): 18% from April 2026, on up to £1m of such gains over a person's lifetime. Withdrawing it means these gains pay the main rates. The model gives it on every qualifying gain, as if each person claims it.";
 const ELASTICITY_NOTE =
   "The elasticity of realised gains with respect to the retention rate (1 − t): taxpayers realise fewer gains as the share of each gain they keep falls.";
+
+const RETENTION_ELASTICITY_NOTE =
+  "How much taxpayers cut the gains they realise when the tax rate on them rises. At 0 they do not respond; at 1.0, CenTax's central value, a 10% fall in the share of each gain kept after tax cuts realised gains by 10%; the HMRC/OBR official value is 3.6 for the main rates.";
+
+// The select's value for a typed elasticity.
+const CUSTOM = "custom";
 
 // "CenTax central (retention elasticity 1.0)" → a short name for the select
 // and its detail for the line beneath. The static case reads "No response".
@@ -59,13 +70,14 @@ function FieldError({ id, children }) {
   );
 }
 
-// A percentage input with its "%" inside the field and up/down buttons that
-// step it by STEP_PCT within its bounds.
-function PercentInput({ id, value, onChange, invalid, describedBy, min = PCT_MIN }) {
-  const step = (direction) => {
+// A number input with up/down buttons that step it by `step` within its
+// bounds, and an optional unit ("%") inside the field.
+function SteppedInput({ id, value, onChange, invalid, describedBy, min, max, step, decimals, unit, stepLabel }) {
+  const factor = 10 ** decimals;
+  const move = (direction) => {
     const current = Number(value);
     const base = value === "" || !Number.isFinite(current) ? min : current;
-    const next = Math.min(PCT_MAX, Math.max(min, Math.round((base + direction * STEP_PCT) * 100) / 100));
+    const next = Math.min(max, Math.max(min, Math.round((base + direction * step) * factor) / factor));
     onChange(String(next));
   };
   const stepButton =
@@ -77,38 +89,47 @@ function PercentInput({ id, value, onChange, invalid, describedBy, min = PCT_MIN
         type="number"
         inputMode="decimal"
         min={min}
-        max={PCT_MAX}
-        step={STEP_PCT}
+        max={max}
+        step={step}
         value={value}
         aria-invalid={invalid || undefined}
         aria-describedby={describedBy}
         onChange={(event) => onChange(event.target.value)}
-        className={`${FIELD} ${fieldBorder(invalid)} w-full pr-16`}
+        className={`${FIELD} ${fieldBorder(invalid)} w-full ${unit ? "pr-16" : "pr-10"}`}
       />
-      <span className="pointer-events-none absolute inset-y-0 right-9 flex items-center text-base font-semibold text-slate-400">
-        %
-      </span>
+      {unit ? (
+        <span className="pointer-events-none absolute inset-y-0 right-9 flex items-center text-base font-semibold text-slate-400">
+          {unit}
+        </span>
+      ) : null}
       <span className="absolute inset-y-px right-px flex flex-col overflow-hidden rounded-r-lg border-l border-slate-200">
         <button
           type="button"
-          aria-label="Increase by one point"
+          aria-label={`Increase by ${stepLabel}`}
           className={`${stepButton} border-b border-slate-200`}
-          disabled={Number(value) >= PCT_MAX}
-          onClick={() => step(1)}
+          disabled={Number(value) >= max}
+          onClick={() => move(1)}
         >
           <svg aria-hidden="true" viewBox="0 0 10 6" className="h-1.5 w-2.5" fill="currentColor"><path d="M5 0l5 6H0z" /></svg>
         </button>
         <button
           type="button"
-          aria-label="Decrease by one point"
+          aria-label={`Decrease by ${stepLabel}`}
           className={stepButton}
           disabled={value !== "" && Number(value) <= min}
-          onClick={() => step(-1)}
+          onClick={() => move(-1)}
         >
           <svg aria-hidden="true" viewBox="0 0 10 6" className="h-1.5 w-2.5" fill="currentColor"><path d="M0 0h10L5 6z" /></svg>
         </button>
       </span>
     </div>
+  );
+}
+
+// A percentage input with its "%" inside the field, stepping by STEP_PCT.
+function PercentInput({ min = PCT_MIN, ...props }) {
+  return (
+    <SteppedInput {...props} min={min} max={PCT_MAX} step={STEP_PCT} decimals={2} unit="%" stepLabel="one point" />
   );
 }
 
@@ -246,7 +267,16 @@ export default function ScheduleForm({ form, onChange, onCalculate, running, onN
   const set = (patch) => onChange({ ...form, ...patch });
   const setBadr = (patch) => set({ badrForm: { ...form.badrForm, ...patch } });
   const errorFor = (field) => (check.errorField === field ? check.error : null);
-  const elasticity = ELASTICITIES.find((option) => String(option.e_retention) === String(form.elasticity));
+  const custom = form.customElasticity !== null && form.customElasticity !== undefined;
+  // The case the select shows; with Custom on, the case a typed value equals.
+  const elasticity = custom ? elasticityOption(check.elasticity) : elasticityOption(form.elasticity);
+  const responseSummary = custom
+    ? check.elasticity === null
+      ? "Elasticity –"
+      : elasticityShortName(check.elasticity)
+    : elasticity
+      ? splitLabel(elasticity.label).name
+      : "";
 
   const badrSummary = form.badrForm.mode === "withdraw"
     ? "Withdrawn"
@@ -261,8 +291,8 @@ export default function ScheduleForm({ form, onChange, onCalculate, running, onN
     {
       id: "response",
       label: "Relief and behaviour",
-      summary: [badrSummary, elasticity ? splitLabel(elasticity.label).name : ""].filter(Boolean).join(" · "),
-      error: check.errorField === "badr_rate",
+      summary: [badrSummary, responseSummary].filter(Boolean).join(" · "),
+      error: check.errorField === "badr_rate" || check.errorField === "elasticity",
     },
   ];
   const [step, setStep] = useState(steps[0].id);
@@ -391,16 +421,52 @@ export default function ScheduleForm({ form, onChange, onCalculate, running, onN
               </label>
               <Select
                 id="elasticity"
-                value={String(form.elasticity)}
-                onChange={(value) => set({ elasticity: Number(value) })}
+                value={custom ? CUSTOM : String(form.elasticity)}
+                onChange={(value) =>
+                  value === CUSTOM
+                    ? set({ customElasticity: String(form.elasticity) })
+                    : set({ elasticity: Number(value), customElasticity: null })
+                }
                 describedBy="elasticity-detail"
-                options={ELASTICITIES.map((option) => ({
-                  value: String(option.e_retention),
-                  label: splitLabel(option.label).name,
-                }))}
+                options={[
+                  ...ELASTICITIES.map((option) => ({
+                    value: String(option.e_retention),
+                    label: splitLabel(option.label).name,
+                  })),
+                  { value: CUSTOM, label: "Custom" },
+                ]}
               />
+              {custom ? (
+                <div className="mt-4">
+                  <div className="mb-1.5 flex items-center gap-2">
+                    <label htmlFor="elasticity-custom" className="text-xs font-semibold text-slate-600">
+                      Retention elasticity
+                    </label>
+                    <InfoTip label="About the retention elasticity">{RETENTION_ELASTICITY_NOTE}</InfoTip>
+                  </div>
+                  <div className="max-w-[10rem]">
+                    <SteppedInput
+                      id="elasticity-custom"
+                      value={form.customElasticity}
+                      onChange={(value) => set({ customElasticity: value })}
+                      min={ELASTICITY_MIN}
+                      max={ELASTICITY_MAX}
+                      step={ELASTICITY_STEP}
+                      decimals={1}
+                      stepLabel={String(ELASTICITY_STEP)}
+                      invalid={Boolean(errorFor("elasticity"))}
+                      describedBy={errorFor("elasticity") ? "elasticity-error" : "elasticity-detail"}
+                    />
+                  </div>
+                  {errorFor("elasticity") ? <FieldError id="elasticity-error">{errorFor("elasticity")}</FieldError> : null}
+                </div>
+              ) : null}
               <p id="elasticity-detail" className={`mt-2 ${HINT}`}>
-                {elasticity ? splitLabel(elasticity.label).detail : ""}
+                {custom
+                  ? "How strongly taxpayers cut realised gains as rates rise: CenTax's central value is 1.0, the official 3.6."
+                  : elasticity
+                    ? splitLabel(elasticity.label).detail
+                    : ""}
               </p>
               <p className={`mt-2 ${HINT}`}>
                 From no response, through <SourceLink href={CENTAX_ELASTICITY}>CenTax&apos;s</SourceLink>{" "}

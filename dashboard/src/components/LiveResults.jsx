@@ -30,9 +30,11 @@ import {
   sameElasticity,
 } from "../lib/schedule";
 import { colors } from "../lib/colors";
+import { liveYieldSplit, stepNames } from "../lib/yieldSplit";
 import BudgetChart from "./charts/BudgetChart";
 import ChartLegend from "./charts/ChartLegend";
 import RateChangeChart from "./charts/RateChangeChart";
+import YieldChart from "./charts/YieldChart";
 import GroupImpactChart, { GROUP_DESCRIPTION, GroupDefinitions, HOUSEHOLD_COLOR } from "./charts/GroupImpactChart";
 import { Card, MetricCard, Notes, PAIRED_CARD, SourceLink, TabLink } from "./controls";
 import { SPEC_SUMMARY } from "./EqualisationResults";
@@ -40,7 +42,31 @@ import SectionHeading from "./SectionHeading";
 
 const EXEMPT_AMOUNT = "https://www.gov.uk/capital-gains-tax/allowances";
 
-const elasticityName = (e) => elasticityOption(e)?.label ?? `retention elasticity ${e}`;
+// The parts of a live schedule's yield, in the order they are applied.
+function yieldParts(steps, incomeTax) {
+  const rates = incomeTax ? "income tax rates" : "the new rates";
+  const parts = steps.map((row) =>
+    row.step === "main_rates"
+      ? `${rates} on other gains`
+      : row.step === "residential"
+        ? "then on residential property gains"
+        : row.step === "badr_withdrawn"
+          ? "withdrawing the relief"
+          : "the change to the relief",
+  );
+  return parts
+    .map((part, i) => (i > 0 && !part.startsWith("then") ? `then ${part}` : part))
+    .join(", ");
+}
+
+// "CenTax central (elasticity 1.0)", or for a typed value "an elasticity of
+// 2.5".
+const elasticityName = (e) => {
+  const option = elasticityOption(e);
+  return option
+    ? option.label.replace("(retention elasticity", "(elasticity").replace("for BADR gains", "for gains qualifying for the relief")
+    : `an elasticity of ${e}`;
+};
 
 // Where a live run stands: a cache lookup for a shared link, a computation,
 // or an error; a finished run shows its results instead.
@@ -56,7 +82,7 @@ export function StatusLine({ status, error }) {
     return (
       <p className="mt-4 text-sm leading-6 text-slate-600" role="status">
         Nobody has run this schedule yet, and a link does not start a computation on its own.
-        Press Calculate to compute it; it should take 1–2 minutes.
+        Press Calculate to compute it; it should take a few minutes.
       </p>
     );
   }
@@ -68,7 +94,7 @@ export function StatusLine({ status, error }) {
           className="h-8 w-8 animate-spin rounded-full border-[3px] border-slate-200 border-t-[color:var(--pe-color-primary-600)]"
         />
         <p className="text-base font-semibold text-slate-800">Processing…</p>
-        <p className="text-sm text-slate-500">This should take 1–2 minutes.</p>
+        <p className="text-sm text-slate-500">This should take a few minutes.</p>
       </div>
     );
   }
@@ -272,6 +298,9 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
   };
   const likeForLike = sameElasticity(resultE, equalisation.elasticity);
   const bn = (value) => formatSignedBn(value, 1);
+  // The headline year's yield split; a result cached before it has none.
+  const yieldSplit = liveYieldSplit(result, data.schedule_split?.[headlineYear]);
+  const names = stepNames(result.metadata.reform, data.metadata.reform);
 
   return (
     <>
@@ -280,7 +309,7 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
           title={`Headline results, ${headlineYear}`}
           description={
             <>
-              {`These figures use the behavioural case ${elasticityName(resultE)}; the household figures cover every UK household. `}
+              {`These figures use ${elasticityName(resultE)}; the household figures cover every UK household. `}
               {likeForLike
                 ? `Compared with equalisation at the same response: ${difference(headlineRow.gov_balance_change_bn, equalisation.revenue)} in the year and ${difference(result.five_year_total_bn, equalisation.fiveYear)} over five years. `
                 : "Equalisation's results use another response, so they are not compared here. "}
@@ -356,6 +385,20 @@ export default function LiveResults({ data, result, onNavigate, onShowEqualisati
           </div>
         </Card>
       </div>
+
+      {yieldSplit ? (
+        <Card className="min-w-0">
+          <SectionHeading
+            title={`Where the yield comes from, ${yieldSplit.year}`}
+            description={`Each bar is this schedule's whole change in CGT revenue, split into its ${["", "one", "two", "three"][yieldSplit.steps.length] ?? yieldSplit.steps.length} parts in the order they are applied: ${yieldParts(yieldSplit.steps, Object.keys(names).length === 0)}. The bars run from the smallest behavioural response at the top to the largest.`}
+          />
+          <YieldChart
+            steps={yieldSplit.steps}
+            cases={yieldSplit.cases}
+            names={names}
+          />
+        </Card>
+      ) : null}
 
       {matchedRow ? <ReadyReckonerPanel
           row={matchedRow}

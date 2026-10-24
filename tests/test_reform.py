@@ -232,3 +232,17 @@ def test_comparison_rate_reforms_take_effect_in_2024_25():
     post = reforms["post_30_october_rates_all_year"]
     assert pre["gov.hmrc.cgt.higher_rate"][COMPARISON_PERIOD] == 0.20
     assert post["gov.hmrc.cgt.higher_rate"][COMPARISON_PERIOD] == 0.24
+
+
+def test_schedule_steps_of_any_schedule_end_at_its_whole_reform():
+    flat = {"basic_rate": 0.18, "higher_rate": 0.30, "additional_rate": 0.30}
+    steps = schedule_step_reforms(2.5, flat, BADR_CURRENT_LAW)
+    # The relief stays at current law: no step for it.
+    assert [step for step, _, _ in steps] == ["main_rates", "residential"]
+    assert steps[0][1] == "Main rates at 18% / 30% / 30%"
+    assert steps[-1][2] == cgt_rate_reform(flat, 2.5)
+    assert not any("residential_property" in key for key in steps[0][2])
+    # The default is equalisation, labels included.
+    assert [(s, label) for s, label, _ in schedule_step_reforms(ELASTICITY)] == [
+        (s, label) for s, label, _, _ in SCHEDULE_STEPS
+    ]

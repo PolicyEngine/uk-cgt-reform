@@ -18,7 +18,9 @@ from pathlib import Path
 
 from .explore import (
     DEFAULT_ELASTICITY,
+    ELASTICITY_BOUNDS,
     ELASTICITY_OPTIONS,
+    ELASTICITY_STEP,
     ExploreValidationError,
     api_options,
     cached_locally,
@@ -83,7 +85,9 @@ def build_parser() -> argparse.ArgumentParser:
         type=float,
         default=DEFAULT_ELASTICITY,
         help=(
-            "Elasticity of realised gains with respect to the retention rate (1 - t); one of "
+            "Elasticity of realised gains with respect to the retention rate (1 - t), from "
+            f"{ELASTICITY_BOUNDS[0]:g} to {ELASTICITY_BOUNDS[1]:g} in steps of "
+            f"{ELASTICITY_STEP:g}; the cases are "
             + ", ".join(str(o["e_retention"]) for o in ELASTICITY_OPTIONS)
             + f" (default {DEFAULT_ELASTICITY})."
         ),
@@ -137,6 +141,16 @@ def print_headline(result: dict) -> None:
     timing = md.get("timing", {})
     if timing.get("total_seconds") is not None:
         print(f"  Simulation time: {timing['total_seconds']}s ({timing['per_year_seconds']})")
+    split = result.get("schedule_split")
+    if split:
+        print(f"  Yield by schedule, {split['year']} (change in CGT, £bn):")
+        for row in split["steps"]:
+            parts = ", ".join(
+                f"{case} {row[f'{case}_increment_bn']:+.2f}" for case in split["elasticities"]
+            )
+            print(f"    {row['label']}: {parts}")
+        if timing.get("schedule_split_seconds") is not None:
+            print(f"  Of which the split: {timing['schedule_split_seconds']}s")
     print(f"  Cache key: {cache.get('key')}")
 
 

@@ -3,12 +3,14 @@ import results from "../../public/data/cgt_equalisation_results.json";
 import {
   PRESETS,
   checkForm,
+  elasticityShortName,
   formOf,
   initialChoice,
   isPrecomputed,
   precomputedSchedule,
   readUrlState,
   scheduleParams,
+  validateElasticity,
 } from "./schedule";
 
 const precomputed = precomputedSchedule(results);
@@ -24,7 +26,8 @@ describe("the precomputed schedule", () => {
 
   test("any changed value makes it a live run", () => {
     const form = formOf(precomputed.rates, precomputed.badr, precomputed.elasticity);
-    expect(isPrecomputed(checkForm({ ...form, elasticity: 2.0 }), precomputed)).toBe(false);
+    expect(isPrecomputed(checkForm({ ...form, elasticity: 2.0, customElasticity: null }), precomputed)).toBe(false);
+    expect(isPrecomputed(checkForm({ ...form, customElasticity: "2.5" }), precomputed)).toBe(false);
     expect(isPrecomputed(checkForm({ ...form, badrForm: { ...form.badrForm, mode: "keep" } }), precomputed)).toBe(false);
     expect(
       isPrecomputed(checkForm({ ...form, percents: { ...form.percents, basic_rate: "21" } }), precomputed),
@@ -128,5 +131,58 @@ describe("scheduleParams", () => {
     const kept = checkForm(formOf({ basic_rate: 0.2, higher_rate: 0.4, additional_rate: 0.45 }, { withdrawn: false, rate: 0.1, lifetime_limit: 10_000_000 }, 3.6));
     const read = readUrlState(scheduleParams("", kept));
     expect(checkForm(read)).toEqual(kept);
+  });
+});
+
+describe("a custom elasticity", () => {
+  const base = formOf({ basic_rate: 0.18, higher_rate: 0.3, additional_rate: 0.3 }, null);
+  const typed = (value) => checkForm({ ...base, customElasticity: value });
+
+  test("accepts any tenth from 0 to 5 and normalises it", () => {
+    expect(validateElasticity("2.5")).toEqual({ elasticity: 2.5 });
+    expect(validateElasticity("0")).toEqual({ elasticity: 0 });
+    expect(validateElasticity("5")).toEqual({ elasticity: 5 });
+    expect(validateElasticity("0.30000000000000004")).toEqual({ elasticity: 0.3 });
+    expect(typed("2.5")).toMatchObject({ elasticity: 2.5, errorField: null });
+    expect(typed("2.5").rates).not.toBe(null);
+  });
+
+  test("refuses an empty, out-of-range or off-step value, and blocks the form", () => {
+    for (const value of ["", "abc", "-0.1", "5.1", "2.55"]) {
+      const check = typed(value);
+      expect(check.errorField).toBe("elasticity");
+      expect(check.rates).toBe(null);
+      expect(check.error).toBeTruthy();
+    }
+    expect(typed("5.1").error).toContain("between 0 and 5");
+    expect(typed("2.55").error).toContain("0.1");
+  });
+
+  test("a typed value equal to a case is that case", () => {
+    expect(typed("1.0").elasticity).toBe(1);
+    expect(elasticityShortName(typed("1.0").elasticity)).toBe("CenTax central");
+    expect(elasticityShortName(2.5)).toBe("Elasticity 2.5");
+  });
+
+  test("every form opens on the Custom box, holding its elasticity", () => {
+    expect(formOf({ basic_rate: 0.2, higher_rate: 0.4, additional_rate: 0.45 }, null, 2.5).customElasticity).toBe("2.5");
+    expect(formOf({ basic_rate: 0.2, higher_rate: 0.4, additional_rate: 0.45 }, null, 2.0).customElasticity).toBe("2.0");
+  });
+
+  test("round-trips through the URL, and a bad e falls back to the default", () => {
+    const check = typed("2.5");
+    const query = scheduleParams("", check);
+    expect(query.get("e")).toBe("2.5");
+    const read = readUrlState(query);
+    expect(read.customElasticity).toBe("2.5");
+    expect(checkForm(read)).toEqual(check);
+    expect(readUrlState(params("basic=18&higher=30&additional=30&e=7")).elasticity).toBe(1);
+    expect(readUrlState(params("basic=18&higher=30&additional=30&e=2.55")).customElasticity).toBe(null);
+    expect(readUrlState(params("basic=18&higher=30&additional=30&e=2")).customElasticity).toBe(null);
+  });
+
+  test("a link with a custom value opens Custom and looks it up live", () => {
+    const opened = choice("basic=20&higher=40&additional=45&bw=1&e=2.5");
+    expect(opened).toMatchObject({ policy: "custom", view: "live" });
   });
 });

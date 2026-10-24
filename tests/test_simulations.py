@@ -48,6 +48,17 @@ def test_zero_elasticities_are_static():
     assert resolved["sources"]["elasticity"] == "default"
 
 
+def test_any_retention_elasticity_flows_through_to_every_gain():
+    # A custom value from the dashboard: not one of the cases.
+    resolved = resolve_response(settings(elasticity=2.5), CURRENT_LAW, 2027)
+    assert resolved["convention"] == "retention"
+    assert resolved["elasticity"] == 2.5
+    assert resolved["badr_elasticity"] == 2.5
+    assert resolved["separate_badr_elasticity"] is False
+    assert resolved["sources"]["elasticity"] == "override"
+    assert resolved["sources"]["badr_elasticity"] == "override"
+
+
 def test_the_separate_relief_elasticity_applies_only_when_switched_on():
     official = settings(elasticity=3.6, separate_badr_elasticity=True)
     resolved = resolve_response(official, CURRENT_LAW, 2026)

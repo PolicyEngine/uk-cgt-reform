@@ -292,12 +292,46 @@ SCHEDULE_STEPS = (
 )
 
 
-def schedule_step_reforms(elasticity: float) -> list[tuple[str, str, dict]]:
-    """``(step id, label, reform dict)`` for each step of
-    :data:`SCHEDULE_STEPS`; the last is the equalisation reform itself."""
+def _pct(rate: float) -> str:
+    return f"{100 * rate:g}%"
+
+
+def _badr_step(badr: BadrPolicy) -> tuple[str, str]:
+    """The relief's step id and label: withdrawn, or kept at a changed rate
+    or lifetime limit."""
+    if badr.withdrawn:
+        return SCHEDULE_STEPS[2][0], SCHEDULE_STEPS[2][1]
+    limit = badr.lifetime_limit
+    limit_label = f"£{limit / 1e6:g}m" if limit >= 1_000_000 else f"£{limit / 1e3:g}k"
+    return (
+        "badr_changed",
+        f"Business Asset Disposal Relief at {_pct(badr.rate)} up to {limit_label}",
+    )
+
+
+def schedule_step_reforms(
+    elasticity: float,
+    rates: dict | None = None,
+    badr: BadrPolicy = BADR_WITHDRAWN,
+) -> list[tuple[str, str, dict]]:
+    """``(step id, label, reform dict)`` for each step of a rate schedule
+    built up schedule by schedule: the main rates alone, then the residential
+    property schedule at the same rates, then the relief's treatment. The
+    last is the whole schedule (:func:`cgt_rate_reform` with the explorer's
+    schedules). By default the schedule is equalisation (:data:`SCHEDULE_STEPS`),
+    whose last step is :func:`equalisation_reform`. A schedule that leaves the
+    relief at current law has no relief step: it would equal the one before."""
+    rates = dict(INCOME_TAX_RATES if rates is None else rates)
+    main_label = "Main rates at " + " / ".join(_pct(rates[band]) for band in RATE_BANDS)
+    steps = [
+        ("main_rates", main_label, (), BADR_CURRENT_LAW),
+        (SCHEDULE_STEPS[1][0], SCHEDULE_STEPS[1][1], SCHEDULES, BADR_CURRENT_LAW),
+    ]
+    if not badr.is_current_law:
+        steps.append((*_badr_step(badr), SCHEDULES, badr))
     return [
-        (step, label, cgt_rate_reform(INCOME_TAX_RATES, elasticity, schedules=schedules, badr=badr))
-        for step, label, schedules, badr in SCHEDULE_STEPS
+        (step, label, cgt_rate_reform(rates, elasticity, schedules=schedules, badr=step_badr))
+        for step, label, schedules, step_badr in steps
     ]
 
 

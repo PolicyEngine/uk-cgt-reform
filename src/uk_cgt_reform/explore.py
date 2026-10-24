@@ -7,7 +7,10 @@ projection, the same cached baseline simulations and the same impact code
 (``impacts``). An explorer run of 20/40/45 with the relief withdrawn therefore
 builds the equalisation reform's own dict and reproduces the tab's figures;
 the scope (``reform.EXPLORER_SCOPE``) adds Business Asset Disposal Relief, kept
-at a rate and lifetime limit or withdrawn.
+at a rate and lifetime limit or withdrawn. In the headline year a run also
+splits its yield schedule by schedule, as the pipeline's ``schedule_split``
+does, with no behavioural response, at CenTax's central elasticity and at the
+run's own (:func:`score_schedule_split`).
 
 Two runners share every function here. ``run_locally`` backs the
 ``uk-cgt-reform-explore`` command, which the dashboard's Next route also
@@ -42,7 +45,13 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .comparison import READY_RECKONER, SENSITIVITY_CASES
-from .impacts import budget_impact, fiscal_year_label, income_change_groups
+from .impacts import (
+    budget_impact,
+    cgt_revenue,
+    fiscal_year_label,
+    income_change_groups,
+    schedule_split,
+)
 from .reform import (
     BADR_CURRENT_LAW,
     BADR_CURRENT_RATE,
@@ -65,6 +74,7 @@ from .reform import (
     elasticity_convention,
     rate_reform_schedules,
     reform_fingerprint,
+    schedule_step_reforms,
 )
 from .simulations import (
     DATASETS,
@@ -98,6 +108,15 @@ ELASTICITY_OPTIONS = tuple(
     )
 )
 DEFAULT_ELASTICITY = ELASTICITY
+#: A request may also carry any retention-rate elasticity in this closed
+#: interval, in steps of :data:`ELASTICITY_STEP` (the dashboard's Custom
+#: choice). It applies to every gain; a value equal to a case above is that
+#: case, so 3.6 is the official case with its 1.4 for gains qualifying for
+#: the relief (``reform.elasticity_assignment``). The step bounds the values
+#: a visitor can ask the backend to compute to 51.
+ELASTICITY_BOUNDS = (0.0, 5.0)
+ELASTICITY_STEP = 0.1
+ELASTICITY_DECIMALS = 1
 #: Requests from before the retention form keyed each case by a
 #: marginal-tax-rate value; shared links still carry them, so they map to
 #: the case they named.
@@ -235,18 +254,32 @@ def _as_rate(value, band: str) -> float:
 
 
 def _as_elasticity(value) -> float:
+    """A retention-rate elasticity within :data:`ELASTICITY_BOUNDS`, a
+    multiple of :data:`ELASTICITY_STEP`, rounded so that every spelling of
+    one value builds the same reform dict and cache key. A legacy
+    marginal-rate value maps to the case it named."""
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise ExploreValidationError("elasticity must be a number.")
+    value = float(value)
     for legacy, retention in LEGACY_MTR_ELASTICITIES.items():
-        if math.isclose(legacy, float(value), abs_tol=1e-9):
-            value = retention
+        if math.isclose(legacy, value, abs_tol=1e-9):
+            return retention
+    lo, hi = ELASTICITY_BOUNDS
+    if not math.isfinite(value) or not lo - 1e-9 <= value <= hi + 1e-9:
+        raise ExploreValidationError(
+            f"elasticity must be between {lo:g} and {hi:g} (a retention-rate elasticity); "
+            f"got {value:g}."
+        )
+    steps = value / ELASTICITY_STEP
+    if abs(steps - round(steps)) > 1e-6:
+        raise ExploreValidationError(
+            f"elasticity must be a multiple of {ELASTICITY_STEP:g}; got {value:g}."
+        )
+    elasticity = round(round(steps) * ELASTICITY_STEP, ELASTICITY_DECIMALS)
     for option in ELASTICITY_OPTIONS:
-        if math.isclose(option["e_retention"], float(value), abs_tol=1e-9):
+        if math.isclose(option["e_retention"], elasticity, abs_tol=1e-9):
             return option["e_retention"]
-    allowed = ", ".join(str(o["e_retention"]) for o in ELASTICITY_OPTIONS)
-    raise ExploreValidationError(
-        f"elasticity must be one of {allowed} (a retention-rate elasticity); got {value}."
-    )
+    return elasticity
 
 
 _BADR_KEYS = {"withdrawn", "rate", "lifetime_limit"}
@@ -301,7 +334,7 @@ def validate_request(payload) -> ExploreRequest:
     ``payload`` is ``{"dataset": key, "rates": {band: fraction}, "badr": {...},
     "elasticity": e}``; ``badr`` (see :func:`_as_badr`) defaults to current law,
     ``dataset`` to the dashboard's default dataset and ``elasticity``
-    to the central case. Every band must be present, within
+    to the central case (any value :func:`_as_elasticity` accepts). Every band must be present, within
     :data:`RATE_BOUNDS`, a whole percentage point (:data:`RATE_STEP`), and
     ordered basic <= higher <= additional: the engine splits gains above the
     basic rate band only so that a reform can charge an additional rate on
@@ -348,6 +381,8 @@ def api_options() -> dict:
         "rate_step": RATE_STEP,
         "elasticity_options": [dict(o) for o in ELASTICITY_OPTIONS],
         "default_elasticity": DEFAULT_ELASTICITY,
+        "elasticity_bounds": list(ELASTICITY_BOUNDS),
+        "elasticity_step": ELASTICITY_STEP,
         # The default option's parameter; each option names its own.
         "elasticity_parameter": elasticity_convention(DEFAULT_ELASTICITY)["elasticity_parameter"],
         "presets": [{**p, "rates": dict(p["rates"]), "badr": dict(p["badr"])} for p in PRESETS],
@@ -557,10 +592,68 @@ def per_year_dataset(spec: DatasetSpec, year: int, folder: Path):
     )
 
 
+#: The reference bars of a run's yield split: no behavioural response and
+#: CenTax's central case. The run's own elasticity is the ``user`` case
+#: beside them unless it equals one of these.
+SPLIT_REFERENCE_CASES = {"static": 0.0, "central": ELASTICITY}
+SPLIT_USER_CASE = "user"
+
+
+def is_equalisation(req: ExploreRequest) -> bool:
+    """Whether ``req`` is the equalisation reform the results file scores:
+    income tax rates with the relief withdrawn (at any elasticity)."""
+    return req.rates == dict(INCOME_TAX_RATES) and req.badr == BADR_WITHDRAWN
+
+
+def split_cases(req: ExploreRequest) -> dict[str, float]:
+    """The cases a run splits its headline-year yield for, case -> elasticity.
+
+    The reference cases (:data:`SPLIT_REFERENCE_CASES`) for equalisation are
+    the results file's own split of the same year (``schedule_split``), so an
+    equalisation run computes only the ``user`` case and the dashboard takes
+    the other two from the file. A run whose elasticity equals a reference
+    case has no ``user`` case: its bar is that case's."""
+    cases = {} if is_equalisation(req) else dict(SPLIT_REFERENCE_CASES)
+    if not any(
+        math.isclose(e, req.elasticity, abs_tol=1e-9) for e in SPLIT_REFERENCE_CASES.values()
+    ):
+        cases[SPLIT_USER_CASE] = req.elasticity
+    return cases
+
+
+def score_schedule_split(req: ExploreRequest, year: int, baseline_cgt: float, revenue) -> dict:
+    """The run's yield in ``year`` built up schedule by schedule, for each of
+    :func:`split_cases`, in the pipeline's ``schedule_split`` shape: the steps
+    are ``reform.schedule_step_reforms`` for the request's rates and relief,
+    the rows ``impacts.schedule_split``. ``revenue(case, step, reform)``
+    returns a step's weighted CGT revenue, £."""
+    cases = split_cases(req)
+    template = schedule_step_reforms(0.0, req.rates, req.badr)
+    revenues, digests = {}, {}
+    for case, e in cases.items():
+        steps = schedule_step_reforms(e, req.rates, req.badr)
+        assert steps[-1][2] == cgt_rate_reform(req.rates, e, badr=req.badr), (
+            "the last step must be the whole schedule"
+        )
+        revenues[case] = {step: revenue(case, step, reform) for step, _label, reform in steps}
+        digests[case] = {step: reform_fingerprint(reform) for step, _label, reform in steps}
+    return {
+        "year": fiscal_year_label(year),
+        "elasticities": cases,
+        "reference_cases_from_results_file": is_equalisation(req),
+        "reform_fingerprints": digests,
+        "steps": schedule_split(
+            baseline_cgt, [(step, label) for step, label, _ in template], revenues
+        ),
+    }
+
+
 def run_year(req: ExploreRequest, year: int, folder: Path, context: dict | None = None) -> dict:
     """Score one (dataset, year): the cached baseline against an in-memory
     reform run. Returns the year's budget row and distributional groups in
-    the pipeline's shapes, plus the seconds it took."""
+    the pipeline's shapes, plus the seconds it took. In the headline year it
+    also splits the yield schedule by schedule (:func:`score_schedule_split`),
+    which needs up to two more in-memory runs per case."""
     context = context or engine_context()
     folder = Path(folder)
     sim_stem = folder.name
@@ -590,12 +683,31 @@ def run_year(req: ExploreRequest, year: int, folder: Path, context: dict | None 
         context["entrant_ceilings"],
     )[0]
     groups = income_change_groups(baseline, reform)
-    return {
+    row = {
         "year": fiscal_year_label(year),
         "budget": budget,
         "income_change_groups": groups,
-        "seconds": round(time.perf_counter() - started, 2),
     }
+    if year == HEADLINE_YEAR:
+        split_started = time.perf_counter()
+
+        def revenue(case: str, step: str, step_reform: dict) -> float:
+            # The whole schedule at the run's elasticity is the run itself.
+            if step_reform == req.reform():
+                return cgt_revenue(reform)
+            digest = reform_fingerprint(step_reform)
+            sim = run_simulation(
+                dataset,
+                policy=make_policy(step_reform, f"split_{step}_{digest}"),
+                sim_id=f"{sim_stem}_split_{case}_{step}_{digest}_{year}",
+                persist=False,
+            )
+            return cgt_revenue(sim)
+
+        row["schedule_split"] = score_schedule_split(req, year, cgt_revenue(baseline), revenue)
+        row["schedule_split"]["seconds"] = round(time.perf_counter() - split_started, 2)
+    row["seconds"] = round(time.perf_counter() - started, 2)
+    return row
 
 
 def assemble_response(
@@ -618,6 +730,8 @@ def assemble_response(
     aea = context["exempt_amounts"]
     ceilings = context["entrant_ceilings"]
     per_year_seconds = {row["year"]: row.get("seconds") for row in ordered}
+    headline = rows.get(fiscal_year_label(HEADLINE_YEAR), {})
+    split = headline.get("schedule_split")
     return {
         "metadata": {
             "generated": generated,
@@ -648,12 +762,16 @@ def assemble_response(
             "timing": {
                 "per_year_seconds": per_year_seconds,
                 "total_seconds": round(sum(s for s in per_year_seconds.values() if s), 2),
+                "schedule_split_seconds": split.get("seconds") if split else None,
             },
             "cache": {"hit": False, "key": cache_key(req, context), "computed_at": generated},
         },
         "budget": budget,
         "income_change_groups": {row["year"]: row["income_change_groups"] for row in ordered},
         "five_year_total_bn": sum(row["gov_balance_change_bn"] for row in budget),
+        # The headline year's yield split (score_schedule_split); only that
+        # year, to keep a run fast.
+        **({"schedule_split": split} if split else {}),
     }
 
 
