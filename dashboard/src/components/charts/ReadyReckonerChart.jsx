@@ -21,7 +21,7 @@ const SERIES = {
   hmrc: { fill: colors.gray[700], text: colors.gray[800], weight: 700 },
   central: { fill: colors.primary[600], text: colors.primary[700], weight: 600 },
   upper: { fill: colors.primary[300], text: colors.primary[600], weight: 600 },
-  official: { fill: colors.error, opacity: 0.45, text: "#B42318", weight: 600 },
+  official: { fill: colors.primary[900], text: colors.primary[900], weight: 600 },
 };
 // Top to bottom in each row, and in the legend: HMRC, then the model from
 // the strongest response to the weakest.

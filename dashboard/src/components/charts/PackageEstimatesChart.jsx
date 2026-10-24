@@ -18,7 +18,7 @@ const DERIVED = { fill: "#FFFFFF", stroke: colors.gray[500], text: colors.gray[7
 // Short row labels, keyed by the results file's ids; an id not listed here
 // falls back to its source and locator.
 const SHORT_LABELS = {
-  centax_2024_rates_only_post_behavioural_derived: "Rates only (PolicyEngine's estimate from CenTax's tables)",
+  centax_2024_rates_only_post_behavioural_derived: "Rates only (PolicyEngine's derivation from CenTax's tables, not a CenTax figure)",
   centax_2024_table5_package: "Full package (CenTax 2024)",
   centax_2024_table6_package_range: "Full package, range of responses (CenTax 2024)",
   centax_2025_technical_note_package: "Full package, updated (CenTax 2025)",
@@ -96,7 +96,7 @@ function RowChart({ value, text, title, derived = false, emphasis = false, domai
                   title={title}
                   rows={[
                     {
-                      label: derived ? "PolicyEngine's estimate" : "CenTax estimate",
+                      label: derived ? "PolicyEngine's derivation" : "CenTax estimate",
                       value: text,
                       color: derived ? DERIVED.stroke : CENTAX.fill,
                     },
@@ -171,7 +171,7 @@ export default function PackageEstimatesChart({ rows }) {
         items={[
           { label: "CenTax estimate", fill: CENTAX.fill },
           ...(anyDerived
-            ? [{ label: "PolicyEngine's estimate from CenTax's tables", fill: DERIVED.fill, stroke: DERIVED.stroke, dashed: true }]
+            ? [{ label: "PolicyEngine's derivation from CenTax's tables", fill: DERIVED.fill, stroke: DERIVED.stroke, dashed: true }]
             : []),
         ]}
       />

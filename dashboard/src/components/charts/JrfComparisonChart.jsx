@@ -20,7 +20,7 @@ const SERIES = [
 const GRID = "md:grid-cols-[4.5rem_repeat(3,6.5rem)_minmax(0,1fr)] md:gap-x-5";
 
 // Column headings; the legend below names each series in full.
-const SHORT = { static: "Static", obr: "On OBR receipts", jrf: "JRF" };
+const SHORT = { static: "PolicyEngine", obr: "PolicyEngine on OBR receipts", jrf: "JRF" };
 
 const isNum = (v) => v !== null && v !== undefined && Number.isFinite(Number(v));
 

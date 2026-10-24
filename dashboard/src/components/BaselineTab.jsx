@@ -161,7 +161,10 @@ export default function BaselineTab({ data, anchor, onNavigate }) {
           <p>
             The Family Resources <SourceLink href={FRS}>Survey</SourceLink> records few capital
             gains, so the dataset imputes them from HMRC data and weights households to
-            HMRC&apos;s CGT <SourceLink href={CGT_STATISTICS}>statistics</SourceLink>.
+            HMRC&apos;s 2024-25 CGT <SourceLink href={CGT_STATISTICS}>statistics</SourceLink>. Every
+            row here is a calibration target or built from one (the totals, the liability, the
+            size-of-gain bands and the relief&apos;s bands), so in 2024-25 the differences in these rows are the weighting&apos;s remaining distance
+            from its targets, not an independent comparison.
           </p>
           <p>
             {`PolicyEngine's figures are for ${modelYear}, the dataset's own year, with no projection; the Reform tab's figures start in 2027-28.`}
