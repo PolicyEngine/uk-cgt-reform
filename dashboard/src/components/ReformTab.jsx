@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { describeBadr, getFirstYear } from "../lib/dataHelpers";
+import { getFirstYear } from "../lib/dataHelpers";
 import { formatPct } from "../lib/formatters";
 import { useExploration } from "../lib/exploreApi";
 import { initialState, isStale, reformReducer } from "../lib/reformState";
@@ -226,13 +226,12 @@ export default function ReformTab({ data, datasetKey, onNavigate, anchor }) {
   const setForm = (id) => (form) => dispatch({ type: "edit", policy: id, form });
   // "20% · 40% · 45%" and "Relief withdrawn": the precomputed schedule in brief.
   const equaliseRates = BANDS.map((band) => formatPct(precomputed.rates[band.key] * 100, 0)).join(" · ");
-  const equaliseRelief = precomputed.badr.withdrawn ? "Relief withdrawn" : `Relief ${describeBadr(precomputed.badr)}`;
   const stale = isStale(state);
   const POLICIES = [
     {
       id: "equalise",
       sentence: "Set each CGT rate to the matching income tax rate.",
-      pills: [equaliseRates, equaliseRelief],
+      pills: [equaliseRates],
     },
     {
       id: "custom",
