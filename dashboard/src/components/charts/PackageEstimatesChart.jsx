@@ -19,10 +19,10 @@ const DERIVED = { fill: "#FFFFFF", stroke: colors.gray[500], text: colors.gray[7
 // falls back to its source and locator.
 const SHORT_LABELS = {
   centax_2024_rates_only_post_behavioural_derived: "Rates only (PolicyEngine's derivation from CenTax's tables, not a CenTax figure)",
-  centax_2024_table5_package: "Full package (CenTax 2024)",
-  centax_2024_table6_package_range: "Full package, range of responses (CenTax 2024)",
-  centax_2025_technical_note_package: "Full package, updated (CenTax 2025)",
-  centax_2026_taxes_at_the_top_package: "Full package, latest (CenTax 2026)",
+  centax_2024_table5_package: "CenTax 2024 report",
+  centax_2024_table6_package_range: "CenTax 2024 report",
+  centax_2025_technical_note_package: "CenTax 2025 update",
+  centax_2026_taxes_at_the_top_package: "CenTax 2026 report",
 };
 
 const DERIVED_IDS = new Set(["centax_2024_rates_only_post_behavioural_derived"]);
@@ -53,7 +53,7 @@ export function buildPackageRows(rows) {
         bars: [...points]
           .sort((a, b) => a.retention_elasticity - b.retention_elasticity)
           .map((p) => {
-            const main = `${formatBn(p.value, 1)} at ${p.retention_elasticity.toFixed(1)}`;
+            const main = `${formatBn(p.value, 1)} at elasticity ${p.retention_elasticity.toFixed(1)}`;
             const extra =
               p === central && table5.details?.uplift_pct ? ` (+${table5.details.uplift_pct}%, CenTax's central case)` : "";
             return {
@@ -65,7 +65,7 @@ export function buildPackageRows(rows) {
               extra,
             };
           }),
-        note: "One bar per assumption about how strongly people respond, from weakest (0.5) to strongest (2.0): the stronger the response, the less it raises.",
+        note: "One bar per elasticity CenTax tested, from 0.5 to 2.0: the stronger the response, the less the package raises.",
       });
       continue;
     }
@@ -199,7 +199,7 @@ export default function PackageEstimatesChart({ rows }) {
       </div>
       <ChartLegend
         items={[
-          { label: "CenTax estimate", fill: CENTAX.fill },
+          { label: "CenTax's published estimate", fill: CENTAX.fill },
           ...(anyDerived
             ? [{ label: "PolicyEngine's derivation from CenTax's tables", fill: DERIVED.fill, stroke: DERIVED.stroke, dashed: true }]
             : []),

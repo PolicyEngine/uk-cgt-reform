@@ -153,8 +153,7 @@ function AtAGlance({ benchmarks, baseline }) {
   );
 }
 
-// The years the package chart shows, the rates-only derivation's 2019-20
-// included, as a range: "2019-20 to 2029-30".
+// The years the package chart shows, as a range: "2025-26 to 2029-30".
 function packageYears(rows) {
   const years = rows.map((row) => row.year).sort();
   return years[0] === years.at(-1) ? years[0] : `${years[0]} to ${years.at(-1)}`;
@@ -225,7 +224,7 @@ function CentaxRegions({ block, dataset }) {
   return (
     <section className="section-card">
       <SectionHeading
-        title={`Regional CGT: PolicyEngine ${block.year} and CenTax 2019-20`}
+        title={`Regional CGT under 2019-20 rules: PolicyEngine (${block.year} data) and CenTax (2019-20 data)`}
         description={
           <>
             {"Each region's share of baseline CGT under "}
@@ -271,17 +270,21 @@ function CentaxRegions({ block, dataset }) {
   );
 }
 
-function CentaxPackage({ rows, onNavigate }) {
+function CentaxPackage({ rows: allRows, onNavigate }) {
+  // CenTax's own published figures only; the file's rates-only derivation
+  // (PolicyEngine's arithmetic on CenTax's tables) is left out.
+  const rows = allRows.filter((row) => !row.id.endsWith("_derived"));
   const built = buildPackageRows(rows);
   return (
     <section className="section-card">
       <SectionHeading
-        title={`CenTax's wider package, ${packageYears(rows)}`}
+        title={`CenTax's own estimates for a wider package, ${packageYears(rows)}`}
         description={
           <>
-            <SourceLink href={CENTAX_REPORT}>CenTax</SourceLink> estimate what equalising would
-            raise alongside wider changes to how gains are taxed. These cover more than this
-            dashboard&apos;s reform, so they are context, not a direct comparison.
+            Every bar is a figure <SourceLink href={CENTAX_REPORT}>CenTax</SourceLink> published,
+            not a PolicyEngine estimate. Each is for equal rates together with wider changes to
+            how gains are taxed, which this dashboard does not model, so they are context, not a
+            comparison.
           </>
         }
       />
