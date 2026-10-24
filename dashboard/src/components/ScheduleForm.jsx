@@ -43,11 +43,12 @@ const ELASTICITY_NOTE =
   "The elasticity of realised gains with respect to the retention rate (1 − t): taxpayers realise fewer gains as the share of each gain they keep falls.";
 
 // "CenTax central (retention elasticity 1.0)" → a short name for the select
-// and its detail for the line beneath.
+// and its detail for the line beneath. The static case reads "No response".
+const SHORT_NAMES = { Static: "No response" };
 function splitLabel(label) {
   const match = label.match(/^(.*?)\s*\((.*)\)$/);
-  if (!match) return { name: label, detail: "" };
-  return { name: match[1], detail: match[2][0].toUpperCase() + match[2].slice(1) };
+  if (!match) return { name: SHORT_NAMES[label] ?? label, detail: "" };
+  return { name: SHORT_NAMES[match[1]] ?? match[1], detail: match[2][0].toUpperCase() + match[2].slice(1) };
 }
 
 function FieldError({ id, children }) {
