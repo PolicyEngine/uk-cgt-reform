@@ -1,7 +1,7 @@
 "use client";
 
 import { colors } from "../../lib/colors";
-import { formatBn, formatCount, formatPct } from "../../lib/formatters";
+import { formatBn, formatCount, formatPct, formatSignedPoints } from "../../lib/formatters";
 import ChartLogo from "../ChartLogo";
 import { InfoTip } from "../controls";
 import ChartLegend from "./ChartLegend";
@@ -14,7 +14,7 @@ import { HoverTip, useHoverState } from "./ChartTooltip";
 const DOT_R = 5;
 const SERIES = [
   { key: "model", color: colors.primary[600], text: colors.primary[700] },
-  { key: "hmrc2024", label: "HMRC, 2024-25 (provisional)", color: colors.gray[400], text: colors.gray[600] },
+  { key: "hmrc2024", label: "HMRC (provisional)", color: colors.gray[400], text: colors.gray[600] },
 ];
 
 // How each unit's values read. Values arrive in their natural unit:
@@ -75,7 +75,7 @@ function gapToLatest(row) {
   // Shares compare in points; everything else as a percentage difference.
   if (row.unit === "pct") {
     const pp = Math.round(row.model - row.hmrc2024);
-    return `${pp > 0 ? "+" : pp < 0 ? "−" : ""}${Math.abs(pp)} pp`;
+    return formatSignedPoints(pp);
   }
   const rel = Math.round(100 * (row.model / row.hmrc2024 - 1));
   return `${rel > 0 ? "+" : rel < 0 ? "−" : ""}${Math.abs(rel)}%`;

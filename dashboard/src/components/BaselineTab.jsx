@@ -145,7 +145,7 @@ export default function BaselineTab({ data, anchor, onNavigate }) {
         />
         <BenchmarkChart
           rows={benchmarkRows}
-          modelLabel={`PolicyEngine ${modelYear} (${dataset.shortLabel})`}
+          modelLabel={`PolicyEngine (${dataset.shortLabel.replace(/\s*\d{4}-\d{2}$/, "")})`}
           modelColumn={`PolicyEngine ${modelYear}`}
         />
         <Notes>
@@ -156,9 +156,6 @@ export default function BaselineTab({ data, anchor, onNavigate }) {
             row here is a calibration target or built from one (the totals, the liability, the
             size-of-gain bands and the relief&apos;s bands), so in 2024-25 the differences in these rows are the weighting&apos;s remaining distance
             from its targets, not an independent comparison.
-          </p>
-          <p>
-            {`PolicyEngine's figures are for ${modelYear}, the dataset's own year, with no projection; the Reform tab's figures start in 2027-28.`}
           </p>
           {rates?.main_blended ? (
             <p>

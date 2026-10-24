@@ -350,7 +350,7 @@ function ReadyReckoner({ block, dataset, elasticities, rr, headlineYear, onNavig
         description={
           <>
             <SourceLink href={block.url}>HMRC&apos;s</SourceLink>
-            {` table of small rate changes (its "ready reckoner", June 2025): HMRC's receipts beside ${PE}'s change in the government balance ${reckonerElasticities(elasticities.official, elasticities.central, block.elasticities.elasticity_3)}. Bars left of £0 reduce revenue.`}
+            {` table of small rate changes (its ‘ready reckoner’, June 2025): HMRC's receipts beside ${PE}'s change in the government balance ${reckonerElasticities(elasticities.official, elasticities.central, block.elasticities.elasticity_3)}. Bars left of £0 reduce revenue.`}
           </>
         }
       />

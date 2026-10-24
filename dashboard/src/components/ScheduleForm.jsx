@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { badrLimitLabel, describeBadr } from "../lib/dataHelpers";
-import { formatPct } from "../lib/formatters";
+import { formatPct, formatSignedPoints } from "../lib/formatters";
 import {
   BADR_CURRENT_LAW,
   BADR_LIMITS,
@@ -136,7 +136,7 @@ function ChangeChip({ value, reference }) {
   if (value === "" || !Number.isFinite(number)) return null;
   const gap = Math.round((number - reference * 100) * 100) / 100;
   if (gap === 0) return <span className="text-sm text-slate-400">No change</span>;
-  return <Pill tone="teal">{`${gap > 0 ? "+" : "−"}${Math.abs(gap)} pp`}</Pill>;
+  return <Pill tone="teal">{formatSignedPoints(gap)}</Pill>;
 }
 
 // The sub-tabs along the top of the panel, one per group of parameters,

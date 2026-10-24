@@ -11,7 +11,7 @@ export const BANDS = [
     key: "basic_rate",
     param: "basic",
     label: "Basic rate",
-    note: "Gains that fall within the basic rate band once stacked on the taxpayer's income.",
+    note: "Gains that fall within the basic rate band once counted on top of the taxpayer's income.",
   },
   {
     key: "higher_rate",
@@ -23,7 +23,7 @@ export const BANDS = [
     key: "additional_rate",
     param: "additional",
     label: "Additional rate",
-    note: "Gains stacked above £125,140 of income and gains. Current law has no separate rate here: set it equal to the higher rate for a single rate above the basic band.",
+    note: "Gains above £125,140 once counted on top of the taxpayer's income. Current law has no separate rate here: set it equal to the higher rate for a single rate above the basic band.",
   },
 ];
 export const PCT_MIN = options.rate_bounds[0] * 100;

@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+  formatSignedPoints,
   reckonerElasticities,
   splitFiscalYears,
   formatBn,
@@ -124,5 +125,14 @@ describe("reckonerElasticities", () => {
     expect(reckonerElasticities({ e_retention: 3.6, badr_e_retention: 1.4 }, { e_retention: 1 })).toBe(
       "at the official 3.6 (1.4 for the relief), at 3.0 and at CenTax's central 1.0",
     );
+  });
+});
+
+describe("formatSignedPoints", () => {
+  test("signs and pluralises", () => {
+    expect(formatSignedPoints(2)).toBe("+2 points");
+    expect(formatSignedPoints(-1)).toBe("\u22121 point");
+    expect(formatSignedPoints(0)).toBe("0 points");
+    expect(formatSignedPoints(2.5, 1)).toBe("+2.5 points");
   });
 });

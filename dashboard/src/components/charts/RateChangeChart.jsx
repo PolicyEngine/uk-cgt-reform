@@ -13,13 +13,12 @@ import {
   YAxis,
 } from "recharts";
 import { colors } from "../../lib/colors";
-import { formatPct } from "../../lib/formatters";
+import { formatPct, formatSignedPoints } from "../../lib/formatters";
 import ChartLogo from "../ChartLogo";
 import ChartLegend from "./ChartLegend";
 import { TOOLTIP_PROPS, TooltipCard } from "./ChartTooltip";
 
 const AXIS_STYLE = { fontSize: 12, fill: colors.gray[500] };
-const MINUS = "−";
 
 // Every row shares one scale from 0, so bars compare across rows: at least
 // 0–50%, extended in 10-point steps to hold the largest rate (custom
@@ -48,13 +47,13 @@ function isRate(v) {
   return v !== null && v !== undefined && Number.isFinite(Number(v));
 }
 
-// "+2 pp", "−4 pp", "No change"; null when either side is not a rate.
+// "+2 points", "−4 points", "No change"; null when either side is not a rate.
 export function formatPpChange(baseline, reform) {
   if (!isRate(baseline) || !isRate(reform)) return null;
   const pp = Math.round((Number(reform) - Number(baseline)) * 1000) / 10;
   if (pp === 0) return "No change";
   const digits = Number.isInteger(pp) ? 0 : 1;
-  return `${pp > 0 ? "+" : MINUS}${Math.abs(pp).toFixed(digits)} pp`;
+  return formatSignedPoints(pp, digits);
 }
 
 function ChangeChip({ baseline, reform }) {

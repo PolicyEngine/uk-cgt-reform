@@ -159,3 +159,11 @@ export function splitFiscalYears(text) {
 export function reckonerElasticities(official, central, third = 3) {
   return `at the official ${official.e_retention.toFixed(1)} (${official.badr_e_retention.toFixed(1)} for the relief), at ${third.toFixed(1)} and at CenTax's central ${central.e_retention.toFixed(1)}`;
 }
+
+// A signed change in percentage points, in words: "+2 points", "−1 point",
+// "0 points".
+export function formatSignedPoints(value, digits = 0) {
+  const text = Math.abs(value).toFixed(digits);
+  const sign = Number(text) === 0 ? "" : value > 0 ? "+" : "\u2212";
+  return `${sign}${text} ${Number(text) === 1 ? "point" : "points"}`;
+}
