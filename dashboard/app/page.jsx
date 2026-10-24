@@ -91,7 +91,12 @@ function Dashboard() {
         <div className="animate-[fadeIn_0.4s_ease-out]">
           <p className="text-lg leading-8 text-slate-800">
             This dashboard estimates how{" "}
-            <strong className={BOLD}>taxing capital gains at income tax rates</strong> and
+            <strong className={BOLD}>
+              taxing capital{" "}
+              <a href="https://www.gov.uk/capital-gains-tax" target="_blank" rel="noopener noreferrer" className={LINK}>gains</a>{" "}
+              at income tax rates
+            </strong>{" "}
+            and
             withdrawing Business Asset Disposal{" "}
             <a href="https://www.gov.uk/business-asset-disposal-relief" target="_blank" rel="noopener noreferrer" className={LINK}>Relief</a>, a reform{" "}
             <a href="https://ifs.org.uk/sites/default/files/2024-10/Captial-gains-tax-reform.pdf" target="_blank" rel="noopener noreferrer" className={LINK}>debated</a>{" "}
