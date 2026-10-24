@@ -3,6 +3,8 @@
 // Relief and a behavioural elasticity. Validation, presets and the shareable
 // URL live here, apart from the components, so they can be tested.
 import options from "../../public/data/explore_options.json";
+import { describeBadr } from "./dataHelpers";
+import { formatPct } from "./formatters";
 
 // The request options come from the pipeline (uk-cgt-reform-explore
 // --options), bundled at build time so the controls never wait on a network.
@@ -261,6 +263,29 @@ export function readUrlState(searchParams) {
   );
   if (relieflessLegacyLink && equalisationRates && equalisation.badr.withdrawn) badrForm.mode = "withdraw";
   return { percents, elasticity, customElasticity, badrForm };
+}
+
+// Whether a policy's form has the relief control. "Equalise with income tax"
+// keeps the relief at current law, as the headline reform does, so its form
+// sets only the rates and the behavioural response, and its links never carry
+// relief parameters; Custom rates can keep, change or withdraw it.
+export function hasReliefControl(policy) {
+  return policy !== "equalise";
+}
+
+// A form in one line: "20% · 40% · 45% · Relief withdrawn · CenTax central"
+// (or "Elasticity 2.5" for a typed value). Without the relief control the
+// relief part is dropped: "20% · 40% · 45% · CenTax central".
+export function formSummary(form, { relief = true } = {}) {
+  const check = checkForm(form);
+  if (!check.rates) return "";
+  const rates = BANDS.map((band) => formatPct(check.rates[band.key] * 100, 0)).join(" · ");
+  const reliefPart = !relief
+    ? null
+    : check.badr.withdrawn
+      ? "Relief withdrawn"
+      : `Relief ${describeBadr(check.badr)}`;
+  return [rates, reliefPart, elasticityShortName(check.elasticity)].filter(Boolean).join(" · ");
 }
 
 // What a page load opens: which policy a link selects, each policy's form,

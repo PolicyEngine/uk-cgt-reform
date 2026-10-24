@@ -5,6 +5,8 @@ import {
   checkForm,
   elasticityShortName,
   formOf,
+  formSummary,
+  hasReliefControl,
   initialChoice,
   isPrecomputed,
   precomputedSchedule,
@@ -184,5 +186,41 @@ describe("a custom elasticity", () => {
   test("a link with a custom value opens Custom and looks it up live", () => {
     const opened = choice("basic=20&higher=40&additional=45&bw=1&e=2.5");
     expect(opened).toMatchObject({ policy: "custom", view: "live" });
+  });
+});
+
+describe("the equalise tile has no relief control", () => {
+  test("only Custom rates sets the relief", () => {
+    expect(hasReliefControl("equalise")).toBe(false);
+    expect(hasReliefControl("custom")).toBe(true);
+  });
+
+  test("its one-line summary drops the relief", () => {
+    const equalise = choice("").forms.equalise;
+    expect(formSummary(equalise, { relief: false })).toBe("20% · 40% · 45% · CenTax central");
+    expect(formSummary({ ...equalise, customElasticity: "2.5" }, { relief: false })).toBe(
+      "20% · 40% · 45% · Elasticity 2.5",
+    );
+    // Custom rates keeps it.
+    const withdrawn = { ...equalise, badrForm: { ...equalise.badrForm, mode: "withdraw" } };
+    expect(formSummary(withdrawn)).toBe("20% · 40% · 45% · Relief withdrawn · CenTax central");
+  });
+
+  test("its links never carry relief parameters", () => {
+    const equalise = choice("").forms.equalise;
+    expect(equalise.badrForm.mode).toBe("keep");
+    for (const customElasticity of [null, "2.5"]) {
+      const query = scheduleParams("", checkForm({ ...equalise, customElasticity }));
+      ["bw", "br", "bl"].forEach((key) => expect(query.get(key)).toBeNull());
+    }
+  });
+
+  test("an old equalise link with bw=1 opens Custom rates with the relief withdrawn", () => {
+    for (const e of ["1", "2.5"]) {
+      const opened = choice(`basic=20&higher=40&additional=45&bw=1&e=${e}`);
+      expect(opened).toMatchObject({ policy: "custom", view: "live" });
+      expect(opened.forms.custom.badrForm.mode).toBe("withdraw");
+      expect(opened.forms.equalise.badrForm.mode).toBe("keep");
+    }
   });
 });

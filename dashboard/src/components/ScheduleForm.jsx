@@ -260,8 +260,10 @@ function RateRow({ band, value, onChange, error }) {
 // One policy's parameters as one panel with sub-tabs (CGT rates; relief and
 // behavioural response) and one button: Next, or Calculate on the last
 // sub-tab. It is a form: Enter moves to the next sub-tab, or calculates on
-// the last; `running` (a run in flight) disables it.
-export default function ScheduleForm({ form, onChange, onCalculate, running, onNavigate, about }) {
+// the last; `running` (a run in flight) disables it. Without `relief` (the
+// equalisation reform, which keeps the relief at current law) the second
+// sub-tab holds only the behavioural response.
+export default function ScheduleForm({ form, onChange, onCalculate, running, onNavigate, about, relief = true }) {
   const [showAbout, setShowAbout] = useState(false);
   const check = checkForm(form);
   const set = (patch) => onChange({ ...form, ...patch });
@@ -290,9 +292,9 @@ export default function ScheduleForm({ form, onChange, onCalculate, running, onN
     },
     {
       id: "response",
-      label: "Relief and behaviour",
-      summary: [badrSummary, responseSummary].filter(Boolean).join(" · "),
-      error: check.errorField === "badr_rate" || check.errorField === "elasticity",
+      label: relief ? "Relief and behaviour" : "Behaviour",
+      summary: [relief ? badrSummary : null, responseSummary].filter(Boolean).join(" · "),
+      error: (relief && check.errorField === "badr_rate") || check.errorField === "elasticity",
     },
   ];
   const [step, setStep] = useState(steps[0].id);
@@ -337,7 +339,9 @@ export default function ScheduleForm({ form, onChange, onCalculate, running, onN
           id="response"
           intro={
             <>
-              Keep or withdraw the relief, and choose how strongly taxpayers respond.
+              {relief
+                ? "Keep or withdraw the relief, and choose how strongly taxpayers respond."
+                : "Choose how strongly taxpayers respond."}
               {about ? (
                 <>
                   {" "}
@@ -357,60 +361,62 @@ export default function ScheduleForm({ form, onChange, onCalculate, running, onN
         >
           {about && showAbout ? <div className="mb-4 rounded-lg bg-slate-50 px-4 py-3">{about.content}</div> : null}
           <div className="max-w-xl space-y-6">
-            <div>
-              <div className="mb-2 flex items-center gap-2">
-                <label htmlFor="badr-mode" className="text-sm font-semibold text-slate-800">
-                  Business Asset Disposal Relief
-                </label>
-                <InfoTip label="About Business Asset Disposal Relief">{BADR_NOTE}</InfoTip>
-              </div>
-              <Select
-                id="badr-mode"
-                value={form.badrForm.mode}
-                onChange={(mode) => setBadr({ mode })}
-                options={[
-                  { value: "keep", label: "Keep the relief" },
-                  { value: "withdraw", label: "Withdraw the relief" },
-                ]}
-              />
-              {form.badrForm.mode === "keep" ? (
-                <div className="mt-4 grid grid-cols-2 gap-4">
-                  <div>
-                    <FieldLabel htmlFor="badr-rate">Rate</FieldLabel>
-                    <PercentInput
-                      id="badr-rate"
-                      min={0}
-                      value={form.badrForm.rate}
-                      onChange={(rate) => setBadr({ rate })}
-                      invalid={Boolean(errorFor("badr_rate"))}
-                      describedBy={errorFor("badr_rate") ? "badr-rate-error" : undefined}
-                    />
-                  </div>
-                  <div>
-                    <FieldLabel htmlFor="badr-limit">Lifetime limit</FieldLabel>
-                    <Select
-                      id="badr-limit"
-                      value={String(form.badrForm.limit)}
-                      onChange={(value) => setBadr({ limit: Number(value) })}
-                      options={BADR_LIMITS.map((limit) => ({ value: String(limit), label: badrLimitLabel(limit) }))}
-                    />
-                  </div>
+            {relief ? (
+              <div>
+                <div className="mb-2 flex items-center gap-2">
+                  <label htmlFor="badr-mode" className="text-sm font-semibold text-slate-800">
+                    Business Asset Disposal Relief
+                  </label>
+                  <InfoTip label="About Business Asset Disposal Relief">{BADR_NOTE}</InfoTip>
                 </div>
-              ) : null}
-              {errorFor("badr_rate") ? <FieldError id="badr-rate-error">{errorFor("badr_rate")}</FieldError> : null}
-              <p className={`mt-2 ${HINT}`}>
-                Current law {describeBadr(BADR_CURRENT_LAW).toLowerCase()}
-                {form.badrForm.mode === "withdraw" ? "; withdrawn, qualifying gains take the main rates." : "."}
-              </p>
-              {check.reliefAboveBasic ? (
-                <p className="mt-2 text-xs leading-5 text-amber-800">
-                  The relief&apos;s {formatPct(check.badr.rate * 100, 0)} is above the basic rate of{" "}
-                  {formatPct(check.rates.basic_rate * 100, 0)}. In law the relief is claimed, and a taxpayer
-                  whose qualifying gains fall in the basic rate band would not claim it; the model charges
-                  it anyway, so it overstates the tax on those gains.
+                <Select
+                  id="badr-mode"
+                  value={form.badrForm.mode}
+                  onChange={(mode) => setBadr({ mode })}
+                  options={[
+                    { value: "keep", label: "Keep the relief" },
+                    { value: "withdraw", label: "Withdraw the relief" },
+                  ]}
+                />
+                {form.badrForm.mode === "keep" ? (
+                  <div className="mt-4 grid grid-cols-2 gap-4">
+                    <div>
+                      <FieldLabel htmlFor="badr-rate">Rate</FieldLabel>
+                      <PercentInput
+                        id="badr-rate"
+                        min={0}
+                        value={form.badrForm.rate}
+                        onChange={(rate) => setBadr({ rate })}
+                        invalid={Boolean(errorFor("badr_rate"))}
+                        describedBy={errorFor("badr_rate") ? "badr-rate-error" : undefined}
+                      />
+                    </div>
+                    <div>
+                      <FieldLabel htmlFor="badr-limit">Lifetime limit</FieldLabel>
+                      <Select
+                        id="badr-limit"
+                        value={String(form.badrForm.limit)}
+                        onChange={(value) => setBadr({ limit: Number(value) })}
+                        options={BADR_LIMITS.map((limit) => ({ value: String(limit), label: badrLimitLabel(limit) }))}
+                      />
+                    </div>
+                  </div>
+                ) : null}
+                {errorFor("badr_rate") ? <FieldError id="badr-rate-error">{errorFor("badr_rate")}</FieldError> : null}
+                <p className={`mt-2 ${HINT}`}>
+                  Current law {describeBadr(BADR_CURRENT_LAW).toLowerCase()}
+                  {form.badrForm.mode === "withdraw" ? "; withdrawn, qualifying gains take the main rates." : "."}
                 </p>
-              ) : null}
-            </div>
+                {check.reliefAboveBasic ? (
+                  <p className="mt-2 text-xs leading-5 text-amber-800">
+                    The relief&apos;s {formatPct(check.badr.rate * 100, 0)} is above the basic rate of{" "}
+                    {formatPct(check.rates.basic_rate * 100, 0)}. In law the relief is claimed, and a taxpayer
+                    whose qualifying gains fall in the basic rate band would not claim it; the model charges
+                    it anyway, so it overstates the tax on those gains.
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
             <div>
               <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-800">
                 Behavioural response
