@@ -176,7 +176,7 @@ function StaticEqualisation({ block, dataset }) {
             <SourceLink href={OBR_EFO}>OBR&apos;s</SourceLink>
             {` receipts. ${PE} shows its own microsimulated liabilities on `}
             <DatasetName label={dataset.shortLabel} />
-            {" (dark dots) and, for reference, its uplift applied to the OBR's receipts (light dots)."}
+            {" (rings) and, for reference, its uplift applied to the OBR's receipts (light dots); JRF's figures are the dark dots."}
           </>
         }
       />
