@@ -71,7 +71,23 @@ export default function BudgetChart({ budget, title, description }) {
             />
             <Tooltip
               {...TOOLTIP_PROPS}
-              content={<ChartTooltip title={(year) => `Fiscal year ${year}`} format={(v) => formatSignedBn(v, 1)} />}
+              content={
+                <ChartTooltip
+                  title={(year) => `Fiscal year ${year}`}
+                  // One series: its value is the bold line. Two (baseline
+                  // and reform revenue): both, then their difference.
+                  rows={(payload) =>
+                    payload.length > 1
+                      ? payload.map((p) => ({ label: p.name, value: formatSignedBn(p.value, 1), color: p.color ?? p.fill }))
+                      : []
+                  }
+                  footer={(payload) =>
+                    payload.length > 1
+                      ? { label: "Change", value: formatSignedBn(payload[1].value - payload[0].value, 1) }
+                      : { label: payload[0].name, value: formatSignedBn(payload[0].value, 1) }
+                  }
+                />
+              }
             />
             {budgetView === "levels" ? (
               <>

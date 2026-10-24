@@ -104,13 +104,14 @@ export const badrFormOf = (badr) =>
     ? { mode: "withdraw", rate: String(toPercent(BADR_CURRENT_LAW.rate)), limit: BADR_CURRENT_LAW.lifetime_limit }
     : { mode: "keep", rate: String(toPercent(badr.rate)), limit: badr.lifetime_limit };
 
-// A form loaded with a schedule: rates and relief as stored, an elasticity.
-// A value that is not a case loads into the Custom choice.
+// A form loaded with a schedule: rates and relief as stored, and the
+// elasticity in the Custom box, which every form opens on; picking a case
+// from the select replaces it.
 export const formOf = (rates, badr, elasticity = DEFAULT_ELASTICITY) => ({
   percents: percentsOf(rates),
   badrForm: badrFormOf(badr ?? BADR_CURRENT_LAW),
   elasticity,
-  customElasticity: elasticityOption(elasticity) ? null : String(elasticity),
+  customElasticity: Number(elasticity).toFixed(1),
 });
 
 // The schedule the precomputed results file scored, read from the file

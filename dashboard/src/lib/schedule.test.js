@@ -26,7 +26,8 @@ describe("the precomputed schedule", () => {
 
   test("any changed value makes it a live run", () => {
     const form = formOf(precomputed.rates, precomputed.badr, precomputed.elasticity);
-    expect(isPrecomputed(checkForm({ ...form, elasticity: 2.0 }), precomputed)).toBe(false);
+    expect(isPrecomputed(checkForm({ ...form, elasticity: 2.0, customElasticity: null }), precomputed)).toBe(false);
+    expect(isPrecomputed(checkForm({ ...form, customElasticity: "2.5" }), precomputed)).toBe(false);
     expect(isPrecomputed(checkForm({ ...form, badrForm: { ...form.badrForm, mode: "withdraw" } }), precomputed)).toBe(false);
     expect(
       isPrecomputed(checkForm({ ...form, percents: { ...form.percents, basic_rate: "21" } }), precomputed),
@@ -163,9 +164,9 @@ describe("a custom elasticity", () => {
     expect(elasticityShortName(2.5)).toBe("Elasticity 2.5");
   });
 
-  test("a value that is not a case loads into the Custom choice", () => {
+  test("every form opens on the Custom box, holding its elasticity", () => {
     expect(formOf({ basic_rate: 0.2, higher_rate: 0.4, additional_rate: 0.45 }, null, 2.5).customElasticity).toBe("2.5");
-    expect(formOf({ basic_rate: 0.2, higher_rate: 0.4, additional_rate: 0.45 }, null, 2.0).customElasticity).toBe(null);
+    expect(formOf({ basic_rate: 0.2, higher_rate: 0.4, additional_rate: 0.45 }, null, 2.0).customElasticity).toBe("2.0");
   });
 
   test("round-trips through the URL, and a bad e falls back to the default", () => {
