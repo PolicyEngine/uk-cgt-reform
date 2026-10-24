@@ -285,9 +285,8 @@ def test_package_model_rows_name_published_centax_figures():
 
     ids = {row["id"] for row in CENTAX_PACKAGE_CONTEXT}
     assert all(source in ids for source, _ in PACKAGE_MODEL_RUNS.values())
-    # CenTax's Table 6 elasticities, and the central 1.0 where one figure is given.
-    assert PACKAGE_MODEL_RUNS[2025][1] == (0.5, 1.0, 1.5, 2.0)
-    assert PACKAGE_MODEL_RUNS[2026][1] == PACKAGE_MODEL_RUNS[2029][1] == (1.0,)
+    # CenTax's central elasticity in every year.
+    assert all(runs == (1.0,) for _, runs in PACKAGE_MODEL_RUNS.values())
     block = package_model_block(
         [
             {

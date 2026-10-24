@@ -143,8 +143,8 @@ function StaticEqualisation({ block, dataset }) {
       <JrfComparisonChart
         rows={rows}
         labels={{
-          static: `${PE}, equal rates and relief withdrawn (JRF's scope), no behavioural response`,
-          obr: `${PE}'s percentage increase applied to OBR receipts (JRF's scope)`,
+          static: `${PE}, no behavioural response`,
+          obr: `${PE}'s percentage increase applied to OBR receipts`,
           jrf: "JRF, no behavioural response (2026 report)",
         }}
       />
@@ -156,11 +156,11 @@ function StaticEqualisation({ block, dataset }) {
         <p>
           JRF applies HMRC&apos;s grouped CGT <SourceLink href={CGT_STATISTICS}>statistics</SourceLink>{" "}
           by income band to the OBR&apos;s March 2026 CGT{" "}
-          <SourceLink href={OBR_EFO}>projection</SourceLink>, with no behavioural response,
-          &quot;taking account of gains from carried interest and gains subject to Business Asset
-          Disposal Relief&quot;. {PE} reads that as equalising those gains too, so its figures
-          here withdraw the relief, unlike the headline reform; they are scored for this
-          comparison only.
+          <SourceLink href={OBR_EFO}>projection</SourceLink>, with no behavioural response.
+        </p>
+        <p>
+          JRF&apos;s figure includes gains under Business Asset Disposal Relief, which this reform
+          leaves at current law.
         </p>
         <p>
           The light dots apply {PE}&apos;s percentage increase (the change with no behavioural
@@ -224,10 +224,11 @@ function CentaxPackage({ rows: allRows, model, windowYears, onNavigate }) {
       </summary>
       <p className="mb-5 mt-3 text-sm leading-6 text-slate-600">
         <SourceLink href={CENTAX_REPORT}>CenTax&apos;s</SourceLink> published estimates for equal
-        rates together with wider changes to how gains are taxed, beside PolicyEngine&apos;s
-        estimate for the same year and elasticity of the part it models (equal rates and the
-        relief withdrawn). The gap reflects the measures PolicyEngine does not model as well as
-        data and method.
+        rates with wider changes, beside PolicyEngine&apos;s headline reform for the same year at
+        CenTax&apos;s central elasticity. CenTax&apos;s package also withdraws Business Asset
+        Disposal Relief, adds an investment allowance, taxes gains at death and charges an exit
+        tax; PolicyEngine models none of these, so the gap reflects them as well as data and
+        method.
       </p>
       <PackageEstimatesChart rows={built} />
       <Notes>
@@ -242,7 +243,7 @@ function CentaxPackage({ rows: allRows, model, windowYears, onNavigate }) {
         </p>
         {model ? (
           <p>
-            {`PolicyEngine's bars are the change in CGT revenue on its own liabilities for the year, nominal, after the response at the elasticity shown, under the year's current law. CenTax's are a percentage rise applied to the OBR's CGT forecast. ${outside.length ? `${outside.join(" and ")} lie outside the Reform tab's years and are scored for this comparison only.` : ""}`}
+            {`PolicyEngine's bars are the change in CGT revenue on its own liabilities for the year, nominal, after the response at the elasticity shown, against the year's current law. CenTax's are a percentage rise applied to the OBR's CGT forecast. ${outside.length ? `${outside.join(" and ")} lie outside the Reform tab's years and are scored for this comparison only.` : ""}`}
           </p>
         ) : null}
         {rows.map((row) => (
@@ -284,25 +285,25 @@ function ReadyReckoner({ block, dataset, elasticities, rr, headlineYear, onNavig
   );
   const currentPair = rr.pairs.find((p) => p.key === pairKey) ?? rr.pairs[0];
   return (
-    <section className="section-card scroll-mt-24" id="ready-reckoner">
-      <SectionHeading
-        title={`Small rate changes: PolicyEngine and HMRC, gains made in ${currentPair.modelYear}`}
-        action={
-          rr.pairs.length > 1 ? (
-            <YearPill
-              years={rr.pairs.map((p) => ({ value: p.key, label: p.modelYear }))}
-              value={pairKey}
-              onChange={setPairKey}
-            />
-          ) : null
-        }
-        description={
-          <>
-            <SourceLink href={block.url}>HMRC&apos;s</SourceLink>
-            {` table of small rate changes (its ‘ready reckoner’, June 2025): HMRC's receipts beside ${PE}'s change in the government balance ${reckonerElasticities(elasticities.official, elasticities.central, block.elasticities.elasticity_3)}. Both are for the same gains: the tax on gains made in ${currentPair.modelYear} is paid, and counted by HMRC as receipts, in ${currentPair.hmrcYear}. Bars left of £0 reduce revenue.`}
-          </>
-        }
-      />
+    // Collapsed by default, like the CenTax package box; a link to
+    // #ready-reckoner opens it (BaselineTab opens a DETAILS anchor).
+    <details className="section-card group scroll-mt-24" id="ready-reckoner">
+      <summary className="cursor-pointer select-none text-xl font-semibold tracking-tight text-slate-900 marker:text-[color:var(--pe-color-primary-600)]">
+        {`Small rate changes: PolicyEngine and HMRC, gains made in ${currentPair.modelYear}`}
+      </summary>
+      {rr.pairs.length > 1 ? (
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          <YearPill
+            years={rr.pairs.map((p) => ({ value: p.key, label: p.modelYear }))}
+            value={pairKey}
+            onChange={setPairKey}
+          />
+        </div>
+      ) : null}
+      <p className="mb-5 mt-2 text-sm leading-6 text-slate-600">
+        <SourceLink href={block.url}>HMRC&apos;s</SourceLink>
+        {` table of small rate changes (its ‘ready reckoner’, June 2025): HMRC's receipts beside ${PE}'s change in the government balance ${reckonerElasticities(elasticities.official, elasticities.central, block.elasticities.elasticity_3)}. Both are for the same gains: the tax on gains made in ${currentPair.modelYear} is paid, and counted by HMRC as receipts, in ${currentPair.hmrcYear}. Bars left of £0 reduce revenue.`}
+      </p>
       <ReadyReckonerChart
         pairs={rr.pairs}
         rows={rr.rows}
@@ -354,7 +355,7 @@ function ReadyReckoner({ block, dataset, elasticities, rr, headlineYear, onNavig
           .
         </p>
       </Notes>
-    </section>
+    </details>
   );
 }
 

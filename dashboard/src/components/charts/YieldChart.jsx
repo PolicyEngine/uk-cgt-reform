@@ -135,10 +135,19 @@ function YieldTooltip({ active, payload, label, steps }) {
 // it, two bars, no behavioural response and the CenTax central elasticity.
 // `steps` is the pipeline's schedule_split.steps.
 // `official` (optional) is the year's official HMRC/OBR sensitivity row,
-// drawn as a ring at its total, as on the sensitivity chart.
-export default function YieldChart({ steps, grid, centralRetention = 1, official }) {
+// drawn as a labelled ring at its total; `breakEven` (optional) is the
+// year's interpolated £0 crossing, labelled with no marker.
+export default function YieldChart({ steps, grid, centralRetention = 1, official, breakEven }) {
   if (grid?.length)
-    return <YieldArea steps={steps} grid={grid} centralRetention={centralRetention} official={official} />;
+    return (
+      <YieldArea
+        steps={steps}
+        grid={grid}
+        centralRetention={centralRetention}
+        official={official}
+        breakEven={breakEven}
+      />
+    );
   return <YieldBars steps={steps} />;
 }
 
@@ -148,6 +157,61 @@ const OFFICIAL = colors.gray[700];
 function OfficialRing({ cx, cy }) {
   if (!Number.isFinite(cx) || !Number.isFinite(cy)) return null;
   return <circle cx={cx} cy={cy} r={6.5} fill="#FFFFFF" fillOpacity={0.6} stroke={OFFICIAL} strokeWidth={2} />;
+}
+
+// The official case's label on the chart: one line, or three on a phone.
+function officialLines(official, narrow) {
+  const value = fmt(Number(official.revenue_bn));
+  const relief = `(${Number(official.badr_elasticity).toFixed(1)} for relief gains)`;
+  return narrow ? ["HMRC/OBR official:", value, relief] : [`HMRC/OBR official: ${value} ${relief}`];
+}
+
+// The official case's label, above the £0 line at its elasticity: the total
+// is below £0 there, so the space is clear in every year. It ends at the
+// 3.6 line, or at the plot's right edge in three lines on a narrow chart.
+function OfficialLabel({ cx, cy, lines, right }) {
+  if (!Number.isFinite(cx) || !Number.isFinite(cy)) return null;
+  const x = right ?? cx + 4;
+  return (
+    <text
+      x={x}
+      y={cy - 10 - 13 * (lines.length - 1)}
+      textAnchor="end"
+      fontSize={11}
+      fontWeight={600}
+      fill={OFFICIAL}
+      stroke="#FFFFFF"
+      strokeWidth={3}
+      paintOrder="stroke"
+    >
+      {lines.map((line, i) => (
+        <tspan key={line} x={x} dy={i === 0 ? 0 : 13}>
+          {line}
+        </tspan>
+      ))}
+    </text>
+  );
+}
+
+// "£0 at about 1.8", just below the £0 line and left of the crossing, where
+// the total (above £0 there) leaves room. No marker.
+function BreakEvenLabel({ cx, cy, text }) {
+  if (!Number.isFinite(cx) || !Number.isFinite(cy)) return null;
+  return (
+    <text
+      x={cx - 6}
+      y={cy + 15}
+      textAnchor="end"
+      fontSize={11}
+      fontWeight={600}
+      fill={colors.gray[900]}
+      stroke="#FFFFFF"
+      strokeWidth={3}
+      paintOrder="stroke"
+    >
+      {text}
+    </text>
+  );
 }
 
 function YieldAreaTooltip({ active, payload, steps, official }) {
@@ -166,7 +230,7 @@ function YieldAreaTooltip({ active, payload, steps, official }) {
         ...(atOfficial
           ? [
               {
-                label: `Official case total (relief gains ${Number(official.badr_elasticity).toFixed(1)})`,
+                label: `HMRC/OBR official case (${Number(official.badr_elasticity).toFixed(1)} for relief gains)`,
                 value: fmt(Number(official.revenue_bn)),
                 color: OFFICIAL,
               },
@@ -180,7 +244,7 @@ function YieldAreaTooltip({ active, payload, steps, official }) {
 
 // The parts stacked by sign at each elasticity (positive parts up from £0,
 // negative ones down), with the total, the sensitivity curve, as a line.
-function YieldArea({ steps, grid, centralRetention, official }) {
+function YieldArea({ steps, grid, centralRetention, official, breakEven }) {
   const [chartWidth, setChartWidth] = useState(0);
   const { narrow, marks, margin } = elasticityLayout(chartWidth, centralRetention);
   const data = grid.map((p) => {
@@ -241,6 +305,32 @@ function YieldArea({ steps, grid, centralRetention, official }) {
                 shape={(props) => <OfficialRing {...props} />}
               />
             ) : null}
+            {official ? (
+              <ReferenceDot
+                x={Number(official.e_retention)}
+                y={0}
+                r={0}
+                ifOverflow="visible"
+                shape={(props) => (
+                  <OfficialLabel
+                    {...props}
+                    right={narrow && chartWidth ? chartWidth - margin.right : undefined}
+                    lines={officialLines(official, narrow)}
+                  />
+                )}
+              />
+            ) : null}
+            {breakEven ? (
+              <ReferenceDot
+                x={breakEven.elasticity}
+                y={0}
+                r={0}
+                ifOverflow="visible"
+                shape={(props) => (
+                  <BreakEvenLabel {...props} text={`£0 at about ${breakEven.elasticity.toFixed(1)}`} />
+                )}
+              />
+            ) : null}
             <Tooltip
               {...TOOLTIP_PROPS}
               cursor={{ stroke: colors.gray[400], strokeWidth: 1 }}
@@ -256,7 +346,7 @@ function YieldArea({ steps, grid, centralRetention, official }) {
           ...(official
             ? [
                 {
-                  label: `Official case total: ${Number(official.e_retention).toFixed(1)}, ${Number(official.badr_elasticity).toFixed(1)} for relief gains`,
+                  label: `HMRC/OBR official case: ${Number(official.e_retention).toFixed(1)}, ${Number(official.badr_elasticity).toFixed(1)} for relief gains`,
                   fill: OFFICIAL,
                   marker: "ring",
                 },

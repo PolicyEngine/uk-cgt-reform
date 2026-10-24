@@ -639,21 +639,22 @@ def elasticities_block() -> dict:
     }
 
 
-# PolicyEngine's runs beside CenTax's package figures: the equalisation
-# reform (equal rates, the relief withdrawn) in each year CenTax report, at
-# each elasticity they state; the 2026 report states none, so the central
-# 1.0. 2025-26 and 2026-27 lie outside the modelled window and are scored
-# for this comparison only; 2029-30 at 1.0 is the window's central run.
+# PolicyEngine's runs beside CenTax's package figures: its own headline
+# reform (equal rates, the relief kept) in each year CenTax report, at
+# CenTax's central elasticity (the 2026 report states none). 2025-26 and
+# 2026-27 lie outside the modelled window and are scored for this
+# comparison only.
 PACKAGE_MODEL_RUNS = {
-    2025: ("centax_2024_table6_package_range", (0.5, 1.0, 1.5, 2.0)),
+    2025: ("centax_2024_table6_package_range", (1.0,)),
     2026: ("centax_2025_technical_note_package", (1.0,)),
     2029: ("centax_2026_taxes_at_the_top_package", (1.0,)),
 }
 PACKAGE_MODEL_MEASURE = (
     "Change in CGT revenue, £bn, on this repo's own liabilities in the year, nominal: "
-    "equal rates and the relief withdrawn only, after the behavioural response at the "
-    "elasticity shown. CenTax's figures are the change in CGT revenue from their whole "
-    "package, a percentage applied to the OBR's CGT forecast."
+    "the headline reform (equal rates, the relief kept) after the behavioural response "
+    "at the elasticity shown. CenTax's figures are the change in CGT revenue from their "
+    "whole package, which also withdraws the relief, a percentage applied to the OBR's "
+    "CGT forecast."
 )
 
 

@@ -157,7 +157,7 @@ export function getFirstYear(data) {
   return year;
 }
 
-// The year the headline cards, the yield split, the sensitivity chart and
+// The year the headline cards, the revenue-and-response chart and
 // the group chart's default report (a fiscal label, "2027-28").
 export function getHeadlineYear(data) {
   const year = data.metadata.headline_year;

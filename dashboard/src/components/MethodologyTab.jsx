@@ -307,63 +307,51 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
       <section className="section-card scroll-mt-24" id="relief">
         <SectionHeading
           title="How the relief is modelled"
-          description={
-            <p>
-              What the relief does under current law, how the model handles its lifetime limit, and
-              what the reform changes.
-            </p>
-          }
+          description={<p>What the relief is, how this dashboard treats it, and the limits of the data.</p>}
         />
         <div className={`mt-4 ${COLUMN}`}>
             <ul className="list-disc space-y-1.5 pl-5">
               <li>
-                <strong className="font-semibold text-slate-800">Current law.</strong> Gains
-                qualifying for Business Asset Disposal{" "}
-                <ExternalLink href={BADR_GUIDANCE}>Relief</ExternalLink> pay one rate whatever the
-                person&apos;s income tax band: 10% to 2024-25, 14% in 2025-26 and 18% from 6 April
-                2026. The rate applies to up to £1m of qualifying gains over a person&apos;s lifetime;
-                gains above that pay the main rates.
+                <strong className="font-semibold text-slate-800">What it is.</strong> Business Asset
+                Disposal <ExternalLink href={BADR_GUIDANCE}>Relief</ExternalLink> lowers the tax on
+                gains from selling a business or qualifying shares. Those gains pay one rate whatever
+                the person&apos;s income: 10% up to 2024-25, 14% in 2025-26 and 18% from April 2026.
+                This rate applies to up to £1m of such gains over a person&apos;s lifetime; gains above
+                that pay the normal rates.
               </li>
               <li>
-                <strong className="font-semibold text-slate-800">The lifetime limit.</strong> The
-                data hold one year&apos;s gains and no record of earlier claims, so the model applies
-                the £1m to each year&apos;s qualifying gains as if none of it had been used before.
-                In 2024-25, the data&apos;s own year, qualifying gains are calibrated to what HMRC
-                records as relieved, so earlier use is already reflected; the{" "}
+                <strong className="font-semibold text-slate-800">In this reform.</strong> The relief
+                stays as it is under current law. Custom rates can withdraw it, so these gains pay the
+                new main rates, or change its rate and lifetime limit (£500k, £1m or £10m).
+              </li>
+              <li>
+                <strong className="font-semibold text-slate-800">The £1m lifetime limit.</strong> The
+                data show one year of gains, not past claims, so the model applies the £1m within each
+                year. This comes close: the 2024-25 data match what HMRC records people actually
+                claimed, after any earlier use (see{" "}
                 <TabLink onNavigate={onNavigate} tab="baseline" section="benchmarks">
                   Baseline
-                </TabLink>{" "}
-                tab shows the claimants and gains beside HMRC&apos;s. HMRC and the{" "}
+                </TabLink>
+                ), and HMRC and the{" "}
                 <ExternalLink href="https://obr.uk/docs/dlm_uploads/CGT-supplementary-release-Jan-2025.pdf">OBR</ExternalLink>{" "}
-                also cost the relief from returns, without each person&apos;s history. In later years
-                two small effects pull in opposite directions: gains that grow past £1m pay the main
-                rates on the excess, and gains below it are not checked against earlier claims.
-                Together they move baseline CGT by about £0.05bn a year or less.
+                cost the relief the same way. In later years the error is about £0.05bn of CGT a year
+                or less.
               </li>
               <li>
-                <strong className="font-semibold text-slate-800">2024-25 claims.</strong> Claims
-                rose in 2024-25, before the relief&apos;s rate went up from April 2025, as some
-                business owners sold earlier. The model carries 2024-25&apos;s level of qualifying
-                gains into later years, so it may overstate those gains in 2027-28 onwards, and the
-                yield from withdrawing the relief in a custom run.
+                <strong className="font-semibold text-slate-800">2024-25 was unusual.</strong> More
+                people claimed than usual, selling before the rate rose in April 2025. The model
+                carries that level forward, so it may overstate these gains in later years. This
+                matters only for custom runs that change the relief.
               </li>
               <li>
-                <strong className="font-semibold text-slate-800">Investors&apos; Relief.</strong>{" "}
-                HMRC Table <ExternalLink href={HMRC_TABLE_4}>4</ExternalLink> reports it with Business
-                Asset Disposal Relief, so the model treats the two together, with one £1m limit. In
-                law, Investors&apos; <ExternalLink href={INVESTORS_RELIEF}>Relief</ExternalLink> had
-                its own £10m limit until 30 October 2024.
+                <strong className="font-semibold text-slate-800">Investors&apos; Relief.</strong> It is
+                counted together with this relief, as in HMRC&apos;s statistics, under one £1m limit. In
+                law it had its own £10m limit until 30 October 2024.
               </li>
               <li>
-                <strong className="font-semibold text-slate-800">Under the reform.</strong>{" "}
-                The headline reform keeps the relief at current law. Custom rates can withdraw it,
-                which sets the limit to zero so all qualifying gains pay the new main rates, or keep
-                it at a chosen rate and a lifetime limit of £500k, £1m or £10m.
-              </li>
-              <li>
-                <strong className="font-semibold text-slate-800">Behaviour.</strong> Qualifying gains
-                respond like other gains, except under the HMRC/OBR official assumption, which gives
-                them their own elasticity (described{" "}
+                <strong className="font-semibold text-slate-800">Behaviour.</strong> These gains
+                respond like other gains, except under the official HMRC/OBR assumption, which uses
+                1.4 for them (see{" "}
                 <TabLink onNavigate={() => openSection("elasticity-gap")}>below</TabLink>).
               </li>
             </ul>
@@ -604,10 +592,11 @@ export default function MethodologyTab({ data, anchor, onNavigate }) {
           <ul className="list-disc space-y-1.5 pl-5">
             <li>
               The{" "}
-              <TabLink onNavigate={onNavigate} tab="reform" section="sensitivity">
+              <TabLink onNavigate={onNavigate} tab="reform" section="response">
                 Reform
               </TabLink>{" "}
-              tab&apos;s sensitivity chart shows the reform&apos;s revenue at each value.
+              tab&apos;s chart of revenue and the behavioural response shows the reform&apos;s
+              revenue at each value.
             </li>
             <li>
               The{" "}

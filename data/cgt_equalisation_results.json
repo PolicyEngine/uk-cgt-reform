@@ -3200,7 +3200,7 @@
       "form": "realised gains \u00d7 ((1 \u2212 t\u2081) / (1 \u2212 t\u2080))^e, t the marginal rate on gains"
     },
     "static_equalisation": {
-      "reform_fingerprint": "4251e7185edd",
+      "reform_fingerprint": "ebeeba8cd992",
       "price_basis": "2026-27 prices",
       "price_index": "gov.economic_assumptions.yoy_growth.obr.consumer_price_index",
       "price_index_source": "OBR EFO March 2026 (Table A.1)",
@@ -3209,55 +3209,55 @@
         {
           "year": "2027-28",
           "baseline_cgt_bn": 30.120280831058018,
-          "static_cgt_change_bn": 27.019114081709194,
-          "static_gov_balance_change_bn": 27.01911410199945,
-          "static_uplift_pct": 89.70405765224105,
+          "static_cgt_change_bn": 21.947757963107044,
+          "static_gov_balance_change_bn": 21.947757977274904,
+          "static_uplift_pct": 72.8670429276874,
           "price_factor": 1.02,
-          "static_cgt_change_real_bn": 26.489327531087444,
+          "static_cgt_change_real_bn": 21.517409767752003,
           "obr_receipts_bn": 25.5,
-          "uplift_on_obr_receipts_real_bn": 22.426014413060262
+          "uplift_on_obr_receipts_real_bn": 18.21676073192185
         },
         {
           "year": "2028-29",
           "baseline_cgt_bn": 31.218391580265003,
-          "static_cgt_change_bn": 28.013447434094775,
-          "static_gov_balance_change_bn": 28.013447145829957,
-          "static_uplift_pct": 89.73379477949702,
+          "static_cgt_change_bn": 22.82578320915774,
+          "static_gov_balance_change_bn": 22.82578290785608,
+          "static_uplift_pct": 73.11646133488591,
           "price_factor": 1.0404,
-          "static_cgt_change_real_bn": 26.925651128503244,
+          "static_cgt_change_real_bn": 21.939430227948616,
           "obr_receipts_bn": 28.9,
-          "uplift_on_obr_receipts_real_bn": 24.92605410541584
+          "uplift_on_obr_receipts_real_bn": 20.31012814857942
         },
         {
           "year": "2029-30",
           "baseline_cgt_bn": 32.32284269699309,
-          "static_cgt_change_bn": 29.012940830778778,
-          "static_gov_balance_change_bn": 29.01294064107367,
-          "static_uplift_pct": 89.75986766621172,
+          "static_cgt_change_bn": 23.709497709088303,
+          "static_gov_balance_change_bn": 23.7094974811958,
+          "static_uplift_pct": 73.35214272875182,
           "price_factor": 1.061208,
-          "static_cgt_change_real_bn": 27.339542135734728,
+          "static_cgt_change_real_bn": 22.341989232165893,
           "obr_receipts_bn": 32.0,
-          "uplift_on_obr_receipts_real_bn": 27.06647297531469
+          "uplift_on_obr_receipts_real_bn": 22.118835961659336
         },
         {
           "year": "2030-31",
           "baseline_cgt_bn": 33.53359315870728,
-          "static_cgt_change_bn": 30.108212667072124,
-          "static_gov_balance_change_bn": 30.108212546047426,
-          "static_uplift_pct": 89.78522678609605,
+          "static_cgt_change_bn": 24.681392897402088,
+          "static_gov_balance_change_bn": 24.68139285863739,
+          "static_uplift_pct": 73.60199302410084,
           "price_factor": 1.08243216,
-          "static_cgt_change_real_bn": 27.815334558308138,
+          "static_cgt_change_real_bn": 22.801791936228213,
           "obr_receipts_bn": 34.9,
-          "uplift_on_obr_receipts_real_bn": 28.948737210789748
+          "uplift_on_obr_receipts_real_bn": 23.730905746011082
         },
         {
           "year": "2031-32",
           "baseline_cgt_bn": 34.773195963361026,
-          "static_cgt_change_bn": 31.216765674623428,
-          "static_gov_balance_change_bn": 31.216765642732483,
-          "static_uplift_pct": 89.77249519289268,
+          "static_cgt_change_bn": 25.668521530410256,
+          "static_gov_balance_change_bn": 25.6685216110813,
+          "static_uplift_pct": 73.81697545849981,
           "price_factor": 1.1040808032,
-          "static_cgt_change_real_bn": 28.273986454747398,
+          "static_cgt_change_real_bn": 23.248770792875114,
           "obr_receipts_bn": null,
           "uplift_on_obr_receipts_real_bn": null
         }
@@ -3266,13 +3266,13 @@
         {
           "year": "2026-27",
           "baseline_cgt_bn": 29.031002810145814,
-          "static_cgt_change_bn": 26.030934380976866,
-          "static_gov_balance_change_bn": 26.030934840990355,
-          "static_uplift_pct": 89.66598415911255,
+          "static_cgt_change_bn": 21.07942736144152,
+          "static_gov_balance_change_bn": 21.079427815100157,
+          "static_uplift_pct": 72.61005587473072,
           "price_factor": 1.0,
-          "static_cgt_change_real_bn": 26.030934380976866,
+          "static_cgt_change_real_bn": 21.07942736144152,
           "obr_receipts_bn": 20.8,
-          "uplift_on_obr_receipts_real_bn": 18.65052470509541
+          "uplift_on_obr_receipts_real_bn": 15.10289162194399
         }
       ],
       "external": [
@@ -3634,42 +3634,24 @@
       }
     ],
     "centax_package_model": {
-      "measure": "Change in CGT revenue, \u00a3bn, on this repo's own liabilities in the year, nominal: equal rates and the relief withdrawn only, after the behavioural response at the elasticity shown. CenTax's figures are the change in CGT revenue from their whole package, a percentage applied to the OBR's CGT forecast.",
+      "measure": "Change in CGT revenue, \u00a3bn, on this repo's own liabilities in the year, nominal: the headline reform (equal rates, the relief kept) after the behavioural response at the elasticity shown. CenTax's figures are the change in CGT revenue from their whole package, which also withdraws the relief, a percentage applied to the OBR's CGT forecast.",
       "rows": [
         {
           "year": "2025-26",
-          "elasticity": 0.5,
-          "cgt_change_bn": 17.640365559055766,
-          "source_id": "centax_2024_table6_package_range"
-        },
-        {
-          "year": "2025-26",
           "elasticity": 1.0,
-          "cgt_change_bn": 10.654691902541272,
-          "source_id": "centax_2024_table6_package_range"
-        },
-        {
-          "year": "2025-26",
-          "elasticity": 1.5,
-          "cgt_change_bn": 4.752592402197704,
-          "source_id": "centax_2024_table6_package_range"
-        },
-        {
-          "year": "2025-26",
-          "elasticity": 2.0,
-          "cgt_change_bn": -0.23339007953055954,
+          "cgt_change_bn": 7.451903663564808,
           "source_id": "centax_2024_table6_package_range"
         },
         {
           "year": "2026-27",
           "elasticity": 1.0,
-          "cgt_change_bn": 10.4217011235047,
+          "cgt_change_bn": 7.624908173083801,
           "source_id": "centax_2025_technical_note_package"
         },
         {
           "year": "2029-30",
           "elasticity": 1.0,
-          "cgt_change_bn": 11.666042893771706,
+          "cgt_change_bn": 8.451076531143142,
           "source_id": "centax_2026_taxes_at_the_top_package"
         }
       ]

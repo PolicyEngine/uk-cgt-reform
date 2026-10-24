@@ -78,11 +78,12 @@ and gains qualifying for Business Asset Disposal Relief on their own
 schedules when a dataset records them, and a reform that touches only the
 three main rates no longer reaches them. The reform also takes residential
 property gains to 20/40/45% and keeps Business Asset Disposal Relief at
-current law (18%, £1m lifetime limit). The comparisons whose scope withdraws
-the relief (JRF's static estimate and CenTax's package) are scored with it
-withdrawn (the engine's lifetime limit goes to zero, so qualifying gains,
-Investors' Relief included, fall to the main schedule), for those
-comparisons only. Carried interest has been taxed as income since 6 April 2026 (the
+current law (18%, £1m lifetime limit). Every comparison shows this reform
+as it is; where a source also withdraws the relief (JRF's static estimate
+includes relief gains, CenTax's package abolishes the relief), that is
+listed with the other measures this repo does not model. Custom rates can
+withdraw it (the engine's lifetime limit goes to zero, so qualifying gains,
+Investors' Relief included, fall to the main schedule). Carried interest has been taxed as income since 6 April 2026 (the
 engine keeps a 32% CGT stand-in), so equalising CGT with income tax leaves
 it alone. On a dataset without these columns the parameters are inert.
 
@@ -113,7 +114,7 @@ fingerprint `1f3d4d9bbc1a`.
 | Share of gains from gains of £1m or more | 67% (65%) | HMRC Table 2: 61% (2023-24), 65% (2024-25) |
 | Taxpayers with gains over £500k | 37.8k (32.7k) | HMRC Table 2: 19k (2023-24), 33k (2024-25) |
 | Largest single gain | £584m (£527m) | none: HMRC's top band is £5m and over (2k taxpayers, £23.6bn in 2023-24; 3k, £48.5bn in 2024-25) |
-| Static yield (e = 0) | +£22.0bn | JRF (2026): around £13bn, static, with the relief withdrawn (see [Benchmarks](#benchmarks)) |
+| Static yield (e = 0) | +£22.0bn | JRF (2026): around £13bn, static, including relief gains (see [Benchmarks](#benchmarks)) |
 | of which residential property (static) | +£2.3bn | none |
 | Yield, CenTax lower (retention 0.5) | +£14.3bn | none |
 | **Yield, CenTax central (retention 1.0)** | **+£7.9bn** | none for equal rates alone; CenTax's £14.3bn (2025-26), £11.3bn (2026-27) and £19.7bn (2029-30) withdraw the relief and add an investment allowance and base broadening |
@@ -205,12 +206,11 @@ external figure with its source, locator, scope, year and basis.
   puts equalisation at around £13bn in 2026/27, rising to £17bn in 2029/30 (2026/27
   prices), applying HMRC's CGT statistics by income band to the OBR's March
   2026 receipts projection: an implied uplift of about 60% in 2026-27. JRF
-  say they take "account of gains from carried interest and gains subject to
-  Business Asset Disposal Relief", read here as equalising those gains too, so
-  this comparison withdraws the relief, unlike the headline reform. This
-  repo's static uplift at that scope is 90%; applied to the same OBR
-  receipts that is £18.6bn in 2026-27 and £27.1bn in 2029-30 (deflated with
-  the OBR's CPI path).
+  take "account of gains from carried interest and gains subject to Business
+  Asset Disposal Relief", which this reform leaves at current law. This
+  repo's static uplift is 73%; applied to the same OBR receipts that is
+  £15.1bn in 2026-27 and £22.1bn in 2029-30 (deflated with the OBR's CPI
+  path).
 - **HMRC regional statistics, 2024-25.** Each region's share of CGT
   liability on this repo's 2024-25 baseline (the dataset's own year, no
   projection, no behavioural response) beside HMRC's Table 5.1 for the same

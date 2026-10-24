@@ -61,7 +61,6 @@ from .impacts import (
 )
 from .reform import (
     BADR_ELASTICITY_BY_CASE,
-    BADR_WITHDRAWN,
     COMPARISON_YEAR,
     ELASTICITY,
     ELASTICITY_PARAMETER,
@@ -291,9 +290,10 @@ def step_simulations(dataset, sim_stem: str, year: int, elasticity: float) -> di
 
 
 def package_simulations(spec, folder, sim_stem: str, years: list[int]) -> dict:
-    """The comparison-only runs for CenTax's package years, at CenTax's
-    scope (equal rates, the relief withdrawn): ``{year: {"baseline": sim,
-    elasticity: sim}}`` per :data:`comparison.PACKAGE_MODEL_RUNS`."""
+    """The runs beside CenTax's package figures: the headline reform (equal
+    rates, the relief kept) in each year, scored for this comparison only
+    outside the window: ``{year: {"baseline": sim, elasticity: sim}}`` per
+    :data:`comparison.PACKAGE_MODEL_RUNS`."""
     datasets = ensure_uk_datasets(spec, years, folder)
     out = {}
     for year in years:
@@ -301,9 +301,9 @@ def package_simulations(spec, folder, sim_stem: str, years: list[int]) -> dict:
             "baseline": run_simulation(datasets[year], sim_id=f"{sim_stem}_baseline_{year}")
         }
         for e in PACKAGE_MODEL_RUNS[year][1]:
-            # CenTax's scope withdraws the relief; a year before the reform
+            # The headline reform (relief kept); a year before the reform
             # dicts' own start date takes the same values from its own start.
-            reform = equalisation_reform(e, badr=BADR_WITHDRAWN)
+            reform = equalisation_reform(e)
             if f"{year}-01-01" < PERIOD:
                 reform = dated(reform, f"{year}-01-01")
             out[year][e] = run_simulation(
@@ -358,19 +358,6 @@ def run_dataset(
     static_reform = equalisation_reform(0.0)
     static_digest = reform_fingerprint(static_reform)
     static_policy = make_policy(static_reform, equalisation_case(0.0))
-    # The same static reform with the relief withdrawn: JRF's scope, for
-    # that comparison only (``comparison.EQUALISATION_SCOPE``).
-    jrf_static_reform = equalisation_reform(0.0, badr=BADR_WITHDRAWN)
-    jrf_static_digest = reform_fingerprint(jrf_static_reform)
-    jrf_static_policy = make_policy(jrf_static_reform, equalisation_case(0.0))
-    jrf_static_sims = {
-        year: run_simulation(
-            datasets[year],
-            policy=jrf_static_policy,
-            sim_id=equalisation_sim_id(sim_stem, 0.0, jrf_static_digest, year),
-        )
-        for year in YEARS
-    }
     static_sims = {
         year: run_simulation(
             datasets[year],
@@ -399,8 +386,8 @@ def run_dataset(
             )
             cmp_statics[year] = run_simulation(
                 cmp_datasets[year],
-                policy=jrf_static_policy,
-                sim_id=equalisation_sim_id(sim_stem, 0.0, jrf_static_digest, year),
+                policy=static_policy,
+                sim_id=equalisation_sim_id(sim_stem, 0.0, static_digest, year),
             )
         jrf_years = jrf_comparison_years(YEARS)
         comparison_budget = budget_impact(cmp_baselines, cmp_statics, jrf_years, cmp_aea, cmp_ceilings)
@@ -547,9 +534,9 @@ def run_dataset(
         split[label]["grid"] = points
         print(f"    {label}: {len(points)} points")
 
-    # ── Step 2e: CenTax's package years, PolicyEngine's rates-only estimate
-    # at each elasticity CenTax state, with the relief withdrawn as CenTax's
-    # scope has it; scored for this comparison only ─────────────────────
+    # ── Step 2e: CenTax's package years, PolicyEngine's headline reform at
+    # CenTax's central elasticity; 2025-26 and 2026-27 lie outside the
+    # window and are scored for this comparison only ─────────────────────
     print(f"Step 2e {tag}: CenTax package years {sorted(PACKAGE_MODEL_RUNS)} (rates only)...")
     pkg_sims = package_simulations(spec, folder, sim_stem, sorted(PACKAGE_MODEL_RUNS))
     pkg_rows = []
@@ -638,8 +625,7 @@ def run_dataset(
         )
     five_year_total = sum(r["gov_balance_change_bn"] for r in budget)
     print(f"    Five-year total budgetary impact: £{five_year_total:.1f}bn")
-    # JRF's comparison uses the static reform at JRF's scope (relief withdrawn).
-    static_budget = budget_impact(baseline_sims, jrf_static_sims, YEARS, aea, ceilings)
+    static_budget = budget_impact(baseline_sims, static_sims, YEARS, aea, ceilings)
 
     # ── Step 6: distributional impacts (income quantiles, household type,
     # region), all years ──────────────────────────────────────────────────
@@ -655,7 +641,7 @@ def run_dataset(
         static_equalisation=static_equalisation_block(
             static_budget,
             factors,
-            jrf_static_digest,
+            static_digest,
             cpi["reference"][0]["title"],
             comparison_budget,
         ),

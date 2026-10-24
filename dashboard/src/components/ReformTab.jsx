@@ -266,7 +266,7 @@ export default function ReformTab({ data, datasetKey, onNavigate, anchor }) {
                   Methodology
                 </TabLink>{" "}
                 explains that elasticity; the{" "}
-                <TabLink onNavigate={() => showEqualisation("sensitivity")}>sensitivity</TabLink>{" "}
+                <TabLink onNavigate={() => showEqualisation("response")}>revenue</TabLink>{" "}
                 chart in the results shows other values.
               </li>
               <li>

@@ -16,8 +16,7 @@ const CENTAX = { fill: colors.gray[500], text: colors.gray[700] };
 const DERIVED = { fill: "#FFFFFF", stroke: colors.gray[500], text: colors.gray[700] };
 // PolicyEngine's rates-only estimate: an outlined, dashed teal bar.
 const MODEL = { fill: "#FFFFFF", stroke: colors.primary[600], text: colors.primary[700] };
-export const MODEL_LEGEND =
-  "PolicyEngine, equal rates and relief withdrawn only (no investment allowance, no change at death, no exit tax)";
+export const MODEL_LEGEND = "PolicyEngine, equal rates only";
 
 // Short row labels, keyed by the results file's ids; an id not listed here
 // falls back to its source and locator.
@@ -63,8 +62,10 @@ export function buildPackageRows(rows, model = []) {
       built.push({
         ...base,
         label: SHORT_LABELS.centax_2024_table5_package,
-        bars: [...points]
-          .sort((a, b) => a.retention_elasticity - b.retention_elasticity)
+        // Only CenTax's central case, like the other rows: one CenTax bar and
+        // PolicyEngine's at the same elasticity.
+        bars: points
+          .filter((p) => p === central)
           .flatMap((p) => {
             const main = `${formatBn(p.value, 1)} at elasticity ${p.retention_elasticity.toFixed(1)}`;
             const short = `${formatBn(p.value, 1)} at ${p.retention_elasticity.toFixed(1)}`;
@@ -77,14 +78,14 @@ export function buildPackageRows(rows, model = []) {
                 elasticity: p.retention_elasticity,
                 central: p === central,
                 text: `${main}${extra}`,
-                main: short,
-                short,
+                main,
+                short: main,
                 extra,
               },
-              ...modelBar(row.id, p.retention_elasticity, true),
+              ...modelBar(row.id, p.retention_elasticity, true).map((bar) => ({ ...bar, short: bar.text })),
             ];
           }),
-        note: "One pair of bars per retention elasticity CenTax tested, 0.5 to 2.0, CenTax's above PolicyEngine's: the stronger the response, the less each raises.",
+        note: null,
       });
       continue;
     }
@@ -140,7 +141,7 @@ function RowChart({ value, text, label, title, derived = false, kind = "centax",
                     {
                       label:
                         kind === "model"
-                          ? "PolicyEngine, rates only"
+                          ? "PolicyEngine, equal rates only"
                           : derived
                             ? "PolicyEngine's derivation"
                             : "CenTax estimate",

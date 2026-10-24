@@ -24,7 +24,6 @@ import {
   getReformSchedules,
   getScheduleSplit,
   getScheduleSplitYears,
-  getSensitivityYears,
   getSensitivity,
   getSensitivityCurve,
   getReform,
@@ -33,7 +32,6 @@ import {
 import { colors } from "../lib/colors";
 import BudgetChart from "./charts/BudgetChart";
 import GroupImpactChart, { GROUP_DESCRIPTION, GroupDefinitions, HOUSEHOLD_COLOR } from "./charts/GroupImpactChart";
-import SensitivityChart, { SENSITIVITY_DESCRIPTION, SensitivityNotes } from "./charts/SensitivityChart";
 import RateChangeChart from "./charts/RateChangeChart";
 import YieldChart from "./charts/YieldChart";
 import { Card, MetricCard, Notes, PAIRED_CARD, SourceLabel, SourceLink, TabLink, YearPill } from "./controls";
@@ -64,22 +62,14 @@ function officialSource(official) {
 
 // The Reform tab's precomputed results: equalisation with income tax, as the
 // pipeline scored it, with the detail a live run does not produce (the yield
-// by schedule and the sensitivity to the elasticity).
+// by schedule across the behavioural response).
 export default function EqualisationResults({ data, onNavigate, onChooseCustom }) {
   const budget = getBudget(data);
   const headlineYear = getHeadlineYear(data);
   const headlineGroups = getIncomeChangeGroups(data, headlineYear);
-  // The yield and sensitivity sections each have a year select, starting
-  // at the headline year; the headline card's range stays on that year.
+  // The revenue-and-response section has a year select, starting at the
+  // headline year.
   const [splitYear, setSplitYear] = useState(headlineYear);
-  const [sensitivityYear, setSensitivityYear] = useState(headlineYear);
-  const headlineSensitivity = getSensitivity(data, headlineYear);
-  const sensitivity = getSensitivity(data, sensitivityYear);
-  // A year's chart shows only with every case the headline year has, never
-  // a partial set of bars.
-  const sensitivityComplete =
-    sensitivity.length === headlineSensitivity.length &&
-    headlineSensitivity.every((row) => sensitivity.some((r) => r.e_retention === row.e_retention));
   const { central, official, centax_range: centaxRange } = getBenchmarks(data).elasticities;
   const validation = getValidation(data);
   const dataset = getDatasetInfo(data);
@@ -115,7 +105,7 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
             label="Change in government balance"
             valueColor={colors.primary[700]}
             value={formatSignedBn(headlineRow.gov_balance_change_bn, 1)}
-            tip="The sensitivity chart below shows this figure under other behavioural responses."
+            tip="The chart of revenue and the behavioural response below shows this figure at other elasticities."
           />
           {topDecile ? (
             <MetricCard
@@ -180,27 +170,29 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
         </Card>
       </div>
 
-        <Card className="min-w-0">
+        <Card className="min-w-0 scroll-mt-24" id="response">
+          {/* The ids of the two sections this one replaced, so older links land here. */}
+          <span id="sensitivity" aria-hidden="true" className="block scroll-mt-24" />
+          <span id="yield" aria-hidden="true" className="block scroll-mt-24" />
           <SectionHeading
-            title={`Where the yield comes from, ${split.year}`}
+            title={`Revenue and the behavioural response, ${split.year}`}
             action={
               <YearSelect years={getScheduleSplitYears(data)} value={splitYear} onChange={setSplitYear} />
             }
             description={
               split.grid?.length ? (
                 <>
-                  The reform&apos;s change in CGT revenue at each retention elasticity from 0 to 4,
-                  split into its two parts in the order they are applied: income tax rates on
-                  other gains, then on residential property gains. The line is the total; the
-                  vertical lines mark the same values as the sensitivity chart.
+                  The reform&apos;s change in CGT revenue as the assumed elasticity rises from 0 to
+                  4, split into income tax rates on other gains and on residential property gains;
+                  the line is the total. Vertical lines mark CenTax&apos;s range, 3.0 and the
+                  official HMRC/OBR value.
                 </>
               ) : (
                 <>
-                  Each bar is the reform&apos;s whole change in CGT revenue, split into its two
-                  parts in the order they are applied: income tax rates on other gains, then on
-                  residential property gains. The top bar has no
-                  behavioural response; the bottom one uses{" "}
-                  <SourceLink href={CENTAX_SOURCE.url}>CenTax&apos;s</SourceLink> central response.
+                  Each bar is the reform&apos;s change in CGT revenue, split into income tax rates
+                  on other gains and on residential property gains: with no behavioural response,
+                  and at <SourceLink href={CENTAX_SOURCE.url}>CenTax&apos;s</SourceLink> central
+                  response.
                 </>
               )
             }
@@ -213,55 +205,66 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
             official={getSensitivity(data, split.year).find(
               (row) => row.e_retention === official.e_retention && row.badr_elasticity !== row.e_retention,
             )}
+            breakEven={getSensitivityCurve(data, split.year)?.break_even}
           />
           <Notes>
             {split.grid?.length ? (
               <p>
-                {`Each of the ${split.grid.length} elasticities on the sensitivity curve is scored twice, adding one part at a time, with one elasticity for every gain; between computed points the areas are straight lines. Where a part turns negative it stacks below £0.`}
+                {`The chart joins ${split.grid.length} runs of the reform at retention elasticities of 0.0 to 4.0 in steps of 0.2, plus 0.5, each with one elasticity for every gain and scored twice: the main rates alone, then residential property too. Between runs the areas and the line are straight, and the £0 point is interpolated linearly between the two runs either side of it.`}
               </p>
             ) : null}
+            <p>
+              The retention elasticity is the response of realised gains to the retention{" "}
+              <TabLink onNavigate={onNavigate} tab="methodology" section="elasticity">
+                rate
+              </TabLink>{" "}
+              (1 − t). CenTax central {central.e_retention.toFixed(1)} is the dashboard&apos;s central
+              assumption; CenTax lower {centaxRange.lower.toFixed(1)} and upper{" "}
+              {centaxRange.upper.toFixed(1)} are the ends of the range from{" "}
+              <SourceLabel href={CENTAX_SOURCE.url} label="CenTax" />, anchored on{" "}
+              <a
+                href="https://www.aeaweb.org/articles?id=10.1257/aeri.20200535"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline decoration-1 underline-offset-2 hover:opacity-80"
+              >
+                Agersnap
+              </a>{" "}
+              &amp; Zidar (2021) and{" "}
+              <a
+                href="https://www.nber.org/papers/w28514"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline decoration-1 underline-offset-2 hover:opacity-80"
+              >
+                Lavecchia
+              </a>{" "}
+              &amp; Tazhitdinova (2024).
+            </p>
+            <p>
+              3.0 is one of the elasticities HMRC&apos;s small rate changes are scored at on the{" "}
+              <TabLink onNavigate={onNavigate} tab="baseline" section="ready-reckoner">
+                Baseline
+              </TabLink>{" "}
+              tab.
+            </p>
+            <p>
+              HMRC/OBR {official.e_retention.toFixed(1)} is the official assumption (
+              <SourceLabel href={officialSource(official).url} label="OBR" />, January 2025, para
+              1.9). It gives gains qualifying for the relief their own{" "}
+              {Number(official.badr_e_retention).toFixed(1)}, so it is a ring beside the line rather
+              than a point on it;{" "}
+              <TabLink onNavigate={onNavigate} tab="methodology" section="elasticity-gap">
+                Methodology
+              </TabLink>{" "}
+              describes both elasticities.
+            </p>
             <p>
               Business Asset Disposal <SourceLink href={BADR_GUIDANCE}>Relief</SourceLink> stays at
               current law in this reform; <TabLink onNavigate={onChooseCustom}>Custom</TabLink> rates
               can score withdrawing it or any rate for it.
             </p>
           </Notes>
-        </Card>
-
-        <Card as="details" className="group min-w-0 scroll-mt-24" id="sensitivity">
-          <summary className="cursor-pointer select-none text-xl font-semibold tracking-tight text-slate-900 marker:text-[color:var(--pe-color-primary-600)]">
-            {`Sensitivity to the behavioural response, ${sensitivityYear}`}
-            <span className="ml-2 text-sm font-normal text-slate-500 group-open:hidden">
-              (expand to see how the result depends on taxpayers&apos; response)
-            </span>
-          </summary>
-          {/* The year pill sits under the title once the section is open, as
-              in every other card. */}
-          <div className="mt-3 flex">
-            <YearSelect years={getSensitivityYears(data)} value={sensitivityYear} onChange={setSensitivityYear} />
-          </div>
-          <p className="mb-5 mt-2 text-sm leading-6 text-slate-600">
-            {SENSITIVITY_DESCRIPTION}
-          </p>
-          {sensitivityComplete ? (
-            <SensitivityChart
-              key={sensitivityYear}
-              rows={sensitivity}
-              centralRetention={central.e_retention}
-              curve={getSensitivityCurve(data, sensitivityYear)}
-            />
-          ) : (
-            <p className="text-sm text-slate-500">The sensitivity runs for {sensitivityYear} are not in this results file.</p>
-          )}
-          <SensitivityNotes
-            onNavigate={onNavigate}
-            curve={getSensitivityCurve(data, sensitivityYear)}
-            central={central}
-            centaxRange={centaxRange}
-            official={official}
-            centaxHref={CENTAX_SOURCE.url}
-            officialHref={officialSource(official).url}
-          />
         </Card>
     </div>
   );
