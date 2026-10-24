@@ -62,6 +62,17 @@ def test_equalisation_ids_match_the_cached_outputs():
     )
 
 
+def test_the_curves_single_elasticity_changes_only_the_official_value():
+    # The curve's points apply one elasticity to every gain; that differs
+    # from the cases only at 3.6, where the official case gives the relief
+    # its own 1.4, so every other point reuses the cases' cached runs.
+    for e in (0.0, 0.5, 1.0, 2.0, 3.0):
+        assert equalisation_reform(e, single=True) == equalisation_reform(e)
+    single = equalisation_reform(OFFICIAL_ELASTICITY, single=True)
+    assert single != equalisation_reform(OFFICIAL_ELASTICITY)
+    assert not any("badr_elasticity" in key for key in single)
+
+
 def test_counterfactual_ids_name_their_side():
     assert counterfactual_sim_id("STEM", "baseline", "710d8df0d472", 2026) == (
         "STEM_centax1920_baseline_710d8df0d472_2026"

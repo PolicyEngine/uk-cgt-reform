@@ -119,6 +119,12 @@ BADR_ELASTICITY_PARAMETER = "gov.simulation.capital_gains_responses.badr_elastic
 #: The cases with their own elasticity for gains qualifying for the relief:
 #: only the official one. CenTax state one elasticity for every gain.
 BADR_ELASTICITY_BY_CASE = {OFFICIAL_ELASTICITY: OFFICIAL_BADR_ELASTICITY}
+#: The retention elasticities the sensitivity curve is computed at: 0.0 to
+#: 4.0 in steps of 0.2, plus CenTax's lower value 0.5, so CenTax's three
+#: values, the ready reckoner's 3.0 and the official 3.6 are exact points.
+#: Every point applies one elasticity to every gain (``single``); the
+#: official case, with its own value for the relief, is scored separately.
+SENSITIVITY_GRID = tuple(sorted({round(0.2 * i, 1) for i in range(21)} | {CENTAX_LOWER_ELASTICITY}))
 
 # Reformed CGT rates, equal to the income tax rates for each band.
 INCOME_TAX_RATES = {
@@ -217,24 +223,26 @@ CENTAX_1920_BADR_RATE = 0.10
 CENTAX_1920_BADR_LIFETIME_LIMIT = 1_000_000
 
 
-def elasticity_assignment(elasticity: float) -> dict[str, float | bool]:
+def elasticity_assignment(elasticity: float, *, single: bool = False) -> dict[str, float | bool]:
     """The engine parameters (and values) that carry a behavioural case: the
     retention-rate elasticity, applied as stated, and for the official case
-    the separate elasticity for gains qualifying for the relief."""
+    the separate elasticity for gains qualifying for the relief. With
+    ``single`` every gain responds at ``elasticity``, the official value
+    included (the sensitivity curve's points, ``SENSITIVITY_GRID``)."""
     assignment: dict[str, float | bool] = {ELASTICITY_PARAMETER: elasticity}
-    badr = BADR_ELASTICITY_BY_CASE.get(elasticity)
+    badr = None if single else BADR_ELASTICITY_BY_CASE.get(elasticity)
     if badr is not None:
         assignment[SEPARATE_BADR_ELASTICITY_PARAMETER] = True
         assignment[BADR_ELASTICITY_PARAMETER] = badr
     return assignment
 
 
-def elasticity_convention(elasticity: float) -> dict:
+def elasticity_convention(elasticity: float, *, single: bool = False) -> dict:
     """How a behavioural case is applied: the engine parameter it sets, the
     convention, the value the engine receives and the elasticity gains
     qualifying for the relief respond at. Every output that reports a case
     carries these."""
-    assignment = elasticity_assignment(elasticity)
+    assignment = elasticity_assignment(elasticity, single=single)
     return {
         "elasticity_parameter": ELASTICITY_PARAMETER,
         "applied_as": "retention",
@@ -249,6 +257,7 @@ def cgt_rate_reform(
     *,
     schedules: tuple[str, ...] = EXPLORER_SCHEDULES,
     badr: BadrPolicy = BADR_CURRENT_LAW,
+    single: bool = False,
 ) -> dict:
     """A CGT rate schedule as a PolicyEngine parametric reform dict.
 
@@ -265,20 +274,24 @@ def cgt_rate_reform(
         for band in RATE_BANDS:
             reform[f"gov.hmrc.cgt.{schedule}.{band}"] = {PERIOD: rates[band]}
     reform.update(badr.parameters())
-    for parameter, value in elasticity_assignment(elasticity).items():
+    for parameter, value in elasticity_assignment(elasticity, single=single).items():
         reform[parameter] = {PERIOD: value}
     return reform
 
 
 def equalisation_reform(
-    elasticity: float = ELASTICITY, *, badr: BadrPolicy = BADR_WITHDRAWN
+    elasticity: float = ELASTICITY, *, badr: BadrPolicy = BADR_WITHDRAWN, single: bool = False
 ) -> dict:
     """The equalisation reform as a PolicyEngine parametric reform dict: the
     main and residential property schedules take the income tax rates and
     Business Asset Disposal Relief is withdrawn (``badr`` keeps it instead).
     The dict is the one the cached simulation ids were minted from, so its
-    fingerprint is pinned in the tests."""
-    return cgt_rate_reform(INCOME_TAX_RATES, elasticity, schedules=SCHEDULES, badr=badr)
+    fingerprint is pinned in the tests. ``single`` applies one elasticity to
+    every gain (``elasticity_assignment``); it changes only the official
+    value's reform."""
+    return cgt_rate_reform(
+        INCOME_TAX_RATES, elasticity, schedules=SCHEDULES, badr=badr, single=single
+    )
 
 
 #: The equalisation reform built up schedule by schedule, for the split of

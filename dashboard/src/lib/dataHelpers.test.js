@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import results from "../../public/data/cgt_equalisation_results.json";
-import { getBudgetRow, getHeadlineYear, getScheduleSplit, getSensitivity } from "./dataHelpers";
+import { getBudgetRow, getHeadlineYear, getScheduleSplit, getSensitivity, getSensitivityCurve } from "./dataHelpers";
 
 describe("headline year", () => {
   test("the results file reports 2027-28 by default", () => {
@@ -33,5 +33,35 @@ describe("income deciles", () => {
       expect(groups.decile[0].group).toBe("Lowest 10%");
       expect(groups.decile.at(-1).group).toBe("Highest 10%");
     }
+  });
+});
+
+describe("sensitivity curve", () => {
+  test("every year's curve passes through its one-elasticity cases", () => {
+    for (const year of Object.keys(results.sensitivity)) {
+      const curve = getSensitivityCurve(results, year);
+      expect(curve.runs).toBe(curve.grid.length);
+      for (const row of getSensitivity(results, year)) {
+        // The official case gives BADR gains their own elasticity: off the line.
+        if (row.badr_elasticity !== row.e_retention) continue;
+        const point = curve.grid.find((p) => p.elasticity === row.e_retention);
+        expect(point.revenue_bn).toBe(row.revenue_bn);
+      }
+    }
+  });
+
+  test("the £0 point lies between the two runs either side of it", () => {
+    for (const year of Object.keys(results.sensitivity)) {
+      const { grid, break_even: crossing } = getSensitivityCurve(results, year);
+      if (!crossing) continue;
+      const [a, b] = crossing.between.map((e) => grid.find((p) => p.elasticity === e));
+      expect(Math.sign(a.revenue_bn)).not.toBe(Math.sign(b.revenue_bn));
+      expect(crossing.elasticity).toBeGreaterThan(a.elasticity);
+      expect(crossing.elasticity).toBeLessThan(b.elasticity);
+    }
+  });
+
+  test("a results file without the block returns null", () => {
+    expect(getSensitivityCurve({ sensitivity: {} }, "2027-28")).toBeNull();
   });
 });

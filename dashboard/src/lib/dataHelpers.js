@@ -69,6 +69,21 @@ export function getSensitivity(data, year) {
   return rows;
 }
 
+// One year's sensitivity curve: the reform's change in CGT revenue at each
+// retention elasticity on the pipeline's grid ({ elasticity, revenue_bn },
+// sorted) and the interpolated £0 crossing (`break_even`, or null). Null
+// for a results file from before the block existed; the chart then draws
+// through the sensitivity rows.
+export function getSensitivityCurve(data, year) {
+  const block = data.sensitivity_curve?.[year];
+  if (!block) return null;
+  for (const point of block.grid) {
+    requireNumber(point, "elasticity", `sensitivity curve ${year}`);
+    requireNumber(point, "revenue_bn", `sensitivity curve ${year}`);
+  }
+  return block;
+}
+
 // The years the per-year blocks (sensitivity, yield by schedule) cover.
 export function getSensitivityYears(data) {
   return Object.keys(data.sensitivity);

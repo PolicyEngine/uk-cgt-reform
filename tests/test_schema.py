@@ -13,9 +13,16 @@ from uk_cgt_reform.comparison import (
     ready_reckoner_block,
     static_equalisation_block,
 )
-from uk_cgt_reform.impacts import QUANTILE_LABELS, REGION_NAMES, fiscal_year_label, schedule_split
+from uk_cgt_reform.impacts import (
+    QUANTILE_LABELS,
+    REGION_NAMES,
+    break_even,
+    fiscal_year_label,
+    schedule_split,
+)
 from uk_cgt_reform.reform import (
     HEADLINE_YEAR,
+    SENSITIVITY_GRID,
     YEARS,
     centax_1920_rules,
     elasticity_convention,
@@ -32,6 +39,7 @@ TOP_LEVEL_KEYS = {
     "budget",
     "income_change_groups",
     "sensitivity",
+    "sensitivity_curve",
     "benchmarks",
     "schedule_split",
     "baseline_comparison",
@@ -249,6 +257,7 @@ def fake_results(spec=CANDIDATE, scale: float = 1.0) -> dict:
             ]
             for label in YEAR_LABELS
         },
+        "sensitivity_curve": {label: fake_curve(label) for label in YEAR_LABELS},
         "benchmarks": fake_benchmarks(scale),
         "schedule_split": {label: fake_schedule_split(scale, label) for label in YEAR_LABELS},
         "baseline_comparison": baseline_comparison_block(
@@ -373,6 +382,61 @@ def test_sensitivity_cases():
     assert all(
         r["elasticity_parameter"].endswith(".capital_gains_responses.elasticity") for r in rows
     )
+
+
+def fake_curve(label: str) -> dict:
+    """One year's ``sensitivity_curve`` block: a falling line through £0 at 2.0."""
+    grid = [{"elasticity": e, "revenue_bn": 10.0 - 5.0 * e} for e in SENSITIVITY_GRID]
+    return {
+        "year": label,
+        "measure": "Change in CGT revenue, £bn",
+        "runs": len(grid),
+        "grid": grid,
+        "break_even": break_even(grid),
+    }
+
+
+def test_sensitivity_grid_holds_every_marked_value():
+    assert len(SENSITIVITY_GRID) == 22
+    assert list(SENSITIVITY_GRID) == sorted(SENSITIVITY_GRID)
+    assert SENSITIVITY_GRID[0] == 0.0 and SENSITIVITY_GRID[-1] == 4.0
+    # CenTax's three values, the ready reckoner's 3.0 and the official 3.6
+    # are exact points, so the curve passes through every marked value.
+    for e in (0.5, 1.0, 2.0, 3.0, 3.6):
+        assert e in SENSITIVITY_GRID
+
+
+def test_sensitivity_curve_block_shape():
+    curve = fake_results()["sensitivity_curve"]
+    assert list(curve) == YEAR_LABELS
+    block = curve["2027-28"]
+    assert set(block) == {"year", "measure", "runs", "grid", "break_even"}
+    assert block["runs"] == len(block["grid"]) == len(SENSITIVITY_GRID)
+    assert all(set(p) == {"elasticity", "revenue_bn"} for p in block["grid"])
+
+
+def test_break_even_interpolates_between_computed_points():
+    points = [
+        {"elasticity": 1.8, "revenue_bn": 1.0},
+        {"elasticity": 2.0, "revenue_bn": -3.0},
+    ]
+    crossing = break_even(points)
+    assert crossing["elasticity"] == pytest.approx(1.85)
+    assert crossing["between"] == [1.8, 2.0]
+    assert "interpolation" in crossing["method"]
+
+
+def test_break_even_is_none_without_a_crossing_and_exact_on_a_zero_point():
+    falling = [{"elasticity": 0.0, "revenue_bn": 2.0}, {"elasticity": 0.2, "revenue_bn": 1.0}]
+    assert break_even(falling) is None
+    exact = break_even(
+        [
+            {"elasticity": 0.0, "revenue_bn": 2.0},
+            {"elasticity": 0.2, "revenue_bn": 0.0},
+            {"elasticity": 0.4, "revenue_bn": -1.0},
+        ]
+    )
+    assert exact["elasticity"] == 0.2 and exact["method"] == "computed point"
 
 
 def test_benchmarks_block_shape():

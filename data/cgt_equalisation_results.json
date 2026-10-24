@@ -1808,6 +1808,523 @@
       }
     ]
   },
+  "sensitivity_curve": {
+    "2027-28": {
+      "year": "2027-28",
+      "measure": "Change in CGT revenue, \u00a3bn",
+      "runs": 22,
+      "grid": [
+        {
+          "elasticity": 0.0,
+          "revenue_bn": 27.019114081709194
+        },
+        {
+          "elasticity": 0.2,
+          "revenue_bn": 23.341769841846652
+        },
+        {
+          "elasticity": 0.4,
+          "revenue_bn": 19.899088811480144
+        },
+        {
+          "elasticity": 0.5,
+          "revenue_bn": 18.261136029817127
+        },
+        {
+          "elasticity": 0.6,
+          "revenue_bn": 16.676473627051678
+        },
+        {
+          "elasticity": 0.8,
+          "revenue_bn": 13.660438317871174
+        },
+        {
+          "elasticity": 1.0,
+          "revenue_bn": 10.837106247754834
+        },
+        {
+          "elasticity": 1.2,
+          "revenue_bn": 8.19379902264513
+        },
+        {
+          "elasticity": 1.4,
+          "revenue_bn": 5.719459551876949
+        },
+        {
+          "elasticity": 1.6,
+          "revenue_bn": 3.404430808247597
+        },
+        {
+          "elasticity": 1.8,
+          "revenue_bn": 1.2380926261327934
+        },
+        {
+          "elasticity": 2.0,
+          "revenue_bn": -0.7898717933099861
+        },
+        {
+          "elasticity": 2.2,
+          "revenue_bn": -2.687057876552723
+        },
+        {
+          "elasticity": 2.4,
+          "revenue_bn": -4.4635736422637065
+        },
+        {
+          "elasticity": 2.6,
+          "revenue_bn": -6.126475259449913
+        },
+        {
+          "elasticity": 2.8,
+          "revenue_bn": -7.6816847473844225
+        },
+        {
+          "elasticity": 3.0,
+          "revenue_bn": -9.136617775777573
+        },
+        {
+          "elasticity": 3.2,
+          "revenue_bn": -10.498273252109497
+        },
+        {
+          "elasticity": 3.4,
+          "revenue_bn": -11.771979694836162
+        },
+        {
+          "elasticity": 3.6,
+          "revenue_bn": -12.964501179924367
+        },
+        {
+          "elasticity": 3.8,
+          "revenue_bn": -14.080602167632016
+        },
+        {
+          "elasticity": 4.0,
+          "revenue_bn": -15.12519956936961
+        }
+      ],
+      "break_even": {
+        "elasticity": 1.9221020067475327,
+        "between": [
+          1.8,
+          2.0
+        ],
+        "method": "linear interpolation between the two computed points"
+      }
+    },
+    "2028-29": {
+      "year": "2028-29",
+      "measure": "Change in CGT revenue, \u00a3bn",
+      "runs": 22,
+      "grid": [
+        {
+          "elasticity": 0.0,
+          "revenue_bn": 28.013447434094775
+        },
+        {
+          "elasticity": 0.2,
+          "revenue_bn": 24.205751722025074
+        },
+        {
+          "elasticity": 0.4,
+          "revenue_bn": 20.64068446991798
+        },
+        {
+          "elasticity": 0.5,
+          "revenue_bn": 18.94415979562875
+        },
+        {
+          "elasticity": 0.6,
+          "revenue_bn": 17.302813581912343
+        },
+        {
+          "elasticity": 0.8,
+          "revenue_bn": 14.178106966896648
+        },
+        {
+          "elasticity": 1.0,
+          "revenue_bn": 11.25353230772362
+        },
+        {
+          "elasticity": 1.2,
+          "revenue_bn": 8.515734371577908
+        },
+        {
+          "elasticity": 1.4,
+          "revenue_bn": 5.9526314124867215
+        },
+        {
+          "elasticity": 1.6,
+          "revenue_bn": 3.553319340706562
+        },
+        {
+          "elasticity": 1.8,
+          "revenue_bn": 1.3085272969646606
+        },
+        {
+          "elasticity": 2.0,
+          "revenue_bn": -0.7928479083900146
+        },
+        {
+          "elasticity": 2.2,
+          "revenue_bn": -2.7592063712129975
+        },
+        {
+          "elasticity": 2.4,
+          "revenue_bn": -4.59952561091248
+        },
+        {
+          "elasticity": 2.6,
+          "revenue_bn": -6.322801000070911
+        },
+        {
+          "elasticity": 2.8,
+          "revenue_bn": -7.935269319863029
+        },
+        {
+          "elasticity": 3.0,
+          "revenue_bn": -9.444059412628102
+        },
+        {
+          "elasticity": 3.2,
+          "revenue_bn": -10.855458448439128
+        },
+        {
+          "elasticity": 3.4,
+          "revenue_bn": -12.175825718138286
+        },
+        {
+          "elasticity": 3.6,
+          "revenue_bn": -13.411784279965786
+        },
+        {
+          "elasticity": 3.8,
+          "revenue_bn": -14.568534823078199
+        },
+        {
+          "elasticity": 4.0,
+          "revenue_bn": -15.65149143622593
+        }
+      ],
+      "break_even": {
+        "elasticity": 1.9245400910442174,
+        "between": [
+          1.8,
+          2.0
+        ],
+        "method": "linear interpolation between the two computed points"
+      }
+    },
+    "2029-30": {
+      "year": "2029-30",
+      "measure": "Change in CGT revenue, \u00a3bn",
+      "runs": 22,
+      "grid": [
+        {
+          "elasticity": 0.0,
+          "revenue_bn": 29.012940830778778
+        },
+        {
+          "elasticity": 0.2,
+          "revenue_bn": 25.072244392250717
+        },
+        {
+          "elasticity": 0.4,
+          "revenue_bn": 21.382847635070412
+        },
+        {
+          "elasticity": 0.5,
+          "revenue_bn": 19.627217005343436
+        },
+        {
+          "elasticity": 0.6,
+          "revenue_bn": 17.928336154800775
+        },
+        {
+          "elasticity": 0.8,
+          "revenue_bn": 14.694047845679336
+        },
+        {
+          "elasticity": 1.0,
+          "revenue_bn": 11.666042893771706
+        },
+        {
+          "elasticity": 1.2,
+          "revenue_bn": 8.83161465140007
+        },
+        {
+          "elasticity": 1.4,
+          "revenue_bn": 6.178234023341011
+        },
+        {
+          "elasticity": 1.6,
+          "revenue_bn": 3.6940021022044602
+        },
+        {
+          "elasticity": 1.8,
+          "revenue_bn": 1.3687982471896896
+        },
+        {
+          "elasticity": 2.0,
+          "revenue_bn": -0.8069181343788948
+        },
+        {
+          "elasticity": 2.2,
+          "revenue_bn": -2.8436599691551208
+        },
+        {
+          "elasticity": 2.4,
+          "revenue_bn": -4.749599676050697
+        },
+        {
+          "elasticity": 2.6,
+          "revenue_bn": -6.533867497704102
+        },
+        {
+          "elasticity": 2.8,
+          "revenue_bn": -8.204178206933895
+        },
+        {
+          "elasticity": 3.0,
+          "revenue_bn": -9.766651225442445
+        },
+        {
+          "elasticity": 3.2,
+          "revenue_bn": -11.229180475997685
+        },
+        {
+          "elasticity": 3.4,
+          "revenue_bn": -12.596954634073258
+        },
+        {
+          "elasticity": 3.6,
+          "revenue_bn": -13.876611049267812
+        },
+        {
+          "elasticity": 3.8,
+          "revenue_bn": -15.074346439824204
+        },
+        {
+          "elasticity": 4.0,
+          "revenue_bn": -16.195277003370645
+        }
+      ],
+      "break_even": {
+        "elasticity": 1.925825062382704,
+        "between": [
+          1.8,
+          2.0
+        ],
+        "method": "linear interpolation between the two computed points"
+      }
+    },
+    "2030-31": {
+      "year": "2030-31",
+      "measure": "Change in CGT revenue, \u00a3bn",
+      "runs": 22,
+      "grid": [
+        {
+          "elasticity": 0.0,
+          "revenue_bn": 30.108212667072124
+        },
+        {
+          "elasticity": 0.2,
+          "revenue_bn": 26.022132497657054
+        },
+        {
+          "elasticity": 0.4,
+          "revenue_bn": 22.196715832585276
+        },
+        {
+          "elasticity": 0.5,
+          "revenue_bn": 20.37656212165115
+        },
+        {
+          "elasticity": 0.6,
+          "revenue_bn": 18.615332431687108
+        },
+        {
+          "elasticity": 0.8,
+          "revenue_bn": 15.262037378590458
+        },
+        {
+          "elasticity": 1.0,
+          "revenue_bn": 12.122196929763836
+        },
+        {
+          "elasticity": 1.2,
+          "revenue_bn": 9.18253144514616
+        },
+        {
+          "elasticity": 1.4,
+          "revenue_bn": 6.430467725757839
+        },
+        {
+          "elasticity": 1.6,
+          "revenue_bn": 3.854183976811611
+        },
+        {
+          "elasticity": 1.8,
+          "revenue_bn": 1.4421250017335547
+        },
+        {
+          "elasticity": 2.0,
+          "revenue_bn": -0.8151592468334732
+        },
+        {
+          "elasticity": 2.2,
+          "revenue_bn": -2.927942941013855
+        },
+        {
+          "elasticity": 2.4,
+          "revenue_bn": -4.905426813296284
+        },
+        {
+          "elasticity": 2.6,
+          "revenue_bn": -6.756520329022133
+        },
+        {
+          "elasticity": 2.8,
+          "revenue_bn": -8.489897429729702
+        },
+        {
+          "elasticity": 3.0,
+          "revenue_bn": -10.1118774305984
+        },
+        {
+          "elasticity": 3.2,
+          "revenue_bn": -11.629391542494668
+        },
+        {
+          "elasticity": 3.4,
+          "revenue_bn": -13.049898660221698
+        },
+        {
+          "elasticity": 3.6,
+          "revenue_bn": -14.378003853340962
+        },
+        {
+          "elasticity": 3.8,
+          "revenue_bn": -15.62007879142461
+        },
+        {
+          "elasticity": 4.0,
+          "revenue_bn": -16.782431628585343
+        }
+      ],
+      "break_even": {
+        "elasticity": 1.9277752239354922,
+        "between": [
+          1.8,
+          2.0
+        ],
+        "method": "linear interpolation between the two computed points"
+      }
+    },
+    "2031-32": {
+      "year": "2031-32",
+      "measure": "Change in CGT revenue, \u00a3bn",
+      "runs": 22,
+      "grid": [
+        {
+          "elasticity": 0.0,
+          "revenue_bn": 31.216765674623428
+        },
+        {
+          "elasticity": 0.2,
+          "revenue_bn": 26.98198023059001
+        },
+        {
+          "elasticity": 0.4,
+          "revenue_bn": 23.017296520117515
+        },
+        {
+          "elasticity": 0.5,
+          "revenue_bn": 21.13070669215239
+        },
+        {
+          "elasticity": 0.6,
+          "revenue_bn": 19.30534324324079
+        },
+        {
+          "elasticity": 0.8,
+          "revenue_bn": 15.82982342539769
+        },
+        {
+          "elasticity": 1.0,
+          "revenue_bn": 12.575651361163803
+        },
+        {
+          "elasticity": 1.2,
+          "revenue_bn": 9.528500551001777
+        },
+        {
+          "elasticity": 1.4,
+          "revenue_bn": 6.67562893545472
+        },
+        {
+          "elasticity": 1.6,
+          "revenue_bn": 4.005125309217132
+        },
+        {
+          "elasticity": 1.8,
+          "revenue_bn": 1.5049276149552535
+        },
+        {
+          "elasticity": 2.0,
+          "revenue_bn": -0.8354954343665275
+        },
+        {
+          "elasticity": 2.2,
+          "revenue_bn": -3.025564579421497
+        },
+        {
+          "elasticity": 2.4,
+          "revenue_bn": -5.076170409825859
+        },
+        {
+          "elasticity": 2.6,
+          "revenue_bn": -6.995229024001786
+        },
+        {
+          "elasticity": 2.8,
+          "revenue_bn": -8.79197448570935
+        },
+        {
+          "elasticity": 3.0,
+          "revenue_bn": -10.474373115355895
+        },
+        {
+          "elasticity": 3.2,
+          "revenue_bn": -12.047846105235951
+        },
+        {
+          "elasticity": 3.4,
+          "revenue_bn": -13.520719744304946
+        },
+        {
+          "elasticity": 3.6,
+          "revenue_bn": -14.898513913597904
+        },
+        {
+          "elasticity": 3.8,
+          "revenue_bn": -16.186323994947248
+        },
+        {
+          "elasticity": 4.0,
+          "revenue_bn": -17.391868999192432
+        }
+      ],
+      "break_even": {
+        "elasticity": 1.9286030416929416,
+        "between": [
+          1.8,
+          2.0
+        ],
+        "method": "linear interpolation between the two computed points"
+      }
+    }
+  },
   "schedule_split": {
     "2027-28": {
       "year": "2027-28",

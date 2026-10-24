@@ -53,6 +53,7 @@ from .impacts import (
     income_change_groups,
     schedule_split,
     sensitivity,
+    sensitivity_curve,
     validation_stats,
 )
 from .reform import (
@@ -65,6 +66,7 @@ from .reform import (
     INCOME_TAX_RATES,
     PERIOD,
     PRICE_BASE_YEAR,
+    SENSITIVITY_GRID,
     YEARS,
     centax_1920_reforms,
     centax_1920_rules,
@@ -365,13 +367,16 @@ def run_dataset(
     print(f"Step 3 {tag}: Elasticity sensitivity, every year...")
     base_cgt = {year: cgt_revenue(baseline_sims[year]) for year in YEARS}
 
-    def case_runner(year: int):
+    def case_runner(year: int, single: bool = False):
+        # ``single``: one elasticity for every gain (the curve's points);
+        # it changes the reform only at the official value, so every other
+        # point shares the cases' cached runs.
         def run_case(e: float):
             if e == ELASTICITY:
                 return reform_sims[year]
             if e == 0.0:
                 return static_sims[year]
-            reform = equalisation_reform(e)
+            reform = equalisation_reform(e, single=single)
             return run_simulation(
                 datasets[year],
                 policy=make_policy(reform, equalisation_case(e)),
@@ -395,6 +400,31 @@ def run_dataset(
             f"    {label}: "
             + ", ".join(f"{r['e_retention']}: {r['revenue_bn']:+.1f}bn" for r in rows)
         )
+
+    # ── Step 3b: the sensitivity curve, every year: the reform at each
+    # retention elasticity on the grid, one elasticity for every gain, and
+    # where its change in CGT revenue crosses £0 ──────────────────────────
+    print(f"Step 3b {tag}: Sensitivity curve, {len(SENSITIVITY_GRID)} elasticities, every year...")
+    curve = {}
+    for year in YEARS:
+        label = fiscal_year_label(year)
+        for e in SENSITIVITY_GRID:
+            checked_assumption(equalisation_reform(e, single=True), e, year, single=True)
+        curve[label] = sensitivity_curve(
+            base_cgt[year], SENSITIVITY_GRID, case_runner(year, single=True), year
+        )
+        crossing = curve[label]["break_even"]
+        print(
+            f"    {label}: £0 at "
+            + (f"{crossing['elasticity']:.2f}" if crossing else "no crossing on the grid")
+        )
+        # The points the cases share must agree with the cases' own rows.
+        for row in sens[label]:
+            if row["e_retention"] in BADR_ELASTICITY_BY_CASE:
+                continue
+            point = next(p for p in curve[label]["grid"] if p["elasticity"] == row["e_retention"])
+            assert point["revenue_bn"] == row["revenue_bn"], (label, row["e_retention"])
+
     headline_sens = sens[fiscal_year_label(hy)]
     static_yield = next(r["revenue_bn"] for r in headline_sens if r["e_retention"] == 0.0)
     central_yield = next(r["revenue_bn"] for r in headline_sens if r["e_retention"] == ELASTICITY)
@@ -625,6 +655,7 @@ def run_dataset(
         "budget": budget,
         "income_change_groups": groups,
         "sensitivity": sens,
+        "sensitivity_curve": curve,
         "schedule_split": split,
         "benchmarks": benchmarks,
         "baseline_comparison": baseline_comparison,
@@ -654,7 +685,9 @@ def comparison_rates(year: int) -> dict:
     }
 
 
-def checked_assumption(reform: dict, elasticity: float, year: int) -> dict:
+def checked_assumption(
+    reform: dict, elasticity: float, year: int, *, single: bool = False
+) -> dict:
     """The resolution of the response ``reform`` applies in ``year``
     (``simulations.response_assumption``), checked against the case
     this repo meant: the retention-rate convention at ``elasticity`` (static at
@@ -666,8 +699,10 @@ def checked_assumption(reform: dict, elasticity: float, year: int) -> dict:
     if (
         assumption["convention"] != expected
         or assumption["elasticity"] != elasticity
-        or assumption["badr_elasticity"] != elasticity_convention(elasticity)["badr_elasticity"]
-        or assumption["separate_badr_elasticity"] != (elasticity in BADR_ELASTICITY_BY_CASE)
+        or assumption["badr_elasticity"]
+        != elasticity_convention(elasticity, single=single)["badr_elasticity"]
+        or assumption["separate_badr_elasticity"]
+        != (not single and elasticity in BADR_ELASTICITY_BY_CASE)
         or assumption["mtr_elasticity"] != 0
         or assumption["mtr_auto_resolved"]
         or assumption["warnings"]
