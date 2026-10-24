@@ -175,7 +175,7 @@ export default function BenchmarkChart({ rows, modelLabel, modelColumn = "Policy
         <span>Quantity</span>
         <span className="text-right">{modelColumn}</span>
         <span className="text-right">HMRC 2024-25</span>
-        <span className="text-right">PolicyEngine vs HMRC</span>
+        <span className="text-right">Difference</span>
         <span>On one scale, from 0</span>
       </div>
       {groups.map(([group, groupRows]) => (
