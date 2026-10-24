@@ -26,13 +26,14 @@ import {
   getScheduleSplitYears,
   getSensitivityYears,
   getSensitivity,
+  getSensitivityCurve,
   getReform,
   getValidation,
 } from "../lib/dataHelpers";
 import { colors } from "../lib/colors";
 import BudgetChart from "./charts/BudgetChart";
 import GroupImpactChart, { GROUP_DESCRIPTION, GroupDefinitions, HOUSEHOLD_COLOR } from "./charts/GroupImpactChart";
-import SensitivityChart from "./charts/SensitivityChart";
+import SensitivityChart, { SENSITIVITY_DESCRIPTION, SensitivityNotes } from "./charts/SensitivityChart";
 import RateChangeChart from "./charts/RateChangeChart";
 import YieldChart from "./charts/YieldChart";
 import { Card, MetricCard, Notes, PAIRED_CARD, SourceLabel, SourceLink, TabLink, YearPill } from "./controls";
@@ -229,61 +230,27 @@ export default function EqualisationResults({ data, onNavigate, onChooseCustom }
             <YearSelect years={getSensitivityYears(data)} value={sensitivityYear} onChange={setSensitivityYear} />
           </div>
           <p className="mb-5 mt-2 text-sm leading-6 text-slate-600">
-            Each bar shows the change in CGT revenue under a different assumption about how
-            strongly taxpayers cut the gains they realise.
+            {SENSITIVITY_DESCRIPTION}
           </p>
           {sensitivityComplete ? (
-            <SensitivityChart key={sensitivityYear} rows={sensitivity} centralRetention={central.e_retention} />
+            <SensitivityChart
+              key={sensitivityYear}
+              rows={sensitivity}
+              centralRetention={central.e_retention}
+              curve={getSensitivityCurve(data, sensitivityYear)}
+            />
           ) : (
             <p className="text-sm text-slate-500">The sensitivity runs for {sensitivityYear} are not in this results file.</p>
           )}
-          <Notes>
-          <p>
-            Each bar re-runs the reform with a different elasticity of realised gains with respect
-            to the retention{" "}
-            <TabLink onNavigate={onNavigate} tab="methodology" section="elasticity">
-              rate
-            </TabLink>{" "}
-            (1 − t).
-          </p>
-          <p>
-            The dark bar is the dashboard&apos;s central assumption, CenTax&apos;s central{" "}
-            {central.e_retention.toFixed(1)}; the bars either side are CenTax&apos;s range,{" "}
-            {centaxRange.lower.toFixed(1)} to {centaxRange.upper.toFixed(1)}, from{" "}
-            <SourceLabel href={CENTAX_SOURCE.url} label="CenTax" />, anchored on{" "}
-            <a
-              href="https://www.aeaweb.org/articles?id=10.1257/aeri.20200535"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline decoration-1 underline-offset-2 hover:opacity-80"
-            >
-              Agersnap
-            </a>{" "}
-            &amp; Zidar (2021) and{" "}
-            <a
-              href="https://www.nber.org/papers/w28514"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline decoration-1 underline-offset-2 hover:opacity-80"
-            >
-              Lavecchia
-            </a>{" "}
-            &amp; Tazhitdinova (2024).
-          </p>
-          <p>
-            The last bar is the official HMRC/OBR assumption (
-            <SourceLabel href={officialSource(official).url} label="OBR" />, January 2025, para
-            1.9);{" "}
-            <TabLink onNavigate={onNavigate} tab="methodology" section="elasticity-gap">
-              Methodology
-            </TabLink>{" "}
-            describes both elasticities and the{" "}
-            <TabLink onNavigate={onNavigate} tab="methodology" section="elasticity">
-              scope
-            </TabLink>{" "}
-            of CenTax&apos;s central value.
-          </p>
-          </Notes>
+          <SensitivityNotes
+            onNavigate={onNavigate}
+            curve={getSensitivityCurve(data, sensitivityYear)}
+            central={central}
+            centaxRange={centaxRange}
+            official={official}
+            centaxHref={CENTAX_SOURCE.url}
+            officialHref={officialSource(official).url}
+          />
         </Card>
     </div>
   );
