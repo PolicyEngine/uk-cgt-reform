@@ -7,16 +7,23 @@ from uk_cgt_reform.comparison import (
     READY_RECKONER,
     READY_RECKONER_ELASTICITIES,
     SENSITIVITY_CASES,
+    baseline_comparison_block,
     benchmarks_block,
-    centax_1920_block,
     ready_reckoner_block,
+    regional_block,
     static_equalisation_block,
 )
-from uk_cgt_reform.impacts import QUANTILE_LABELS, REGION_NAMES, fiscal_year_label, schedule_split
+from uk_cgt_reform.impacts import (
+    QUANTILE_LABELS,
+    REGION_NAMES,
+    break_even,
+    fiscal_year_label,
+    schedule_split,
+)
 from uk_cgt_reform.reform import (
     HEADLINE_YEAR,
+    SENSITIVITY_GRID,
     YEARS,
-    centax_1920_rules,
     elasticity_convention,
     reform_schedules,
 )
@@ -31,8 +38,10 @@ TOP_LEVEL_KEYS = {
     "budget",
     "income_change_groups",
     "sensitivity",
+    "sensitivity_curve",
     "benchmarks",
     "schedule_split",
+    "baseline_comparison",
 }
 
 
@@ -53,25 +62,6 @@ def fake_benchmarks(scale: float = 1.0) -> dict:
         for label in labels
     ]
     factors = {label: 1.02**i for i, label in enumerate(labels)}
-    uplift = {
-        "national": {
-            "baseline_cgt_bn": 8.0 * scale,
-            "reform_cgt_bn": 20.0 * scale,
-            "change_bn": 12.0 * scale,
-            "uplift_pct": 150.0,
-        },
-        "regions": [
-            {
-                "region": region,
-                "baseline_cgt_bn": 1.0 * scale,
-                "reform_cgt_bn": 2.5 * scale,
-                "change_bn": 1.5 * scale,
-                "uplift_pct": 150.0,
-            }
-            for region in REGION_NAMES.values()
-        ],
-        "unassigned_cgt_bn": {"baseline": 0.0, "reform": 0.0},
-    }
     model_m = {
         row["id"]: {
             elasticity_id: {lag["model_year"]: -100.0 * scale for lag in READY_RECKONER["lag"]}
@@ -83,12 +73,8 @@ def fake_benchmarks(scale: float = 1.0) -> dict:
         static_equalisation=static_equalisation_block(
             static_budget, factors, "45576cc53935", "OBR EFO March 2026 (Table A.1)"
         ),
-        centax_2019_20_rules=centax_1920_block(
-            17.2 * scale,
-            uplift,
-            centax_1920_rules(),
-            {"baseline": "a2eab6466ee5", "reform": "2367c58b5ba5"},
-            "2027-28",
+        regional=regional_block(
+            {region: 1e9 * scale for region in REGION_NAMES.values()}, "2024-25"
         ),
         ready_reckoner=ready_reckoner_block(model_m),
     )
@@ -247,9 +233,39 @@ def fake_results(spec=CANDIDATE, scale: float = 1.0) -> dict:
             ]
             for label in YEAR_LABELS
         },
+        "sensitivity_curve": {label: fake_curve(label) for label in YEAR_LABELS},
         "benchmarks": fake_benchmarks(scale),
         "schedule_split": {label: fake_schedule_split(scale, label) for label in YEAR_LABELS},
+        "baseline_comparison": baseline_comparison_block(
+            "2024-25",
+            {"total_gains_bn": 118.0 * scale, "baseline_cgt_revenue_bn": 23.0 * scale},
+            {
+                "main": {"basic_rate": 0.1346, "higher_rate": 0.2173, "additional_rate": 0.2173},
+                "residential_property": {"basic_rate": 0.18, "higher_rate": 0.24, "additional_rate": 0.24},
+                "badr": {"rate": 0.10, "lifetime_limit": 1_000_000.0},
+                "main_blended": True,
+            },
+            {
+                "engine_schedule": 23.0 * scale,
+                "pre_30_october_rates_all_year": 21.6 * scale,
+                "post_30_october_rates_all_year": 25.2 * scale,
+            },
+            {"pre_30_october_rates_all_year": "a", "post_30_october_rates_all_year": "b"},
+        ),
     }
+
+
+def test_baseline_comparison_is_in_hmrcs_year_apart_from_the_window():
+    block = fake_results()["baseline_comparison"]
+    assert block["year"] == "2024-25" == block["comparator"]["year"]
+    assert block["year"] not in YEAR_LABELS
+    assert block["projection"].startswith("none")
+    bounds = block["liability_bn"]
+    assert (
+        bounds["pre_30_october_rates_all_year"]
+        < bounds["engine_schedule"]
+        < bounds["post_30_october_rates_all_year"]
+    )
 
 
 def test_top_level_keys():
@@ -344,12 +360,68 @@ def test_sensitivity_cases():
     )
 
 
+def fake_curve(label: str) -> dict:
+    """One year's ``sensitivity_curve`` block: a falling line through £0 at 2.0."""
+    grid = [{"elasticity": e, "revenue_bn": 10.0 - 5.0 * e} for e in SENSITIVITY_GRID]
+    return {
+        "year": label,
+        "measure": "Change in CGT revenue, £bn",
+        "runs": len(grid),
+        "grid": grid,
+        "break_even": break_even(grid),
+    }
+
+
+def test_sensitivity_grid_holds_every_marked_value():
+    assert len(SENSITIVITY_GRID) == 22
+    assert list(SENSITIVITY_GRID) == sorted(SENSITIVITY_GRID)
+    assert SENSITIVITY_GRID[0] == 0.0 and SENSITIVITY_GRID[-1] == 4.0
+    # CenTax's three values, the ready reckoner's 3.0 and the official 3.6
+    # are exact points, so the curve passes through every marked value.
+    for e in (0.5, 1.0, 2.0, 3.0, 3.6):
+        assert e in SENSITIVITY_GRID
+
+
+def test_sensitivity_curve_block_shape():
+    curve = fake_results()["sensitivity_curve"]
+    assert list(curve) == YEAR_LABELS
+    block = curve["2027-28"]
+    assert set(block) == {"year", "measure", "runs", "grid", "break_even"}
+    assert block["runs"] == len(block["grid"]) == len(SENSITIVITY_GRID)
+    assert all(set(p) == {"elasticity", "revenue_bn"} for p in block["grid"])
+
+
+def test_break_even_interpolates_between_computed_points():
+    points = [
+        {"elasticity": 1.8, "revenue_bn": 1.0},
+        {"elasticity": 2.0, "revenue_bn": -3.0},
+    ]
+    crossing = break_even(points)
+    assert crossing["elasticity"] == pytest.approx(1.85)
+    assert crossing["between"] == [1.8, 2.0]
+    assert "interpolation" in crossing["method"]
+
+
+def test_break_even_is_none_without_a_crossing_and_exact_on_a_zero_point():
+    falling = [{"elasticity": 0.0, "revenue_bn": 2.0}, {"elasticity": 0.2, "revenue_bn": 1.0}]
+    assert break_even(falling) is None
+    exact = break_even(
+        [
+            {"elasticity": 0.0, "revenue_bn": 2.0},
+            {"elasticity": 0.2, "revenue_bn": 0.0},
+            {"elasticity": 0.4, "revenue_bn": -1.0},
+        ]
+    )
+    assert exact["elasticity"] == 0.2 and exact["method"] == "computed point"
+
+
 def test_benchmarks_block_shape():
     bench = fake_results()["benchmarks"]
     assert set(bench) == {
         "elasticities",
         "static_equalisation",
-        "centax_2019_20_rules",
+        "regional",
+        "centax_2019_20",
         "centax_package_context",
         "ready_reckoner",
     }
@@ -366,16 +438,16 @@ def test_benchmarks_block_shape():
     # The OBR forecast ends in 2030-31: no receipts for 2031-32.
     assert static["by_year"][-1]["obr_receipts_bn"] is None
     assert static["by_year"][3]["static_cgt_change_real_bn"] == pytest.approx(14.0 / 1.02**3)
-    centax = bench["centax_2019_20_rules"]
-    assert [row["region"] for row in centax["regions"]] == list(REGION_NAMES.values())
-    london = next(row for row in centax["regions"] if row["region"] == "London")
-    assert london["centax_uplift_pct"] == 123
-    assert london["baseline_share_pct"] == pytest.approx(100 / 12)
-    assert centax["external"]["value"] == 139.0
+    regional = bench["regional"]
+    assert regional["year"] == regional["external"]["year"] == "2024-25"
+    assert [row["region"] for row in regional["regions"]] == list(REGION_NAMES.values())
+    london = next(row for row in regional["regions"] if row["region"] == "London")
+    assert london["model_share_pct"] == pytest.approx(100 / 12)
+    assert bench["centax_2019_20"]["value"] == 139.0
     rows = bench["ready_reckoner"]["rows"]
     assert [row["id"] for row in rows] == [row["id"] for row in READY_RECKONER["rows"]]
     assert set(rows[0]["model_m"]) == set(READY_RECKONER_ELASTICITIES)
-    assert set(rows[0]["model_m"]["official"]) == {"2027-28"}
+    assert set(rows[0]["model_m"]["official"]) == {"2026-27", "2027-28"}
 
 
 def test_schedule_split_builds_the_yield_up_step_by_step():

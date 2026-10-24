@@ -72,6 +72,15 @@ YEARS = [2027, 2028, 2029, 2030, 2031]
 # The year the dashboard reports by default: the headline cards, and the
 # first year of every chart with a year select.
 HEADLINE_YEAR = 2027  # 2027-28
+# The year PolicyEngine is computed in beside HMRC's statistics and
+# CenTax's 2019/20-rules estimate: 2024-25, the dataset's own year, with no
+# projection (the engine's per-year file for 2024 is the published file:
+# same inputs, same weights). HMRC's latest outturn is for 2024-25; CenTax's
+# 2019-20 is out of the dataset's reach, so the dataset's own year stands in.
+COMPARISON_YEAR = 2024  # 2024-25
+# Reform dicts for that year must take effect from its start: PERIOD (2026)
+# would leave 2024-25 at current law.
+COMPARISON_PERIOD = "2024-01-01"
 # The price base of the static comparison with JRF, which reports in
 # 2026/27 prices.
 PRICE_BASE_YEAR = 2026
@@ -110,6 +119,12 @@ BADR_ELASTICITY_PARAMETER = "gov.simulation.capital_gains_responses.badr_elastic
 #: The cases with their own elasticity for gains qualifying for the relief:
 #: only the official one. CenTax state one elasticity for every gain.
 BADR_ELASTICITY_BY_CASE = {OFFICIAL_ELASTICITY: OFFICIAL_BADR_ELASTICITY}
+#: The retention elasticities the sensitivity curve is computed at: 0.0 to
+#: 4.0 in steps of 0.2, plus CenTax's lower value 0.5, so CenTax's three
+#: values, the ready reckoner's 3.0 and the official 3.6 are exact points.
+#: Every point applies one elasticity to every gain (``single``); the
+#: official case, with its own value for the relief, is scored separately.
+SENSITIVITY_GRID = tuple(sorted({round(0.2 * i, 1) for i in range(21)} | {CENTAX_LOWER_ELASTICITY}))
 
 # Reformed CGT rates, equal to the income tax rates for each band.
 INCOME_TAX_RATES = {
@@ -195,37 +210,27 @@ EXPLORER_SCOPE = "main_residential_and_badr"
 
 EXEMPT_AMOUNT_PARAMETER = "gov.hmrc.cgt.annual_exempt_amount"
 
-# The rules CenTax's rates-only estimate starts from (Advani, Lonsdale and
-# Summers 2024, Table 3: 2019/20). Applied to this repo's data as a static
-# counterfactual, so the percentage uplift is comparable with theirs.
-CENTAX_1920_MAIN_RATES = {"basic_rate": 0.10, "higher_rate": 0.20, "additional_rate": 0.20}
-CENTAX_1920_SCHEDULE_RATES = {"basic_rate": 0.18, "higher_rate": 0.28, "additional_rate": 0.28}
-CENTAX_1920_EXEMPT_AMOUNT = 12_000
-# Business Asset Disposal Relief (then Entrepreneurs' Relief) charged 10% in
-# 2019/20; CenTax's baseline applies the £1m lifetime limit of March 2020.
-# Investors' Relief gains sit in the engine's BADR input and follow it.
-CENTAX_1920_BADR_RATE = 0.10
-CENTAX_1920_BADR_LIFETIME_LIMIT = 1_000_000
 
-
-def elasticity_assignment(elasticity: float) -> dict[str, float | bool]:
+def elasticity_assignment(elasticity: float, *, single: bool = False) -> dict[str, float | bool]:
     """The engine parameters (and values) that carry a behavioural case: the
     retention-rate elasticity, applied as stated, and for the official case
-    the separate elasticity for gains qualifying for the relief."""
+    the separate elasticity for gains qualifying for the relief. With
+    ``single`` every gain responds at ``elasticity``, the official value
+    included (the sensitivity curve's points, ``SENSITIVITY_GRID``)."""
     assignment: dict[str, float | bool] = {ELASTICITY_PARAMETER: elasticity}
-    badr = BADR_ELASTICITY_BY_CASE.get(elasticity)
+    badr = None if single else BADR_ELASTICITY_BY_CASE.get(elasticity)
     if badr is not None:
         assignment[SEPARATE_BADR_ELASTICITY_PARAMETER] = True
         assignment[BADR_ELASTICITY_PARAMETER] = badr
     return assignment
 
 
-def elasticity_convention(elasticity: float) -> dict:
+def elasticity_convention(elasticity: float, *, single: bool = False) -> dict:
     """How a behavioural case is applied: the engine parameter it sets, the
     convention, the value the engine receives and the elasticity gains
     qualifying for the relief respond at. Every output that reports a case
     carries these."""
-    assignment = elasticity_assignment(elasticity)
+    assignment = elasticity_assignment(elasticity, single=single)
     return {
         "elasticity_parameter": ELASTICITY_PARAMETER,
         "applied_as": "retention",
@@ -240,6 +245,7 @@ def cgt_rate_reform(
     *,
     schedules: tuple[str, ...] = EXPLORER_SCHEDULES,
     badr: BadrPolicy = BADR_CURRENT_LAW,
+    single: bool = False,
 ) -> dict:
     """A CGT rate schedule as a PolicyEngine parametric reform dict.
 
@@ -256,20 +262,24 @@ def cgt_rate_reform(
         for band in RATE_BANDS:
             reform[f"gov.hmrc.cgt.{schedule}.{band}"] = {PERIOD: rates[band]}
     reform.update(badr.parameters())
-    for parameter, value in elasticity_assignment(elasticity).items():
+    for parameter, value in elasticity_assignment(elasticity, single=single).items():
         reform[parameter] = {PERIOD: value}
     return reform
 
 
 def equalisation_reform(
-    elasticity: float = ELASTICITY, *, badr: BadrPolicy = BADR_WITHDRAWN
+    elasticity: float = ELASTICITY, *, badr: BadrPolicy = BADR_WITHDRAWN, single: bool = False
 ) -> dict:
     """The equalisation reform as a PolicyEngine parametric reform dict: the
     main and residential property schedules take the income tax rates and
     Business Asset Disposal Relief is withdrawn (``badr`` keeps it instead).
     The dict is the one the cached simulation ids were minted from, so its
-    fingerprint is pinned in the tests."""
-    return cgt_rate_reform(INCOME_TAX_RATES, elasticity, schedules=SCHEDULES, badr=badr)
+    fingerprint is pinned in the tests. ``single`` applies one elasticity to
+    every gain (``elasticity_assignment``); it changes only the official
+    value's reform."""
+    return cgt_rate_reform(
+        INCOME_TAX_RATES, elasticity, schedules=SCHEDULES, badr=badr, single=single
+    )
 
 
 #: The equalisation reform built up schedule by schedule, for the split of
@@ -291,54 +301,26 @@ def schedule_step_reforms(elasticity: float) -> list[tuple[str, str, dict]]:
     ]
 
 
-def centax_1920_reforms() -> tuple[dict, dict]:
-    """The static counterfactual pair for the CenTax rates-only benchmark:
-    2019/20 rules (main 10/20, residential and carried interest 18/28, BADR
-    at 10% with a £1m lifetime limit, a £12,000 exempt amount) and the same
-    rules with every schedule, carried interest included, at income tax
-    rates and the relief withdrawn, as CenTax's Table 3 has it. Both at
-    e = 0, so each is exact against the current-law baseline and their
-    difference is the uplift from equalising at 2019/20 rules."""
-    exempt = {EXEMPT_AMOUNT_PARAMETER: {PERIOD: CENTAX_1920_EXEMPT_AMOUNT}}
-    baseline = cgt_rate_reform(CENTAX_1920_MAIN_RATES, 0.0, schedules=())
-    for schedule in (*SCHEDULES, CARRIED_INTEREST_SCHEDULE):
-        for band in RATE_BANDS:
-            baseline[f"gov.hmrc.cgt.{schedule}.{band}"] = {PERIOD: CENTAX_1920_SCHEDULE_RATES[band]}
-    baseline[BADR_RATE_PARAMETER] = {PERIOD: CENTAX_1920_BADR_RATE}
-    baseline[BADR_LIFETIME_LIMIT_PARAMETER] = {PERIOD: CENTAX_1920_BADR_LIFETIME_LIMIT}
-    carried = {
-        f"gov.hmrc.cgt.{CARRIED_INTEREST_SCHEDULE}.{band}": {PERIOD: INCOME_TAX_RATES[band]}
-        for band in RATE_BANDS
-    }
-    return {**baseline, **exempt}, {**equalisation_reform(0.0), **carried, **exempt}
-
-
-def centax_1920_rules() -> dict:
-    """The counterfactual's rules, for the results metadata."""
-    schedules = (*SCHEDULES, CARRIED_INTEREST_SCHEDULE)
+def dated(reform: dict, start: str) -> dict:
+    """``reform`` with every value taking effect from ``start`` instead of
+    its own date: the same reform for a year before :data:`PERIOD`."""
     return {
-        "baseline": {
-            "main": dict(CENTAX_1920_MAIN_RATES),
-            **{schedule: dict(CENTAX_1920_SCHEDULE_RATES) for schedule in schedules},
-            "badr": {
-                "rate": CENTAX_1920_BADR_RATE,
-                "lifetime_limit": CENTAX_1920_BADR_LIFETIME_LIMIT,
-            },
-            "annual_exempt_amount": CENTAX_1920_EXEMPT_AMOUNT,
-        },
-        "reform": {
-            "main": dict(INCOME_TAX_RATES),
-            **{schedule: dict(INCOME_TAX_RATES) for schedule in schedules},
-            "badr": BADR_WITHDRAWN.to_dict(),
-            "annual_exempt_amount": CENTAX_1920_EXEMPT_AMOUNT,
-        },
-        "elasticity": 0.0,
-        "not_modelled": (
-            "Investors' Relief, which CenTax's Table 3 also abolishes, shares the engine's "
-            "BADR input (capital_gains_badr): it is charged at the BADR rate within the BADR "
-            "lifetime limit and withdrawn with it; its own £10m limit is not modelled. On a "
-            "dataset without BADR gains the relief settings are inert."
-        ),
+        path: {start: value for value in dates.values()} for path, dates in reform.items()
+    }
+
+
+def comparison_rate_reforms() -> dict[str, dict]:
+    """The two bounds on the 2024-25 liability: the main rates before
+    30 October 2024 (10% / 20%) and after it (18% / 24%) charged for the
+    whole year, in place of the engine's day-weighted blend of the two.
+    Residential property (18% / 24%) and the relief (10%) did not change on
+    30 October 2024 and stay as they are."""
+    return {
+        role: dated(cgt_rate_reform(rates, 0.0, schedules=()), COMPARISON_PERIOD)
+        for role, rates in (
+            ("pre_30_october_rates_all_year", dict(zip(RATE_BANDS, (0.10, 0.20, 0.20)))),
+            ("post_30_october_rates_all_year", dict(zip(RATE_BANDS, (0.18, 0.24, 0.24)))),
+        )
     }
 
 

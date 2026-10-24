@@ -7,10 +7,11 @@ so the dashboard can say how comparable it is:
 - JRF (2026): static yield of equalising CGT with income tax rates, 2026-27
   and 2029-30, grouped HMRC statistics scaled to the OBR's March 2026
   receipts projection.
-- CenTax (Advani, Lonsdale and Summers 2024), Table 3 and Table 8: the
-  static uplift from equalising rates alone, nationally and by region, on
-  2019/20 rules. The pipeline re-scores that reform on this repo's data at
-  the same rules (``reform.centax_1920_reforms``).
+- HMRC's regional statistics (2026 release, Table 5.1): CGT liability by
+  region in 2024-25, beside this repo's 2024-25 baseline by region.
+- CenTax (Advani, Lonsdale and Summers 2024), Table 3: the static uplift
+  from equalising rates alone on 2019-20 rules, carried as published; the
+  dataset cannot reach 2019-20, so it is not re-scored.
 - CenTax's package estimates (Tables 5 and 6, the August 2025 technical
   note, "Taxes at the top" 2026), which add an investment allowance and
   base broadening: context only, a different scope.
@@ -22,7 +23,7 @@ so the dashboard can say how comparable it is:
 
 from __future__ import annotations
 
-from .impacts import REGION_NAMES
+from .impacts import REGION_NAMES, UNASSIGNED_REGION
 from .reform import (
     BADR_CURRENT_LAW,
     CENTAX_LOWER_ELASTICITY,
@@ -107,7 +108,7 @@ JRF_STATIC = [
         comparable=True,
         year="2026-27",
         basis="static",
-        price_basis="2026/27 prices",
+        price_basis="2026-27 prices",
         value=13.0,
         unit="gbp_bn",
         details={"method": JRF_METHOD},
@@ -123,7 +124,7 @@ JRF_STATIC = [
         comparable=True,
         year="2029-30",
         basis="static",
-        price_basis="2026/27 prices",
+        price_basis="2026-27 prices",
         value=17.0,
         unit="gbp_bn",
         details={"method": JRF_METHOD},
@@ -144,7 +145,7 @@ CENTAX_RATES_ONLY_SCOPE = (
     "carried-interest rates abolished; principal private residence relief kept"
 )
 CENTAX_1920_RULES_NOTE = (
-    "2019/20 rules and data: main rates 10/20, residential and carried interest "
+    "2019-20 rules and data: main rates 10/20, residential and carried interest "
     "18/28, BADR 10%, exempt amount £12,000; resident individuals; CGT and income tax "
     "counted together"
 )
@@ -163,49 +164,11 @@ CENTAX_TABLE_3 = _external(
     comparable=True,
     year="2019-20",
     basis="static",
-    price_basis="nominal, 2019/20",
+    price_basis="nominal, 2019-20",
     value=139.0,
     unit="pct",
     details={"change_bn": 15.2, "baseline_bn": 10.9},
     note=CENTAX_1920_RULES_NOTE,
-)
-
-# Table 8 ("Equalisation (no allowance)", 2020 tax year): baseline CGT and
-# the static uplift by taxpayers' region of residence.
-CENTAX_TABLE_8_REGIONS = [
-    {"region": "London", "baseline_bn": 3.0, "uplift_pct": 123},
-    {"region": "South East", "baseline_bn": 2.4, "uplift_pct": 139},
-    {"region": "East of England", "baseline_bn": 1.1, "uplift_pct": 137},
-    {"region": "North West", "baseline_bn": 0.9, "uplift_pct": 146},
-    {"region": "South West", "baseline_bn": 0.8, "uplift_pct": 144},
-    {"region": "West Midlands", "baseline_bn": 0.6, "uplift_pct": 151},
-    {"region": "Yorkshire and the Humber", "baseline_bn": 0.6, "uplift_pct": 152},
-    {"region": "East Midlands", "baseline_bn": 0.6, "uplift_pct": 151},
-    {"region": "Scotland", "baseline_bn": 0.5, "uplift_pct": 160},
-    {"region": "Wales", "baseline_bn": 0.2, "uplift_pct": 148},
-    {"region": "North East", "baseline_bn": 0.2, "uplift_pct": 163},
-    {"region": "Northern Ireland", "baseline_bn": 0.2, "uplift_pct": 154},
-]
-assert {row["region"] for row in CENTAX_TABLE_8_REGIONS} == set(REGION_NAMES.values())
-
-CENTAX_TABLE_8 = _external(
-    id="centax_2024_table8_regions_static",
-    source=CENTAX_2024_SOURCE,
-    published="2024-10",
-    url=f"{CENTAX_2024_URL}#page=47",
-    locator="Table 8, p.46",
-    scope=CENTAX_RATES_ONLY_SCOPE,
-    comparable=True,
-    year="2019-20",
-    basis="static",
-    price_basis="nominal, 2019/20",
-    value=None,
-    unit="pct",
-    details={"regions": CENTAX_TABLE_8_REGIONS},
-    note=(
-        f"{CENTAX_1920_RULES_NOTE}. Regions are taxpayers' regions of residence; "
-        "the rows sum to £11.1bn against the national £10.9bn (rounding)."
-    ),
 )
 
 CENTAX_PACKAGE_CONTEXT = [
@@ -219,15 +182,15 @@ CENTAX_PACKAGE_CONTEXT = [
         comparable=False,
         year="2019-20",
         basis="post_behavioural",
-        price_basis="nominal, 2019/20",
+        price_basis="nominal, 2019-20",
         value=8.2,
         unit="gbp_bn",
         details={"share_of_static_pct": 54, "retention_elasticity": 1.0},
         note=(
-            "Not a CenTax figure. CenTax adds the death-uplift (£1.3bn) and exit-charge "
-            "(£4.3bn) components without a behavioural response; subtracting them from the "
-            "no-allowance package (£13.8bn, Table 4) leaves about £8.2bn for rates alone. "
-            "CenTax expects a rates-only reform to face a higher elasticity than its package."
+            "Not a CenTax figure. CenTax adds the uplift at death (gains on assets held "
+            "until death are not taxed; £1.3bn) and exit-charge (£4.3bn) components without "
+            "a behavioural response; subtracting them from the no-allowance package "
+            "(£13.8bn, Table 4) leaves about £8.2bn for rates alone."
         ),
     ),
     _external(
@@ -240,11 +203,11 @@ CENTAX_PACKAGE_CONTEXT = [
         comparable=False,
         year="2025-26",
         basis="post_behavioural",
-        price_basis="nominal, scaled to the OBR's 2025/26 CGT forecast",
+        price_basis="nominal, scaled to the OBR's 2025-26 CGT forecast",
         value=14.3,
         unit="gbp_bn",
         details={"uplift_pct": 88, "retention_elasticity": 1.0},
-        note="The headline £14bn: a medium-term effect on the 2025/26 base.",
+        note="The headline £14bn: a medium-term effect on the 2025-26 base.",
     ),
     _external(
         id="centax_2024_table6_package_range",
@@ -256,7 +219,7 @@ CENTAX_PACKAGE_CONTEXT = [
         comparable=False,
         year="2025-26",
         basis="post_behavioural",
-        price_basis="nominal, scaled to the OBR's 2025/26 CGT forecast",
+        price_basis="nominal, scaled to the OBR's 2025-26 CGT forecast",
         value=None,
         unit="gbp_bn",
         details={
@@ -299,7 +262,7 @@ CENTAX_PACKAGE_CONTEXT = [
         value=19.7,
         unit="gbp_bn",
         details={"uplift_pct": 62, "previous_uplift_pct": 88},
-        note="Uplift 62%, down from 88% in the 2024 report; no elasticity value stated.",
+        note="Increase in revenue 62%, down from 88% in the 2024 report; no elasticity value stated.",
     ),
 ]
 
@@ -362,8 +325,9 @@ READY_RECKONER = {
     "basis": "post_behavioural",
     "unit": "gbp_m",
     "measure": (
-        "Exchequer receipts in £m (positive = yield), including income tax and SDLT "
-        "effects, for a change from April 2026 on the OBR's March 2025 forecast"
+        "Exchequer receipts in £m (positive = yield), including income tax and stamp duty "
+        "land tax (SDLT) effects, for a change to the named rate, on the OBR's March 2025 "
+        "forecast"
     ),
     "note": (
         "The higher-rate rows move the higher and additional rates together, for main "
@@ -374,52 +338,55 @@ READY_RECKONER = {
     ),
     "hmrc_years": ["2026-27", "2027-28", "2028-29"],
     # Receipts lag liabilities by about a year: this repo's liabilities in
-    # a year are compared with HMRC's receipts in the next.
-    # The modelled window starts in 2027-28, so one pair remains.
+    # a year are compared with HMRC's receipts in the next. 2026-27 sits
+    # before the modelled window and is scored for this comparison only;
+    # HMRC's 2026-27 receipts would need 2025-26 liabilities, before the
+    # rows' April 2026 start, so they have no pair.
     "lag": [
+        {"model_year": "2026-27", "hmrc_year": "2027-28"},
         {"model_year": "2027-28", "hmrc_year": "2028-29"},
     ],
     "rows": [
         _row(
             "higher_plus_1",
-            "Higher rate +1pp (18% / 25% / 25%)",
+            "Higher rate +1 point (18% / 25% / 25%)",
             _rates(0.18, 0.25, 0.25),
             {"2026-27": -15, "2027-28": 80, "2028-29": -30},
         ),
         _row(
             "higher_plus_5",
-            "Higher rate +5pp (18% / 29% / 29%)",
+            "Higher rate +5 points (18% / 29% / 29%)",
             _rates(0.18, 0.29, 0.29),
             {"2026-27": -170, "2027-28": -235, "2028-29": -870},
         ),
         _row(
             "higher_plus_10",
-            "Higher rate +10pp (18% / 34% / 34%)",
+            "Higher rate +10 points (18% / 34% / 34%)",
             _rates(0.18, 0.34, 0.34),
             {"2026-27": -540, "2027-28": -2060, "2028-29": -3565},
         ),
         _row(
             "lower_plus_1",
-            "Lower rate +1pp (19% / 24% / 24%)",
+            "Lower rate +1 point (19% / 24% / 24%)",
             _rates(0.19, 0.24, 0.24),
             {"2026-27": -5, "2027-28": 10, "2028-29": 5},
         ),
         _row(
             "lower_plus_5",
-            "Lower rate +5pp (23% / 24% / 24%)",
+            "Lower rate +5 points (23% / 24% / 24%)",
             _rates(0.23, 0.24, 0.24),
             {"2026-27": -40, "2027-28": 20, "2028-29": -10},
         ),
         _row(
             "badr_plus_1",
-            "Business Asset Disposal Relief rate +1pp (19%)",
+            "Business Asset Disposal Relief rate +1 point (19%)",
             _CURRENT_RATES,
             {"2026-27": 10, "2027-28": 135, "2028-29": 180},
             badr=BadrPolicy(rate=0.19),
         ),
         _row(
             "badr_plus_5",
-            "Business Asset Disposal Relief rate +5pp (23%)",
+            "Business Asset Disposal Relief rate +5 points (23%)",
             _CURRENT_RATES,
             {"2026-27": 40, "2027-28": 635, "2028-29": 840},
             badr=BadrPolicy(rate=0.23),
@@ -509,42 +476,6 @@ def static_equalisation_block(
     }
 
 
-def centax_1920_block(
-    current_law_cgt_bn: float,
-    uplift: dict,
-    rules: dict,
-    fingerprints: dict[str, str],
-    year: str,
-) -> dict:
-    """This repo's static uplift at 2019/20 rules beside CenTax Tables 3 and 8.
-    ``uplift`` is :func:`impacts.cgt_uplift` of the counterfactual pair."""
-    centax = {row["region"]: row for row in CENTAX_TABLE_8_REGIONS}
-    centax_total = sum(row["baseline_bn"] for row in CENTAX_TABLE_8_REGIONS)
-    model_total = sum(row["baseline_cgt_bn"] for row in uplift["regions"])
-    regions = []
-    for row in uplift["regions"]:
-        ref = centax[row["region"]]
-        regions.append(
-            {
-                **row,
-                "baseline_share_pct": 100 * row["baseline_cgt_bn"] / model_total,
-                "centax_baseline_bn": ref["baseline_bn"],
-                "centax_baseline_share_pct": 100 * ref["baseline_bn"] / centax_total,
-                "centax_uplift_pct": ref["uplift_pct"],
-            }
-        )
-    return {
-        "year": year,
-        "rules": rules,
-        "reform_fingerprints": dict(fingerprints),
-        "national": {"current_law_cgt_bn": current_law_cgt_bn, **uplift["national"]},
-        "unassigned_cgt_bn": dict(uplift["unassigned_cgt_bn"]),
-        "regions": regions,
-        "external": dict(CENTAX_TABLE_3),
-        "external_regions": {k: v for k, v in CENTAX_TABLE_8.items() if k != "details"},
-    }
-
-
 def ready_reckoner_block(model_m: dict[str, dict[str, dict[str, float]]]) -> dict:
     """HMRC's rows beside this repo's scores. ``model_m`` maps row id to
     elasticity id to model year to the change in government balance, £m."""
@@ -562,6 +493,122 @@ def ready_reckoner_block(model_m: dict[str, dict[str, dict[str, float]]]) -> dic
             "3.6 to main-rate gains and 1.4 to gains qualifying for the relief"
         ),
         "rows": [{**row, "model_m": model_m[row["id"]]} for row in READY_RECKONER["rows"]],
+    }
+
+
+HMRC_CGT_STATISTICS = {
+    "source": "HMRC, Capital Gains Tax statistics, 2026 release",
+    "url": "https://www.gov.uk/government/statistics/capital-gains-tax-statistics",
+    "year": "2024-25",
+    "status": "provisional",
+}
+
+
+# HMRC's regional statistics for 2024-25 (2026 release, Table 5.1, provisional):
+# taxpayers (thousands), gains (£m, after losses, before the annual exempt
+# amount) and tax (£m), by UK country and English region. The table's own
+# "All" row is £24,169m of tax; the twelve rows sum to £24,168m (rounding).
+HMRC_TABLE_5_REGIONS = [
+    {"region": "North East", "taxpayers_k": 12, "gains_m": 1_599, "tax_m": 274},
+    {"region": "North West", "taxpayers_k": 44, "gains_m": 9_384, "tax_m": 1_711},
+    {"region": "Yorkshire and the Humber", "taxpayers_k": 34, "gains_m": 7_442, "tax_m": 1_385},
+    {"region": "East Midlands", "taxpayers_k": 33, "gains_m": 6_725, "tax_m": 1_224},
+    {"region": "West Midlands", "taxpayers_k": 35, "gains_m": 6_289, "tax_m": 1_136},
+    {"region": "East of England", "taxpayers_k": 62, "gains_m": 12_326, "tax_m": 2_324},
+    {"region": "London", "taxpayers_k": 113, "gains_m": 34_717, "tax_m": 7_036},
+    {"region": "South East", "taxpayers_k": 121, "gains_m": 27_337, "tax_m": 5_150},
+    {"region": "South West", "taxpayers_k": 64, "gains_m": 11_040, "tax_m": 2_059},
+    {"region": "Wales", "taxpayers_k": 18, "gains_m": 2_518, "tax_m": 447},
+    {"region": "Scotland", "taxpayers_k": 37, "gains_m": 6_064, "tax_m": 1_090},
+    {"region": "Northern Ireland", "taxpayers_k": 10, "gains_m": 1_876, "tax_m": 332},
+]
+assert [row["region"] for row in HMRC_TABLE_5_REGIONS] == list(REGION_NAMES.values())
+
+HMRC_TABLE_5 = _external(
+    id="hmrc_2026_table5_regions_2024_25",
+    source="HMRC, Capital Gains Tax statistics, 2026 release",
+    published="2026-08-27",
+    url=(
+        "https://assets.publishing.service.gov.uk/media/6a7b2444114277b327805c10/"
+        "Table_5_2026_Regional_and_country_statistics.ods"
+    ),
+    locator="Table 5.1 (sheet 5_1_2024-25)",
+    scope="CGT liabilities of individuals by UK country and English region, current law",
+    comparable=True,
+    year="2024-25",
+    basis="static",
+    price_basis="nominal, 2024-25",
+    value=24_169,
+    unit="gbp_m",
+    details={"regions": HMRC_TABLE_5_REGIONS, "status": "provisional"},
+    note=(
+        "Provisional. Regions by the postcode of each individual's residence (HMRC's "
+        "commentary, Table 5). Gains after losses, before the annual exempt amount; tax in £m. "
+        "The twelve rows sum to £24,168m against the table's £24,169m (rounding)."
+    ),
+)
+
+
+def regional_block(model_cgt: dict[str, float], year: str) -> dict:
+    """Each region's share of CGT liability under current law: this repo's
+    baseline in ``year`` (``impacts.cgt_by_region``, £, households' regions,
+    no projection and no behavioural response) beside HMRC's Table 5.1. Each
+    side's shares are of its own twelve-region total."""
+    regions = list(REGION_NAMES.values())
+    model_total = sum(model_cgt[region] for region in regions)
+    hmrc = {row["region"]: row for row in HMRC_TABLE_5_REGIONS}
+    hmrc_total = sum(row["tax_m"] for row in HMRC_TABLE_5_REGIONS)
+    return {
+        "year": year,
+        "basis": "current law, no projection, no behavioural response",
+        "model_cgt_bn": model_total / 1e9,
+        "unassigned_cgt_bn": model_cgt.get(UNASSIGNED_REGION, 0.0) / 1e9,
+        "regions": [
+            {
+                "region": region,
+                "model_cgt_bn": model_cgt[region] / 1e9,
+                "model_share_pct": 100 * model_cgt[region] / model_total,
+                "hmrc_tax_m": hmrc[region]["tax_m"],
+                "hmrc_share_pct": 100 * hmrc[region]["tax_m"] / hmrc_total,
+            }
+            for region in regions
+        ],
+        "external": dict(HMRC_TABLE_5),
+    }
+
+
+def reckoner_comparison_years(window: list[int]) -> list[int]:
+    """Ready-reckoner model years outside the modelled window (2026-27),
+    scored for that comparison only."""
+    return sorted({int(lag["model_year"][:4]) for lag in READY_RECKONER["lag"]} - set(window))
+
+
+def baseline_comparison_block(
+    year: str,
+    validation: dict,
+    rates: dict,
+    liability_bn: dict[str, float],
+    fingerprints: dict[str, str],
+) -> dict:
+    """PolicyEngine's baseline in HMRC's own year (2024-25, the dataset's own
+    year, no projection) for the Baseline tab, apart from the reform window.
+    ``rates`` is the rate schedule the engine applies in that year and
+    ``liability_bn`` the year's liability at that schedule and with the main
+    rates from before and after 30 October 2024 charged for the whole year."""
+    return {
+        "year": year,
+        "projection": "none: the dataset's own year, its inputs and weights as published",
+        "comparator": dict(HMRC_CGT_STATISTICS),
+        "validation": validation,
+        "rates": rates,
+        "rates_note": (
+            "One schedule for the year: the main rates are the day-weighted average of the "
+            "rates before and after 30 October 2024 (policyengine-uk's fiscal_year_blend); "
+            "HMRC's figures reflect when each gain was realised, and HMRC publishes no "
+            "split of the year by disposal date."
+        ),
+        "liability_bn": dict(liability_bn),
+        "reform_fingerprints": dict(fingerprints),
     }
 
 
@@ -592,14 +639,15 @@ def elasticities_block() -> dict:
     }
 
 
-def benchmarks_block(
-    *, static_equalisation: dict, centax_2019_20_rules: dict, ready_reckoner: dict
-) -> dict:
-    """The results file's ``benchmarks`` block."""
+def benchmarks_block(*, static_equalisation: dict, regional: dict, ready_reckoner: dict) -> dict:
+    """The results file's ``benchmarks`` block. CenTax's 2019-20 rates-only
+    uplift (Table 3) is carried as published, for the regional section's
+    notes: the dataset cannot reach 2019-20, so it is not scored here."""
     return {
         "elasticities": elasticities_block(),
         "static_equalisation": static_equalisation,
-        "centax_2019_20_rules": centax_2019_20_rules,
+        "regional": regional,
+        "centax_2019_20": dict(CENTAX_TABLE_3),
         "centax_package_context": [dict(row) for row in CENTAX_PACKAGE_CONTEXT],
         "ready_reckoner": ready_reckoner,
     }

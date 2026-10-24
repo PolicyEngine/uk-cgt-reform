@@ -143,3 +143,27 @@ export function formatPublished(isoDate) {
   if (!monthName) return String(year);
   return day ? `${day} ${monthName} ${year}` : `${monthName} ${year}`;
 }
+
+// Splits text into plain parts and fiscal-year labels ("2027-28"), so a
+// title can keep each year on one line (a browser may break after its hyphen).
+export function splitFiscalYears(text) {
+  return String(text)
+    .split(/(\b\d{4}-\d{2}\b)/)
+    .filter((part) => part !== "")
+    .map((part) => ({ text: part, year: /^\d{4}-\d{2}$/.test(part) }));
+}
+
+// The three elasticities HMRC's table of small rate changes is scored at, in
+// one wording everywhere: "at the official 3.6 (1.4 for the relief), at 3.0
+// and at CenTax's central 1.0".
+export function reckonerElasticities(official, central, third = 3) {
+  return `at the official ${official.e_retention.toFixed(1)} (${official.badr_e_retention.toFixed(1)} for the relief), at ${third.toFixed(1)} and at CenTax's central ${central.e_retention.toFixed(1)}`;
+}
+
+// A signed change in percentage points, in words: "+2 points", "−1 point",
+// "0 points".
+export function formatSignedPoints(value, digits = 0) {
+  const text = Math.abs(value).toFixed(digits);
+  const sign = Number(text) === 0 ? "" : value > 0 ? "+" : "\u2212";
+  return `${sign}${text} ${Number(text) === 1 ? "point" : "points"}`;
+}

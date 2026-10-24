@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { badrLimitLabel, describeBadr } from "../lib/dataHelpers";
-import { formatPct } from "../lib/formatters";
+import { formatPct, formatSignedPoints } from "../lib/formatters";
 import {
   BADR_CURRENT_LAW,
   BADR_LIMITS,
@@ -43,11 +43,12 @@ const ELASTICITY_NOTE =
   "The elasticity of realised gains with respect to the retention rate (1 − t): taxpayers realise fewer gains as the share of each gain they keep falls.";
 
 // "CenTax central (retention elasticity 1.0)" → a short name for the select
-// and its detail for the line beneath.
+// and its detail for the line beneath. The static case reads "No response".
+const SHORT_NAMES = { Static: "No response" };
 function splitLabel(label) {
   const match = label.match(/^(.*?)\s*\((.*)\)$/);
-  if (!match) return { name: label, detail: "" };
-  return { name: match[1], detail: match[2][0].toUpperCase() + match[2].slice(1) };
+  if (!match) return { name: SHORT_NAMES[label] ?? label, detail: "" };
+  return { name: SHORT_NAMES[match[1]] ?? match[1], detail: match[2][0].toUpperCase() + match[2].slice(1) };
 }
 
 function FieldError({ id, children }) {
@@ -135,7 +136,7 @@ function ChangeChip({ value, reference }) {
   if (value === "" || !Number.isFinite(number)) return null;
   const gap = Math.round((number - reference * 100) * 100) / 100;
   if (gap === 0) return <span className="text-sm text-slate-400">No change</span>;
-  return <Pill tone="teal">{`${gap > 0 ? "+" : "−"}${Math.abs(gap)} pp`}</Pill>;
+  return <Pill tone="teal">{formatSignedPoints(gap)}</Pill>;
 }
 
 // The sub-tabs along the top of the panel, one per group of parameters,

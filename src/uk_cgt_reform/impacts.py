@@ -309,32 +309,6 @@ def cgt_by_region(sim) -> dict[str, float]:
     return {region: float(totals.get(region, 0.0)) for region in order}
 
 
-def cgt_uplift(baseline, reformed) -> dict:
-    """The change in CGT from ``baseline`` to ``reformed``, nationally and by
-    region, with each as a percentage of its baseline CGT."""
-    base, ref = cgt_by_region(baseline), cgt_by_region(reformed)
-
-    def entry(b: float, r: float) -> dict:
-        return {
-            "baseline_cgt_bn": b / 1e9,
-            "reform_cgt_bn": r / 1e9,
-            "change_bn": (r - b) / 1e9,
-            "uplift_pct": 100 * (r - b) / b if b else None,
-        }
-
-    return {
-        "national": entry(sum(base.values()), sum(ref.values())),
-        "regions": [
-            {"region": region, **entry(base[region], ref[region])}
-            for region in REGION_NAMES.values()
-        ],
-        "unassigned_cgt_bn": {
-            "baseline": base[UNASSIGNED_REGION] / 1e9,
-            "reform": ref[UNASSIGNED_REGION] / 1e9,
-        },
-    }
-
-
 def sensitivity(baseline_cgt: float, cases: dict[str, float], run_case, year: int) -> list[dict]:
     """Re-run the reform in ``year`` under each institution's elasticity
     assumption.
@@ -358,6 +332,51 @@ def sensitivity(baseline_cgt: float, cases: dict[str, float], run_case, year: in
             }
         )
     return rows
+
+
+def sensitivity_curve(baseline_cgt: float, grid: tuple[float, ...], run_point, year: int) -> dict:
+    """The change in CGT revenue across a grid of retention elasticities,
+    one completed reform run per point.
+
+    ``run_point(elasticity)`` must return the reform simulation for ``year``
+    with one elasticity applied to every gain; ``baseline_cgt`` is that
+    year's current-law CGT revenue, £. The block carries the computed points
+    and the elasticity at which the change crosses zero (:func:`break_even`).
+    """
+    points = [
+        {"elasticity": e, "revenue_bn": (cgt_revenue(run_point(e)) - baseline_cgt) / 1e9}
+        for e in sorted(grid)
+    ]
+    return {
+        "year": fiscal_year_label(year),
+        "measure": "Change in CGT revenue, £bn",
+        "runs": len(points),
+        "grid": points,
+        "break_even": break_even(points),
+    }
+
+
+def break_even(points: list[dict]) -> dict | None:
+    """Where the change in revenue first crosses £0 along ``points``
+    (``{elasticity, revenue_bn}``, sorted by elasticity): linear
+    interpolation between the two computed points either side of it, or a
+    computed point that is exactly zero. None when the change does not
+    cross zero on the grid."""
+    for i, point in enumerate(points):
+        if point["revenue_bn"] == 0:
+            e = point["elasticity"]
+            return {"elasticity": e, "between": [e, e], "method": "computed point"}
+        if i + 1 < len(points):
+            a, b = point, points[i + 1]
+            ya, yb = a["revenue_bn"], b["revenue_bn"]
+            if yb != 0 and (ya > 0) != (yb > 0):
+                e = a["elasticity"] + (b["elasticity"] - a["elasticity"]) * ya / (ya - yb)
+                return {
+                    "elasticity": e,
+                    "between": [a["elasticity"], b["elasticity"]],
+                    "method": "linear interpolation between the two computed points",
+                }
+    return None
 
 
 def schedule_split(

@@ -18,11 +18,11 @@ const DERIVED = { fill: "#FFFFFF", stroke: colors.gray[500], text: colors.gray[7
 // Short row labels, keyed by the results file's ids; an id not listed here
 // falls back to its source and locator.
 const SHORT_LABELS = {
-  centax_2024_rates_only_post_behavioural_derived: "Rates only (PolicyEngine's estimate from CenTax's tables)",
-  centax_2024_table5_package: "Full package (CenTax 2024)",
-  centax_2024_table6_package_range: "Full package, range of responses (CenTax 2024)",
-  centax_2025_technical_note_package: "Full package, updated (CenTax 2025)",
-  centax_2026_taxes_at_the_top_package: "Full package, latest (CenTax 2026)",
+  centax_2024_rates_only_post_behavioural_derived: "Rates only (PolicyEngine's derivation from CenTax's tables, not a CenTax figure)",
+  centax_2024_table5_package: "CenTax 2024 report",
+  centax_2024_table6_package_range: "CenTax 2024 report",
+  centax_2025_technical_note_package: "CenTax 2025 update",
+  centax_2026_taxes_at_the_top_package: "CenTax 2026 report",
 };
 
 const DERIVED_IDS = new Set(["centax_2024_rates_only_post_behavioural_derived"]);
@@ -52,15 +52,20 @@ export function buildPackageRows(rows) {
         label: SHORT_LABELS.centax_2024_table5_package,
         bars: [...points]
           .sort((a, b) => a.retention_elasticity - b.retention_elasticity)
-          .map((p) => ({
-            value: p.value,
-            elasticity: p.retention_elasticity,
-            central: p === central,
-            text: `${formatBn(p.value, 1)} at ${p.retention_elasticity.toFixed(1)}${
-              p === central && table5.details?.uplift_pct ? ` (+${table5.details.uplift_pct}%, CenTax's central case)` : ""
-            }`,
-          })),
-        note: "One bar per assumption about how strongly people respond, from weakest (0.5) to strongest (2.0): the stronger the response, the less it raises.",
+          .map((p) => {
+            const main = `${formatBn(p.value, 1)} at elasticity ${p.retention_elasticity.toFixed(1)}`;
+            const extra =
+              p === central && table5.details?.uplift_pct ? ` (+${table5.details.uplift_pct}%, CenTax's central case)` : "";
+            return {
+              value: p.value,
+              elasticity: p.retention_elasticity,
+              central: p === central,
+              text: `${main}${extra}`,
+              main,
+              extra,
+            };
+          }),
+        note: "One bar per elasticity CenTax tested, from 0.5 to 2.0: the stronger the response, the less the package raises.",
       });
       continue;
     }
@@ -77,7 +82,8 @@ export function buildPackageRows(rows) {
   return built;
 }
 
-function RowChart({ value, text, title, derived = false, emphasis = false, domain, ticks }) {
+// `label`: the text beside the bar, if not `text` (the tooltip's).
+function RowChart({ value, text, label, title, derived = false, emphasis = false, domain, ticks }) {
   const style = derived ? DERIVED : CENTAX;
   const data = [{ key: "v", hasValue: isNum(value), value: Number(value) }];
   return (
@@ -96,7 +102,7 @@ function RowChart({ value, text, title, derived = false, emphasis = false, domai
                   title={title}
                   rows={[
                     {
-                      label: derived ? "PolicyEngine's estimate" : "CenTax estimate",
+                      label: derived ? "PolicyEngine's derivation" : "CenTax estimate",
                       value: text,
                       color: derived ? DERIVED.stroke : CENTAX.fill,
                     },
@@ -115,7 +121,7 @@ function RowChart({ value, text, title, derived = false, emphasis = false, domai
             <LabelList
               dataKey="key"
               content={(props) => (
-                <EndLabel {...props} value={1} text={text} color={style.text} weight={emphasis ? 700 : 600} />
+                <EndLabel {...props} value={1} text={label ?? text} color={style.text} weight={emphasis ? 700 : 600} />
               )}
             />
           </Bar>
@@ -153,7 +159,31 @@ export default function PackageEstimatesChart({ rows }) {
             <div aria-hidden="true">
               {row.bars ? (
                 row.bars.map((bar) => (
-                  <RowChart key={bar.text} title={`${row.label}, ${row.year}`} value={bar.value} text={bar.text} emphasis={bar.central} domain={domain} ticks={ticks} />
+                  <div key={bar.text}>
+                    {/* A long label's parenthesis moves under its bar on phones,
+                        where it would run past the chart's edge. */}
+                    <RowChart
+                      title={`${row.label}, ${row.year}`}
+                      value={bar.value}
+                      text={bar.text}
+                      label={
+                        bar.extra ? (
+                          <>
+                            {bar.main}
+                            <tspan className="hidden sm:inline">{bar.extra}</tspan>
+                          </>
+                        ) : undefined
+                      }
+                      emphasis={bar.central}
+                      domain={domain}
+                      ticks={ticks}
+                    />
+                    {bar.extra ? (
+                      <p className="text-xs font-bold leading-4 text-slate-700 sm:hidden" style={{ paddingLeft: MARGIN.left }}>
+                        {bar.extra.trim()}
+                      </p>
+                    ) : null}
+                  </div>
                 ))
               ) : (
                 <RowChart title={`${row.label}, ${row.year}`} value={row.value} text={row.text} derived={row.derived} domain={domain} ticks={ticks} />
@@ -169,9 +199,9 @@ export default function PackageEstimatesChart({ rows }) {
       </div>
       <ChartLegend
         items={[
-          { label: "CenTax estimate", fill: CENTAX.fill },
+          { label: "CenTax's published estimate", fill: CENTAX.fill },
           ...(anyDerived
-            ? [{ label: "PolicyEngine's estimate from CenTax's tables", fill: DERIVED.fill, stroke: DERIVED.stroke, dashed: true }]
+            ? [{ label: "PolicyEngine's derivation from CenTax's tables", fill: DERIVED.fill, stroke: DERIVED.stroke, dashed: true }]
             : []),
         ]}
       />

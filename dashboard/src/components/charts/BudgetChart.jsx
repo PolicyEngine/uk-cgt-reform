@@ -15,19 +15,25 @@ import { formatSignedBn } from "../../lib/formatters";
 import ChartLogo from "../ChartLogo";
 import ChartLegend from "./ChartLegend";
 import ChartTooltip, { TOOLTIP_PROPS } from "./ChartTooltip";
-import { LabelledSelect } from "../controls";
+import { PillSelect } from "../controls";
+import SectionHeading from "../SectionHeading";
 
 const AXIS_STYLE = { fontSize: 12, fill: colors.gray[500] };
 
 // Baseline and reform CGT revenue, or the change in the government balance,
-// by fiscal year. `budget` is the pipeline's budget rows.
-export default function BudgetChart({ budget }) {
+// by fiscal year, under its heading with the "Show" pill. `budget` is the
+// pipeline's budget rows. It renders two blocks, the heading and the chart,
+// so a two-column card can line them up with its neighbour's.
+export default function BudgetChart({ budget, title, description }) {
   const [budgetView, setBudgetView] = useState("change");
   return (
     <>
-      <div className="mb-4 flex flex-wrap gap-3">
-        <div>
-          <LabelledSelect
+      <SectionHeading
+        title={title}
+        description={description}
+        paired
+        action={
+          <PillSelect
             label="Show"
             options={[
               { value: "change", label: "Change in government balance" },
@@ -36,8 +42,9 @@ export default function BudgetChart({ budget }) {
             value={budgetView}
             onChange={setBudgetView}
           />
-        </div>
-      </div>
+        }
+      />
+      <div>
       <div className="h-[340px] w-full">
         <ResponsiveContainer>
           <BarChart data={budget} margin={{ top: 10, right: 20, bottom: 15, left: 0 }}>
@@ -93,6 +100,7 @@ export default function BudgetChart({ budget }) {
         />
       ) : null}
       <ChartLogo />
+      </div>
     </>
   );
 }

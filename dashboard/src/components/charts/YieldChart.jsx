@@ -24,8 +24,8 @@ const fmt = (v) => formatSignedBn(v, 1);
 // One colour, short name and label colour per reform step, in stacking order.
 // Steps the pipeline adds later fall back to the extra colours below.
 const STEP_STYLE = {
-  main_rates: { short: "Main rates", fill: colors.primary[700], text: "#FFFFFF" },
-  residential: { short: "Residential property", fill: colors.primary[300], text: colors.gray[900] },
+  main_rates: { short: "Income tax rates on other gains", fill: colors.primary[700], text: "#FFFFFF" },
+  residential: { short: "Income tax rates on residential property", fill: colors.primary[300], text: colors.gray[900] },
   badr_withdrawn: { short: "Relief withdrawn", fill: colors.gray[400], text: colors.gray[900] },
 };
 const FALLBACK_FILLS = [colors.primary[500], colors.gray[600], colors.primary[100]];
@@ -114,7 +114,7 @@ function YieldTooltip({ active, payload, label, steps }) {
     <TooltipCard
       title={caseLabel}
       rows={steps.map((step, i) => ({
-        label: step.label,
+        label: styleFor(step, i).short,
         value: fmt(row[step.step]),
         color: styleFor(step, i).fill,
       }))}

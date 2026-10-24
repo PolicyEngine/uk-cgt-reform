@@ -28,6 +28,15 @@ export function getValidation(data) {
   return data.validation;
 }
 
+// The baseline in HMRC's own year (2024-25, the dataset's own year, no
+// projection), for the Baseline tab: { year, validation, rates,
+// liability_bn, ... }. A results file from before the block existed falls
+// back to the headline year's validation, with no rates or liability bounds.
+export function getBaselineComparison(data) {
+  if (data.baseline_comparison) return data.baseline_comparison;
+  return { year: getHeadlineYear(data), validation: data.validation, rates: null, liability_bn: null };
+}
+
 // The revenue cards read each year's change in the government balance.
 export function getBudget(data) {
   for (const row of data.budget) requireNumber(row, "gov_balance_change_bn", `budget row ${row.year}`);
@@ -60,14 +69,29 @@ export function getSensitivity(data, year) {
   return rows;
 }
 
+// One year's sensitivity curve: the reform's change in CGT revenue at each
+// retention elasticity on the pipeline's grid ({ elasticity, revenue_bn },
+// sorted) and the interpolated £0 crossing (`break_even`, or null). Null
+// for a results file from before the block existed; the chart then draws
+// through the sensitivity rows.
+export function getSensitivityCurve(data, year) {
+  const block = data.sensitivity_curve?.[year];
+  if (!block) return null;
+  for (const point of block.grid) {
+    requireNumber(point, "elasticity", `sensitivity curve ${year}`);
+    requireNumber(point, "revenue_bn", `sensitivity curve ${year}`);
+  }
+  return block;
+}
+
 // The years the per-year blocks (sensitivity, yield by schedule) cover.
 export function getSensitivityYears(data) {
   return Object.keys(data.sensitivity);
 }
 
 // External benchmarks beside this dataset's own scores (issue #7): the
-// static reform against JRF, the 2019/20-rules uplift against CenTax, and
-// HMRC's ready-reckoner rows.
+// static reform against JRF, regional shares against HMRC's for the same year,
+// and HMRC's ready-reckoner rows.
 export function getBenchmarks(data) {
   return data.benchmarks;
 }

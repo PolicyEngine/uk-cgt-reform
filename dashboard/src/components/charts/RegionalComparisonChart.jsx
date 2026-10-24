@@ -9,7 +9,6 @@ import ChartLegend from "./ChartLegend";
 import { RowAxis } from "./benchmarkRows";
 import { TOOLTIP_PROPS, TooltipCard } from "./ChartTooltip";
 
-const MINUS = "−";
 // Room for a value label beside the outer dot on either side.
 const MARGIN = { top: 0, right: 46, bottom: 0, left: 46 };
 const ROW_CHART_HEIGHT = 18;
@@ -18,21 +17,16 @@ const DOT_R = 5;
 const NAME_COL = "sm:w-32 sm:shrink-0";
 
 const PE = { fill: colors.primary[600], text: colors.primary[700] };
-const CENTAX = { fill: colors.gray[400], text: colors.gray[600] };
+const HMRC = { fill: colors.gray[400], text: colors.gray[600] };
 
 const isNum = (v) => v !== null && v !== undefined && Number.isFinite(Number(v));
-
-export function formatUplift(value) {
-  if (!isNum(value)) return "—";
-  return `${value < 0 ? MINUS : "+"}${Math.abs(value).toFixed(0)}%`;
-}
 
 const PANELS = [
   {
     key: "share",
-    title: "Share of baseline CGT",
-    pe: "baseline_share_pct",
-    centax: "centax_baseline_share_pct",
+    title: "Share of CGT liability",
+    pe: "model_share_pct",
+    other: "hmrc_share_pct",
     format: (v) => formatPct(v, 1),
     tickFormat: (v) => formatPct(v, 0),
     fromZero: true,
@@ -40,19 +34,16 @@ const PANELS = [
   },
 ];
 
-// The props from `benchmarks.centax_2019_20_rules.regions`, largest share of
-// baseline CGT first (the dataset's share), so the regions that carry most of
-// the comparison lead. The file keeps
-// CenTax's Table 8 order (the standard regional list).
+// The props from `benchmarks.regional.regions`, largest share of CGT
+// liability first (the dataset's share), so the regions that carry most of
+// the comparison lead. The file keeps the standard regional order.
 export function buildRegionRows(regions) {
   const rows = regions.map((row) => ({
     region: row.region,
-    baseline_share_pct: row.baseline_share_pct,
-    centax_baseline_share_pct: row.centax_baseline_share_pct,
-    uplift_pct: row.uplift_pct,
-    centax_uplift_pct: row.centax_uplift_pct,
+    model_share_pct: row.model_share_pct,
+    hmrc_share_pct: row.hmrc_share_pct,
   }));
-  return rows.sort((a, b) => Number(b.baseline_share_pct) - Number(a.baseline_share_pct));
+  return rows.sort((a, b) => Number(b.model_share_pct) - Number(a.model_share_pct));
 }
 
 // A connector between the two dots, each dot's value on its outer side.
@@ -64,19 +55,19 @@ function Dumbbell({ x, y, width, height, payload, format }) {
   const peLeft = payload.pe <= payload.cx;
   const dots = [
     { cx: peLeft ? left : right, s: PE, v: payload.pe, side: peLeft ? "left" : "right" },
-    { cx: peLeft ? right : left, s: CENTAX, v: payload.cx, side: peLeft ? "right" : "left" },
+    { cx: peLeft ? right : left, s: HMRC, v: payload.cx, side: peLeft ? "right" : "left" },
   ];
   return (
     <g>
       <line x1={left} x2={right} y1={cy} y2={cy} stroke={colors.gray[300]} strokeWidth={2} />
-      {/* CenTax under PolicyEngine, so the teal dot shows when they meet. */}
-      {[dots[1], dots[0]].map((d) => (
-        <circle key={d.s.fill} cx={d.cx} cy={cy} r={DOT_R} fill={d.s.fill} stroke="#FFFFFF" strokeWidth={1} />
-      ))}
+      {/* PolicyEngine a solid dot, HMRC a larger hollow ring around it, so
+          both stay visible when the values meet (as on the other charts). */}
+      <circle cx={dots[0].cx} cy={cy} r={DOT_R - 0.5} fill={PE.fill} stroke="#FFFFFF" strokeWidth={1} />
+      <circle cx={dots[1].cx} cy={cy} r={DOT_R + 1.5} fill="none" stroke={HMRC.fill} strokeWidth={2} />
       {dots.map((d) => (
         <text
           key={`t${d.s.fill}`}
-          x={d.side === "left" ? d.cx - DOT_R - 4 : d.cx + DOT_R + 4}
+          x={d.side === "left" ? d.cx - DOT_R - 5 : d.cx + DOT_R + 5}
           y={cy}
           textAnchor={d.side === "left" ? "end" : "start"}
           dominantBaseline="central"
@@ -109,7 +100,7 @@ function RowChart({ d, domain, ticks, format, labels }) {
                   title={d.region}
                   rows={[
                     { label: labels.pe, value: format(d.pe), color: PE.fill },
-                    { label: labels.centax, value: format(d.cx), color: CENTAX.fill },
+                    { label: labels.other, value: format(d.cx), color: HMRC.fill },
                   ]}
                 />
               ) : null
@@ -125,7 +116,7 @@ function RowChart({ d, domain, ticks, format, labels }) {
 function Panel({ panel, rows, labels }) {
   const data = rows.map((row) => {
     const pe = Number(row[panel.pe]);
-    const cx = Number(row[panel.centax]);
+    const cx = Number(row[panel.other]);
     return { region: row.region, pe, cx, range: [Math.min(pe, cx), Math.max(pe, cx)] };
   });
   const values = data.flatMap((d) => [d.pe, d.cx]);
@@ -145,7 +136,7 @@ function Panel({ panel, rows, labels }) {
           <div
             key={d.region}
             role="listitem"
-            aria-label={`${d.region}: ${labels.pe} ${panel.format(d.pe)}, ${labels.centax} ${panel.format(d.cx)}`}
+            aria-label={`${d.region}: ${labels.pe} ${panel.format(d.pe)}, ${labels.other} ${panel.format(d.cx)}`}
             className="border-b border-slate-100 py-1 last:border-b-0 sm:flex sm:items-center"
           >
             <p aria-hidden="true" className={`${NAME_COL} text-xs leading-4 text-slate-700`}>
@@ -161,11 +152,12 @@ function Panel({ panel, rows, labels }) {
   );
 }
 
-// Region by region, the dataset against CenTax (2024) at 2019/20 rules:
-// each region's share of baseline CGT, one dot per source. Each row carries its values as an aria-label; the drawing
-// itself is hidden from screen readers. `rows`: buildRegionRows(regions).
-export default function RegionalComparisonChart({ rows, peLabel = "PolicyEngine", centaxLabel = "CenTax 2024" }) {
-  const labels = { pe: peLabel, centax: centaxLabel };
+// Region by region, the dataset against HMRC's statistics for the same
+// year: each region's share of CGT liability, one dot per source. Each row
+// carries its values as an aria-label; the drawing itself is hidden from
+// screen readers. `rows`: buildRegionRows(regions).
+export default function RegionalComparisonChart({ rows, peLabel = "PolicyEngine", otherLabel = "HMRC" }) {
+  const labels = { pe: peLabel, other: otherLabel };
   return (
     <>
       <div>
@@ -176,7 +168,7 @@ export default function RegionalComparisonChart({ rows, peLabel = "PolicyEngine"
       <ChartLegend
         items={[
           { label: peLabel, fill: PE.fill, marker: "dot" },
-          { label: centaxLabel, fill: CENTAX.fill, marker: "dot" },
+          { label: otherLabel, fill: HMRC.fill, marker: "ring" },
         ]}
       />
       <ChartLogo />
