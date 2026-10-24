@@ -209,7 +209,11 @@ function ReadyReckonerPanel({ row, result, onNavigate }) {
         </>
       </p>
       <ReckonerBars
-        rows={READY_RECKONER.lag.map((lag) => ({
+        rows={READY_RECKONER.lag
+          // A run covers the modelled window only; the Baseline tab also
+          // scores 2026-27, which a run has no liability for.
+          .filter((lag) => result.budget.some((budgetRow) => budgetRow.year === lag.model_year))
+          .map((lag) => ({
           key: lag.hmrc_year,
           label: `HMRC ${lag.hmrc_year} receipts and this run's ${lag.model_year}`,
           hmrc: row.hmrc_m[lag.hmrc_year],
