@@ -6,7 +6,8 @@
 // Six of them are TLS intermediates that chain to "emSign ECC Root CA - G3",
 // and all eight are also cross-signed by Sectigo's "AAA Certificate Services".
 // Vercel Functions ran Node.js 24.21.0 and 22.23.2 when last measured
-// (2026-10-21). The CA list compiled into both includes "emSign ECC Root CA -
+// (2026-10-21), and this project's preview functions still ran 24.21.0 on
+// 2026-10-26. The CA list compiled into both includes "emSign ECC Root CA -
 // G3"; the one in Node.js 24.22.1 and 22.23.4 does not. This module removes
 // both roots from Node's default CA list, which TLS connections opened after
 // this call use (fetch included) unless they pass their own `ca` option.
@@ -38,9 +39,11 @@ export const COMPROMISED_ROOT_FINGERPRINTS = new Map([
   // compiles in only the roots Mozilla trusts for websites. It reaches Node's
   // default CA list through NODE_EXTRA_CA_CERTS, or through --use-system-ca
   // (or NODE_USE_SYSTEM_CA=1) on an operating system whose CA store still
-  // contains it, as Debian's ca-certificates 20230311 does. The Vercel
-  // project's environment variables set none of NODE_EXTRA_CA_CERTS,
-  // NODE_USE_SYSTEM_CA or NODE_OPTIONS.
+  // contains it, as Debian's ca-certificates 20230311 does. Neither applies
+  // on Vercel now: the project's environment variables set none of
+  // NODE_EXTRA_CA_CERTS, NODE_USE_SYSTEM_CA or NODE_OPTIONS, and on
+  // 2026-10-26 a preview function's default CA list held 121 certificates,
+  // the size of the list compiled into Node.js 24.21.0.
   [
     "D7:A7:A0:FB:5D:7E:27:31:D7:71:E9:48:4E:BC:DE:F7:1D:5F:0C:3E:0A:29:48:78:2B:C8:3E:E0:EA:69:9E:F4",
     "AAA Certificate Services",
