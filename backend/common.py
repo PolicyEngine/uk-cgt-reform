@@ -55,6 +55,23 @@ MANIFEST_PATH = f"{DATA_ROOT}/manifest.json"
 PYTHON_VERSION = "3.13"
 SOURCE_IGNORE = ["**/__pycache__/**", "**/*.pyc"]
 
+# Modal's cached debian_slim base for Python 3.13 carries pip 26.0.1, whose
+# bundled certifi (2026.01.04) still contains the compromised eMudhra root
+# "emSign ECC Root CA - G3"; pip trusts it whatever the operating-system store
+# holds, and --cert or PIP_CERT only add to that trust. Both images therefore
+# replace pip with 26.2.2, whose bundled certifi (2026.10.19) drops the root,
+# before they install any other package. --require-hashes accepts only the
+# wheel with the sha256 PyPI publishes, whatever certificate the connection
+# presents.
+PIP_VERSION = "26.2.2"
+PIP_WHEEL_SHA256 = "fd7f4dfa8190e014013b9f08f3e973f4e4c26ffd179a204895533a7254813a70"
+PIP_BOOTSTRAP_COMMAND = (
+    f"printf '%s\\n' 'pip=={PIP_VERSION} --hash=sha256:{PIP_WHEEL_SHA256}'"
+    " > /tmp/pip-bootstrap.txt"
+    " && python -m pip install --require-hashes --no-deps -r /tmp/pip-bootstrap.txt"
+    " && rm /tmp/pip-bootstrap.txt"
+)
+
 JOBS_DICT_NAME = f"uk-cgt-reform-jobs{_SUFFIX}"
 #: Uncached schedules computing at once, across every visitor. Each fans out
 #: five 4-CPU containers, so this bounds the queue, not only concurrency.
@@ -79,18 +96,20 @@ usage = modal.Dict.from_name(USAGE_DICT_NAME, create_if_missing=True)
 # The engine image: the pinned runtime plus the pipeline package.
 engine_image = (
     modal.Image.debian_slim(python_version=PYTHON_VERSION)
-    .pip_install_from_requirements(str(ROOT / "backend" / "requirements.txt"))
     # Modal's prebuilt Debian base carries ca-certificates 20230311, which
     # trusts the compromised eMudhra root "emSign ECC Root CA - G3".
     # huggingface_hub (through truststore) and hf-xet read this operating-system
     # store when warm.py downloads the private datasets, so upgrade the package
     # to the Debian release that drops the root (20250419~deb12u2 or later).
+    # pip reads the same store as well as its own certifi, so the upgrade
+    # precedes the pip replacement, and both precede every package install.
+    .apt_install("ca-certificates")
+    .run_commands(PIP_BOOTSTRAP_COMMAND)
+    .pip_install_from_requirements(str(ROOT / "backend" / "requirements.txt"))
     # requests reads its CA list from certifi, and 2026.10.19 is the first
     # certifi release without the root: a minimum, not a pin, so a rebuild can
-    # pick up later removals. Both steps follow the requirements step so that
-    # Modal reuses that step's cached build; changing an earlier step would
-    # rebuild it and re-resolve every dependency requirements.txt does not pin.
-    .apt_install("ca-certificates")
+    # pick up later removals. This step follows the requirements step, so the
+    # minimum holds whatever certifi the requirements resolve.
     .pip_install("certifi>=2026.10.19")
     .env({"CGT_EXPLORER_STAGE": STAGE})
     .add_local_dir(
@@ -107,11 +126,13 @@ engine_image = (
 # at module level (through ``impacts``) and nothing heavier.
 gateway_image = (
     modal.Image.debian_slim(python_version=PYTHON_VERSION)
-    .pip_install("fastapi==0.141.1", "numpy==2.5.3")
-    # The same ca-certificates upgrade as engine_image, after the cached pip
-    # step. The gateway makes no outbound HTTPS requests of its own; this keeps
-    # one added later from trusting the 20230311 store.
+    # The same ca-certificates upgrade and pip replacement as engine_image,
+    # before the gateway's packages are installed. The gateway makes no
+    # outbound HTTPS requests of its own; the upgrade keeps one added later
+    # from trusting the 20230311 store.
     .apt_install("ca-certificates")
+    .run_commands(PIP_BOOTSTRAP_COMMAND)
+    .pip_install("fastapi==0.141.1", "numpy==2.5.3")
     .env({"CGT_EXPLORER_STAGE": STAGE})
     .add_local_dir(
         str(ROOT / "src" / "uk_cgt_reform"),
