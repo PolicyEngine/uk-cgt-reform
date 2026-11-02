@@ -80,6 +80,18 @@ usage = modal.Dict.from_name(USAGE_DICT_NAME, create_if_missing=True)
 engine_image = (
     modal.Image.debian_slim(python_version=PYTHON_VERSION)
     .pip_install_from_requirements(str(ROOT / "backend" / "requirements.txt"))
+    # Modal's prebuilt Debian base carries ca-certificates 20230311, which
+    # trusts the compromised eMudhra root "emSign ECC Root CA - G3".
+    # huggingface_hub (through truststore) and hf-xet read this operating-system
+    # store when warm.py downloads the private datasets, so upgrade the package
+    # to the Debian release that drops the root (20250419~deb12u2 or later).
+    # requests reads its CA list from certifi, and 2026.10.19 is the first
+    # certifi release without the root: a minimum, not a pin, so a rebuild can
+    # pick up later removals. Both steps follow the requirements step so that
+    # Modal reuses that step's cached build; changing an earlier step would
+    # rebuild it and re-resolve every dependency requirements.txt does not pin.
+    .apt_install("ca-certificates")
+    .pip_install("certifi>=2026.10.19")
     .env({"CGT_EXPLORER_STAGE": STAGE})
     .add_local_dir(
         str(ROOT / "src" / "uk_cgt_reform"),
@@ -96,6 +108,10 @@ engine_image = (
 gateway_image = (
     modal.Image.debian_slim(python_version=PYTHON_VERSION)
     .pip_install("fastapi==0.141.1", "numpy==2.5.3")
+    # The same ca-certificates upgrade as engine_image, after the cached pip
+    # step. The gateway makes no outbound HTTPS requests of its own; this keeps
+    # one added later from trusting the 20230311 store.
+    .apt_install("ca-certificates")
     .env({"CGT_EXPLORER_STAGE": STAGE})
     .add_local_dir(
         str(ROOT / "src" / "uk_cgt_reform"),
